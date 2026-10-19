@@ -3,6 +3,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Icon } from './shared/icon';
 import { Auth } from './core/auth';
 import { MAT_KHAU_DEMO, TAI_KHOAN_DEMO } from './core/seed';
+import { CONG_TY } from './core/cong-ty';
 
 /** NT-01: đăng nhập email + mật khẩu (nút hiện/ẩn). Thông báo lỗi chung, không lộ email có tồn tại. */
 @Component({
@@ -13,10 +14,9 @@ import { MAT_KHAU_DEMO, TAI_KHOAN_DEMO } from './core/seed';
     <div class="login-wrap">
       <form class="card login-card" (submit)="$event.preventDefault(); go()">
         <div class="brand-big">
-          <span class="brand-logo"><img src="brand/logo-oxy.png" alt="Logo Oxy Mecie" width="38" height="46" /></span>
+          <span class="brand-logo wide"><img src="brand/logo-oxymecie.png" alt="Logo Oxy Mecie" width="399" height="160" /></span>
           <div>
-            <h1 style="color: var(--brand)">Oxy <span style="color: var(--leaf)">Mecie</span></h1>
-            <span class="sub">Quản lý nội bộ · Kế toán · Kinh doanh · Kho · Phú Tài</span>
+            <span class="sub">Phần mềm quản lý nội bộ</span>
           </div>
         </div>
         <div class="field">
@@ -40,6 +40,12 @@ import { MAT_KHAU_DEMO, TAI_KHOAN_DEMO } from './core/seed';
           }
         </details>
       </form>
+      <footer class="login-ct">
+        <b>{{ congTy.ten }}</b>
+        <span>MST: {{ congTy.mst }}</span>
+        <span>{{ congTy.diaChi }}</span>
+        <span>Hotline: <a [href]="'tel:' + congTy.hotline">{{ congTy.hotline }}</a> · Email: <a [href]="'mailto:' + congTy.email">{{ congTy.email }}</a></span>
+      </footer>
     </div>
   `,
 })
@@ -54,6 +60,7 @@ export class Login {
   protected readonly busy = signal(false);
   protected readonly demo = TAI_KHOAN_DEMO;
   protected readonly demoPw = MAT_KHAU_DEMO;
+  protected readonly congTy = CONG_TY;
 
   protected async go(): Promise<void> {
     this.busy.set(true);

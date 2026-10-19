@@ -26,7 +26,10 @@ interface Dong {
   imports: [RouterLink, FilterBar, Kpi, TrangThai, Pager, Icon],
   template: `
     <div class="page-head">
-      <div><div class="crumbs">Kinh doanh</div><h1>Hợp đồng mua</h1></div>
+      <div>
+        <div class="crumbs"><a routerLink="/">Trang chủ</a> › Hợp đồng mua</div>
+        <h1>Hợp đồng mua</h1>
+      </div>
       <div class="actions">
         <button type="button" class="btn quiet" (click)="xuat()"><app-icon name="download" [size]="16" /> Xuất Excel</button>
         @if (store.canEdit('hdm')) {
@@ -36,20 +39,19 @@ interface Dong {
     </div>
 
     <div class="kpis">
-      <app-kpi label="Số HĐ mua" [value]="'' + rows().length" [sub]="'Đang nhận hàng: ' + kpi().dangNhan" />
-      <app-kpi label="Tổng giá trị" [value]="vndShort(kpi().tong)" sub="VNĐ, không tính HĐ huỷ" />
-      <app-kpi label="Đã trả NCC" [value]="vndShort(kpi().daTra)" sub="Phiếu chi đã duyệt" tone="ok" />
-      <app-kpi label="Còn phải trả (Oxy)" [value]="vndShort(kpi().conPhaiTra)" sub="Không tính HĐ Thuộc Phú Tài" [tone]="kpi().conPhaiTra > 0 ? 'warn' : ''" />
-      <app-kpi label="Đợt quá hạn" [value]="'' + kpi().quaHan" [tone]="kpi().quaHan > 0 ? 'bad' : ''" />
+      <app-kpi label="Tổng giá trị" [value]="vndShort(kpi().tong)" [sub]="kpi().n + ' HĐ (không tính HĐ huỷ)'" />
+      <app-kpi label="Đã trả NCC" [value]="vndShort(kpi().daTra)" [sub]="pct(kpi().tongOxy ? kpi().daTra / kpi().tongOxy : 0)" tone="ok" />
+      <app-kpi label="Còn phải trả (Oxy)" [value]="vndShort(kpi().conPhaiTra)" [sub]="kpi().quaHan + ' đợt quá hạn · không tính Phú Tài'" [tone]="kpi().quaHan ? 'bad' : kpi().conPhaiTra > 0 ? 'warn' : ''" />
+      <app-kpi label="Đang nhận hàng" [value]="'' + kpi().dangNhan" sub="HĐ ở trạng thái Đang nhận hàng" [tone]="kpi().dangNhan ? 'warn' : ''" />
     </div>
 
-    <app-filter [(loc)]="loc" memo="hdm-list" [facets]="facets()" placeholder="Tìm số HĐ, NCC, MST, HĐ bán…" />
+    <app-filter [(loc)]="loc" memo="hdm-list" [facets]="facets()" placeholder="Tìm số HĐ, nhà cung cấp, MST, HĐ bán, ghi chú…" />
 
     <div class="tbl-wrap">
       <table class="tbl freeze">
         <thead>
           <tr>
-            <th>Số HĐ mua</th><th>NCC</th><th>Ngày ký</th><th class="num">Giá trị VNĐ</th><th>Đã trả</th>
+            <th>Số HĐ</th><th>Nhà cung cấp</th><th>Ngày ký</th><th class="num">Giá trị VNĐ</th><th>Đã trả</th>
             <th class="num">Còn phải trả</th><th>Nhập hàng</th><th>HĐ bán liên quan</th><th>Phú Tài</th><th>Trạng thái</th>
           </tr>
         </thead>
@@ -57,19 +59,23 @@ interface Dong {
           @for (r of pg.items(); track r.m.id) {
             <tr class="click" (click)="mo(r.m.id)" [class.overdue]="r.c.quaHan > 0">
               <td>
-                <b>{{ r.m.soHD || '(chưa có số)' }}</b>
+                <a [routerLink]="['/hop-dong-mua', r.m.id]" (click)="$event.stopPropagation()"><b>{{ r.m.soHD || '(chưa có số)' }}</b></a>
                 @if (r.m.import) { <app-tt v="Import" /> }
+                @if (r.choXoa) { <app-tt v="Chờ xoá" /> }
               </td>
-              <td>{{ r.m.tenNCC }}<span class="sub muted">{{ r.m.mst }}</span></td>
+              <td>{{ r.m.tenNCC }}<div class="sub">{{ r.m.mst }}</div></td>
               <td>{{ viDate(r.m.ngayKy) }}</td>
               <td class="num">{{ money(r.c.tong) }}</td>
               <td>
-                <div class="cell-bar"><span class="num">{{ pct(r.c.pctTra) }}</span><div class="bar"><i [style.width.%]="r.c.pctTra * 100"></i></div></div>
+                <div class="cell-bar">
+                  <span class="num">{{ pct(r.c.pctTra, 0) }}</span>
+                  <div class="bar" [class.warn]="r.c.pctTra < 1"><i [style.width.%]="r.c.pctTra * 100"></i></div>
+                </div>
               </td>
               <td class="num" [class.neg]="r.c.conPhaiTra < 0">{{ money(r.c.conPhaiTra) }}</td>
               <td>
                 @if (r.m.thuocPhuTai) { <span class="muted">—</span> } @else {
-                  <div class="cell-bar"><span class="num">{{ pct(r.c.pctNhap) }}</span><div class="bar warn"><i [style.width.%]="r.c.pctNhap * 100"></i></div></div>
+                  <div class="cell-bar"><span class="num">{{ pct(r.c.pctNhap, 0) }}</span><div class="bar warn"><i [style.width.%]="r.c.pctNhap * 100"></i></div></div>
                 }
               </td>
               <td>
@@ -78,7 +84,6 @@ interface Dong {
               <td>@if (r.m.thuocPhuTai) { <app-tt v="Thuộc Phú Tài" /> }</td>
               <td>
                 <app-tt [v]="r.m.trangThai" />
-                @if (r.choXoa) { <app-tt v="Chờ xoá" /> }
               </td>
             </tr>
           } @empty {
@@ -87,7 +92,11 @@ interface Dong {
         </tbody>
         @if (rows().length) {
           <tfoot>
-            <tr><th>Tổng ({{ rows().length }})</th><td></td><td></td><td class="num">{{ money(kpi().tongAll) }}</td><td></td><td class="num">{{ money(kpi().conAll) }}</td><td colspan="4"></td></tr>
+            <tr>
+              <th colspan="3">Tổng {{ rows().length }} HĐ</th>
+              <td class="num">{{ money(kpi().tongAll) }}</td><td></td>
+              <td class="num">{{ money(kpi().conAll) }}</td><td colspan="4"></td>
+            </tr>
           </tfoot>
         }
       </table>
@@ -159,7 +168,9 @@ export class HdmList {
     const hl = rs.filter((r) => r.m.trangThai !== 'Huỷ');
     const oxy = hl.filter((r) => !r.m.thuocPhuTai);
     return {
+      n: hl.length,
       tong: sum(hl, (r) => r.c.tong),
+      tongOxy: sum(oxy, (r) => r.c.tong),
       daTra: sum(oxy, (r) => r.c.daTra),
       conPhaiTra: sum(oxy, (r) => Math.max(0, r.c.conPhaiTra)),
       quaHan: sum(oxy, (r) => r.c.quaHan),

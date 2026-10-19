@@ -26,7 +26,7 @@ interface LinkDT {
   template: `
     <div class="page-head">
       <div>
-        <div class="crumbs">Hệ thống › Duyệt xoá</div>
+        <div class="crumbs"><a routerLink="/">Trang chủ</a> › Hệ thống › Duyệt xoá</div>
         <h1>Duyệt xoá</h1>
       </div>
     </div>

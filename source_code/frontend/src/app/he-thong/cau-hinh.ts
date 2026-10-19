@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Auth } from '../core/auth';
 import { CauHinh, CauHinhKey, TableKey } from '../core/models';
 import { Store } from '../core/store';
@@ -57,11 +57,11 @@ const BANG: { k: TableKey; nhan: string }[] = [
   selector: 'app-cau-hinh',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'page' },
-  imports: [Pager, Kpi, ImportCsv],
+  imports: [RouterLink, Pager, Kpi, ImportCsv],
   template: `
     <div class="page-head">
       <div>
-        <div class="crumbs">Hệ thống › Cấu hình & Import</div>
+        <div class="crumbs"><a routerLink="/">Trang chủ</a> › Hệ thống › Cấu hình & Import</div>
         <h1>Cấu hình & Import</h1>
       </div>
     </div>

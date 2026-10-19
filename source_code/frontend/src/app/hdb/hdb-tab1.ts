@@ -24,7 +24,7 @@ import { Pick, PickOption } from '../shared/ui-kit';
         </div>
         <div class="field">
           <span class="lbl">Tên khách hàng (bản sao)</span>
-          <div class="ro">{{ f().tenKH || '—' }}</div>
+          <div class="ro multi">{{ f().tenKH || '—' }}</div>
         </div>
         <div class="field">
           <span class="lbl">MST</span>

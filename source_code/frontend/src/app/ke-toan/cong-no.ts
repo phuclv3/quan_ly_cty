@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { Store } from '../core/store';
 import { Db, HopDongMua } from '../core/models';
 import { dotMuaDaTra, hdbCalc, hdmCalc, soNgayQuaHan } from '../core/calc';
@@ -56,7 +56,7 @@ function gom(rows: CnRow[]): Nhom[] {
 @Component({
   selector: 'app-kt-cong-no',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Kpi],
+  imports: [RouterLink, Kpi],
   template: `
     <div class="row" style="margin-bottom:12px">
       <div class="btn-row" role="tablist">
@@ -94,7 +94,7 @@ function gom(rows: CnRow[]): Nhom[] {
               <tr><th colspan="2">{{ g.ten }} <span class="muted">({{ g.rows.length }} HĐ)</span></th><th class="num">{{ money(g.giaTri) }}</th><th class="num">{{ money(g.da) }}</th><th class="num">{{ money(g.con) }}</th><th colspan="2"></th></tr>
               @for (r of g.rows; track r.id) {
                 <tr class="click" [class.overdue]="r.quaHan > 0" (click)="mo(r)">
-                  <td>{{ r.soHD }}</td><td class="muted">{{ r.doiTac }}</td><td class="num">{{ money(r.giaTri) }}</td><td class="num">{{ money(r.da) }}</td>
+                  <td><a [routerLink]="[duongDan(), r.id]" (click)="$event.stopPropagation()"><b>{{ r.soHD }}</b></a></td><td>{{ r.doiTac }}</td><td class="num">{{ money(r.giaTri) }}</td><td class="num">{{ money(r.da) }}</td>
                   <td class="num" [class.neg]="r.con < 0">{{ money(r.con) }}</td><td>{{ viDate(r.han) }}</td><td class="num">{{ r.quaHan || '' }}</td>
                 </tr>
               }
@@ -104,7 +104,7 @@ function gom(rows: CnRow[]): Nhom[] {
           <tbody>
             @for (r of rows(); track r.id) {
               <tr class="click" [class.overdue]="r.quaHan > 0" (click)="mo(r)">
-                <td><b>{{ r.soHD }}</b></td><td>{{ r.doiTac }}</td><td class="num">{{ money(r.giaTri) }}</td><td class="num">{{ money(r.da) }}</td>
+                <td><a [routerLink]="[duongDan(), r.id]" (click)="$event.stopPropagation()"><b>{{ r.soHD }}</b></a></td><td>{{ r.doiTac }}</td><td class="num">{{ money(r.giaTri) }}</td><td class="num">{{ money(r.da) }}</td>
                 <td class="num" [class.neg]="r.con < 0">{{ money(r.con) }}</td><td>{{ viDate(r.han) }}</td><td class="num">{{ r.quaHan || '' }}</td>
               </tr>
             }
@@ -173,8 +173,12 @@ export class CongNoTab {
   });
   protected readonly soQuaHan = computed(() => this.rows().filter((r) => r.quaHan > 0).length);
 
+  protected duongDan(): string {
+    return this.sub() === 'thu' ? '/hop-dong-ban' : '/hop-dong-mua';
+  }
+
   protected mo(r: CnRow): void {
-    void this.router.navigate([this.sub() === 'thu' ? '/hop-dong-ban' : '/hop-dong-mua', r.id]);
+    void this.router.navigate([this.duongDan(), r.id]);
   }
 
   protected xuat(): void {

@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Store } from '../core/store';
 import { Auth } from '../core/auth';
 import { TaiKhoan } from '../core/models';
@@ -41,11 +41,11 @@ interface FormTK {
   selector: 'app-tai-khoan',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'page' },
-  imports: [FilterBar, Pager, Modal, TrangThai, Icon, NhomQuyenTab, ChucNangTab, MaTranTab],
+  imports: [RouterLink, FilterBar, Pager, Modal, TrangThai, Icon, NhomQuyenTab, ChucNangTab, MaTranTab],
   template: `
     <div class="page-head">
       <div>
-        <div class="crumbs">Hệ thống › Tài khoản & phân quyền</div>
+        <div class="crumbs"><a routerLink="/">Trang chủ</a> › Hệ thống › Tài khoản & phân quyền</div>
         <h1>Tài khoản & phân quyền</h1>
         <div class="sub">{{ store.taiKhoan().length }} tài khoản · {{ store.nhomQuyen().length }} nhóm quyền · quyền gán theo mã chức năng</div>
       </div>

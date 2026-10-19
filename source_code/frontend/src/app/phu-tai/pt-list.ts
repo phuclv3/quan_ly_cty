@@ -38,7 +38,7 @@ const formRong = (): FormDT => ({ ngay: todayIso(), chieu: 'Thu về PT', hdptId
   template: `
     <div class="page-head">
       <div>
-        <div class="crumbs"><span>Phú Tài</span></div>
+        <div class="crumbs"><a routerLink="/">Trang chủ</a> › Phú Tài</div>
         <h1>Phú Tài <span class="tag pt">Module riêng</span></h1>
       </div>
       <div class="actions">
@@ -84,7 +84,7 @@ const formRong = (): FormDT => ({ ngay: todayIso(), chieu: 'Thu về PT', hdptId
               <tr class="click" (click)="mo(r.p.id)">
                 <td>
                   <a [routerLink]="['/phu-tai', r.p.id]" (click)="$event.stopPropagation()"><b>{{ r.p.soHD }}</b></a>
-                  @if (r.p.import) { <span class="tag mute">Import</span> }
+                  @if (r.p.import) { <app-tt v="Import" /> }
                 </td>
                 <td>{{ r.p.tenKH }}<div class="sub">{{ r.p.mst }}</div></td>
                 <td>{{ viDate(r.p.ngayKy) }}</td>

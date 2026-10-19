@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { map } from 'rxjs';
 import { Store } from '../core/store';
 import { TonKhoTab } from './ton-kho';
@@ -25,10 +25,10 @@ const TABS: { k: Tab; t: string }[] = [
   selector: 'app-kho',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'page' },
-  imports: [TonKhoTab, PhieuKhoTab, GiaTriHdTab, DmKhoTab, DmLoaiHangTab],
+  imports: [RouterLink, TonKhoTab, PhieuKhoTab, GiaTriHdTab, DmKhoTab, DmLoaiHangTab],
   template: `
     <div class="page-head">
-      <div><div class="crumbs">Kho › {{ tabTen() }}</div><h1>Kho</h1></div>
+      <div><div class="crumbs"><a routerLink="/">Trang chủ</a> › Kho › {{ tabTen() }}</div><h1>Kho</h1></div>
     </div>
     <div class="tabs" role="tablist">
       @for (t of tabs; track t.k) {

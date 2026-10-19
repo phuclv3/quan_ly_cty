@@ -38,14 +38,14 @@ interface TraForm {
   imports: [RouterLink, Kpi, Modal, MoneyInput, Pick, TrangThai, HoSoPanel, Icon, FileHd, XemFileHd],
   template: `
     @if (!isNew() && !saved()) {
-      <div class="page-head"><div><div class="crumbs"><a routerLink="/hop-dong-mua">Hợp đồng mua</a></div><h1>Không tìm thấy HĐ mua</h1></div></div>
+      <div class="page-head"><div><div class="crumbs"><a routerLink="/">Trang chủ</a> › <a routerLink="/hop-dong-mua">Hợp đồng mua</a></div><h1>Không tìm thấy HĐ mua</h1></div></div>
       <div class="card empty">HĐ không tồn tại hoặc bạn không có quyền xem.</div>
     } @else {
       @let m = f();
       @let c = calc();
       <div class="page-head">
         <div>
-          <div class="crumbs"><a routerLink="/hop-dong-mua">Hợp đồng mua</a> › {{ isNew() ? 'Tạo mới' : m.soHD }}</div>
+          <div class="crumbs"><a routerLink="/">Trang chủ</a> › <a routerLink="/hop-dong-mua">Hợp đồng mua</a> › {{ isNew() ? 'Tạo mới' : m.soHD }}</div>
           <h1 class="row">
             {{ isNew() ? 'HĐ mua mới' : 'HĐ mua ' + m.soHD }}
             <app-tt [v]="saved()?.trangThai ?? 'Nháp'" />
@@ -92,41 +92,58 @@ interface TraForm {
 
       @switch (tab()) {
         @case ('1') {
-          <section class="card stack">
-            <div class="form-grid">
-              <div class="field">
-                <label for="soHD">Số HĐ mua <span class="req">*</span></label>
-                <input id="soHD" [value]="m.soHD" [disabled]="!edit()" (input)="set('soHD', $any($event.target).value)" />
+          <section class="card form-card">
+            <fieldset class="form-sec">
+              <legend>Thông tin hợp đồng</legend>
+              <div class="form-grid cols-3">
+                <div class="field">
+                  <label for="soHD">Số HĐ mua <span class="req">*</span></label>
+                  <input id="soHD" [value]="m.soHD" [disabled]="!edit()" (input)="set('soHD', $any($event.target).value)" />
+                </div>
+                <div class="field">
+                  <label for="ngayKy">Ngày ký</label>
+                  <input id="ngayKy" type="date" [value]="m.ngayKy ?? ''" [disabled]="!edit()" (input)="set('ngayKy', $any($event.target).value || undefined)" />
+                </div>
+                <div class="field">
+                  <label for="hdb">HĐ bán liên quan</label>
+                  <app-pick inputId="hdb" [options]="hdbOpts()" [value]="m.hdbId ?? ''" [allowEmpty]="true" placeholder="— Chưa gắn —" [disabled]="!edit()" (valueChange)="set('hdbId', $event || undefined)" />
+                  @if (m.hdbId) { <a class="hint linkish" [routerLink]="['/hop-dong-ban', m.hdbId]">Mở HĐ bán</a> } @else { <span class="hint">Tuỳ chọn — có thể mua nhập kho trước khi gắn đơn bán.</span> }
+                </div>
               </div>
-              <div class="field">
-                <label for="ncc">Nhà cung cấp <span class="req">*</span></label>
-                <app-pick inputId="ncc" [options]="nccOpts()" [value]="m.maNCC" [disabled]="!edit()" (valueChange)="chonNCC($event)" />
+            </fieldset>
+
+            <fieldset class="form-sec">
+              <legend>Nhà cung cấp</legend>
+              <div class="form-grid cols-3">
+                <div class="field span-2">
+                  <label for="ncc">Chọn nhà cung cấp <span class="req">*</span></label>
+                  <app-pick inputId="ncc" [options]="nccOpts()" [value]="m.maNCC" [disabled]="!edit()" (valueChange)="chonNCC($event)" />
+                </div>
+                <div class="field"><span class="lbl">MST</span><div class="ro">{{ m.mst || '—' }}</div></div>
+                <div class="field"><span class="lbl">Tên NCC</span><div class="ro multi">{{ m.tenNCC || '—' }}</div></div>
+                <div class="field span-2"><span class="lbl">Địa chỉ</span><div class="ro" [title]="m.diaChi">{{ m.diaChi || '—' }}</div></div>
               </div>
-              <div class="field">
-                <label for="ngayKy">Ngày ký</label>
-                <input id="ngayKy" type="date" [value]="m.ngayKy ?? ''" [disabled]="!edit()" (input)="set('ngayKy', $any($event.target).value || undefined)" />
+            </fieldset>
+
+            <fieldset class="form-sec">
+              <legend>Phân loại &amp; ghi chú</legend>
+              <div class="form-grid cols-3">
+                <div class="field span-3">
+                  <label class="check-card" [class.on]="m.thuocPhuTai" [class.off]="!edit() || (!m.thuocPhuTai && !doiPTDuoc())">
+                    <input type="checkbox" [checked]="m.thuocPhuTai" [disabled]="!edit() || (!m.thuocPhuTai && !doiPTDuoc())" (change)="set('thuocPhuTai', $any($event.target).checked)" />
+                    <span>
+                      <b>Thuộc Phú Tài</b>
+                      <span class="hint">Bật → HĐ không tính công nợ phải trả, không sinh phiếu nhập kho và phiếu chi của Oxy; chỉ dùng làm giá đầu vào cho HĐ Phú Tài.</span>
+                      @if (!m.thuocPhuTai && !doiPTDuoc()) { <span class="err">HĐ đã có phiếu nhập kho hoặc phiếu chi — không bật được.</span> }
+                    </span>
+                  </label>
+                </div>
+                <div class="field span-3">
+                  <label for="ghiChu">Ghi chú</label>
+                  <textarea id="ghiChu" rows="3" [value]="m.ghiChu" [disabled]="!edit()" (input)="set('ghiChu', $any($event.target).value)"></textarea>
+                </div>
               </div>
-              <div class="field">
-                <label for="hdb">HĐ bán liên quan</label>
-                <app-pick inputId="hdb" [options]="hdbOpts()" [value]="m.hdbId ?? ''" [allowEmpty]="true" placeholder="— Chưa gắn —" [disabled]="!edit()" (valueChange)="set('hdbId', $event || undefined)" />
-                @if (m.hdbId) { <a class="hint linkish" [routerLink]="['/hop-dong-ban', m.hdbId]">Mở HĐ bán</a> } @else { <span class="hint">Tuỳ chọn — có thể mua nhập kho trước khi gắn đơn bán.</span> }
-              </div>
-              <div class="field"><span class="lbl">Tên NCC</span><div class="ro">{{ m.tenNCC || '—' }}</div></div>
-              <div class="field"><span class="lbl">MST</span><div class="ro">{{ m.mst || '—' }}</div></div>
-              <div class="field wide"><span class="lbl">Địa chỉ</span><div class="ro">{{ m.diaChi || '—' }}</div></div>
-              <div class="field wide">
-                <label class="check-row">
-                  <input type="checkbox" [checked]="m.thuocPhuTai" [disabled]="!edit() || (!m.thuocPhuTai && !doiPTDuoc())" (change)="set('thuocPhuTai', $any($event.target).checked)" />
-                  <b>Thuộc Phú Tài</b>
-                </label>
-                <span class="hint">Bật → HĐ không tính công nợ phải trả, không sinh phiếu nhập kho và phiếu chi của Oxy; chỉ dùng làm giá đầu vào cho HĐ Phú Tài.</span>
-                @if (!m.thuocPhuTai && !doiPTDuoc()) { <span class="err">HĐ đã có phiếu nhập kho hoặc phiếu chi — không bật được.</span> }
-              </div>
-              <div class="field wide">
-                <label for="ghiChu">Ghi chú</label>
-                <textarea id="ghiChu" rows="2" [value]="m.ghiChu" [disabled]="!edit()" (input)="set('ghiChu', $any($event.target).value)"></textarea>
-              </div>
-            </div>
+            </fieldset>
           </section>
 
           <app-file-hd chu="HDM" [chuId]="saved()?.id ?? ''" [edit]="edit()" [info]="infoFile()" [(pending)]="fileCho" />

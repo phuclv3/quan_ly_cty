@@ -1,6 +1,6 @@
 /* ══════════════════════════════════════════════════════════════════════
    App Oxy · Oxy Mecie — hệ thống thiết kế dùng chung (NT-08)
-   Màu nhận diện lấy từ logo: xanh bình O₂ (#1f4f9c) + xanh lá của lá (#14a06a).
+   Màu nhận diện: xanh lá OXYMECIE #01b600 (theo logo mới). Trắng giữ nguyên.
    Font Times New Roman theo spec. Màu trạng thái tách riêng khỏi màu thương hiệu.
    ══════════════════════════════════════════════════════════════════════ */
 
@@ -19,17 +19,17 @@
   --ink-3: #5e626b;
   --line: #e3e5e9;
   --line-2: #cfd2d8;
-  --brand: #1f4f9c;
-  --brand-hi: #173d7a;
-  --brand-tint: #e7eef9;
-  --leaf: #14a06a;
-  --leaf-tint: #e3f5ec;
+  --brand: #01b600;
+  --brand-hi: #01b600;
+  --brand-tint: #e6f8e6;
+  --leaf: #01b600;
+  --leaf-tint: #e6f8e6;
   --on-brand: #ffffff;
 
   --ok-fg: #17663f;
   --ok-bg: #e2f3e9;
-  --info-fg: #1f4f9c;
-  --info-bg: #e5edf9;
+  --info-fg: #01b600;
+  --info-bg: #e6f8e6;
   --warn-fg: #8a5a00;
   --warn-bg: #fbf0d6;
   --bad-fg: #a3261d;
@@ -61,16 +61,16 @@
     --ink-3: #8796aa;
     --line: #253244;
     --line-2: #34445a;
-    --brand: #79a8ee;
-    --brand-hi: #a3c3f4;
-    --brand-tint: #17294a;
-    --leaf: #4fd39a;
-    --leaf-tint: #123326;
-    --on-brand: #0a1a33;
+    --brand: #01b600;
+    --brand-hi: #01b600;
+    --brand-tint: #0f2e12;
+    --leaf: #01b600;
+    --leaf-tint: #0f2e12;
+    --on-brand: #ffffff;
     --ok-fg: #8bd8ad;
     --ok-bg: #143021;
-    --info-fg: #9ec0f3;
-    --info-bg: #172a47;
+    --info-fg: #01b600;
+    --info-bg: #0f2e12;
     --warn-fg: #f0c46a;
     --warn-bg: #362a10;
     --bad-fg: #f3a199;
@@ -95,16 +95,16 @@
   --ink-3: #8796aa;
   --line: #253244;
   --line-2: #34445a;
-  --brand: #79a8ee;
-  --brand-hi: #a3c3f4;
-  --brand-tint: #17294a;
-  --leaf: #4fd39a;
-  --leaf-tint: #123326;
-  --on-brand: #0a1a33;
+  --brand: #01b600;
+  --brand-hi: #01b600;
+  --brand-tint: #0f2e12;
+  --leaf: #01b600;
+  --leaf-tint: #0f2e12;
+  --on-brand: #ffffff;
   --ok-fg: #8bd8ad;
   --ok-bg: #143021;
-  --info-fg: #9ec0f3;
-  --info-bg: #172a47;
+  --info-fg: #01b600;
+  --info-bg: #0f2e12;
   --warn-fg: #f0c46a;
   --warn-bg: #362a10;
   --bad-fg: #f3a199;
@@ -128,7 +128,7 @@ body {
   text-rendering: optimizeLegibility;
 }
 img { max-width: 100%; height: auto; }
-a { color: var(--brand); }
+a { color: var(--brand); text-underline-offset: 3px; }
 h1, h2, h3, h4 { margin: 0; line-height: 1.2; font-weight: 700; }
 h1 { font-size: 28px; }
 h2 { font-size: 20px; }
@@ -170,8 +170,8 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .topbar::before {
   content: '';
   position: absolute; inset: 0 auto 0 0; z-index: -1;
-  width: min(720px, 75%);
-  background: url('/brand/chim-lac.webp') left 150px center / auto 175% no-repeat;
+  width: min(990px, 85%);
+  background: url('/brand/chim-lac.webp') left 420px center / auto 175% no-repeat;
   opacity: 0.32;
   pointer-events: none;
 }
@@ -183,16 +183,19 @@ button, input, select, textarea { font: inherit; color: inherit; }
   display: grid; place-items: center; background: #fff; border: 1px solid var(--line);
 }
 .brand-logo img { width: 34px; height: 41px; object-fit: contain; }
+/* Logo chữ ngang OXYMECIE: khung trắng co theo bề ngang ảnh */
+.brand-logo.wide { width: auto; height: 62px; padding: 0 10px; }
+.brand-logo.wide img { width: auto; height: 52px; max-width: none; }
 .brand-name { display: grid; line-height: 1.1; min-width: 0; }
 .brand-name b { font-size: 28px; font-weight: 700; line-height: 1.15; color: var(--brand); letter-spacing: 0.01em; text-transform: uppercase; }
 .brand-name b span { color: var(--leaf); }
-.brand-name small { color: var(--ink-2); font-size: 16.8px; font-weight: 500; letter-spacing: 0.01em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.brand-name small { color: var(--ink-2); font-size: 16.8px; font-weight: 500; letter-spacing: 0.01em; text-transform: uppercase; line-height: 1.6; padding-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .topbar .spacer { flex: 1 1 auto; }
-.user-chip { display: flex; align-items: center; gap: 10px; min-width: 0; }
-.user-chip .who { display: grid; text-align: right; line-height: 1.15; min-width: 0; }
-.user-chip .who b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.user-chip .who b { font-size: 17px; font-weight: 700; text-transform: uppercase; }
-.user-chip .who small { color: var(--ink-3); font-size: 14px; }
+.user-chip { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 4px 14px 4px 4px; border: 1px solid var(--line); border-radius: 999px; background: var(--surf); }
+.user-chip .who { display: grid; gap: 0; text-align: left; line-height: 1.4; min-width: 0; }
+.user-chip .who b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.5; padding-top: 2px; }
+.user-chip .who b { font-size: 15px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.01em; }
+.user-chip .who small { color: var(--ink-3); font-size: 13px; line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .avatar {
   width: 44px; height: 44px; border-radius: 50%; flex: 0 0 auto; font-size: 18px;
   display: grid; place-items: center; font-weight: 700;
@@ -229,7 +232,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 }
 .side a .ico, .side button.nav .ico { transition: transform var(--nav-dur) var(--ease-out); }
 .side a:hover, .side button.nav:hover { background: var(--surf-3); color: var(--ink); }
-.side a.on { background: var(--brand); color: var(--on-brand); font-weight: 700; box-shadow: 0 6px 14px -8px color-mix(in srgb, var(--brand) 70%, transparent); }
+.side a.on { background: #01b600; color: #ffffff; font-weight: 700; box-shadow: 0 6px 14px -8px color-mix(in srgb, #01b600 70%, transparent); }
 .side a.on .count { background: rgba(255, 255, 255, 0.22); color: inherit; }
 .side .lb {
   flex: 1 1 auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px;
@@ -260,8 +263,8 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .page { display: block; max-width: 1480px; margin: 0 auto; }
 .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
 .page-head .crumbs { font-size: 15px; color: var(--ink-3); display: flex; gap: 6px; align-items: center; margin-bottom: 4px; }
-.page-head .crumbs a { color: var(--ink-3); text-decoration: none; }
-.page-head .crumbs a:hover { color: var(--brand); }
+.page-head .crumbs a { color: var(--brand); font-weight: 600; text-decoration: none; }
+.page-head .crumbs a:hover { text-decoration: underline; }
 .page-head .actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
 .scrim { display: none; }
@@ -292,7 +295,8 @@ button, input, select, textarea { font: inherit; color: inherit; }
     content: ''; position: absolute; top: -1px; left: 22%; right: 22%; height: 3px; border-radius: 0 0 3px 3px;
     background: var(--brand); transform: scaleX(0); transition: transform 0.22s var(--ease-out, ease);
   }
-  .tabbar .on { color: var(--brand); }
+  .tabbar .on { color: #01b600; }
+  .tabbar .on::before { background: #01b600; }
   .tabbar .on::before { transform: scaleX(1); }
   .tabbar a:active .tb-ico, .tabbar button:active .tb-ico { transform: scale(0.9); }
   .tb-ico { position: relative; display: grid; place-items: center; transition: transform 0.12s ease; }
@@ -325,7 +329,8 @@ button, input, select, textarea { font: inherit; color: inherit; }
   .shell.drawer-open .scrim { opacity: 1; pointer-events: auto; }
   .shell.collapsed .side .lb, .shell.collapsed .side .count, .shell.collapsed .side .grp-label { display: initial; }
   .user-chip .who { display: none; }
-  .brand-name small { display: none; }
+  .user-chip { padding: 4px; }
+  .brand-name small { font-size: 15px; }
   .main { padding: 14px 16px 64px; }
   .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
   .kpi { padding: 10px 12px; }
@@ -612,16 +617,20 @@ app-money input { width: 100%; }
 
 /* ── Đăng nhập ─────────────────────────────────────────────────────── */
 .login-wrap {
-  min-height: 100dvh; display: grid; place-items: center; padding: 24px 16px;
+  min-height: 100dvh; display: grid; place-items: center; align-content: center; padding: 24px 16px;
   background:
     radial-gradient(900px 500px at 10% 0%, color-mix(in srgb, var(--brand) 16%, transparent), transparent 60%),
     radial-gradient(800px 460px at 100% 100%, color-mix(in srgb, var(--leaf) 16%, transparent), transparent 60%),
     var(--bg);
 }
 .login-card { width: min(420px, 100%); display: grid; gap: 16px; padding: 26px; }
+.login-ct { width: min(420px, 100%); display: grid; gap: 2px; margin-top: 14px; text-align: center; font-size: 14px; line-height: 1.5; color: var(--ink-3); }
+.login-ct b { color: var(--ink-2); font-size: 14.5px; }
 .login-card .brand-big { display: flex; align-items: center; gap: 14px; }
 .login-card .brand-big .brand-logo { width: 58px; height: 58px; border-radius: 14px; }
 .login-card .brand-big .brand-logo img { width: 38px; height: 46px; }
+.login-card .brand-big .brand-logo.wide { width: auto; height: 84px; padding: 0 14px; }
+.login-card .brand-big .brand-logo.wide img { width: auto; height: 72px; max-width: none; }
 .pw { position: relative; display: flex; }
 .pw input { width: 100%; padding-right: 44px; }
 .pw .icon-btn { position: absolute; right: 2px; top: 1px; }
@@ -652,6 +661,8 @@ app-money input { width: 100%; }
   h1 { font-size: 23px; }
   .brand-logo { width: 40px; height: 40px; }
   .brand-logo img { width: 26px; height: 31px; }
+  .brand-logo.wide { width: auto; height: 46px; padding: 0 8px; }
+  .brand-logo.wide img { width: auto; height: 38px; max-width: none; }
   .side a, .side button.nav { font-size: 17px; padding: 12px 12px; }
   .tbl { font-size: 15.5px; }
   .kpi-v { font-size: 21px; }
@@ -659,9 +670,10 @@ app-money input { width: 100%; }
   .main { padding: 12px 12px 72px; }
   .card { padding: 13px; }
   .topbar { gap: 6px; padding: 0 10px; }
-  .topbar::before { width: 100%; background-position: left 96px center; background-size: auto 160%; opacity: 0.26; }
+  .topbar::before { width: 100%; background-position: left 300px center; background-size: auto 160%; opacity: 0.26; }
   .topbar .brand-name b { font-size: 19px; }
-  .user-chip { gap: 2px; }
+  .topbar .brand-name small { font-size: 13px; }
+  .user-chip { gap: 0; padding: 3px; }
   .user-chip .avatar { width: 36px; height: 36px; font-size: 15px; }
 
   /* Chạm dễ: tối thiểu ~44px */
@@ -805,3 +817,56 @@ app-money input { width: 100%; }
   .modal { border: 0; box-shadow: none; max-width: none; }
   .modal-head .icon-btn, .modal-foot { display: none; }
 }
+
+/* ── Form chia nhóm (fieldset + legend), lưới cột cố định ──────────── */
+.form-card { display: grid; gap: 0; padding: 0; overflow: hidden; }
+.form-sec { margin: 0; padding: 18px 20px 20px; border: 0; border-top: 1px solid var(--line); min-width: 0; }
+.form-sec:first-child { border-top: 0; }
+.form-sec > legend {
+  float: left; width: 100%; margin: 0 0 14px; padding: 0;
+  display: flex; align-items: center; gap: 10px;
+  font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--brand);
+}
+.form-sec > legend::before { content: ''; width: 4px; height: 16px; border-radius: 2px; background: var(--brand); }
+.form-sec > legend + * { clear: both; }
+.form-grid.cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 18px; }
+.form-grid .span-2 { grid-column: span 2; }
+.form-grid .span-3 { grid-column: 1 / -1; }
+.form-grid.cols-3 > .field > .ro { display: block; height: 40px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 24px; }
+.check-card {
+  display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px; cursor: pointer;
+  border: 1px solid var(--line-2); border-radius: var(--radius-sm); background: var(--surf);
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+.check-card > input { width: 18px; height: 18px; margin: 3px 0 0; flex: 0 0 auto; accent-color: var(--brand); }
+.check-card > span { display: grid; gap: 2px; min-width: 0; }
+.check-card b { font-size: 15.5px; }
+.check-card:hover { border-color: var(--brand); }
+.check-card.on { border-color: var(--brand); background: var(--brand-tint); }
+.check-card.off { cursor: default; }
+.check-card.off:hover { border-color: var(--line-2); }
+@media (max-width: 900px) {
+  .form-grid.cols-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .form-grid.cols-3 .span-2 { grid-column: 1 / -1; }
+}
+@media (max-width: 640px) {
+  .form-sec { padding: 14px 13px 16px; }
+  .form-grid.cols-3 { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  .form-grid .span-2 { grid-column: 1 / -1; }
+}
+
+/* Ô chỉ đọc nhiều dòng (tên KH / NCC): xuống dòng đủ chữ, cao hơn ô 1 dòng như MST */
+.form-grid > .field:not(.wide) > .ro.multi,
+.form-grid.cols-3 > .field > .ro.multi {
+  height: auto; min-height: 64px; white-space: normal; overflow: visible;
+  display: flex; align-items: flex-start; line-height: 1.45; font-weight: 600;
+}
+
+/* ── Link thống nhất: luôn màu thương hiệu, gạch chân khi rê chuột ─── */
+.tbl a:not(.btn) { color: var(--brand); text-decoration: none; }
+.tbl a:not(.btn):hover { text-decoration: underline; }
+.tbl a:not(.btn) b { color: inherit; }
+/* Dòng bấm được (mở chi tiết / modal): mã ở cột đầu tô màu như link để người dùng biết bấm được */
+.tbl tr.click > td:first-child > b { color: var(--brand); }
+.tbl tr.click:hover > td:first-child > b { text-decoration: underline; text-underline-offset: 3px; }
+.hint a, .note a, .sub a { color: var(--brand); font-weight: 600; }

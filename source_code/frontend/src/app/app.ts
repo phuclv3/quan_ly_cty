@@ -19,13 +19,13 @@ import { MAT_KHAU_TOI_THIEU } from './core/crypto';
       <header class="topbar">
         <button type="button" class="burger" aria-label="Mở / thu gọn menu" (click)="ui.toggleNav()"><app-icon name="menu" [size]="26" /></button>
         <a class="brand" routerLink="/" aria-label="Về trang chủ">
-          <span class="brand-logo"><img src="brand/logo-oxy.png" alt="" width="26" height="31" /></span>
-          <span class="brand-name"><b>Oxy <span>Mecie</span></b><small>Quản lý nội bộ</small></span>
+          <span class="brand-logo wide"><img src="brand/logo-oxymecie.png" alt="Oxy Mecie" width="399" height="160" /></span>
+          <span class="brand-name"><small>Quản lý nội bộ</small></span>
         </a>
         <span class="spacer"></span>
         <div class="user-chip">
-          <span class="who"><b>{{ me.hoTen }}</b><small>{{ vaiTro() }}</small></span>
           <span class="avatar" aria-hidden="true">{{ initial() }}</span>
+          <span class="who"><b>{{ me.hoTen }}</b><small>{{ vaiTro() }}</small></span>
         </div>
       </header>
     }

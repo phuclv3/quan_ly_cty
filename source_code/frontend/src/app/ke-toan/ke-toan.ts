@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { map } from 'rxjs';
 import { Store } from '../core/store';
 import { NguonTienTab } from './nguon-tien';
@@ -17,10 +17,10 @@ type Tab = 'nguon' | 'so-quy' | 'chi-phi' | 'cho-duyet' | 'cong-no' | 'bao-cao';
   selector: 'app-ke-toan',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'page' },
-  imports: [NguonTienTab, SoQuyTab, ChiPhiTab, ChoDuyetTab, CongNoTab, BaoCaoKtTab],
+  imports: [RouterLink, NguonTienTab, SoQuyTab, ChiPhiTab, ChoDuyetTab, CongNoTab, BaoCaoKtTab],
   template: `
     <div class="page-head">
-      <div><div class="crumbs">Kế toán</div><h1>Kế toán</h1></div>
+      <div><div class="crumbs"><a routerLink="/">Trang chủ</a> › Kế toán</div><h1>Kế toán</h1></div>
     </div>
     <div class="tabs" role="tablist">
       @for (t of tabs(); track t.k) {

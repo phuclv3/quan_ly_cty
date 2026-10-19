@@ -22,7 +22,7 @@ interface Viec {
   host: { class: 'page' },
   imports: [RouterLink, Kpi, Icon],
   styles: [
-    `.hello{display:flex;align-items:center;gap:14px}.hello img{width:34px;height:40px;object-fit:contain}
+    `.hello{display:flex;align-items:center;gap:14px}.hello img{width:auto;height:40px;max-width:none;object-fit:contain}
     a.dcard{display:grid;gap:8px;align-content:start;text-decoration:none;color:inherit;border-top:3px solid var(--brand)}
     a.dcard:hover{border-color:var(--brand)}a.dcard h3{display:flex;gap:8px;align-items:center;font-size:18px;margin:0}
     a.dcard .big{font-size:28px;font-weight:700}.dl{display:grid;gap:4px;font-size:15.5px}.dl div{display:flex;justify-content:space-between;gap:8px}
@@ -32,7 +32,7 @@ interface Viec {
   template: `
     <div class="page-head">
       <div class="hello">
-        <img src="brand/logo-oxy.png" alt="Logo Oxy Mecie" width="34" height="40" />
+        <img src="brand/logo-oxymecie.png" alt="Logo Oxy Mecie" width="100" height="40" />
         <div>
           <div class="crumbs">Trang chủ</div>
           <h1>Xin chào, {{ store.me()?.hoTen }}</h1>

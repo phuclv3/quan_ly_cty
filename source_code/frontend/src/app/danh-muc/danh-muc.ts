@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { map } from 'rxjs';
 import { Store } from '../core/store';
 import { Perm } from '../core/perm';
@@ -21,10 +21,10 @@ const TABS: { k: Tab; t: string; p: Perm }[] = [
   selector: 'app-danh-muc',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'page' },
-  imports: [DmKhachHang, DmNcc, DmLoaiChiPhi],
+  imports: [RouterLink, DmKhachHang, DmNcc, DmLoaiChiPhi],
   template: `
     <div class="page-head">
-      <div><div class="crumbs">Danh mục › {{ tabTen() }}</div><h1>Danh mục</h1></div>
+      <div><div class="crumbs"><a routerLink="/">Trang chủ</a> › Danh mục › {{ tabTen() }}</div><h1>Danh mục</h1></div>
     </div>
     <div class="tabs" role="tablist">
       @for (t of tabs(); track t.k) {

@@ -8,6 +8,7 @@ import { Store } from '../core/store';
 import { ChuHoSo, FileRef } from '../core/models';
 import { HO_SO_ACCEPT, MAX_FILE_BYTES, getBlob, viSize } from '../core/files';
 import { money, viDate } from '../core/util';
+import { CONG_TY } from '../core/cong-ty';
 
 /** Dữ liệu HĐ để dựng bản xem giả lập khi chưa có file thật. */
 export interface ThongTinHd {
@@ -92,9 +93,11 @@ type Muc = { k: 'ref'; id: string; name: string; mime: string; size: number; ref
                 @if (h.loai === 'bán') {
                   <p><b>BÊN A (Bên mua):</b> {{ h.tenDoiTac || '……………' }}</p>
                   <p>MST: {{ h.mst || '—' }} · Địa chỉ: {{ h.diaChi || '—' }}</p>
-                  <p><b>BÊN B (Bên bán):</b> Công ty (bên ta)</p>
+                  <p><b>BÊN B (Bên bán):</b> {{ congTy.ten }}</p>
+                  <p>MST: {{ congTy.mst }} · Địa chỉ: {{ congTy.diaChi }}</p>
                 } @else {
-                  <p><b>BÊN A (Bên mua):</b> Công ty (bên ta)</p>
+                  <p><b>BÊN A (Bên mua):</b> {{ congTy.ten }}</p>
+                  <p>MST: {{ congTy.mst }} · Địa chỉ: {{ congTy.diaChi }}</p>
                   <p><b>BÊN B (Bên bán):</b> {{ h.tenDoiTac || '……………' }}</p>
                   <p>MST: {{ h.mst || '—' }} · Địa chỉ: {{ h.diaChi || '—' }}</p>
                 }
@@ -127,6 +130,7 @@ export class XemFileHd {
 
   protected readonly money = money;
   protected readonly viDate = viDate;
+  protected readonly congTy = CONG_TY;
   protected readonly size = viSize;
   protected readonly chonId = signal<string>('');
 

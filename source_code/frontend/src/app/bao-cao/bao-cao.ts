@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { map } from 'rxjs';
 import { Store } from '../core/store';
 import { HopDongBan } from '../core/models';
@@ -30,10 +30,10 @@ interface Dong {
   selector: 'app-bao-cao',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'page' },
-  imports: [Kpi, Multi, TrangThai, Icon],
+  imports: [RouterLink, Kpi, Multi, TrangThai, Icon],
   template: `
     <div class="page-head">
-      <div><div class="crumbs">Báo cáo › {{ tabTen() }}</div><h1>Báo cáo</h1></div>
+      <div><div class="crumbs"><a routerLink="/">Trang chủ</a> › Báo cáo › {{ tabTen() }}</div><h1>Báo cáo</h1></div>
       <div class="actions"><button type="button" class="btn quiet" (click)="xuat()"><app-icon name="download" [size]="16" /> Xuất Excel</button></div>
     </div>
     <div class="tabs" role="tablist">
@@ -82,7 +82,7 @@ interface Dong {
             <tbody>
               @for (r of namRows(); track r.h.id) {
                 <tr class="click" (click)="moHD(r.h.id)">
-                  <td><b>{{ r.h.soHD }}</b><span class="sub">{{ r.h.tenKH }}</span></td>
+                  <td><a [routerLink]="['/hop-dong-ban', r.h.id]" (click)="$event.stopPropagation()"><b>{{ r.h.soHD }}</b></a><span class="sub">{{ r.h.tenKH }}</span></td>
                   <td>{{ store.userName(r.h.sale) }}</td>
                   <td>{{ viDate(r.h.ngayKy) }}</td>
                   <td><app-tt [v]="r.h.trangThai" /></td>
@@ -111,7 +111,7 @@ interface Dong {
             <tbody>
               @for (r of namRows(); track r.h.id) {
                 <tr class="click" (click)="moHD(r.h.id)">
-                  <td><b>{{ r.h.soHD }}</b><span class="sub">{{ r.h.tenKH }}</span></td>
+                  <td><a [routerLink]="['/hop-dong-ban', r.h.id]" (click)="$event.stopPropagation()"><b>{{ r.h.soHD }}</b></a><span class="sub">{{ r.h.tenKH }}</span></td>
                   <td>{{ viDate(r.h.ngayKy) }}</td>
                   <td class="num">{{ money(r.h.truocVAT) }}</td>
                   <td class="num">
@@ -146,7 +146,7 @@ interface Dong {
             <tbody>
               @for (r of ttRows(); track r.h.id) {
                 <tr class="click" [class.overdue]="r.tienQuaHan > 0" (click)="moHD(r.h.id)">
-                  <td><b>{{ r.h.soHD }}</b><span class="sub">{{ r.h.tenKH }}</span></td>
+                  <td><a [routerLink]="['/hop-dong-ban', r.h.id]" (click)="$event.stopPropagation()"><b>{{ r.h.soHD }}</b></a><span class="sub">{{ r.h.tenKH }}</span></td>
                   <td>{{ store.userName(r.h.sale) }}</td>
                   <td class="num">{{ money(r.c.sauVAT) }}</td>
                   <td><div class="cell-bar"><div class="bar"><i [style.width.%]="w(r.c.pctThu)"></i></div><b class="sub">{{ pct(r.c.pctThu) }}</b></div></td>

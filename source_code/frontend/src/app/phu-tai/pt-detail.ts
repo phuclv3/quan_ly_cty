@@ -34,7 +34,7 @@ const quyDoi = (soTien: number, loaiTien: string, tyGia: number) => Math.round(s
     @let c = calc();
     <div class="page-head">
       <div>
-        <div class="crumbs"><a routerLink="/phu-tai">Phú Tài</a> › <span>{{ p.id ? p.soHD : 'Tạo mới' }}</span></div>
+        <div class="crumbs"><a routerLink="/">Trang chủ</a> › <a routerLink="/phu-tai">Phú Tài</a> › {{ p.id ? p.soHD : 'Tạo mới' }}</div>
         <h1>
           {{ p.id ? 'HĐ Phú Tài ' + p.soHD : 'Tạo HĐ Phú Tài' }}
           <span class="tag pt">Phú Tài</span>

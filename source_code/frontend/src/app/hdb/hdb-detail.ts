@@ -34,12 +34,12 @@ const TABS = [
   styles: [`@media print { :host-context(body.in-qt) > :not(app-hdb-tab4) { display: none !important; } }`],
   template: `
     @if (!coQuyen()) {
-      <div class="page-head"><div><div class="crumbs"><a routerLink="/hop-dong-ban">Hợp đồng bán</a></div><h1>Không tìm thấy hợp đồng</h1></div></div>
+      <div class="page-head"><div><div class="crumbs"><a routerLink="/">Trang chủ</a> › <a routerLink="/hop-dong-ban">Hợp đồng bán</a></div><h1>Không tìm thấy hợp đồng</h1></div></div>
       <div class="card empty">HĐ không tồn tại hoặc bạn không phụ trách HĐ này.</div>
     } @else {
       <div class="page-head">
         <div>
-          <div class="crumbs"><a routerLink="/hop-dong-ban">Hợp đồng bán</a> › {{ saved()?.soHD || 'Tạo mới' }}</div>
+          <div class="crumbs"><a routerLink="/">Trang chủ</a> › <a routerLink="/hop-dong-ban">Hợp đồng bán</a> › {{ saved()?.soHD || 'Tạo mới' }}</div>
           <h1>
             {{ saved() ? 'HĐ bán ' + saved()!.soHD : 'HĐ bán mới' }}
             @if (saved()) { <app-tt [v]="saved()!.trangThai" /> }
@@ -136,7 +136,7 @@ const TABS = [
                 <tbody>
                   @for (r of hdms(); track r.m.id) {
                     <tr class="click" (click)="moHdm(r.m.id)">
-                      <td><b>{{ r.m.soHD }}</b> @if (r.m.thuocPhuTai) { <app-tt v="Thuộc Phú Tài" /> }</td>
+                      <td><a [routerLink]="['/hop-dong-mua', r.m.id]" (click)="$event.stopPropagation()"><b>{{ r.m.soHD }}</b></a> @if (r.m.thuocPhuTai) { <app-tt v="Thuộc Phú Tài" /> }</td>
                       <td>{{ r.m.tenNCC }}</td>
                       <td class="num">{{ money(r.c.tong) }}</td>
                       <td class="num">{{ money(r.c.daTra) }}</td>
