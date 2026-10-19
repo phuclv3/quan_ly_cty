@@ -1,0 +1,1408 @@
+/**
+ * Kho dữ liệu trung tâm + toàn bộ luồng nghiệp vụ ghi dữ liệu.
+ *
+ * Quy ước (bám "Quy ước code" của spec):
+ *  - Mọi hàm ghi gọi this.require(...) TRƯỚC khi ghi (tương đương _requireCanEdit_).
+ *  - Hàm ghi trả `string | null`: chuỗi = lỗi tiếng Việt để hiện lên giao diện, null = thành công.
+ *  - Dữ liệu lưu ở localStorage (bản chạy thử); thay lớp này bằng lời gọi Apps Script khi triển khai,
+ *    giữ nguyên chữ ký hàm để các màn hình không phải sửa.
+ */
+import { Injectable, computed, effect, signal } from '@angular/core';
+import {
+  CauHinh,
+  CauHinhKey,
+  ChiPhiHD,
+  ChuHoSo,
+  Db,
+  DoiTuong,
+  DOI_TUONG_LABEL,
+  DongPhieuKho,
+  DongTienPT,
+  FileRef,
+  HoSo,
+  HoaDon,
+  HopDongBan,
+  HopDongMua,
+  HopDongPhuTai,
+  KHO_CHUYEN_THANG,
+  KhachHang,
+  Kho,
+  LCP_HOA_HONG,
+  LoaiChiPhi,
+  LoaiHang,
+  LoaiHoSo,
+  NhaCungCap,
+  NguonTien,
+  PhieuKho,
+  PhieuThuChi,
+  NhomQuyen,
+  TableKey,
+  TaiKhoan,
+  TrangThaiHDB,
+  TrangThaiHDM,
+  TrangThaiPT,
+  YeuCauXoa,
+  CHECKLIST_HDM,
+} from './models';
+import { CHUC_NANG, KE_TOAN_DUYET_XOA, Level, Perm, atLeast, levelOf } from './perm';
+import { DB_VERSION, buildSeed } from './seed';
+import {
+  donGiaGoc,
+  hdbCalc,
+  hdbThieuDeChuyen,
+  hdmCalc,
+  hoSoThieu,
+  ptCalc,
+  slDaNhap,
+  soDuQuyPT,
+  soDuNguon,
+  tamUngChoQuyetToan,
+  tonTai,
+} from './calc';
+import { deleteBlob, luuTep } from './files';
+import { fold, nowIso, todayIso, uid, yy } from './util';
+
+const KEY = 'app-oxy:db';
+type Result = string | null;
+
+@Injectable({ providedIn: 'root' })
+export class Store {
+  readonly db = signal<Db>(null as unknown as Db);
+  readonly ready = signal(false);
+  readonly loadError = signal<string | null>(null);
+  readonly toast = signal<string | null>(null);
+  /** Id tài khoản đang đăng nhập (Auth đặt). */
+  readonly meId = signal<string | null>(null);
+
+  readonly firstLoad: Promise<void>;
+
+  constructor() {
+    this.firstLoad = this.load();
+    let t: ReturnType<typeof setTimeout> | undefined;
+    effect(() => {
+      const d = this.db();
+      if (!this.ready() || !d) return;
+      clearTimeout(t);
+      t = setTimeout(() => {
+        try {
+          localStorage.setItem(KEY, JSON.stringify(d));
+        } catch {
+          this.say('Không lưu được vào bộ nhớ trình duyệt — dữ liệu chỉ còn tới khi tải lại trang');
+        }
+      }, 250);
+    });
+  }
+
+  private async load(): Promise<void> {
+    try {
+      let d: Db | null = null;
+      try {
+        const raw = localStorage.getItem(KEY);
+        if (raw) d = JSON.parse(raw) as Db;
+      } catch {
+        d = null;
+      }
+      // v1 = dữ liệu mẫu dựng bằng bộ import cũ (sai tổng HĐ mua VNĐ) + vai trò cố định → nạp lại mẫu đã sửa.
+      if (!d || d.version !== DB_VERSION) d = await buildSeed();
+      this.db.set(d);
+      this.ready.set(true);
+    } catch (e) {
+      this.loadError.set(e instanceof Error ? e.message : 'Không dựng được dữ liệu');
+    }
+  }
+
+  /** Xoá toàn bộ dữ liệu trên máy này và nạp lại dữ liệu mẫu. */
+  async resetToSeed(): Promise<void> {
+    const d = await buildSeed();
+    this.db.set(d);
+    try {
+      localStorage.setItem(KEY, JSON.stringify(d));
+    } catch {
+      /* bỏ qua */
+    }
+  }
+
+  say(msg: string): void {
+    this.toast.set(msg);
+    setTimeout(() => this.toast() === msg && this.toast.set(null), 2800);
+  }
+
+  // ── Bảng (chỉ đọc) ────────────────────────────────────────────────────
+  readonly taiKhoan = computed(() => this.db().taiKhoan);
+  readonly cauHinh = computed(() => this.db().cauHinh);
+  readonly cauHinhLog = computed(() => this.db().cauHinhLog);
+  readonly yeuCauXoa = computed(() => this.db().yeuCauXoa);
+  readonly hoSo = computed(() => this.db().hoSo);
+  readonly hoaDon = computed(() => this.db().hoaDon);
+  readonly nguonTien = computed(() => this.db().nguonTien);
+  readonly loaiChiPhi = computed(() => this.db().loaiChiPhi);
+  readonly khachHang = computed(() => this.db().khachHang);
+  readonly ncc = computed(() => this.db().ncc);
+  readonly kho = computed(() => this.db().kho);
+  readonly loaiHang = computed(() => this.db().loaiHang);
+  readonly phieuThuChi = computed(() => this.db().phieuThuChi);
+  readonly chiPhiHD = computed(() => this.db().chiPhiHD);
+  readonly hopDongBan = computed(() => this.db().hopDongBan);
+  readonly hopDongMua = computed(() => this.db().hopDongMua);
+  readonly phieuKho = computed(() => this.db().phieuKho);
+  readonly hopDongPhuTai = computed(() => this.db().hopDongPhuTai);
+  readonly dongTienPT = computed(() => this.db().dongTienPT);
+
+  // ── Người dùng & quyền ────────────────────────────────────────────────
+  readonly me = computed<TaiKhoan | null>(() => {
+    const id = this.meId();
+    return id ? (this.db()?.taiKhoan.find((t) => t.id === id) ?? null) : null;
+  });
+  readonly nhomQuyen = computed(() => this.db().nhomQuyen);
+  /** Nhóm quyền (đang hoạt động) của người đăng nhập. */
+  readonly myGroups = computed<NhomQuyen[]>(() => this.nhomCua(this.me()));
+  /** Thuộc nhóm toàn quyền (Giám đốc / Owner). */
+  readonly isGD = computed(() => this.myGroups().some((g) => g.toanQuyen));
+
+  nhomCua(t: TaiKhoan | null | undefined): NhomQuyen[] {
+    if (!t) return [];
+    const all = this.db()?.nhomQuyen ?? [];
+    return all.filter((g) => t.nhom.includes(g.id) && g.trangThai === 'Hoạt động');
+  }
+  /** Tên các nhóm của một tài khoản, VD "Kế toán · Kho". */
+  tenNhom(t: TaiKhoan | null | undefined): string {
+    const all = this.db()?.nhomQuyen ?? [];
+    return (t?.nhom ?? []).map((id) => all.find((g) => g.id === id)?.ten ?? id).join(' · ') || '(chưa có nhóm)';
+  }
+  /** Quyền của một tài khoản bất kỳ trên một chức năng (VD lọc danh sách Sale phụ trách). */
+  levelOfUser(t: TaiKhoan, p: Perm): Level {
+    return levelOf(this.nhomCua(t), p);
+  }
+
+  level(p: Perm): Level {
+    return levelOf(this.myGroups(), p);
+  }
+  /** Thấy được mục này (ở bất kỳ mức nào). */
+  canView(p: Perm): boolean {
+    return this.level(p) !== 'none';
+  }
+  /** Sửa được; với mức own chỉ khi ownerId là mình. */
+  canEdit(p: Perm, ownerId?: string): boolean {
+    const l = this.level(p);
+    if (atLeast(l, 'edit')) return true;
+    if (l === 'own') return ownerId === undefined || ownerId === this.meId();
+    return false;
+  }
+  canApprove(p: Perm): boolean {
+    return this.level(p) === 'approve';
+  }
+  /** Chỉ thấy bản ghi của mình (Sale). */
+  ownOnly(p: Perm): boolean {
+    const l = this.level(p);
+    return l === 'own' || l === 'ownView';
+  }
+
+  private require(p: Perm, min: Level = 'edit', ownerId?: string): Result {
+    const l = this.level(p);
+    if (min === 'edit' && l === 'own' && (ownerId === undefined || ownerId === this.meId())) return null;
+    return atLeast(l, min) ? null : 'Tài khoản của bạn không có quyền thực hiện thao tác này';
+  }
+
+  userName(id?: string): string {
+    if (!id) return '—';
+    return this.db().taiKhoan.find((t) => t.id === id)?.hoTen ?? id;
+  }
+
+  // ── Tra cứu ──────────────────────────────────────────────────────────
+  khById = (id?: string) => this.db().khachHang.find((x) => x.id === id);
+  nccById = (id?: string) => this.db().ncc.find((x) => x.id === id);
+  nguonById = (id?: string) => this.db().nguonTien.find((x) => x.id === id);
+  nguonTen = (id?: string) => this.nguonById(id)?.ten ?? (id ? id : '—');
+  lcpById = (id?: string) => this.db().loaiChiPhi.find((x) => x.id === id);
+  lcpTen = (id?: string) => this.lcpById(id)?.ten ?? '—';
+  khoById = (id?: string) => this.db().kho.find((x) => x.id === id);
+  khoTen = (id?: string) => this.khoById(id)?.ten ?? '—';
+  loaiHangById = (id?: string) => this.db().loaiHang.find((x) => x.id === id);
+  loaiHangTen = (id?: string) => this.loaiHangById(id)?.ten ?? (id ?? '—');
+  hdbById = (id?: string) => this.db().hopDongBan.find((x) => x.id === id);
+  hdmById = (id?: string) => this.db().hopDongMua.find((x) => x.id === id);
+  ptById = (id?: string) => this.db().hopDongPhuTai.find((x) => x.id === id);
+  phieuById = (id?: string) => this.db().phieuThuChi.find((x) => x.id === id);
+
+  /** HĐ Bán người dùng được thấy (Sale: chỉ HĐ mình phụ trách). */
+  readonly hdbVisible = computed(() => {
+    const all = this.db().hopDongBan;
+    return this.ownOnly('hdb') ? all.filter((h) => h.sale === this.meId()) : all;
+  });
+  /** HĐ Mua: Sale chỉ xem HĐ liên quan HĐ bán của mình. */
+  readonly hdmVisible = computed(() => {
+    const all = this.db().hopDongMua;
+    if (!this.ownOnly('hdm')) return all;
+    const mine = new Set(this.hdbVisible().map((h) => h.id));
+    return all.filter((m) => m.hdbId && mine.has(m.hdbId));
+  });
+
+  readonly nguonDangDung = computed(() => this.db().nguonTien.filter((n) => n.trangThai === 'Đang dùng'));
+  readonly lcpVanHanh = computed(() => this.db().loaiChiPhi.filter((l) => l.nhom === 'Vận hành' && l.dangDung));
+  readonly lcpThucHien = computed(() => this.db().loaiChiPhi.filter((l) => l.nhom === 'Thực hiện HĐ' && l.dangDung));
+  readonly khoDangDung = computed(() => this.db().kho.filter((k) => k.dangDung));
+
+  // ── Đếm việc chờ (menu, dashboard) ───────────────────────────────────
+  readonly phieuChoDuyet = computed(() => this.db().phieuThuChi.filter((p) => p.trangThai === 'Chờ duyệt'));
+  readonly cpChoDuyet = computed(() => this.db().chiPhiHD.filter((p) => p.trangThai === 'Chờ duyệt'));
+  readonly xoaChoDuyet = computed(() => this.db().yeuCauXoa.filter((y) => y.trangThai === 'Chờ duyệt'));
+
+  // ── Ghi chung ────────────────────────────────────────────────────────
+  private patch<K extends TableKey>(k: K, fn: (rows: Db[K]) => Db[K]): void {
+    this.db.update((d) => ({ ...d, [k]: fn(d[k]) }));
+  }
+  private upsert<K extends TableKey>(k: K, row: Db[K][number] & { id: string }): void {
+    this.patch(k, (rows) => {
+      const arr = rows as unknown as { id: string }[];
+      const i = arr.findIndex((x) => x.id === row.id);
+      const out = [...arr];
+      if (i >= 0) out[i] = row;
+      else out.unshift(row);
+      return out as unknown as Db[K];
+    });
+  }
+  private drop<K extends TableKey>(k: K, id: string): void {
+    this.patch(k, (rows) => (rows as unknown as { id: string }[]).filter((x) => x.id !== id) as unknown as Db[K]);
+  }
+
+  /** KT-06 / D-31: {tiền tố}{yy}-{nnnn} theo năm của ngày chứng từ, không tái dùng số. */
+  private nextSo(prefix: string, ngay: string): string {
+    const k = prefix + yy(ngay || todayIso());
+    const n = (this.db().boDem[k] ?? 0) + 1;
+    this.db.update((d) => ({ ...d, boDem: { ...d.boDem, [k]: n } }));
+    return `${k}-${String(n).padStart(4, '0')}`;
+  }
+
+  // ═════════════════════════════════════════════════════════════════════
+  // DANH MỤC
+  // ═════════════════════════════════════════════════════════════════════
+
+  private nextMa(prefix: string, ids: string[]): string {
+    let max = 0;
+    for (const id of ids) if (id.startsWith(prefix)) max = Math.max(max, Number(id.slice(prefix.length)) || 0);
+    return prefix + String(max + 1).padStart(4, '0');
+  }
+
+  /** Bản ghi trùng MST / tên để cảnh báo (HDB-13, HDM-10). */
+  trungKhachHang(k: Partial<KhachHang>): KhachHang | undefined {
+    return this.db().khachHang.find(
+      (x) => x.id !== k.id && ((!!k.mst && x.mst === k.mst) || (!!k.ten && fold(x.ten) === fold(k.ten))),
+    );
+  }
+  trungNCC(n: Partial<NhaCungCap>): NhaCungCap | undefined {
+    return this.db().ncc.find(
+      (x) => x.id !== n.id && ((!!n.mst && x.mst === n.mst) || (!!n.ten && fold(x.ten) === fold(n.ten))),
+    );
+  }
+
+  saveKhachHang(k: KhachHang): Result {
+    const e = this.require('khachHang');
+    if (e) return e;
+    if (!k.ten.trim()) return 'Chưa nhập tên khách hàng';
+    if (!k.id) k = { ...k, id: this.nextMa('KH', this.db().khachHang.map((x) => x.id)) };
+    this.upsert('khachHang', k);
+    return null;
+  }
+  saveNCC(n: NhaCungCap): Result {
+    const e = this.require('ncc');
+    if (e) return e;
+    if (!n.ten.trim()) return 'Chưa nhập tên nhà cung cấp';
+    if (!n.id) n = { ...n, id: this.nextMa('NCC', this.db().ncc.map((x) => x.id)) };
+    this.upsert('ncc', n);
+    return null;
+  }
+  /** Nguồn đã có phiếu Đã duyệt thì khoá Số dư đầu kỳ, Ngày đầu kỳ (KT-01). */
+  nguonDaPhatSinh(id: string): boolean {
+    const d = this.db();
+    return (
+      d.phieuThuChi.some((p) => p.trangThai === 'Đã duyệt' && (p.nguonTien === id || p.nguonTienDen === id)) ||
+      d.chiPhiHD.some((c) => c.trangThai === 'Đã duyệt' && c.nguonTien === id)
+    );
+  }
+  saveNguonTien(n: NguonTien, isNew: boolean): Result {
+    const e = this.require('nguonTien');
+    if (e) return e;
+    if (!n.id.trim() || !n.ten.trim()) return 'Cần nhập Mã nguồn và Tên';
+    if (isNew && this.nguonById(n.id)) return `Mã nguồn ${n.id} đã có`;
+    const cu = this.nguonById(n.id);
+    if (cu && this.nguonDaPhatSinh(n.id) && (cu.soDuDauKy !== n.soDuDauKy || cu.ngayDauKy !== n.ngayDauKy))
+      return 'Nguồn đã có phiếu được duyệt — không sửa Số dư đầu kỳ / Ngày đầu kỳ';
+    this.upsert('nguonTien', n);
+    return null;
+  }
+  saveLoaiChiPhi(l: LoaiChiPhi): Result {
+    const e = this.require('nguonTien');
+    if (e) return e;
+    if (!l.ten.trim()) return 'Chưa nhập tên loại chi phí';
+    if (!l.id) l = { ...l, id: this.nextMa(l.nhom === 'Vận hành' ? 'VH-' : 'CPTH-', this.db().loaiChiPhi.map((x) => x.id)) };
+    this.upsert('loaiChiPhi', l);
+    return null;
+  }
+  saveKho(k: Kho): Result {
+    const e = this.require('khoDanhMuc');
+    if (e) return e;
+    if (k.id === KHO_CHUYEN_THANG) return '"Chuyển thẳng" là vị trí hệ thống, không sửa được';
+    if (!k.ten.trim()) return 'Chưa nhập tên kho';
+    if (!k.id) k = { ...k, id: this.nextMa('KHO', this.db().kho.map((x) => x.id)), loai: 'Kho thường' };
+    this.upsert('kho', k);
+    return null;
+  }
+  saveLoaiHang(l: LoaiHang, isNew: boolean): Result {
+    const e = this.require('khoDanhMuc');
+    if (e) return e;
+    if (!l.id.trim() || !l.ten.trim()) return 'Cần nhập Mã loại hàng và Tên';
+    if (isNew && this.loaiHangById(l.id)) return `Mã ${l.id} đã có`;
+    this.upsert('loaiHang', l);
+    return null;
+  }
+
+  // ═════════════════════════════════════════════════════════════════════
+  // KẾ TOÁN — Sổ quỹ (KT-04…KT-10)
+  // ═════════════════════════════════════════════════════════════════════
+
+  newPhieu(loai: PhieuThuChi['loai'] = 'Chi'): PhieuThuChi {
+    return {
+      id: '',
+      soPhieu: '',
+      ngayLap: todayIso(),
+      loai,
+      nguonTien: this.nguonDangDung()[0]?.id ?? '',
+      noiDung: '',
+      soTienThu: 0,
+      soTienChi: 0,
+      nguoiDeNghi: this.meId() ?? '',
+      trangThai: 'Nháp',
+      files: [],
+    };
+  }
+
+  /** Kiểm tra quy tắc KT-05/08/10; trả danh sách lỗi. */
+  loiPhieu(p: PhieuThuChi): string[] {
+    const e: string[] = [];
+    if (!p.ngayLap) e.push('Chưa có Ngày lập');
+    if (!p.nguonTien) e.push(p.loai === 'Luân chuyển' ? 'Chưa chọn Nguồn đi' : 'Chưa chọn Nguồn tiền');
+    if (!p.noiDung.trim()) e.push('Chưa nhập Nội dung');
+    switch (p.loai) {
+      case 'Thu':
+        if (!(p.soTienThu > 0)) e.push('Số tiền Thu phải > 0');
+        break;
+      case 'Chi':
+      case 'Tạm ứng':
+        if (!(p.soTienChi > 0)) e.push('Số tiền Chi phải > 0');
+        if (!p.loaiChiPhi) e.push('Chưa chọn Loại chi phí (nhóm Vận hành)');
+        if (p.loai === 'Tạm ứng' && !p.nguoiNhan?.trim()) e.push('Chưa nhập Người nhận tạm ứng');
+        break;
+      case 'Quyết toán tạm ứng':
+        if (!p.phieuTamUngGoc) e.push('Chưa chọn phiếu Tạm ứng gốc');
+        else if (!tamUngChoQuyetToan(this.db(), p.id).some((x) => x.id === p.phieuTamUngGoc))
+          e.push('Phiếu tạm ứng gốc chưa duyệt hoặc đã được quyết toán');
+        if (!((p.soTienThucChi ?? -1) >= 0)) e.push('Chưa nhập Số tiền thực chi');
+        if (!p.loaiChiPhi) e.push('Chưa chọn Loại chi phí');
+        break;
+      case 'Luân chuyển':
+        if (!p.nguonTienDen) e.push('Chưa chọn Nguồn đến');
+        else if (p.nguonTienDen === p.nguonTien) e.push('Nguồn đi phải khác Nguồn đến');
+        if (!(p.soTienChi > 0)) e.push('Số tiền phải > 0');
+        break;
+    }
+    return e;
+  }
+
+  phieuSuaDuoc(p: PhieuThuChi): boolean {
+    if (p.id && p.trangThai !== 'Nháp' && p.trangThai !== 'Từ chối') return false;
+    if (p.phatSinh) return false;
+    if (this.dangChoXoa('PhieuThuChi', p.id)) return false;
+    const l = this.level('soQuy');
+    if (atLeast(l, 'edit')) return true;
+    return l === 'draft' && (!p.id || p.nguoiDeNghi === this.meId());
+  }
+
+  /** Lưu nháp (gui=false) hoặc Gửi duyệt (gui=true). Trả lỗi hoặc null. */
+  savePhieu(p: PhieuThuChi, gui: boolean): Result {
+    const e = this.require('soQuy', 'draft');
+    if (e) return e;
+    if (!this.phieuSuaDuoc(p)) return 'Phiếu này không sửa được (đã gửi duyệt, đã duyệt hoặc đang chờ xoá)';
+    if (gui) {
+      const loi = this.loiPhieu(p);
+      if (loi.length) return loi.join(' · ');
+    }
+    const clean: PhieuThuChi = { ...p };
+    if (clean.loai === 'Thu') clean.soTienChi = 0;
+    else clean.soTienThu = 0;
+    if (clean.loai === 'Quyết toán tạm ứng') clean.soTienChi = 0;
+    if (clean.loai !== 'Luân chuyển') clean.nguonTienDen = undefined;
+    if (!clean.id) {
+      clean.id = uid('PTC');
+      clean.soPhieu = this.nextSo(this.cauHinh().TIEN_TO_TC, clean.ngayLap);
+    }
+    clean.trangThai = gui ? 'Chờ duyệt' : 'Nháp';
+    clean.lyDoTuChoi = gui ? undefined : clean.lyDoTuChoi;
+    this.upsert('phieuThuChi', clean);
+    return null;
+  }
+
+  /** Người lập không tự duyệt phiếu của mình (trừ Giám đốc) — D-10. */
+  private tuDuyet(nguoiLap: string): boolean {
+    return nguoiLap === this.meId() && !this.canEdit('tuDuyet');
+  }
+
+  duyetPhieu(ids: string[]): Result {
+    const e = this.require('soQuyDuyet', 'approve');
+    if (e) return e;
+    const bo: string[] = [];
+    this.patch('phieuThuChi', (rows) =>
+      rows.map((p) => {
+        if (!ids.includes(p.id) || p.trangThai !== 'Chờ duyệt') return p;
+        if (this.tuDuyet(p.nguoiDeNghi)) {
+          bo.push(p.soPhieu);
+          return p;
+        }
+        return { ...p, trangThai: 'Đã duyệt', nguoiDuyet: this.meId()!, ngayDuyet: nowIso() };
+      }),
+    );
+    return bo.length ? `Không tự duyệt phiếu của mình: ${bo.join(', ')}` : null;
+  }
+
+  tuChoiPhieu(ids: string[], lyDo: string): Result {
+    const e = this.require('soQuyDuyet', 'approve');
+    if (e) return e;
+    if (!lyDo.trim()) return 'Cần nhập lý do từ chối';
+    this.patch('phieuThuChi', (rows) =>
+      rows.map((p) =>
+        ids.includes(p.id) && p.trangThai === 'Chờ duyệt'
+          ? { ...p, trangThai: 'Từ chối', lyDoTuChoi: lyDo, nguoiDuyet: this.meId()!, ngayDuyet: nowIso() }
+          : p,
+      ),
+    );
+    return null;
+  }
+
+  // ── Chi phí thực hiện HĐ (KT-12…KT-15) ──
+
+  newChiPhi(hdbId = ''): ChiPhiHD {
+    return {
+      id: '',
+      maCP: '',
+      hdbId,
+      ngay: todayIso(),
+      loaiChiPhi: this.lcpThucHien()[0]?.id ?? '',
+      noiDung: '',
+      soTien: 0,
+      nguonTien: this.nguonDangDung()[0]?.id ?? '',
+      nguoiThucHien: this.meId() ?? '',
+      trangThai: 'Nháp',
+      files: [],
+    };
+  }
+
+  loiChiPhi(c: ChiPhiHD): string[] {
+    const e: string[] = [];
+    const h = this.hdbById(c.hdbId);
+    if (!h) e.push('Chưa chọn Số HĐ bán');
+    else if (h.trangThai === 'Báo giá') e.push('HĐ đang ở Báo giá — chỉ ghi chi phí cho HĐ từ Hiệu lực trở đi');
+    if (!c.loaiChiPhi || this.lcpById(c.loaiChiPhi)?.nhom !== 'Thực hiện HĐ') e.push('Chưa chọn Loại chi phí thực hiện HĐ');
+    if (!c.noiDung.trim()) e.push('Chưa nhập Nội dung');
+    if (!(c.soTien > 0)) e.push('Số tiền phải > 0');
+    if (!c.nguonTien) e.push('Chưa chọn Nguồn tiền chi ra');
+    if (c.loaiChiPhi === LCP_HOA_HONG && !c.nguoiNhan?.trim()) e.push('Hoa hồng cần Người nhận');
+    return e;
+  }
+
+  chiPhiSuaDuoc(c: ChiPhiHD): boolean {
+    if (c.id && c.trangThai !== 'Nháp' && c.trangThai !== 'Từ chối') return false;
+    if (this.dangChoXoa('ChiPhiThucHienHD', c.id)) return false;
+    const h = this.hdbById(c.hdbId);
+    return this.canEdit('cpHD', h?.sale);
+  }
+
+  saveChiPhi(c: ChiPhiHD, gui: boolean): Result {
+    const h = this.hdbById(c.hdbId);
+    const e = this.require('cpHD', 'edit', h?.sale);
+    if (e) return e;
+    if (!this.chiPhiSuaDuoc(c)) return 'Chi phí này không sửa được';
+    if (gui) {
+      const loi = this.loiChiPhi(c);
+      if (loi.length) return loi.join(' · ');
+    }
+    const out = { ...c };
+    if (!out.id) {
+      out.id = uid('CP');
+      out.maCP = this.nextSo(this.cauHinh().TIEN_TO_CP, out.ngay);
+    }
+    out.trangThai = gui ? 'Chờ duyệt' : 'Nháp';
+    this.upsert('chiPhiHD', out);
+    return null;
+  }
+
+  duyetChiPhi(ids: string[]): Result {
+    const e = this.require('cpHDDuyet', 'approve');
+    if (e) return e;
+    const bo: string[] = [];
+    this.patch('chiPhiHD', (rows) =>
+      rows.map((c) => {
+        if (!ids.includes(c.id) || c.trangThai !== 'Chờ duyệt') return c;
+        if (this.tuDuyet(c.nguoiThucHien)) {
+          bo.push(c.maCP);
+          return c;
+        }
+        return { ...c, trangThai: 'Đã duyệt', nguoiDuyet: this.meId()!, ngayDuyet: nowIso() };
+      }),
+    );
+    return bo.length ? `Không tự duyệt chi phí của mình: ${bo.join(', ')}` : null;
+  }
+
+  tuChoiChiPhi(ids: string[], lyDo: string): Result {
+    const e = this.require('cpHDDuyet', 'approve');
+    if (e) return e;
+    if (!lyDo.trim()) return 'Cần nhập lý do từ chối';
+    this.patch('chiPhiHD', (rows) =>
+      rows.map((c) =>
+        ids.includes(c.id) && c.trangThai === 'Chờ duyệt'
+          ? { ...c, trangThai: 'Từ chối', lyDoTuChoi: lyDo, nguoiDuyet: this.meId()!, ngayDuyet: nowIso() }
+          : c,
+      ),
+    );
+    return null;
+  }
+
+  soDu(nguonId: string, denNgay?: string) {
+    return soDuNguon(nguonId, this.db(), denNgay);
+  }
+
+  // ═════════════════════════════════════════════════════════════════════
+  // KINH DOANH — HĐ Bán (HDB-01…13)
+  // ═════════════════════════════════════════════════════════════════════
+
+  newHdb(): HopDongBan {
+    const c = this.cauHinh();
+    return {
+      id: '',
+      soHD: '',
+      maKH: '',
+      tenKH: '',
+      mst: '',
+      diaChi: '',
+      trangThai: 'Báo giá',
+      sale: this.meId() ?? '',
+      ghiChu: '',
+      truocVAT: 0,
+      vat: 8,
+      thucTeTruocVAT: 0,
+      thamSoThue: { nguong: c.TNDN_NGUONG, muc1: c.TNDN_MUC1, muc2: c.TNDN_MUC2 },
+      dotTT: [],
+      taoLuc: nowIso(),
+    };
+  }
+
+  hdbKhoa(h: HopDongBan): boolean {
+    return h.trangThai === 'Đã tất toán' || this.dangChoXoa('HopDongBan', h.id);
+  }
+
+  /** Lưu HĐ (Tab 1 + Tab 3). Trả id khi thành công qua out.id. */
+  saveHdb(h: HopDongBan): Result {
+    const cu = h.id ? this.hdbById(h.id) : undefined;
+    const e = this.require('hdb', 'edit', cu?.sale ?? h.sale);
+    if (e) return e;
+    if (cu && this.hdbKhoa(cu)) return 'HĐ đã khoá (Đã tất toán hoặc đang chờ xoá)';
+    if (!h.soHD.trim()) return 'Số HĐ bán là bắt buộc';
+    if (this.db().hopDongBan.some((x) => x.id !== h.id && fold(x.soHD) === fold(h.soHD))) return `Số HĐ ${h.soHD} đã tồn tại`;
+    if (!h.maKH) return 'Chưa chọn Khách hàng';
+    if (h.ngayKy && h.ngayHieuLuc && h.ngayHieuLuc < h.ngayKy) return 'Ngày hiệu lực phải ≥ Ngày ký';
+    if (h.dotTT.length > this.cauHinh().SO_DOT_TOI_DA) return `Tối đa ${this.cauHinh().SO_DOT_TOI_DA} đợt thanh toán`;
+    if (cu && cu.trangThai !== 'Báo giá' && h.trangThai === cu.trangThai) {
+      const thieu = hdbThieuDeChuyen(h, 'Hiệu lực', this.db());
+      if (thieu.length) return thieu.join(' · ');
+    }
+    // Ngày & số thực thu chỉ Kế toán / Giám đốc nhập (Ma trận quyền).
+    if (cu && !this.canEdit('hdbThucThu')) {
+      h = {
+        ...h,
+        dotTT: h.dotTT.map((d) => {
+          const old = cu.dotTT.find((x) => x.dot === d.dot);
+          return { ...d, ngayThu: old?.ngayThu, soTienThu: old?.soTienThu, nguonTienNhan: old?.nguonTienNhan, phieuThuId: old?.phieuThuId };
+        }),
+      };
+    }
+    const out: HopDongBan = { ...h, id: h.id || uid('HDB') };
+    this.upsert('hopDongBan', out);
+    if (!h.id) h.id = out.id;
+    return null;
+  }
+
+  /** Bảng trạng thái kế tiếp hợp lệ (HDB-03). */
+  hdbKeTiep(h: HopDongBan): TrangThaiHDB | null {
+    const order: TrangThaiHDB[] = ['Báo giá', 'Hiệu lực', 'Đang giao hàng', 'Hoàn thành', 'Đã tất toán'];
+    const i = order.indexOf(h.trangThai);
+    return i >= 0 && i < order.length - 1 ? order[i + 1] : null;
+  }
+
+  chuyenTrangThaiHdb(id: string, toi: TrangThaiHDB): Result {
+    const h = this.hdbById(id);
+    if (!h) return 'Không tìm thấy HĐ';
+    const e = this.require('hdb', 'edit', h.sale);
+    if (e) return e;
+    if (this.dangChoXoa('HopDongBan', id)) return 'HĐ đang chờ xoá';
+    if (h.trangThai === 'Đã tất toán') {
+      if (!this.canEdit('moLaiHdb')) return 'HĐ đã tất toán — cần quyền "Mở lại HĐ đã tất toán" (HDB-03-ML)';
+    }
+    const thieu = hdbThieuDeChuyen(h, toi, this.db());
+    if (thieu.length) return thieu.join(' · ');
+    this.upsert('hopDongBan', { ...h, trangThai: toi });
+    return null;
+  }
+
+  /** Giám đốc mở lại HĐ đã tất toán → Hoàn thành. */
+  moLaiHdb(id: string): Result {
+    if (!this.canEdit('moLaiHdb')) return 'Cần quyền "Mở lại HĐ đã tất toán" (HDB-03-ML)';
+    const h = this.hdbById(id);
+    if (!h) return 'Không tìm thấy HĐ';
+    this.upsert('hopDongBan', { ...h, trangThai: 'Hoàn thành' });
+    return null;
+  }
+
+  /** HDB-04: ghi nhận một lần giao → sinh 1 phiếu Xuất kho (giá gốc theo KHO-10). */
+  ghiNhanGiaoHang(hdbId: string, o: { ngay: string; kho: string; dong: Omit<DongPhieuKho, 'donGiaGoc'>[]; ghiChu?: string }): Result {
+    const h = this.hdbById(hdbId);
+    if (!h) return 'Không tìm thấy HĐ';
+    const e = this.require('hdbGiaoHang', 'edit', h.sale);
+    if (e) return e;
+    if (h.trangThai === 'Báo giá') return 'HĐ chưa Hiệu lực';
+    if (this.hdbKhoa(h)) return 'HĐ đã khoá';
+    const dong = o.dong.filter((d) => d.loaiHang && d.soLuong > 0);
+    if (!o.kho) return 'Chưa chọn Vị trí kho';
+    if (dong.length === 0) return 'Cần ít nhất 1 dòng hàng có số lượng > 0';
+    const db = this.db();
+    const p: PhieuKho = {
+      id: uid('PK'),
+      soPhieu: this.nextSo(this.cauHinh().TIEN_TO_XK, o.ngay),
+      ngay: o.ngay,
+      loai: 'Xuất',
+      nguonGoc: 'Tự động HĐ Bán',
+      hdId: hdbId,
+      kho: o.kho,
+      nguoiThucHien: this.meId()!,
+      trangThai: 'Hiệu lực',
+      ghiChu: o.ghiChu,
+      dong: dong.map((d) => ({
+        ...d,
+        donGiaGoc: donGiaGoc(db, { hdbId, loaiHang: d.loaiHang, thuocTinh: d.thuocTinh, kho: o.kho, ngay: o.ngay }).donGia,
+      })),
+    };
+    this.upsert('phieuKho', p);
+    if (h.trangThai === 'Hiệu lực') this.upsert('hopDongBan', { ...h, trangThai: 'Đang giao hàng' });
+    return null;
+  }
+
+  /** Cảnh báo (không chặn) khi xuất vượt tồn — trả danh sách dòng vượt. */
+  vuotTon(kho: string, dong: { loaiHang: string; thuocTinh: string; soLuong: number }[]): string[] {
+    if (kho === KHO_CHUYEN_THANG) return [];
+    return dong
+      .filter((d) => d.soLuong > tonTai(this.db(), d.loaiHang, d.thuocTinh, kho))
+      .map((d) => `${this.loaiHangTen(d.loaiHang)} ${d.thuocTinh} (tồn ${tonTai(this.db(), d.loaiHang, d.thuocTinh, kho)})`);
+  }
+
+  /**
+   * Kế toán ghi nhận thực thu một đợt (HDB-10). Sinh kèm phiếu Thu Chờ duyệt ở Sổ quỹ để số dư
+   * nguồn tiền tăng khi được duyệt [Inference — spec không nói rõ; đối xứng với HDM-08].
+   */
+  ghiThucThu(hdbId: string, dot: number, o: { ngayThu: string; soTienThu: number; nguonTienNhan: string }): Result {
+    const e = this.require('hdbThucThu');
+    if (e) return e;
+    const h = this.hdbById(hdbId);
+    if (!h) return 'Không tìm thấy HĐ';
+    if (this.hdbKhoa(h)) return 'HĐ đã khoá';
+    const d = h.dotTT.find((x) => x.dot === dot);
+    if (!d) return 'Không có đợt này';
+    if (!o.ngayThu || !(o.soTienThu > 0) || !o.nguonTienNhan) return 'Cần Ngày thực thu, Số tiền > 0 và Nguồn tiền nhận';
+    let phieuThuId = d.phieuThuId;
+    const cu = phieuThuId ? this.phieuById(phieuThuId) : undefined;
+    if (cu && cu.trangThai === 'Đã duyệt') return 'Phiếu thu của đợt này đã duyệt — muốn sửa thì gửi yêu cầu xoá phiếu';
+    const p: PhieuThuChi = {
+      ...(cu ?? this.newPhieu('Thu')),
+      loai: 'Thu',
+      ngayLap: o.ngayThu,
+      nguonTien: o.nguonTienNhan,
+      noiDung: `Thu đợt ${dot} — HĐ bán ${h.soHD} (${h.tenKH})`,
+      soTienThu: o.soTienThu,
+      soTienChi: 0,
+      trangThai: 'Chờ duyệt',
+      phatSinh: { loai: 'HDB-DotTT', hdId: h.id, dot },
+    };
+    if (!p.id) {
+      p.id = uid('PTC');
+      p.soPhieu = this.nextSo(this.cauHinh().TIEN_TO_TC, p.ngayLap);
+    }
+    phieuThuId = p.id;
+    this.upsert('phieuThuChi', p);
+    this.upsert('hopDongBan', {
+      ...h,
+      dotTT: h.dotTT.map((x) => (x.dot === dot ? { ...x, ...o, phieuThuId } : x)),
+    });
+    return null;
+  }
+
+  /** HDB-09: thêm nhanh tiền trả khách = 1 CP HĐ loại Hoa hồng, Chờ duyệt. */
+  themTienTraKhach(hdbId: string, o: { nguoiNhan: string; soTien: number; ngay: string; nguonTien: string }): Result {
+    const c: ChiPhiHD = {
+      ...this.newChiPhi(hdbId),
+      loaiChiPhi: LCP_HOA_HONG,
+      noiDung: `Hoa hồng kinh doanh — ${o.nguoiNhan}`,
+      ...o,
+    };
+    return this.saveChiPhi(c, true);
+  }
+
+  // ── Hồ sơ & hoá đơn (NT-12, HDB-05/06) ──
+
+  hoSoCua(chu: ChuHoSo, chuId: string, loai: LoaiHoSo): HoSo | undefined {
+    return this.db().hoSo.find((h) => h.chu === chu && h.chuId === chuId && h.loai === loai);
+  }
+
+  private permOfChu(chu: ChuHoSo): Perm {
+    return chu === 'HDB' ? 'hdb' : chu === 'HDM' ? 'hdm' : 'phuTai';
+  }
+  private ownerOfChu(chu: ChuHoSo, id: string): string | undefined {
+    return chu === 'HDB' ? this.hdbById(id)?.sale : undefined;
+  }
+
+  async uploadHoSo(chu: ChuHoSo, chuId: string, loai: LoaiHoSo, files: File[]): Promise<Result> {
+    const e = this.require(this.permOfChu(chu), 'edit', this.ownerOfChu(chu, chuId));
+    if (e) return e;
+    const refs: FileRef[] = [];
+    try {
+      for (const f of files) refs.push(await luuTep(f, this.meId()!));
+    } catch (err) {
+      return err instanceof Error ? err.message : 'Không lưu được tệp';
+    }
+    const cu = this.hoSoCua(chu, chuId, loai);
+    const h: HoSo = cu
+      ? { ...cu, files: [...cu.files, ...refs], daLuu: true }
+      : { id: uid('HS'), chu, chuId, loai, files: refs, daLuu: true, daScan: false };
+    this.upsert('hoSo', h);
+    return null;
+  }
+
+  /** Tích tay Đã lưu (bản giấy, bắt buộc ghi chú) / Đã scan. */
+  setHoSoCo(chu: ChuHoSo, chuId: string, loai: LoaiHoSo, co: { daLuu?: boolean; daScan?: boolean; ghiChu?: string }): Result {
+    const e = this.require(this.permOfChu(chu), 'edit', this.ownerOfChu(chu, chuId));
+    if (e) return e;
+    const cu = this.hoSoCua(chu, chuId, loai) ?? { id: uid('HS'), chu, chuId, loai, files: [], daLuu: false, daScan: false };
+    const next = { ...cu, ...co };
+    if (co.daLuu && next.files.length === 0 && !next.ghiChu?.trim()) return 'Tích "Đã lưu" bản giấy cần ghi chú';
+    this.upsert('hoSo', next);
+    return null;
+  }
+
+  saveHoaDon(x: HoaDon): Result {
+    const e = this.require(this.permOfChu(x.chu), 'edit', this.ownerOfChu(x.chu, x.chuId));
+    if (e) return e;
+    if (!x.soHoaDon.trim() || !x.ngayHoaDon) return 'Số hoá đơn và Ngày hoá đơn là bắt buộc';
+    this.upsert('hoaDon', { ...x, id: x.id || uid('HDN') });
+    return null;
+  }
+
+  // ═════════════════════════════════════════════════════════════════════
+  // KINH DOANH — HĐ Mua (HDM-01…10)
+  // ═════════════════════════════════════════════════════════════════════
+
+  newHdm(): HopDongMua {
+    return {
+      id: '',
+      soHD: '',
+      maNCC: '',
+      tenNCC: '',
+      diaChi: '',
+      mst: '',
+      thuocPhuTai: false,
+      trangThai: 'Nháp',
+      ghiChu: '',
+      chiTiet: [],
+      nhapTay: false,
+      dotTT: [],
+      xuatHoaDon: 'Chưa',
+      checklist: CHECKLIST_HDM.map((ten) => ({ ten, xong: false })),
+      taoLuc: nowIso(),
+    };
+  }
+
+  hdmKhoa(m: HopDongMua): boolean {
+    return m.trangThai === 'Đã tất toán' || m.trangThai === 'Huỷ' || this.dangChoXoa('HopDongMua', m.id);
+  }
+
+  saveHdm(m: HopDongMua): Result {
+    const cu = m.id ? this.hdmById(m.id) : undefined;
+    const canAll = this.canEdit('hdm');
+    const canTab4 = this.canEdit('hdmTab4');
+    if (!canAll && !canTab4) return 'Tài khoản của bạn không có quyền sửa HĐ mua';
+    if (cu && this.hdmKhoa(cu)) return 'HĐ đã khoá';
+    if (!canAll && cu) {
+      // Kế toán chỉ sửa Tab 4.
+      m = { ...cu, dotTT: m.dotTT, xuatHoaDon: m.xuatHoaDon, checklist: m.checklist, nhapTay: m.nhapTay, tongNhapTay: m.tongNhapTay, lyDoNhapTay: m.lyDoNhapTay };
+    }
+    if (!m.soHD.trim()) return 'Số HĐ mua là bắt buộc';
+    if (this.db().hopDongMua.some((x) => x.id !== m.id && fold(x.soHD) === fold(m.soHD))) return `Số HĐ mua ${m.soHD} đã tồn tại`;
+    if (!m.maNCC) return 'Chưa chọn Nhà cung cấp';
+    if (m.nhapTay && !m.lyDoNhapTay?.trim()) return 'Nhập tay tổng giá trị cần ghi lý do';
+    if (m.dotTT.length > this.cauHinh().SO_DOT_TOI_DA) return `Tối đa ${this.cauHinh().SO_DOT_TOI_DA} đợt thanh toán`;
+    for (const d of m.chiTiet) {
+      if (!d.loaiHang) return 'Có dòng hàng chưa chọn Loại hàng';
+      if (!(d.soLuong > 0)) return 'Số lượng mỗi dòng phải > 0';
+      if (d.loaiTien !== 'VNĐ' && !(d.tyGia > 0)) return 'Dòng ngoại tệ cần Tỷ giá';
+      if (d.loaiTien === 'VNĐ') d.tyGia = 1;
+    }
+    if (cu) {
+      for (const d of cu.chiTiet) {
+        if (!m.chiTiet.some((x) => x.id === d.id) && slDaNhap(d.id, this.db()) > 0)
+          return `Dòng "${d.tenHang}" đã có phiếu nhập — không xoá được`;
+      }
+    }
+    const out: HopDongMua = { ...m, id: m.id || uid('HDM') };
+    this.upsert('hopDongMua', out);
+    if (!m.id) m.id = out.id;
+    return null;
+  }
+
+  chuyenTrangThaiHdm(id: string, toi: TrangThaiHDM): Result {
+    const m = this.hdmById(id);
+    if (!m) return 'Không tìm thấy HĐ';
+    const e = this.require('hdm');
+    if (e) return e;
+    const c = hdmCalc(m, this.db());
+    if (toi === 'Đã ký') {
+      if (!m.soHD || !m.maNCC || !m.ngayKy) return 'Cần Số HĐ, NCC và Ngày ký';
+      if (m.chiTiet.length === 0 && c.tong <= 0) return 'Cần ít nhất 1 dòng hàng hoặc tổng giá trị';
+    }
+    if (toi === 'Đã tất toán') {
+      if (c.conPhaiTra > 0) return `Còn phải trả NCC ${c.conPhaiTra.toLocaleString('vi-VN')} đ`;
+      if (m.xuatHoaDon !== 'Đã') return 'NCC chưa xuất hoá đơn';
+      // HDM-04: cùng quy tắc HDB-05 — thiếu hồ sơ bắt buộc thì chặn tất toán (D-23).
+      const thieu = hoSoThieu(this.db(), 'HDM', m.id);
+      if (thieu.length) return `Thiếu hồ sơ: ${thieu.join(', ')}`;
+    }
+    if (toi === 'Huỷ') {
+      if (c.slNhap > 0 || c.daTra > 0) return 'Chỉ huỷ khi chưa có phiếu nhập và chưa trả tiền';
+    }
+    this.upsert('hopDongMua', { ...m, trangThai: toi });
+    return null;
+  }
+
+  /** HDM-06: nhập kho các dòng chọn → 1 phiếu Nhập kho tự động. */
+  nhapKho(hdmId: string, o: { ngay: string; kho: string; dong: { dongId: string; soLuong: number }[]; ghiChu?: string }): Result {
+    const e = this.require('hdmNhapKho');
+    if (e) return e;
+    const m = this.hdmById(hdmId);
+    if (!m) return 'Không tìm thấy HĐ';
+    if (m.thuocPhuTai) return 'HĐ thuộc Phú Tài không nhập kho Oxy';
+    if (m.trangThai === 'Nháp' || m.trangThai === 'Huỷ') return 'HĐ chưa ký hoặc đã huỷ';
+    if (!o.kho) return 'Chưa chọn Vị trí kho';
+    const db = this.db();
+    const dong: DongPhieuKho[] = [];
+    for (const x of o.dong) {
+      if (!(x.soLuong > 0)) continue;
+      const d = m.chiTiet.find((c) => c.id === x.dongId);
+      if (!d) continue;
+      const con = d.soLuong - slDaNhap(d.id, db);
+      if (x.soLuong > con) return `"${d.tenHang}": SL thực nhập vượt SL còn lại (${con})`;
+      dong.push({ loaiHang: d.loaiHang, thuocTinh: d.thongSo, soLuong: x.soLuong, dongHDMua: d.id });
+    }
+    if (dong.length === 0) return 'Chưa có dòng nào có SL thực nhập > 0';
+    const p: PhieuKho = {
+      id: uid('PK'),
+      soPhieu: this.nextSo(this.cauHinh().TIEN_TO_NK, o.ngay),
+      ngay: o.ngay,
+      loai: 'Nhập',
+      nguonGoc: 'Tự động HĐ Mua',
+      hdId: hdmId,
+      kho: o.kho,
+      nguoiThucHien: this.meId()!,
+      trangThai: 'Hiệu lực',
+      ghiChu: o.ghiChu,
+      dong,
+    };
+    this.upsert('phieuKho', p);
+    this.capNhatTrangThaiNhan(hdmId);
+    return null;
+  }
+
+  /** Đang nhận hàng / Đã nhận đủ tự chuyển theo phiếu nhập (HDM-03). */
+  private capNhatTrangThaiNhan(hdmId: string): void {
+    const m = this.hdmById(hdmId);
+    if (!m || m.trangThai === 'Đã tất toán' || m.trangThai === 'Huỷ' || m.trangThai === 'Nháp') return;
+    const c = hdmCalc(m, this.db());
+    const toi: TrangThaiHDM = c.slNhap <= 0 ? 'Đã ký' : c.slNhap >= c.slMua ? 'Đã nhận đủ' : 'Đang nhận hàng';
+    const checklist = m.checklist.map((x) =>
+      x.ten === 'Đã nhập kho' ? { ...x, xong: toi === 'Đã nhận đủ', ngay: toi === 'Đã nhận đủ' ? todayIso() : undefined } : x,
+    );
+    this.upsert('hopDongMua', { ...m, trangThai: toi, checklist });
+  }
+
+  /** HDM-08: ghi nhận trả NCC → phiếu Chi Chờ duyệt (không với HĐ Thuộc Phú Tài). */
+  ghiTraNCC(hdmId: string, dot: number, o: { ngayTra: string; soTienTra: number; nguonTien?: string }): Result {
+    const e = this.require('hdmTab4');
+    if (e) return e;
+    const m = this.hdmById(hdmId);
+    if (!m) return 'Không tìm thấy HĐ';
+    if (this.hdmKhoa(m)) return 'HĐ đã khoá';
+    const d = m.dotTT.find((x) => x.dot === dot);
+    if (!d) return 'Không có đợt này';
+    if (!o.ngayTra || !(o.soTienTra > 0)) return 'Cần Ngày trả và Số tiền > 0';
+    if (m.thuocPhuTai) {
+      this.upsert('hopDongMua', { ...m, dotTT: m.dotTT.map((x) => (x.dot === dot ? { ...x, ngayTra: o.ngayTra, soTienTra: o.soTienTra } : x)) });
+      return null;
+    }
+    if (!o.nguonTien) return 'Chưa chọn Nguồn tiền';
+    const cu = d.phieuChiId ? this.phieuById(d.phieuChiId) : undefined;
+    if (cu && cu.trangThai === 'Đã duyệt') return 'Phiếu chi của đợt này đã duyệt';
+    const p: PhieuThuChi = {
+      ...(cu ?? this.newPhieu('Chi')),
+      loai: 'Chi',
+      ngayLap: o.ngayTra,
+      nguonTien: o.nguonTien,
+      noiDung: `Trả NCC đợt ${dot} — HĐ mua ${m.soHD} (${m.tenNCC})`,
+      soTienChi: o.soTienTra,
+      soTienThu: 0,
+      trangThai: 'Chờ duyệt',
+      phatSinh: { loai: 'HDM-DotTT', hdId: m.id, dot },
+    };
+    if (!p.id) {
+      p.id = uid('PTC');
+      p.soPhieu = this.nextSo(this.cauHinh().TIEN_TO_TC, p.ngayLap);
+    }
+    this.upsert('phieuThuChi', p);
+    this.upsert('hopDongMua', {
+      ...m,
+      dotTT: m.dotTT.map((x) => (x.dot === dot ? { ...x, ngayTra: o.ngayTra, soTienTra: o.soTienTra, nguonTien: o.nguonTien, phieuChiId: p.id } : x)),
+    });
+    return null;
+  }
+
+  // ═════════════════════════════════════════════════════════════════════
+  // KHO (KHO-01…10)
+  // ═════════════════════════════════════════════════════════════════════
+
+  /** KHO-06: phiếu nhập / xuất tay (điều chỉnh) — chỉ Kho / Giám đốc. */
+  savePhieuKhoTay(p: Omit<PhieuKho, 'id' | 'soPhieu' | 'nguonGoc' | 'trangThai' | 'nguoiThucHien'>): Result {
+    const e = this.require('khoPhieuTay');
+    if (e) return e;
+    if (!p.kho) return 'Chưa chọn Vị trí kho';
+    if (!p.lyDo?.trim()) return 'Lý do điều chỉnh là bắt buộc';
+    const dong = p.dong.filter((d) => d.loaiHang && d.soLuong > 0);
+    if (dong.length === 0) return 'Cần ít nhất 1 dòng hàng có SL > 0';
+    const db = this.db();
+    const out: PhieuKho = {
+      ...p,
+      dong:
+        p.loai === 'Xuất'
+          ? dong.map((d) => ({ ...d, donGiaGoc: donGiaGoc(db, { hdbId: p.hdId, loaiHang: d.loaiHang, thuocTinh: d.thuocTinh, kho: p.kho, ngay: p.ngay }).donGia }))
+          : dong,
+      id: uid('PK'),
+      soPhieu: this.nextSo(p.loai === 'Nhập' ? this.cauHinh().TIEN_TO_NK : this.cauHinh().TIEN_TO_XK, p.ngay),
+      nguonGoc: 'Nhập tay – điều chỉnh',
+      trangThai: 'Hiệu lực',
+      nguoiThucHien: this.meId()!,
+    };
+    this.upsert('phieuKho', out);
+    return null;
+  }
+
+  /** Phiếu tự động chỉ sửa Ngày, Ghi chú (KHO-04/05). */
+  suaPhieuKho(id: string, o: { ngay: string; ghiChu?: string }): Result {
+    const p = this.db().phieuKho.find((x) => x.id === id);
+    if (!p) return 'Không tìm thấy phiếu';
+    const e = this.require(p.nguonGoc === 'Tự động HĐ Mua' ? 'hdmNhapKho' : p.nguonGoc === 'Tự động HĐ Bán' ? 'hdbGiaoHang' : 'khoPhieuTay');
+    if (e) return e;
+    if (p.trangThai === 'Đã huỷ') return 'Phiếu đã huỷ';
+    this.upsert('phieuKho', { ...p, ...o });
+    return null;
+  }
+
+  // ═════════════════════════════════════════════════════════════════════
+  // PHÚ TÀI (PT-01…11)
+  // ═════════════════════════════════════════════════════════════════════
+
+  newPt(): HopDongPhuTai {
+    const c = this.cauHinh();
+    return {
+      id: '',
+      soHD: '',
+      maKH: '',
+      tenKH: '',
+      mst: '',
+      trangThai: 'Báo giá',
+      ghiChu: '',
+      truocVAT: 0,
+      vat: 8,
+      hdMua: [],
+      chiPhi: [],
+      dotKH: [],
+      dotTraNCC: [],
+      tyLeThue: c.PT_THUE,
+      tyLeGiu: c.PT_GIU,
+      tyLeLog: [],
+      hoaHongKieu: 'Số tiền',
+      hoaHongGiaTri: 0,
+      doiChieu: [],
+      taoLuc: nowIso(),
+    };
+  }
+
+  ptKhoa(p: HopDongPhuTai): boolean {
+    return p.trangThai === 'Đã tất toán' || p.trangThai === 'Huỷ' || this.dangChoXoa('HopDongPhuTai', p.id);
+  }
+
+  savePt(p: HopDongPhuTai): Result {
+    const e = this.require('phuTai');
+    if (e) return e;
+    const cu = p.id ? this.ptById(p.id) : undefined;
+    if (cu && this.ptKhoa(cu)) return 'HĐ đã khoá';
+    if (!p.soHD.trim()) return 'Số HĐ là bắt buộc';
+    if (this.db().hopDongPhuTai.some((x) => x.id !== p.id && fold(x.soHD) === fold(p.soHD))) return `Số HĐ ${p.soHD} đã tồn tại`;
+    if (!p.maKH) return 'Chưa chọn Khách hàng cuối';
+    if (p.hoaHongGiaTri < 0) return 'Hoa hồng phải ≥ 0';
+    const ok = new Set(this.db().hopDongMua.filter((m) => m.thuocPhuTai).map((m) => m.id));
+    if (p.hdMua.some((id) => !ok.has(id))) return 'Chỉ chọn HĐ Mua có cờ "Thuộc Phú Tài"';
+    if (cu && (cu.tyLeThue !== p.tyLeThue || cu.tyLeGiu !== p.tyLeGiu)) {
+      if (!this.canEdit('phuTaiTyLe')) return 'Chỉ Kế toán / Giám đốc sửa tỷ lệ chia';
+      p = {
+        ...p,
+        tyLeLog: [
+          ...p.tyLeLog,
+          {
+            truoc: `Thuế ${cu.tyLeThue * 100}% · PT giữ ${cu.tyLeGiu * 100}%`,
+            sau: `Thuế ${p.tyLeThue * 100}% · PT giữ ${p.tyLeGiu * 100}%`,
+            nguoi: this.meId()!,
+            luc: nowIso(),
+          },
+        ],
+      };
+    }
+    const out = { ...p, id: p.id || uid('HDPT') };
+    this.upsert('hopDongPhuTai', out);
+    this.syncDongTienTuDoiChieu(out);
+    if (!p.id) p.id = out.id;
+    return null;
+  }
+
+  chuyenTrangThaiPt(id: string, toi: TrangThaiPT): Result {
+    const p = this.ptById(id);
+    if (!p) return 'Không tìm thấy HĐ';
+    const e = this.require('phuTai');
+    if (e) return e;
+    if (toi === 'Hiệu lực' && (!p.soHD || !p.ngayKy || p.truocVAT <= 0)) return 'Cần Số HĐ, Ngày ký và Giá bán';
+    if (toi === 'Đã tất toán') {
+      // PT-03: KH đã trả Phú Tài đủ VÀ Phú Tài đã chuyển đủ phần Oxy được hưởng.
+      // Vế sau chưa có dữ liệu riêng (nghĩa các chiều quỹ ảo chờ Q-04) — tạm tính
+      // theo Σ "Chi từ PT" của HĐ trong sổ dòng tiền [Inference].
+      const c = ptCalc(p, this.db());
+      if (c.khDaTra < c.sauVAT) return `Khách hàng chưa trả Phú Tài đủ (còn ${(c.sauVAT - c.khDaTra).toLocaleString('vi-VN')} đ)`;
+      const daChuyen = soDuQuyPT(this.db(), { hdptId: p.id }).chi;
+      if (c.oxyGop > 0 && daChuyen < c.oxyGop)
+        return `Phú Tài chưa chuyển đủ phần Oxy được hưởng (đã ghi ${daChuyen.toLocaleString('vi-VN')} / ${c.oxyGop.toLocaleString('vi-VN')} đ ở sổ dòng tiền, chiều "Chi từ PT")`;
+    }
+    this.upsert('hopDongPhuTai', { ...p, trangThai: toi });
+    return null;
+  }
+
+  /** PT-08 → PT-09: mỗi dòng "Oxy chuyển PT" sinh 1 dòng "Thu về PT" tự động trong quỹ ảo. */
+  private syncDongTienTuDoiChieu(p: HopDongPhuTai): void {
+    this.patch('dongTienPT', (rows) => {
+      const giu = rows.filter((r) => !(r.nguon === 'Tự động' && r.hdptId === p.id));
+      const auto: DongTienPT[] = p.doiChieu
+        .filter((d) => d.soTienVND > 0 && d.ngayOxyChuyen)
+        .map((d) => ({
+          id: `DT-${d.id}`,
+          ngay: d.ngayOxyChuyen!,
+          chieu: 'Thu về PT',
+          hdptId: p.id,
+          soTien: d.soTienVND,
+          nguon: 'Tự động',
+          refId: d.id,
+          ghiChu: `Oxy chuyển Phú Tài — ${p.soHD}`,
+        }));
+      return [...auto, ...giu];
+    });
+  }
+
+  themDongTienTay(d: Omit<DongTienPT, 'id' | 'nguon'>): Result {
+    const e = this.require('phuTai');
+    if (e) return e;
+    if (!d.ngay || !(d.soTien > 0)) return 'Cần Ngày và Số tiền > 0';
+    if (!d.ghiChu?.trim()) return 'Dòng điều chỉnh tay cần lý do';
+    this.upsert('dongTienPT', { ...d, id: uid('DT'), nguon: 'Nhập tay' });
+    return null;
+  }
+
+  // ═════════════════════════════════════════════════════════════════════
+  // DUYỆT XOÁ (NT-11)
+  // ═════════════════════════════════════════════════════════════════════
+
+  dangChoXoa(loai: DoiTuong, id: string): boolean {
+    return !!id && this.db().yeuCauXoa.some((y) => y.loai === loai && y.maDoiTuong === id && y.trangThai === 'Chờ duyệt');
+  }
+
+  guiYeuCauXoa(loai: DoiTuong, maDoiTuong: string, moTa: string, lyDo: string): Result {
+    if (this.level('duyetXoa') === 'none') return 'Tài khoản của bạn không gửi được yêu cầu xoá';
+    if (!lyDo.trim()) return 'Cần nhập lý do xoá';
+    if (this.dangChoXoa(loai, maDoiTuong)) return 'Đã có yêu cầu xoá đang chờ duyệt';
+    const vuong = this.thamChieu(loai, maDoiTuong);
+    if (vuong) return vuong;
+    const y: YeuCauXoa = {
+      id: this.nextMa('YC', this.db().yeuCauXoa.map((x) => x.id)),
+      loai,
+      maDoiTuong,
+      moTa,
+      lyDo,
+      nguoiGui: this.meId()!,
+      ngayGui: nowIso(),
+      trangThai: 'Chờ duyệt',
+    };
+    this.upsert('yeuCauXoa', y);
+    return null;
+  }
+
+  canDuyetXoa(y: YeuCauXoa): boolean {
+    return this.canApprove('duyetXoa') || (this.canApprove('duyetXoaKT') && KE_TOAN_DUYET_XOA.includes(y.loai));
+  }
+
+  rutYeuCau(id: string): Result {
+    const y = this.db().yeuCauXoa.find((x) => x.id === id);
+    if (!y || y.trangThai !== 'Chờ duyệt') return 'Yêu cầu không còn chờ duyệt';
+    if (y.nguoiGui !== this.meId()) return 'Chỉ người gửi được rút yêu cầu';
+    this.upsert('yeuCauXoa', { ...y, trangThai: 'Đã rút', ngayDuyet: nowIso() });
+    return null;
+  }
+
+  tuChoiXoa(id: string, lyDo: string): Result {
+    const y = this.db().yeuCauXoa.find((x) => x.id === id);
+    if (!y || y.trangThai !== 'Chờ duyệt') return 'Yêu cầu không còn chờ duyệt';
+    if (!this.canDuyetXoa(y)) return 'Bạn không có quyền duyệt yêu cầu này';
+    if (!lyDo.trim()) return 'Cần nhập lý do từ chối';
+    this.upsert('yeuCauXoa', { ...y, trangThai: 'Từ chối', lyDoTuChoi: lyDo, nguoiDuyet: this.meId()!, ngayDuyet: nowIso() });
+    return null;
+  }
+
+  duyetXoa(id: string): Result {
+    const y = this.db().yeuCauXoa.find((x) => x.id === id);
+    if (!y || y.trangThai !== 'Chờ duyệt') return 'Yêu cầu không còn chờ duyệt';
+    if (!this.canDuyetXoa(y)) return 'Bạn không có quyền duyệt yêu cầu này';
+    const vuong = this.thamChieu(y.loai, y.maDoiTuong);
+    if (vuong) return vuong;
+    this.thucHienXoa(y.loai, y.maDoiTuong);
+    this.upsert('yeuCauXoa', { ...y, trangThai: 'Đã duyệt', nguoiDuyet: this.meId()!, ngayDuyet: nowIso() });
+    return null;
+  }
+
+  /** Không xoá bản ghi đang được tham chiếu — phải xoá bản ghi con trước (NT-11). */
+  private thamChieu(loai: DoiTuong, id: string): string | null {
+    const d = this.db();
+    const coKho = (hdId: string) => d.phieuKho.some((p) => p.hdId === hdId && p.trangThai === 'Hiệu lực');
+    switch (loai) {
+      case 'HopDongBan':
+        if (coKho(id)) return 'HĐ đã có phiếu kho — huỷ phiếu kho trước';
+        if (d.chiPhiHD.some((c) => c.hdbId === id)) return 'HĐ đã có chi phí thực hiện — xoá chi phí trước';
+        if (d.hopDongMua.some((m) => m.hdbId === id)) return 'Có HĐ mua đang trỏ tới HĐ này — bỏ liên kết trước';
+        return null;
+      case 'HopDongMua':
+        if (coKho(id)) return 'HĐ đã có phiếu nhập — huỷ phiếu nhập trước';
+        if (d.hopDongPhuTai.some((p) => p.hdMua.includes(id))) return 'HĐ đang làm giá đầu vào của HĐ Phú Tài';
+        if (this.hdmById(id)?.dotTT.some((x) => x.phieuChiId)) return 'HĐ đã có phiếu chi trả NCC — xoá phiếu chi trước';
+        return null;
+      case 'PhieuThuChi':
+        if (d.phieuThuChi.some((p) => p.phieuTamUngGoc === id && p.trangThai !== 'Từ chối')) return 'Phiếu tạm ứng đã có quyết toán';
+        return null;
+      case 'DM_KhachHang':
+        return d.hopDongBan.some((h) => h.maKH === id) || d.hopDongPhuTai.some((h) => h.maKH === id) ? 'Khách hàng đã có hợp đồng' : null;
+      case 'DM_NCC':
+        return d.hopDongMua.some((m) => m.maNCC === id) ? 'Nhà cung cấp đã có HĐ mua' : null;
+      case 'DM_NguonTien':
+        return d.phieuThuChi.some((p) => p.nguonTien === id || p.nguonTienDen === id) || d.chiPhiHD.some((c) => c.nguonTien === id)
+          ? 'Nguồn đã có phiếu — chỉ chuyển Ngưng'
+          : null;
+      case 'DM_LoaiChiPhi':
+        return d.phieuThuChi.some((p) => p.loaiChiPhi === id) || d.chiPhiHD.some((c) => c.loaiChiPhi === id) ? 'Loại đã dùng — chỉ ngưng' : null;
+      case 'DM_Kho':
+        if (id === KHO_CHUYEN_THANG) return '"Chuyển thẳng" là vị trí hệ thống';
+        return d.phieuKho.some((p) => p.kho === id) ? 'Kho đã có phiếu — chỉ ngưng' : null;
+      case 'DM_LoaiHang':
+        return d.phieuKho.some((p) => p.dong.some((x) => x.loaiHang === id)) || d.hopDongMua.some((m) => m.chiTiet.some((x) => x.loaiHang === id))
+          ? 'Loại hàng đã dùng — chỉ ngưng'
+          : null;
+      default:
+        return null;
+    }
+  }
+
+  private thucHienXoa(loai: DoiTuong, id: string): void {
+    switch (loai) {
+      case 'PhieuThuChi': {
+        const p = this.phieuById(id);
+        this.drop('phieuThuChi', id);
+        // Bỏ liên kết ở đợt thanh toán đã sinh ra phiếu.
+        if (p?.phatSinh?.loai === 'HDM-DotTT') {
+          const m = this.hdmById(p.phatSinh.hdId);
+          if (m) this.upsert('hopDongMua', { ...m, dotTT: m.dotTT.map((x) => (x.phieuChiId === id ? { ...x, phieuChiId: undefined, ngayTra: undefined, soTienTra: undefined } : x)) });
+        }
+        if (p?.phatSinh?.loai === 'HDB-DotTT') {
+          const h = this.hdbById(p.phatSinh.hdId);
+          if (h) this.upsert('hopDongBan', { ...h, dotTT: h.dotTT.map((x) => (x.phieuThuId === id ? { ...x, phieuThuId: undefined, ngayThu: undefined, soTienThu: undefined, nguonTienNhan: undefined } : x)) });
+        }
+        break;
+      }
+      case 'ChiPhiThucHienHD':
+        return this.drop('chiPhiHD', id);
+      case 'HopDongBan':
+        this.patch('hoSo', (r) => r.filter((x) => !(x.chu === 'HDB' && x.chuId === id)));
+        this.patch('hoaDon', (r) => r.filter((x) => !(x.chu === 'HDB' && x.chuId === id)));
+        return this.drop('hopDongBan', id);
+      case 'HopDongMua':
+        this.patch('hoSo', (r) => r.filter((x) => !(x.chu === 'HDM' && x.chuId === id)));
+        this.patch('hoaDon', (r) => r.filter((x) => !(x.chu === 'HDM' && x.chuId === id)));
+        return this.drop('hopDongMua', id);
+      case 'HopDongPhuTai':
+        this.patch('dongTienPT', (r) => r.filter((x) => x.hdptId !== id));
+        return this.drop('hopDongPhuTai', id);
+      case 'PhieuKho': {
+        // KHO-08: phiếu chuyển "Đã huỷ", tồn tính lại; cập nhật trạng thái nhận của HĐ Mua.
+        const p = this.db().phieuKho.find((x) => x.id === id);
+        this.patch('phieuKho', (r) => r.map((x) => (x.id === id ? { ...x, trangThai: 'Đã huỷ' } : x)));
+        if (p?.nguonGoc === 'Tự động HĐ Mua' && p.hdId) this.capNhatTrangThaiNhan(p.hdId);
+        return;
+      }
+      case 'HoaDon':
+        return this.drop('hoaDon', id);
+      case 'HoSo': {
+        const [hsId, fileId] = id.split(':');
+        this.patch('hoSo', (r) =>
+          r.map((h) => {
+            if (h.id !== hsId) return h;
+            const files = h.files.filter((f) => f.id !== fileId);
+            return { ...h, files, daLuu: files.length > 0 ? h.daLuu : !!h.ghiChu?.trim() && h.daLuu };
+          }),
+        );
+        void deleteBlob(fileId).catch(() => undefined);
+        return;
+      }
+      case 'DongTienPhuTai':
+        return this.drop('dongTienPT', id);
+      case 'DM_KhachHang':
+        return this.drop('khachHang', id);
+      case 'DM_NCC':
+        return this.drop('ncc', id);
+      case 'DM_NguonTien':
+        return this.drop('nguonTien', id);
+      case 'DM_LoaiChiPhi':
+        return this.drop('loaiChiPhi', id);
+      case 'DM_Kho':
+        return this.drop('kho', id);
+      case 'DM_LoaiHang':
+        return this.drop('loaiHang', id);
+    }
+  }
+
+  nhanDoiTuong(loai: DoiTuong): string {
+    return DOI_TUONG_LABEL[loai];
+  }
+
+  // ═════════════════════════════════════════════════════════════════════
+  // CẤU HÌNH (NT-14) & TÀI KHOẢN (NT-03)
+  // ═════════════════════════════════════════════════════════════════════
+
+  setCauHinh<K extends CauHinhKey>(k: K, v: CauHinh[K]): Result {
+    if (!this.canEdit('cauHinh')) return 'Cần quyền sửa Tham số cấu hình (NT-14)';
+    const cu = this.cauHinh()[k];
+    if (cu === v) return null;
+    this.db.update((d) => ({
+      ...d,
+      cauHinh: { ...d.cauHinh, [k]: v },
+      cauHinhLog: [{ khoa: k, giaTriCu: String(cu), giaTriMoi: String(v), nguoiSua: this.meId()!, ngaySua: nowIso() }, ...d.cauHinhLog],
+    }));
+    return null;
+  }
+
+  /** Ghi tài khoản (Auth gọi sau khi đã băm mật khẩu). */
+  putTaiKhoan(t: TaiKhoan): void {
+    this.upsert('taiKhoan', t);
+  }
+  setPhien(fn: (rows: Db['phien']) => Db['phien']): void {
+    this.patch('phien', fn);
+  }
+
+  // ═════════════════════════════════════════════════════════════════════
+  // NHÓM QUYỀN & PHÂN QUYỀN (NT-03, NT-04)
+  // ═════════════════════════════════════════════════════════════════════
+
+  /**
+   * Kiểm tra sau một thay đổi giả định: phải còn ít nhất 1 tài khoản Hoạt động có quyền sửa
+   * "Tài khoản, nhóm quyền & phân quyền" — không cho ai tự khoá cả hệ thống ra ngoài.
+   */
+  conQuanTri(taiKhoan: TaiKhoan[], nhom: NhomQuyen[]): boolean {
+    return taiKhoan.some((t) => {
+      if (t.trangThai !== 'Hoạt động') return false;
+      const gs = nhom.filter((g) => t.nhom.includes(g.id));
+      return atLeast(levelOf(gs, 'taiKhoan'), 'edit');
+    });
+  }
+
+  newNhom(): NhomQuyen {
+    return { id: '', ma: '', ten: '', moTa: '', toanQuyen: false, trangThai: 'Hoạt động', quyen: {}, taoLuc: nowIso() };
+  }
+
+  saveNhom(n: NhomQuyen): Result {
+    const e = this.require('taiKhoan');
+    if (e) return e;
+    const ma = n.ma.trim().toUpperCase();
+    if (!/^[A-Z0-9_]{2,30}$/.test(ma)) return 'Mã nhóm 2–30 ký tự: chữ in hoa không dấu, số, gạch dưới (VD KE_TOAN)';
+    if (!n.ten.trim()) return 'Chưa nhập tên nhóm';
+    if (this.db().nhomQuyen.some((g) => g.id !== n.id && g.ma === ma)) return `Mã nhóm ${ma} đã có`;
+    // Chỉ giữ mức hợp lệ của từng chức năng; bỏ mức "—" cho gọn dữ liệu.
+    const quyen: Record<string, Level> = {};
+    for (const c of CHUC_NANG) {
+      const l = n.quyen[c.ma];
+      if (l && l !== 'none' && c.mucDo.includes(l)) quyen[c.ma] = l;
+    }
+    const out: NhomQuyen = {
+      ...n,
+      id: n.id || this.nextMa('NQ-', this.db().nhomQuyen.map((g) => g.id)),
+      ma,
+      ten: n.ten.trim(),
+      moTa: n.moTa.trim(),
+      quyen,
+      capNhat: nowIso(),
+      nguoiCapNhat: this.meId() ?? undefined,
+    };
+    const nhom = [...this.db().nhomQuyen.filter((g) => g.id !== out.id), out];
+    if (!this.conQuanTri(this.db().taiKhoan, nhom)) return 'Thay đổi này làm hệ thống không còn ai quản trị tài khoản — giữ quyền NT-03 "Sửa" cho ít nhất 1 nhóm có thành viên';
+    this.upsert('nhomQuyen', out);
+    if (!n.id) n.id = out.id;
+    return null;
+  }
+
+  /** Xoá nhóm: chỉ nhóm tự tạo và không còn thành viên (cấu hình hệ thống, không qua duyệt xoá). */
+  xoaNhom(id: string): Result {
+    const e = this.require('taiKhoan');
+    if (e) return e;
+    const g = this.db().nhomQuyen.find((x) => x.id === id);
+    if (!g) return 'Không tìm thấy nhóm';
+    if (g.heThong) return 'Nhóm khởi tạo sẵn không xoá được — có thể chuyển "Ngưng"';
+    const n = this.db().taiKhoan.filter((t) => t.nhom.includes(id)).length;
+    if (n) return `Nhóm còn ${n} tài khoản — bỏ các tài khoản ra khỏi nhóm trước`;
+    this.drop('nhomQuyen', id);
+    return null;
+  }
+
+  /** Đặt lại danh sách thành viên của một nhóm (gán / bỏ tài khoản). */
+  ganThanhVien(nhomId: string, tkIds: string[]): Result {
+    const e = this.require('taiKhoan');
+    if (e) return e;
+    const taiKhoan = this.db().taiKhoan.map((t) => {
+      const co = t.nhom.includes(nhomId);
+      const can = tkIds.includes(t.id);
+      if (co === can) return t;
+      return { ...t, nhom: can ? [...t.nhom, nhomId] : t.nhom.filter((x) => x !== nhomId) };
+    });
+    if (!this.conQuanTri(taiKhoan, this.db().nhomQuyen)) return 'Thay đổi này làm hệ thống không còn ai quản trị tài khoản';
+    this.db.update((d) => ({ ...d, taiKhoan }));
+    return null;
+  }
+}
+
