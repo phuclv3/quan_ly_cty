@@ -28,7 +28,24 @@ Mật khẩu chung: `Oxy@2026`
 | kho@oxymecie.vn | Kho — tồn kho, nhập / xuất, phiếu điều chỉnh |
 | chixem@oxymecie.vn | Chỉ xem — không có nút hành động |
 
-Quyền theo sheet "Ma trận quyền" (D-25, còn chờ xác nhận Q-06) — xem `src/app/core/perm.ts`.
+## Phân quyền theo nhóm & mã chức năng
+
+Màn **Tài khoản & phân quyền** (`/tai-khoan`):
+
+| Tab | Làm gì |
+| --- | --- |
+| Tài khoản | Tạo tài khoản, gán vào một hoặc nhiều nhóm, khoá / mở khoá, đặt lại mật khẩu |
+| Nhóm quyền | Tạo / sửa / nhân bản / xoá nhóm; gán mức quyền cho từng **mã chức năng**; gán / bỏ tài khoản vào nhóm |
+| Danh mục chức năng | Tra mã chức năng (theo mã spec: `HDB-01`, `KT-07`…), mức được phép, nhóm đang có quyền |
+| Ma trận phân quyền | Nhóm × chức năng, xuất Excel |
+
+- Mức quyền: Xem · Xem của mình · Gửi yêu cầu · Lập nháp · Sửa của mình · Sửa · Duyệt.
+- Một tài khoản nhiều nhóm → lấy mức **cao nhất**; nhóm "Toàn quyền" → mức cao nhất mọi chức năng.
+- Các quy tắc trước đây gắn cứng với Giám đốc nay là chức năng phân quyền được: `HDB-03-ML` mở lại HĐ đã tất toán, `KT-07-TD` tự duyệt chứng từ của mình, `NT-11-KT` duyệt xoá chứng từ kế toán.
+- Chặn tự khoá hệ thống: không lưu thay đổi nào làm mất người cuối cùng có quyền sửa `NT-03`.
+- Danh mục chức năng + 6 nhóm mặc định (sheet "Ma trận quyền", D-25, chờ Q-06) ở `src/app/core/perm.ts`.
+
+**Database:** `docs/database/phan-quyen.sql` — bảng `ChucNang`, `NhomQuyen`, `NhomQuyen_ChucNang`, `TaiKhoan`, `TaiKhoan_Nhom`, `PhienDangNhap` + dữ liệu khởi tạo. Tệp sinh từ `perm.ts` bằng `npm run gen:sql` — sửa danh mục chức năng xong thì chạy lại để SQL luôn khớp mã app dùng.
 
 ## Bản đồ màn hình
 
@@ -44,7 +61,7 @@ Quyền theo sheet "Ma trận quyền" (D-25, còn chờ xác nhận Q-06) — x
 | Báo cáo | `/bao-cao` | theo `nghiep_vu/06_BaoCao.md` |
 | Danh mục | `/danh-muc?tab=kh|ncc|lcp` | HDB-13, HDM-10, KT-03 |
 | Duyệt xoá | `/duyet-xoa` | NT-11 |
-| Quản lý tài khoản | `/tai-khoan` | NT-03, NT-04 |
+| Tài khoản & phân quyền | `/tai-khoan?tab=tai-khoan|nhom|chuc-nang|ma-tran` | NT-02, NT-03, NT-04 |
 | Cấu hình & Import | `/cau-hinh` | NT-13, NT-14 |
 
 ## Cấu trúc mã
