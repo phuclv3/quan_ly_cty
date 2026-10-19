@@ -214,6 +214,8 @@ button, input, select, textarea { font: inherit; color: inherit; }
   padding: 18px 14px 24px; display: flex; flex-direction: column; gap: 4px;
 }
 .side { overflow-x: hidden; }
+/* Không cho mục menu bị co khi menu dài hơn màn hình — menu cuộn thay vì dồn chữ. */
+.side > * { flex-shrink: 0; }
 .side .grp-label {
   font-size: 12.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-3); padding: 14px 14px 4px;
   white-space: nowrap; overflow: hidden; max-height: 48px;
