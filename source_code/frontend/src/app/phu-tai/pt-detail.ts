@@ -9,6 +9,7 @@ import { money, num, pct, todayIso, uid, viDate, viMoment } from '../core/util';
 import { BuocTable, MoneyInput, Pick, PickOption, TrangThai } from '../shared/ui-kit';
 import { Confirm } from '../shared/confirm';
 import { HoSoPanel, guiXoa } from '../shared/ho-so';
+import { Unsaved, canhBaoChuaLuu } from '../shared/unsaved';
 
 type ArrKey = 'chiPhi' | 'dotKH' | 'dotTraNCC' | 'doiChieu';
 type Row<K extends ArrKey> = HopDongPhuTai[K][number];
@@ -37,9 +38,9 @@ const quyDoi = (soTien: number, loaiTien: string, tyGia: number) => Math.round(s
         <div class="crumbs"><a routerLink="/">Trang chủ</a> › <a routerLink="/phu-tai">Phú Tài</a> › {{ p.id ? p.soHD : 'Tạo mới' }}</div>
         <h1>
           {{ p.id ? 'HĐ Phú Tài ' + p.soHD : 'Tạo HĐ Phú Tài' }}
-          <span class="tag pt">Phú Tài</span>
+          <app-tt v="Phú Tài" t="pt" />
           @if (choXoa()) { <app-tt v="Chờ xoá" /> } @else { <app-tt [v]="p.trangThai" /> }
-          @if (p.import) { <span class="tag mute">Import</span> }
+          @if (p.import) { <app-tt v="Import" /> }
         </h1>
       </div>
       <div class="actions">
@@ -105,7 +106,7 @@ const quyDoi = (soTien: number, loaiTien: string, tyGia: number) => Math.round(s
               <span class="st" [class.cur]="s === p.trangThai" [class.done]="daQua(s)">{{ s }}</span>
               @if (!last) { <span class="sep">→</span> }
             }
-            @if (p.trangThai === 'Huỷ') { <span class="sep">·</span><span class="st cur">Huỷ</span> }
+            @if (p.trangThai === 'Huỷ') { <span class="sep">·</span><span class="st cur">Huỷ</span>@if (p.lyDoHuy) { <span class="sub">— {{ p.lyDoHuy }}</span> } }
           </div>
           @if (p.id && store.canEdit('phuTai') && !khoa()) {
             <div class="btn-row" style="justify-content:flex-start;margin-top:10px">
@@ -113,7 +114,7 @@ const quyDoi = (soTien: number, loaiTien: string, tyGia: number) => Math.round(s
               <button type="button" class="btn sm quiet danger" [disabled]="dirty()" (click)="chuyen('Huỷ')">Huỷ HĐ</button>
               @if (dirty()) { <span class="sub">Lưu thay đổi trước khi chuyển trạng thái.</span> }
             </div>
-            <p class="sub">→ Hiệu lực cần Số HĐ, Ngày ký, Giá bán. → Đã tất toán: KH đã trả PT đủ và Phú Tài đã chuyển đủ phần Oxy được hưởng. "Đã tất toán" / "Huỷ" khoá HĐ.</p>
+            <p class="sub">→ Hiệu lực cần Số HĐ, Ngày ký, Giá bán. → Đã tất toán: KH đã trả PT đủ và Phú Tài đã chuyển đủ phần Oxy được hưởng — ghi các lần Phú Tài chuyển cho Oxy là dòng "Chi từ PT" ở <a routerLink="/phu-tai" [queryParams]="{ tab: 'dong-tien', hd: p.id }">sổ quỹ ảo của HĐ</a>. "Đã tất toán" / "Huỷ" khoá HĐ.</p>
           }
         </section>
 
@@ -175,7 +176,7 @@ const quyDoi = (soTien: number, loaiTien: string, tyGia: number) => Math.round(s
       @case ('3') {
         <div class="section-title">
           <h2>Giá mua hàng hoá — HĐ Mua thuộc Phú Tài</h2>
-          @if (store.canEdit('hdm')) { <a class="btn sm quiet" routerLink="/hop-dong-mua/moi">+ Tạo HĐ mua thuộc Phú Tài</a> }
+          @if (store.canEdit('hdm') && p.id && edit()) { <a class="btn sm quiet" routerLink="/hop-dong-mua/moi" [queryParams]="{ pt: p.id }">+ Tạo HĐ mua thuộc Phú Tài</a> }
         </div>
         <div class="tbl-wrap">
           <table class="tbl compact">
@@ -196,6 +197,12 @@ const quyDoi = (soTien: number, loaiTien: string, tyGia: number) => Math.round(s
             </tbody>
           </table>
         </div>
+        @if (hdmHuy().length) {
+          <div class="note warn" style="margin-top:10px">HĐ mua đã Huỷ vẫn đang được chọn và tính vào giá mua: {{ hdmHuy().join(', ') }} — bỏ chọn nếu không còn dùng.</div>
+        }
+        @if (hdmTrung().length) {
+          <div class="note warn" style="margin-top:10px">HĐ mua đang được chọn ở HĐ Phú Tài khác (giá đầu vào có thể bị tính 2 lần): {{ hdmTrung().join(', ') }}</div>
+        }
         <div class="form-grid" style="margin-top:12px">
           <div class="field"><span class="lbl">Giá mua hàng hoá</span><div class="ro num" title="Σ tổng VNĐ trước VAT của HĐ Mua đã chọn">{{ money(c.giaMua) }}</div></div>
           <div class="field"><span class="lbl">Vận chuyển</span><div class="ro num">{{ money(c.vanChuyen) }}</div></div>
@@ -289,11 +296,11 @@ const quyDoi = (soTien: number, loaiTien: string, tyGia: number) => Math.round(s
                 <input id="pt-giu" type="number" min="0" max="100" step="0.1" class="num" [value]="phanTram(p.tyLeGiu)" [disabled]="!suaTyLe()" (change)="setTyLe('tyLeGiu', $any($event.target).value)" />
               </div>
             </div>
-            @if (!store.canEdit('phuTaiTyLe')) { <p class="sub">Chỉ Kế toán / Giám đốc sửa tỷ lệ.</p> }
+            @if (!store.canEdit('phuTaiTyLe')) { <p class="sub">Cần quyền "Sửa tỷ lệ chia lợi nhuận" (PT-06) để sửa tỷ lệ.</p> }
             <h3 style="margin-top:12px">Lịch sử sửa tỷ lệ</h3>
             <ul class="stack">
               @for (l of p.tyLeLog; track $index) {
-                <li class="sub">{{ viMoment(l.luc) }} · {{ store.userName(l.nguoi) }}: {{ l.truoc }} → <b>{{ l.sau }}</b></li>
+                <li class="sub">{{ viMoment(l.luc) }} · {{ store.userName(l.nguoi) }}: {{ l.truoc }} → <b>{{ l.sau }}</b>@if (l.lyDo) { — {{ l.lyDo }} }</li>
               } @empty {
                 <li class="muted">Chưa sửa — đang dùng tỷ lệ lúc tạo HĐ.</li>
               }
@@ -333,7 +340,7 @@ const quyDoi = (soTien: number, loaiTien: string, tyGia: number) => Math.round(s
       @case ('5') {
         <div class="note info" style="margin-bottom:12px">
           Mỗi dòng có "Ngày Oxy chuyển PT" và Số tiền VNĐ &gt; 0 sẽ tự tạo một dòng "Thu về PT" trong Sổ dòng tiền quỹ ảo khi Lưu.
-          <a routerLink="/phu-tai" [queryParams]="{ tab: 'dong-tien' }">Xem sổ quỹ ảo</a>
+          <a routerLink="/phu-tai" [queryParams]="{ tab: 'dong-tien', hd: p.id }">Xem sổ quỹ ảo của HĐ này</a>
         </div>
         <div class="section-title">
           <h2>Đối chiếu thanh toán 3 bên</h2>
@@ -442,11 +449,16 @@ export class PtDetail {
       }));
   });
 
+  protected readonly hdmHuy = computed(() => this.hdmOpts().filter((m) => m.trangThai === 'Huỷ' && this.f().hdMua.includes(m.id)).map((m) => m.soHD));
+  protected readonly hdmTrung = computed(() => this.hdmOpts().filter((m) => m.khac && this.f().hdMua.includes(m.id)).map((m) => `${m.soHD} (${m.khac})`));
+  private readonly unsaved = inject(Unsaved);
+
   constructor() {
     effect(() => {
       const id = this.routeId();
       untracked(() => this.nap(id));
     });
+    canhBaoChuaLuu(() => this.edit() && this.dirty());
   }
 
   private nap(id: string): void {
@@ -533,10 +545,23 @@ export class PtDetail {
     return cur >= 0 && LUONG.indexOf(s) < cur;
   }
 
-  protected luu(): void {
+  protected async luu(): Promise<void> {
     const ban = structuredClone(this.f());
     const moi = !ban.id;
-    const err = this.store.savePt(ban);
+    const cu = this.daLuu();
+    let lyDoTyLe: string | undefined;
+    if (cu && (cu.tyLeThue !== ban.tyLeThue || cu.tyLeGiu !== ban.tyLeGiu)) {
+      const r = await this.confirm.prompt({
+        title: 'Lưu thay đổi tỷ lệ chia lợi nhuận?',
+        message: 'Tỷ lệ mới áp ngay cho bảng tính của HĐ này và được ghi vào Lịch sử sửa tỷ lệ.',
+        label: 'Lý do đổi tỷ lệ',
+        minLength: 3,
+        ok: 'Lưu',
+      });
+      if (r === null) return;
+      lyDoTyLe = r;
+    }
+    const err = this.store.savePt(ban, lyDoTyLe);
     if (err) {
       this.loi.set(err);
       this.store.say(err);
@@ -545,7 +570,7 @@ export class PtDetail {
     this.loi.set('');
     this.store.say('Đã lưu HĐ Phú Tài');
     if (moi) {
-      void this.router.navigate(['/phu-tai', ban.id], { queryParamsHandling: 'merge', replaceUrl: true });
+      void this.unsaved.diSauKhiLuu(() => this.router.navigate(['/phu-tai', ban.id], { queryParamsHandling: 'merge', replaceUrl: true }));
     } else {
       this.nap(ban.id);
     }
@@ -560,14 +585,28 @@ export class PtDetail {
     const c = this.calc();
     let canhBao = '';
     if (toi === 'Đã tất toán' && c.khDaTra < c.sauVAT) canhBao = `KH mới trả PT ${money(c.khDaTra)} / ${money(c.sauVAT)} đ.`;
-    const ok = await this.confirm.ask({
-      title: toi === 'Huỷ' ? `Huỷ HĐ ${p.soHD}?` : `Chuyển ${p.soHD} sang "${toi}"?`,
-      message: toi === 'Đã tất toán' || toi === 'Huỷ' ? 'Sau khi chuyển, HĐ bị khoá sửa.' : undefined,
-      warn: canhBao || (toi === 'Đã tất toán' ? 'Kiểm tra Phú Tài đã chuyển đủ phần Oxy được hưởng.' : undefined),
-      ok: toi === 'Huỷ' ? 'Huỷ HĐ' : 'Chuyển',
-    });
-    if (!ok) return;
-    const err = this.store.chuyenTrangThaiPt(p.id, toi);
+    let lyDo: string | undefined;
+    if (toi === 'Huỷ') {
+      const r = await this.confirm.prompt({
+        title: `Huỷ HĐ ${p.soHD}?`,
+        message: 'Sau khi huỷ, HĐ bị khoá sửa.',
+        label: 'Lý do huỷ',
+        minLength: 3,
+        multiline: true,
+        ok: 'Huỷ HĐ',
+      });
+      if (r === null) return;
+      lyDo = r;
+    } else {
+      const ok = await this.confirm.ask({
+        title: `Chuyển ${p.soHD} sang "${toi}"?`,
+        message: toi === 'Đã tất toán' ? 'Sau khi chuyển, HĐ bị khoá sửa.' : undefined,
+        warn: canhBao || (toi === 'Đã tất toán' ? 'Kiểm tra Phú Tài đã chuyển đủ phần Oxy được hưởng.' : undefined),
+        ok: 'Chuyển',
+      });
+      if (!ok) return;
+    }
+    const err = this.store.chuyenTrangThaiPt(p.id, toi, lyDo);
     this.store.say(err ?? `Đã chuyển sang ${toi}`);
     if (!err) this.nap(p.id);
   }

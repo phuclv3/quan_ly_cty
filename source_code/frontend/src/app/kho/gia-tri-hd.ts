@@ -42,7 +42,7 @@ interface HdGT {
     </div>
     <div class="section-title">
       <span></span>
-      <button type="button" class="btn sm quiet" (click)="xuatCsv()">Xuất Excel</button>
+      <button type="button" class="btn sm quiet" (click)="xuatCsv()">Xuất CSV</button>
     </div>
     <app-filter [(loc)]="loc" memo="kho-gia-tri" [time]="false" [facets]="facets()" placeholder="Tìm số HĐ, khách hàng, loại hàng…" />
     <div class="tbl-wrap">

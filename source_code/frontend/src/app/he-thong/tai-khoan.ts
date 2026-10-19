@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Store } from '../core/store';
+import { dirtyOf } from '../shared/unsaved';
 import { Auth } from '../core/auth';
 import { TaiKhoan } from '../core/models';
 import { MAT_KHAU_TOI_THIEU, matKhauTam } from '../core/crypto';
@@ -109,7 +110,8 @@ interface FormTK {
                             {{ t.trangThai === 'Khoá' ? 'Mở khoá' : 'Khoá' }}
                           </button>
                         }
-                        <button type="button" class="btn sm quiet" (click)="moDatLai(t)">Đặt lại mật khẩu</button>
+                        @if (t.id !== store.meId()) { <button type="button" class="btn sm quiet" (click)="moDatLai(t)">Đặt lại mật khẩu</button> }
+                        @else { <span class="sub muted" title="Tự đổi qua menu Đổi mật khẩu">(tài khoản của bạn)</span> }
                       </div>
                     </td>
                   }
@@ -125,7 +127,7 @@ interface FormTK {
     }
 
     <!-- Thêm / sửa tài khoản -->
-    <app-modal [open]="!!form()" [title]="form()?.id ? 'Sửa tài khoản' : 'Thêm tài khoản'" size="md" (closed)="form.set(null)">
+    <app-modal [open]="!!form()" [title]="form()?.id ? 'Sửa tài khoản' : 'Thêm tài khoản'" size="md" [dirty]="dirtyForm()" (closed)="form.set(null)">
       @if (form(); as f) {
         <div class="form-grid">
           <div class="field">
@@ -164,7 +166,7 @@ interface FormTK {
         @if (loi()) { <div class="note bad">{{ loi() }}</div> }
       }
       <div foot class="btn-row">
-        <button type="button" class="btn quiet" (click)="form.set(null)">Thôi</button>
+        <button type="button" class="btn quiet" (click)="form.set(null)">Huỷ</button>
         <button type="button" class="btn" [disabled]="dangLuu()" (click)="luu()">{{ form()?.id ? 'Lưu' : 'Tạo tài khoản' }}</button>
       </div>
     </app-modal>
@@ -174,7 +176,7 @@ interface FormTK {
       <p>Tạo mật khẩu tạm mới cho <b>{{ datLai()?.email }}</b>. Mọi phiên đăng nhập hiện có của tài khoản này bị huỷ.</p>
       <label class="check-row"><input type="checkbox" [checked]="batDoi()" (change)="batDoi.set(!batDoi())" /> Bắt đổi ở lần đăng nhập tới</label>
       <div foot class="btn-row">
-        <button type="button" class="btn quiet" (click)="datLai.set(null)">Thôi</button>
+        <button type="button" class="btn quiet" (click)="datLai.set(null)">Huỷ</button>
         <button type="button" class="btn danger" [disabled]="dangLuu()" (click)="xacNhanDatLai()">Đặt lại</button>
       </div>
     </app-modal>
@@ -240,6 +242,7 @@ export class TaiKhoanPage {
   protected readonly pg = paginate(this.list);
 
   protected readonly form = signal<FormTK | null>(null);
+  protected readonly dirtyForm = dirtyOf(this.form);
   protected readonly loi = signal<string | null>(null);
   protected readonly dangLuu = signal(false);
   protected readonly datLai = signal<TaiKhoan | null>(null);

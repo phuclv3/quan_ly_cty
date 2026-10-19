@@ -9,6 +9,7 @@ import { Facet, FilterBar, LOC_RONG, Loc, khopQ, khopSel, khopThoiGian } from '.
 import { Pager, paginate } from '../shared/pager';
 import { csv, downloadFile, fileName } from '../shared/export';
 import { ChiPhiForm } from './chi-phi-form';
+import { SortTh, Sorter } from '../shared/sort';
 
 const TRANG_THAI = ['Nháp', 'Chờ duyệt', 'Đã duyệt', 'Từ chối'];
 
@@ -16,12 +17,12 @@ const TRANG_THAI = ['Nháp', 'Chờ duyệt', 'Đã duyệt', 'Từ chối'];
 @Component({
   selector: 'app-kt-chi-phi',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TrangThai, FilterBar, Pager, ChiPhiForm, RouterLink],
+  imports: [TrangThai, FilterBar, Pager, ChiPhiForm, RouterLink, SortTh],
   template: `
     <div class="between" style="margin-bottom:8px">
       <p class="sub muted">Chi phí gắn từng HĐ bán; duyệt xong trừ vào Nguồn tiền chi ra và cộng vào chi phí của HĐ.</p>
       <div class="row">
-        <button type="button" class="btn quiet" (click)="xuat()">Xuất Excel</button>
+        <button type="button" class="btn quiet" (click)="xuat()">Xuất CSV</button>
         @if (store.canEdit('cpHD')) { <button type="button" class="btn" (click)="cp.set(store.newChiPhi())">+ Nhập chi phí</button> }
       </div>
     </div>
@@ -30,8 +31,8 @@ const TRANG_THAI = ['Nháp', 'Chờ duyệt', 'Đã duyệt', 'Từ chối'];
       <table class="tbl freeze">
         <thead>
           <tr>
-            <th>Mã CP</th><th>Số HĐ</th><th>Khách hàng</th><th>Ngày</th><th>Loại chi phí</th><th>Nội dung</th>
-            <th class="num">Số tiền</th><th>Nguồn tiền</th><th>Người thực hiện</th><th>Trạng thái</th>
+            <th app-sort-th [sx]="sx" k="ma">Mã CP</th><th app-sort-th [sx]="sx" k="hd">Số HĐ</th><th app-sort-th [sx]="sx" k="kh">Khách hàng</th><th app-sort-th [sx]="sx" k="ngay">Ngày</th><th app-sort-th [sx]="sx" k="lcp">Loại chi phí</th><th>Nội dung</th>
+            <th app-sort-th [sx]="sx" k="tien" class="num">Số tiền</th><th>Nguồn tiền</th><th app-sort-th [sx]="sx" k="nguoi">Người thực hiện</th><th app-sort-th [sx]="sx" k="tt">Trạng thái</th>
           </tr>
         </thead>
         <tbody>
@@ -50,7 +51,7 @@ const TRANG_THAI = ['Nháp', 'Chờ duyệt', 'Đã duyệt', 'Từ chối'];
               <td>@if (store.dangChoXoa('ChiPhiThucHienHD', c.id)) { <app-tt v="Chờ xoá" /> } @else { <app-tt [v]="c.trangThai" /> }</td>
             </tr>
           } @empty {
-            <tr><td colspan="10" class="empty">Không có chi phí khớp bộ lọc</td></tr>
+            <tr><td colspan="10" class="empty">{{ source().length ? 'Không có chi phí khớp bộ lọc' : 'Chưa có chi phí thực hiện HĐ nào' }}</td></tr>
           }
         </tbody>
         <tfoot>
@@ -72,7 +73,7 @@ export class ChiPhiTab {
   protected readonly loc = signal<Loc>(nhoLoc('kt-chi-phi', LOC_RONG));
   protected readonly cp = signal<ChiPhiHD | null>(null);
 
-  private readonly source = computed(() => {
+  protected readonly source = computed(() => {
     const all = this.store.chiPhiHD();
     if (!this.store.ownOnly('cpHD')) return all;
     const mine = new Set(this.store.hdbVisible().map((h) => h.id));
@@ -95,9 +96,19 @@ export class ChiPhiTab {
     ];
   });
 
+  protected readonly sx = new Sorter<ChiPhiHD>({
+    ma: (c) => c.maCP,
+    hd: (c) => this.store.hdbById(c.hdbId)?.soHD,
+    kh: (c) => this.store.hdbById(c.hdbId)?.tenKH,
+    ngay: (c) => c.ngay,
+    lcp: (c) => this.store.lcpTen(c.loaiChiPhi),
+    tien: (c) => c.soTien,
+    nguoi: (c) => this.store.userName(c.nguoiThucHien),
+    tt: (c) => c.trangThai,
+  });
   protected readonly rows = computed(() => {
     const l = this.loc();
-    return this.source()
+    const list = this.source()
       .filter((c) => {
         const h = this.store.hdbById(c.hdbId);
         return (
@@ -109,16 +120,25 @@ export class ChiPhiTab {
         );
       })
       .sort((a, b) => (a.ngay === b.ngay ? b.maCP.localeCompare(a.maCP) : a.ngay < b.ngay ? 1 : -1));
+    return this.sx.apply(list);
   });
   protected readonly pg = paginate(this.rows);
   protected readonly tong = computed(() => sum(this.rows(), (c) => c.soTien));
 
   constructor() {
-    const hdb = this.route.snapshot.queryParamMap.get('hdb');
-    if (hdb && this.store.canEdit('cpHD', this.store.hdbById(hdb)?.sale)) {
-      this.cp.set(this.store.newChiPhi(hdb));
-      void this.router.navigate([], { queryParams: { hdb: null }, queryParamsHandling: 'merge', replaceUrl: true });
+    const q = this.route.snapshot.queryParamMap;
+    const hdb = q.get('hdb');
+    const id = q.get('id');
+    if (id) {
+      // Liên kết sâu: ?id=<chi phí> mở popup chi phí đó.
+      const c = this.source().find((x) => x.id === id);
+      if (c) this.cp.set(c);
+      else this.store.say('Không tìm thấy chi phí hoặc bạn không được xem chi phí này');
+    } else if (hdb) {
+      if (this.store.canEdit('cpHD', this.store.hdbById(hdb)?.sale)) this.cp.set(this.store.newChiPhi(hdb));
+      else this.store.say('Tài khoản của bạn không có quyền nhập chi phí cho HĐ này');
     }
+    if (id || hdb) void this.router.navigate([], { queryParams: { hdb: null, id: null }, queryParamsHandling: 'merge', replaceUrl: true });
   }
 
   protected xuat(): void {

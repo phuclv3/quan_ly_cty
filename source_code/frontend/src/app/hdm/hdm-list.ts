@@ -10,6 +10,7 @@ import { Kpi, TrangThai } from '../shared/ui-kit';
 import { Pager, paginate } from '../shared/pager';
 import { csv, downloadFile, fileName } from '../shared/export';
 import { Icon } from '../shared/icon';
+import { SortTh, Sorter } from '../shared/sort';
 
 interface Dong {
   m: HopDongMua;
@@ -23,7 +24,7 @@ interface Dong {
   selector: 'app-hdm-list',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'page' },
-  imports: [RouterLink, FilterBar, Kpi, TrangThai, Pager, Icon],
+  imports: [RouterLink, FilterBar, Kpi, TrangThai, Pager, Icon, SortTh],
   template: `
     <div class="page-head">
       <div>
@@ -31,7 +32,7 @@ interface Dong {
         <h1>Hợp đồng mua</h1>
       </div>
       <div class="actions">
-        <button type="button" class="btn quiet" (click)="xuat()"><app-icon name="download" [size]="16" /> Xuất Excel</button>
+        <button type="button" class="btn quiet" (click)="xuat()"><app-icon name="download" [size]="16" /> Xuất CSV</button>
         @if (store.canEdit('hdm')) {
           <a class="btn" routerLink="/hop-dong-mua/moi"><app-icon name="plus" [size]="16" /> Tạo HĐ mua</a>
         }
@@ -51,8 +52,8 @@ interface Dong {
       <table class="tbl freeze">
         <thead>
           <tr>
-            <th>Số HĐ</th><th>Nhà cung cấp</th><th>Ngày ký</th><th class="num">Giá trị VNĐ</th><th>Đã trả</th>
-            <th class="num">Còn phải trả</th><th>Nhập hàng</th><th>HĐ bán liên quan</th><th>Phú Tài</th><th>Trạng thái</th>
+            <th app-sort-th [sx]="sx" k="soHD">Số HĐ</th><th app-sort-th [sx]="sx" k="ncc">Nhà cung cấp</th><th app-sort-th [sx]="sx" k="ngay">Ngày ký</th><th app-sort-th [sx]="sx" k="tong" class="num">Giá trị VNĐ</th><th app-sort-th [sx]="sx" k="pct">Đã trả</th>
+            <th app-sort-th [sx]="sx" k="con" class="num">Còn phải trả</th><th>Nhập hàng</th><th>HĐ bán liên quan</th><th>Phú Tài</th><th app-sort-th [sx]="sx" k="tt">Trạng thái</th>
           </tr>
         </thead>
         <tbody>
@@ -87,15 +88,15 @@ interface Dong {
               </td>
             </tr>
           } @empty {
-            <tr><td colspan="10" class="empty">Không có HĐ mua nào khớp bộ lọc</td></tr>
+            <tr><td colspan="10" class="empty">{{ all().length ? 'Không có HĐ mua nào khớp bộ lọc' : 'Chưa có HĐ mua nào' }}</td></tr>
           }
         </tbody>
         @if (rows().length) {
           <tfoot>
             <tr>
-              <th colspan="3">Tổng {{ rows().length }} HĐ</th>
-              <td class="num">{{ money(kpi().tongAll) }}</td><td></td>
-              <td class="num">{{ money(kpi().conAll) }}</td><td colspan="4"></td>
+              <th colspan="3" title="Giá trị không tính HĐ huỷ; Còn phải trả không tính HĐ huỷ và HĐ Thuộc Phú Tài — khớp thẻ số liệu">Tổng {{ kpi().n }} HĐ (không tính huỷ)</th>
+              <td class="num">{{ money(kpi().tong) }}</td><td></td>
+              <td class="num">{{ money(kpi().conPhaiTra) }}</td><td colspan="4" class="sub">Còn phải trả: chỉ HĐ của Oxy</td>
             </tr>
           </tfoot>
         }
@@ -137,7 +138,7 @@ export class HdmList {
     ];
   });
 
-  private readonly all = computed<Dong[]>(() => {
+  protected readonly all = computed<Dong[]>(() => {
     const db = this.store.db();
     return this.store.hdmVisible().map((m) => ({
       m,
@@ -147,9 +148,19 @@ export class HdmList {
     }));
   });
 
+  protected readonly sx = new Sorter<Dong>({
+    soHD: (r) => r.m.soHD,
+    ncc: (r) => r.m.tenNCC,
+    ngay: (r) => r.m.ngayKy,
+    tong: (r) => r.c.tong,
+    pct: (r) => r.c.pctTra,
+    con: (r) => r.c.conPhaiTra,
+    tt: (r) => TRANG_THAI_HDM.indexOf(r.m.trangThai),
+  });
+
   protected readonly rows = computed<Dong[]>(() => {
     const l = this.loc();
-    return this.all()
+    const out = this.all()
       .filter(
         (r) =>
           khopQ(l, r.m.soHD, r.m.tenNCC, r.m.mst, r.soHDB, r.m.ghiChu) &&
@@ -159,6 +170,7 @@ export class HdmList {
           khopSel(l, 'pt', r.m.thuocPhuTai ? 'co' : 'khong'),
       )
       .sort((a, b) => (b.m.ngayKy ?? b.m.taoLuc).localeCompare(a.m.ngayKy ?? a.m.taoLuc));
+    return this.sx.apply(out);
   });
 
   protected readonly pg = paginate(this.rows);
@@ -175,8 +187,6 @@ export class HdmList {
       conPhaiTra: sum(oxy, (r) => Math.max(0, r.c.conPhaiTra)),
       quaHan: sum(oxy, (r) => r.c.quaHan),
       dangNhan: rs.filter((r) => r.m.trangThai === 'Đang nhận hàng').length,
-      tongAll: sum(rs, (r) => r.c.tong),
-      conAll: sum(rs, (r) => r.c.conPhaiTra),
     };
   });
 

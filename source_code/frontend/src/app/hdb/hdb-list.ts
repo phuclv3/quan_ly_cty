@@ -1,22 +1,29 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { Store } from '../core/store';
-import { hdbCalc } from '../core/calc';
-import { TRANG_THAI_HDB } from '../core/models';
+import { HdbCalc, hdbCalc } from '../core/calc';
+import { HopDongBan, TRANG_THAI_HDB } from '../core/models';
 import { nhoLoc } from '../core/ui';
 import { money, pct, sum, vndShort, viDate } from '../core/util';
 import { Facet, FilterBar, LOC_RONG, Loc, khopQ, khopSel, khopThoiGian } from '../shared/filter-bar';
 import { Kpi, TrangThai } from '../shared/ui-kit';
 import { Pager, paginate } from '../shared/pager';
+import { SortTh, Sorter } from '../shared/sort';
 import { csv, downloadFile, fileName } from '../shared/export';
 import { Icon } from '../shared/icon';
 
-/** HDB-01 — Danh sách Hợp đồng bán. */
+interface Row {
+  h: HopDongBan;
+  c: HdbCalc;
+  xoa: boolean;
+}
+
+/** HDB-01 — Danh sách Hợp đồng bán. Cột tiền chỉ hiện khi có quyền xem HDB-07 (Tab 3). */
 @Component({
   selector: 'app-hdb-list',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'page' },
-  imports: [RouterLink, FilterBar, Kpi, TrangThai, Pager, Icon],
+  imports: [RouterLink, FilterBar, Kpi, TrangThai, Pager, Icon, SortTh],
   template: `
     <div class="page-head">
       <div>
@@ -25,7 +32,7 @@ import { Icon } from '../shared/icon';
         @if (store.ownOnly('hdb')) { <p class="sub">Chỉ hiện HĐ bạn phụ trách.</p> }
       </div>
       <div class="actions">
-        <button type="button" class="btn quiet" (click)="xuat()"><app-icon name="download" [size]="16" /> Xuất Excel</button>
+        <button type="button" class="btn quiet" (click)="xuat()"><app-icon name="download" [size]="16" /> Xuất CSV</button>
         @if (store.canEdit('hdb')) {
           <a class="btn" routerLink="/hop-dong-ban/moi"><app-icon name="plus" [size]="16" /> Tạo HĐ bán</a>
         }
@@ -33,10 +40,14 @@ import { Icon } from '../shared/icon';
     </div>
 
     <div class="kpis">
-      <app-kpi label="Tổng giá trị sau VAT" [value]="short(kpi().tong)" [sub]="kpi().n + ' HĐ (không tính Báo giá)'" />
-      <app-kpi label="Đã thu" [value]="short(kpi().daThu)" [sub]="pct(kpi().tong ? kpi().daThu / kpi().tong : 0)" tone="ok" />
-      <app-kpi label="Còn phải thu" [value]="short(kpi().conThu)" [sub]="kpi().quaHan + ' HĐ có đợt quá hạn'" [tone]="kpi().quaHan ? 'bad' : ''" />
-      <app-kpi label="HĐ thiếu hồ sơ" [value]="'' + kpi().thieu" sub="Thiếu HĐ / BBGH / Hoá đơn" [tone]="kpi().thieu ? 'warn' : ''" />
+      @if (xemTien()) {
+        <app-kpi label="Tổng giá trị sau VAT" [value]="short(kpi().tong)" [sub]="kpi().n + ' HĐ (không tính Báo giá)'" />
+        <app-kpi label="Đã thu" [value]="short(kpi().daThu)" [sub]="pct(kpi().tong ? kpi().daThu / kpi().tong : 0)" tone="ok" />
+        <app-kpi label="Còn phải thu" [value]="short(kpi().conThu)" [sub]="kpi().quaHan + ' HĐ có đợt quá hạn'" [tone]="kpi().quaHan ? 'bad' : ''" />
+      } @else {
+        <app-kpi label="Số HĐ" [value]="'' + kpi().n" sub="Không tính Báo giá" />
+      }
+      <app-kpi label="HĐ thiếu hồ sơ" [value]="'' + kpi().thieu" sub="Thiếu HĐ / BBGH / Hoá đơn (không tính Báo giá)" [tone]="kpi().thieu ? 'warn' : ''" />
     </div>
 
     <app-filter [(loc)]="loc" memo="hdb-list" [facets]="facets()" placeholder="Tìm số HĐ, khách hàng, MST, ghi chú…" />
@@ -45,8 +56,12 @@ import { Icon } from '../shared/icon';
       <table class="tbl freeze">
         <thead>
           <tr>
-            <th>Số HĐ</th><th>Khách hàng</th><th>Ngày ký</th><th class="num">Giá trị sau VAT</th><th>Đã thu</th>
-            <th class="num">Còn phải thu</th><th>Giao hàng</th><th>Hồ sơ</th><th>Sale</th><th>Trạng thái</th>
+            <th app-sort-th [sx]="sx" k="soHD">Số HĐ</th><th app-sort-th [sx]="sx" k="kh">Khách hàng</th><th app-sort-th [sx]="sx" k="ngay">Ngày ký</th>
+            @if (xemTien()) {
+              <th app-sort-th [sx]="sx" k="sau" class="num">Giá trị sau VAT</th><th app-sort-th [sx]="sx" k="pct">Đã thu</th>
+              <th app-sort-th [sx]="sx" k="con" class="num">Còn phải thu</th>
+            }
+            <th>Giao hàng</th><th>Hồ sơ</th><th app-sort-th [sx]="sx" k="sale">Sale</th><th app-sort-th [sx]="sx" k="tt">Trạng thái</th>
           </tr>
         </thead>
         <tbody>
@@ -59,14 +74,16 @@ import { Icon } from '../shared/icon';
               </td>
               <td>{{ r.h.tenKH }}<div class="sub">{{ r.h.mst }}</div></td>
               <td>{{ viDate(r.h.ngayKy) }}</td>
-              <td class="num">{{ money(r.c.sauVAT) }}</td>
-              <td>
-                <div class="cell-bar">
-                  <span class="num">{{ pct(r.c.pctThu, 0) }}</span>
-                  <div class="bar" [class.warn]="r.c.pctThu < 1"><i [style.width.%]="r.c.pctThu * 100"></i></div>
-                </div>
-              </td>
-              <td class="num" [class.neg]="r.c.quaHan > 0">{{ money(r.c.conPhaiThu) }}</td>
+              @if (xemTien()) {
+                <td class="num">{{ money(r.c.sauVAT) }}</td>
+                <td>
+                  <div class="cell-bar">
+                    <span class="num">{{ pct(r.c.pctThu, 0) }}</span>
+                    <div class="bar" [class.warn]="r.c.pctThu < 1"><i [style.width.%]="r.c.pctThu * 100"></i></div>
+                  </div>
+                </td>
+                <td class="num" [class.neg]="r.c.quaHan > 0">{{ money(r.c.conPhaiThu) }}</td>
+              }
               <td><app-tt [v]="r.c.giaoHang" /></td>
               <td>
                 @if (r.c.hoSoThieu.length) { <app-tt v="Thiếu hồ sơ" [attr.title]="r.c.hoSoThieu.join(', ')" /> } @else { <app-tt v="Đủ hồ sơ" /> }
@@ -75,10 +92,15 @@ import { Icon } from '../shared/icon';
               <td><app-tt [v]="r.h.trangThai" /></td>
             </tr>
           } @empty {
-            <tr><td colspan="10" class="empty">Không có hợp đồng phù hợp bộ lọc</td></tr>
+            <tr>
+              <td [attr.colspan]="xemTien() ? 10 : 7" class="empty">
+                @if (all().length) { Không có hợp đồng phù hợp bộ lọc. }
+                @else { Chưa có hợp đồng bán nào. @if (store.canEdit('hdb')) { <a routerLink="/hop-dong-ban/moi">Tạo HĐ bán đầu tiên</a> } }
+              </td>
+            </tr>
           }
         </tbody>
-        @if (rows().length) {
+        @if (rows().length && xemTien()) {
           <tfoot>
             <tr>
               <th colspan="3">Tổng {{ rows().length }} HĐ</th>
@@ -101,8 +123,10 @@ export class HdbList {
   protected readonly short = vndShort;
 
   protected readonly loc = signal<Loc>(nhoLoc('hdb-list', LOC_RONG));
+  /** Giá trị, đã thu, công nợ: chỉ người có quyền xem HDB-07 (VD nhóm Kho không thấy). */
+  protected readonly xemTien = computed(() => this.store.canView('hdbTab3'));
 
-  private readonly all = computed(() => {
+  protected readonly all = computed<Row[]>(() => {
     const db = this.store.db();
     return this.store
       .hdbVisible()
@@ -120,16 +144,29 @@ export class HdbList {
     ];
   });
 
+  protected readonly sx = new Sorter<Row>({
+    soHD: (r) => r.h.soHD,
+    kh: (r) => r.h.tenKH,
+    ngay: (r) => r.h.ngayKy,
+    sau: (r) => r.c.sauVAT,
+    pct: (r) => r.c.pctThu,
+    con: (r) => r.c.conPhaiThu,
+    sale: (r) => this.store.userName(r.h.sale),
+    tt: (r) => TRANG_THAI_HDB.indexOf(r.h.trangThai),
+  });
+
   protected readonly rows = computed(() => {
     const l = this.loc();
-    return this.all().filter(
-      ({ h, c }) =>
-        khopQ(l, h.soHD, h.tenKH, h.mst, h.ghiChu, this.store.userName(h.sale)) &&
-        khopThoiGian(l, h.ngayKy) &&
-        khopSel(l, 'tt', h.trangThai) &&
-        khopSel(l, 'sale', h.sale) &&
-        khopSel(l, 'hoSo', c.hoSoThieu.length ? 'Thiếu' : 'Đủ') &&
-        khopSel(l, 'gh', c.giaoHang),
+    return this.sx.apply(
+      this.all().filter(
+        ({ h, c }) =>
+          khopQ(l, h.soHD, h.tenKH, h.mst, h.ghiChu, this.store.userName(h.sale)) &&
+          khopThoiGian(l, h.ngayKy) &&
+          khopSel(l, 'tt', h.trangThai) &&
+          khopSel(l, 'sale', h.sale) &&
+          khopSel(l, 'hoSo', c.hoSoThieu.length ? 'Thiếu' : 'Đủ') &&
+          khopSel(l, 'gh', c.giaoHang),
+      ),
     );
   });
   protected readonly pg = paginate(this.rows);
@@ -144,7 +181,7 @@ export class HdbList {
       daThu: sum(rs, (r) => r.c.daThu),
       conThu: sum(rs, (r) => r.c.conPhaiThu),
       quaHan: rs.filter((r) => r.c.quaHan > 0).length,
-      thieu: this.rows().filter((r) => r.c.hoSoThieu.length > 0).length,
+      thieu: rs.filter((r) => r.c.hoSoThieu.length > 0).length,
     };
   });
 
@@ -153,16 +190,14 @@ export class HdbList {
   }
 
   protected xuat(): void {
-    const head = ['Số HĐ', 'Khách hàng', 'MST', 'Ngày ký', 'Giá trị sau VAT', 'Đã thu', 'Đã thu (%)', 'Còn phải thu', 'Giao hàng', 'Hồ sơ', 'Sale phụ trách', 'Trạng thái'];
+    const tien = this.xemTien();
+    const head = ['Số HĐ', 'Khách hàng', 'MST', 'Ngày ký', ...(tien ? ['Giá trị sau VAT', 'Đã thu', 'Đã thu (%)', 'Còn phải thu'] : []), 'Giao hàng', 'Hồ sơ', 'Sale phụ trách', 'Trạng thái'];
     const body = this.rows().map(({ h, c }) => [
       h.soHD,
       h.tenKH,
       h.mst,
       viDate(h.ngayKy),
-      c.sauVAT,
-      c.daThu,
-      Math.round(c.pctThu * 1000) / 10,
-      c.conPhaiThu,
+      ...(tien ? [c.sauVAT, c.daThu, Math.round(c.pctThu * 1000) / 10, c.conPhaiThu] : []),
       c.giaoHang,
       c.hoSoThieu.length ? `Thiếu: ${c.hoSoThieu.join(', ')}` : 'Đủ',
       this.store.userName(h.sale),

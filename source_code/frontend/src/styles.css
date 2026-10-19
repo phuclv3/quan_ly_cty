@@ -589,7 +589,22 @@ app-money input { width: 100%; }
   position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); z-index: 130;
   background: var(--ink); color: var(--surf); padding: 10px 16px; border-radius: 10px; box-shadow: var(--shadow);
   max-width: min(560px, calc(100vw - 32px)); font-size: 15px;
+  border-left: 5px solid var(--brand);
 }
+.toast.bad { background: var(--bad-bg); color: var(--bad-fg); border-left-color: var(--bad-fg); font-weight: 600; }
+/* Cột bấm để sắp xếp (shared/sort.ts). */
+th.sortable { cursor: pointer; user-select: none; white-space: nowrap; }
+th.sortable:hover { color: var(--brand); }
+th.sortable .sort-mark { font-size: 12px; margin-left: 3px; color: var(--ink-3); }
+th.sortable .sort-mark::after { content: attr(data-mark); }
+th.sortable[aria-sort='ascending'] .sort-mark, th.sortable[aria-sort='descending'] .sort-mark { color: var(--brand); }
+/* Dòng được mở từ liên kết (?id=) — tô sáng để dễ nhận ra. */
+tr.hilite > td { background: var(--warn-bg) !important; }
+/* Lịch sử thao tác (khối dùng chung). */
+.lich-su { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 14px; }
+.lich-su li { display: grid; grid-template-columns: 140px 1fr; gap: 8px; border-left: 3px solid var(--line-2); padding-left: 8px; }
+.lich-su time { color: var(--ink-3); }
+@media (max-width: 640px) { .lich-su li { grid-template-columns: 1fr; } }
 
 /* ── Hồ sơ ─────────────────────────────────────────────────────────── */
 .hoso-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); margin: 12px 0; }

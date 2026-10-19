@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Store } from '../core/store';
 import { ChiPhiHD, LOAI_PHIEU, PhieuThuChi } from '../core/models';
 import { chenhLechQuyetToan } from '../core/calc';
@@ -11,6 +11,7 @@ import { Pager, paginate } from '../shared/pager';
 import { csv, downloadFile, fileName } from '../shared/export';
 import { PhieuForm } from './phieu-form';
 import { ChiPhiForm } from './chi-phi-form';
+import { SortTh, Sorter } from '../shared/sort';
 
 const CP_HD = 'CP HĐ';
 const TRANG_THAI = ['Nháp', 'Chờ duyệt', 'Đã duyệt', 'Từ chối'];
@@ -39,14 +40,14 @@ export interface SqRow {
 @Component({
   selector: 'app-kt-so-quy',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TrangThai, FilterBar, Pager, PhieuForm, ChiPhiForm, RouterLink],
+  imports: [TrangThai, FilterBar, Pager, PhieuForm, ChiPhiForm, RouterLink, SortTh],
   template: `
     <div class="between" style="margin-bottom:8px">
       <p class="sub muted">
         @if (draftOnly()) { Bạn chỉ thấy các phiếu do mình đề nghị. } @else { Sổ quỹ chung — không gắn hợp đồng. }
       </p>
       <div class="row">
-        <button type="button" class="btn quiet" (click)="xuat()">Xuất Excel</button>
+        <button type="button" class="btn quiet" (click)="xuat()">Xuất CSV</button>
         @if (coTheLap()) { <button type="button" class="btn" (click)="mo(store.newPhieu('Chi'))">+ Lập phiếu</button> }
       </div>
     </div>
@@ -59,8 +60,8 @@ export interface SqRow {
       <table class="tbl freeze">
         <thead>
           <tr>
-            <th>Số phiếu</th><th>Ngày lập</th><th>Loại phiếu</th><th>Nguồn tiền</th><th>Loại chi phí</th><th>Nội dung</th>
-            <th class="num">Thu</th><th class="num">Chi</th><th>Người đề nghị</th><th>Trạng thái</th>
+            <th app-sort-th [sx]="sx" k="so">Số phiếu</th><th app-sort-th [sx]="sx" k="ngay">Ngày lập</th><th app-sort-th [sx]="sx" k="loai">Loại phiếu</th><th app-sort-th [sx]="sx" k="nguon">Nguồn tiền</th><th>Loại chi phí</th><th>Nội dung</th>
+            <th app-sort-th [sx]="sx" k="thu" class="num">Thu</th><th app-sort-th [sx]="sx" k="chi" class="num">Chi</th><th app-sort-th [sx]="sx" k="nguoi">Người đề nghị</th><th app-sort-th [sx]="sx" k="tt">Trạng thái</th>
           </tr>
         </thead>
         <tbody>
@@ -82,7 +83,7 @@ export interface SqRow {
               <td>@if (r.p && store.dangChoXoa('PhieuThuChi', r.p.id)) { <app-tt v="Chờ xoá" /> } @else { <app-tt [v]="r.trangThai" /> }</td>
             </tr>
           } @empty {
-            <tr><td colspan="10" class="empty">Không có phiếu khớp bộ lọc</td></tr>
+            <tr><td colspan="10" class="empty">{{ all().length ? 'Không có phiếu khớp bộ lọc' : 'Chưa có phiếu thu chi nào' }}</td></tr>
           }
         </tbody>
         <tfoot>
@@ -97,7 +98,7 @@ export interface SqRow {
     </div>
     <app-pager [pager]="pg" />
 
-    <app-phieu-form [phieu]="phieu()" (closed)="phieu.set(null)" />
+    <app-phieu-form [phieu]="phieu()" (closed)="phieu.set(null)" (moPhieu)="phieu.set(store.phieuById($event) ?? null)" />
     <app-chi-phi-form [chiPhi]="cp()" (closed)="cp.set(null)" />
   `,
 })
@@ -121,7 +122,26 @@ export class SoQuyTab {
     { key: 'lcp', label: 'Loại chi phí', options: this.store.loaiChiPhi().map((l) => ({ value: l.id, label: l.ten, hint: l.nhom })) },
   ]);
 
-  private readonly all = computed<SqRow[]>(() => {
+  constructor() {
+    // Liên kết sâu: ?id=<phiếu> mở popup phiếu; ?lapQT=<phiếu tạm ứng> mở phiếu Quyết toán điền sẵn gốc.
+    const route = inject(ActivatedRoute);
+    const router = inject(Router);
+    const q = route.snapshot.queryParamMap;
+    const id = q.get('id');
+    const lapQT = q.get('lapQT');
+    if (id) {
+      const p = this.store.phieuById(id);
+      if (p && (!this.draftOnly() || p.nguoiDeNghi === this.store.meId())) this.phieu.set(p);
+      else this.store.say('Không tìm thấy phiếu hoặc bạn không được xem phiếu này');
+    } else if (lapQT) {
+      const g = this.store.phieuById(lapQT);
+      const p = this.store.newPhieu('Quyết toán tạm ứng');
+      if (g && this.coTheLap()) this.phieu.set({ ...p, phieuTamUngGoc: g.id, nguonTien: g.nguonTien, nguoiNhan: g.nguoiNhan, soTienThucChi: g.soTienChi, noiDung: `Quyết toán tạm ứng ${g.soPhieu}` });
+    }
+    if (id || lapQT) void router.navigate([], { relativeTo: route, queryParams: { id: null, lapQT: null }, queryParamsHandling: 'merge', replaceUrl: true });
+  }
+
+  protected readonly all = computed<SqRow[]>(() => {
     const s = this.store;
     const db = s.db();
     const me = s.meId();
@@ -177,9 +197,10 @@ export class SoQuyTab {
     return out.sort((a, b) => (a.ngay === b.ngay ? b.so.localeCompare(a.so) : a.ngay < b.ngay ? 1 : -1));
   });
 
+  protected readonly sx = new Sorter<SqRow>({ so: (r) => r.so, ngay: (r) => r.ngay, loai: (r) => r.loai, nguon: (r) => r.nguon, thu: (r) => r.thu, chi: (r) => r.chi, nguoi: (r) => r.nguoi, tt: (r) => r.trangThai });
   protected readonly rows = computed(() => {
     const l = this.loc();
-    return this.all().filter(
+    return this.sx.apply(this.all().filter(
       (r) =>
         khopThoiGian(l, r.ngay) &&
         khopSel(l, 'loai', r.loai) &&
@@ -187,7 +208,7 @@ export class SoQuyTab {
         khopSel(l, 'lcp', r.p?.loaiChiPhi ?? r.c?.loaiChiPhi) &&
         (!(l.sel['nguon']?.length) || r.nguonIds.some((id) => l.sel['nguon'].includes(id))) &&
         khopQ(l, r.so, r.noiDung, r.nguon, r.nguoi, r.lcp, r.p?.nguoiNhan, r.p?.ghiChu),
-    );
+    ));
   });
   protected readonly pg = paginate(this.rows);
   protected readonly tongThu = computed(() => sum(this.rows().filter((r) => !r.lc), (r) => r.thu));

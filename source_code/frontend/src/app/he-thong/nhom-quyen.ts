@@ -340,12 +340,8 @@ export class NhomQuyenTab {
     });
     if (!ok) return;
     const draft = { ...n };
-    const e = this.store.saveNhom(draft);
+    const e = this.store.saveNhom(draft, this.tv());
     if (e) return this.loi.set(e);
-    if (!this.moi() || draft.id) {
-      const e2 = this.store.ganThanhVien(draft.id, this.tv());
-      if (e2) return this.loi.set(e2);
-    }
     const laMoi = this.moi();
     this.moi.set(false);
     this.store.say(laMoi ? 'Đã tạo nhóm quyền' : 'Đã lưu nhóm quyền');

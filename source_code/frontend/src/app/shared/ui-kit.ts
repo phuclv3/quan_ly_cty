@@ -17,6 +17,8 @@ import {
   viewChild,
 } from '@angular/core';
 import { Icon } from './icon';
+import { Confirm } from './confirm';
+import { HOI_BO_THAY_DOI, canhBaoChuaLuu } from './unsaved';
 import { Buoc } from '../core/calc';
 import { fold, money, parseMoney, pct } from '../core/util';
 
@@ -29,12 +31,14 @@ import { fold, money, parseMoney, pct } from '../core/util';
   host: { '(document:keydown.escape)': 'esc()' },
   template: `
     @if (open()) {
-      <div class="modal-back" (click)="closed.emit()">
+      <div class="modal-back" (click)="tryClose()">
         <section class="modal" [class]="'modal ' + size()" role="dialog" aria-modal="true" [attr.aria-label]="title()" (click)="$event.stopPropagation()">
           <header class="modal-head">
             <h2>{{ title() }}</h2>
             @if (sub()) { <span class="sub">{{ sub() }}</span> }
-            <button type="button" class="icon-btn" aria-label="Đóng" (click)="closed.emit()"><app-icon name="x" /></button>
+            @if (closable()) {
+              <button type="button" class="icon-btn" aria-label="Đóng" (click)="tryClose()"><app-icon name="x" /></button>
+            }
           </header>
           <div class="modal-body"><ng-content /></div>
           <footer class="modal-foot"><ng-content select="[foot]" /></footer>
@@ -44,14 +48,29 @@ import { fold, money, parseMoney, pct } from '../core/util';
   `,
 })
 export class Modal {
+  private readonly confirm = inject(Confirm);
   readonly open = input(false);
   readonly title = input('');
   readonly sub = input('');
   /** sm 440px · md 720px · lg 1100px */
   readonly size = input<'sm' | 'md' | 'lg'>('md');
+  /** Còn thay đổi chưa lưu: đóng bằng nền / ✕ / Esc, hoặc rời màn, đều hỏi trước (NT-05). */
+  readonly dirty = input(false);
+  /** false: không có ✕, bấm nền / Esc không đóng (VD bắt buộc đổi mật khẩu). */
+  readonly closable = input(true);
   readonly closed = output<void>();
+
+  constructor() {
+    canhBaoChuaLuu(() => this.open() && this.dirty());
+  }
+
+  protected async tryClose(): Promise<void> {
+    if (!this.closable()) return;
+    if (this.dirty() && !(await this.confirm.ask(HOI_BO_THAY_DOI))) return;
+    this.closed.emit();
+  }
   protected esc(): void {
-    if (this.open()) this.closed.emit();
+    if (this.open() && !this.confirm.current()) void this.tryClose();
   }
 }
 

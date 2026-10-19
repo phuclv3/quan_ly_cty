@@ -3,12 +3,19 @@
  * quyết toán vận chuyển A4 (KT-16).
  */
 
+import { CONG_TY } from '../core/cong-ty';
+
 export function esc(s: string | number | null | undefined): string {
   return String(s ?? '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+}
+
+/** Khối đơn vị ở góc trái chứng từ in (tên, MST, địa chỉ — core/cong-ty.ts). */
+export function donVi(): string {
+  return `<div><b>${esc(CONG_TY.ten)}</b><br>MST: ${esc(CONG_TY.mst)}<br><span class="m">${esc(CONG_TY.diaChi)}</span></div>`;
 }
 
 /** Hàng chữ ký: mỗi ô "Chức danh / (Ký, họ tên)". */

@@ -26,7 +26,7 @@ const mucCua = (g: NhomQuyen, c: ChucNang): Level => (g.trangThai !== 'Hoạt đ
         <option value="">Mọi module</option>
         @for (m of modules; track m) { <option [value]="m" [selected]="m === mod()">{{ m }}</option> }
       </select>
-      <button type="button" class="btn quiet" (click)="xuat()"><app-icon name="download" [size]="16" /> Xuất Excel</button>
+      <button type="button" class="btn quiet" (click)="xuat()"><app-icon name="download" [size]="16" /> Xuất CSV</button>
     </div>
     <div class="tbl-wrap">
       <table class="tbl freeze">
@@ -81,7 +81,7 @@ export class ChucNangTab {
   template: `
     <div class="between" style="margin-bottom:12px">
       <p class="sub">Quyền thực tế từng nhóm (nhóm Ngưng coi như không có quyền). Một tài khoản nhiều nhóm lấy mức cao nhất. Sửa quyền ở tab Nhóm quyền.</p>
-      <button type="button" class="btn quiet" (click)="xuat()"><app-icon name="download" [size]="16" /> Xuất Excel</button>
+      <button type="button" class="btn quiet" (click)="xuat()"><app-icon name="download" [size]="16" /> Xuất CSV</button>
     </div>
     <div class="tbl-wrap">
       <table class="tbl freeze compact">

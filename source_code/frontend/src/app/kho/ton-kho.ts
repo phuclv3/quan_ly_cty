@@ -33,7 +33,7 @@ interface Chon {
         <button type="button" [class.on]="che() === 'kho'" (click)="che.set('kho')">Theo kho</button>
         <button type="button" [class.on]="che() === 'gop'" (click)="che.set('gop')">Gộp theo loại hàng (tất cả kho)</button>
       </div>
-      <button type="button" class="btn sm quiet" (click)="xuatCsv()">Xuất Excel</button>
+      <button type="button" class="btn sm quiet" (click)="xuatCsv()">Xuất CSV</button>
     </div>
     <app-filter [(loc)]="loc" memo="kho-ton" [time]="false" [facets]="facets()" placeholder="Tìm mã, tên loại hàng, thuộc tính…" />
     <div class="tbl-wrap">

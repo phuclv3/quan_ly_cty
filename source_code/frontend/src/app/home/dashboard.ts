@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { RouterLink } from '@angular/router';
 import { Store } from '../core/store';
 import { KHO_CHUYEN_THANG } from '../core/models';
-import { hdbCalc, hdmCalc, soDuQuyPT, tamUngTreo, tonKho } from '../core/calc';
+import { hdbCalc, hdmCalc, hoSoThieu, ptCalc, soDuQuyPT, tamUngTreo, tonKho } from '../core/calc';
 import { money, sum, viDate, viMoment, vndShort, nowIso } from '../core/util';
 import { Kpi } from '../shared/ui-kit';
 import { Icon } from '../shared/icon';
@@ -78,7 +78,7 @@ interface Viec {
         </a>
       }
       @if (choDuyet(); as c) {
-        <a class="card dcard" routerLink="/ke-toan" [queryParams]="{ tab: 'cho-duyet' }">
+        <a class="card dcard" routerLink="/ke-toan" [queryParams]="{ tab: c.cuaToi ? 'so-quy' : 'cho-duyet' }">
           <h3><app-icon name="clock" [size]="18" /> {{ c.cuaToi ? 'Phiếu của tôi chờ duyệt' : 'Chờ duyệt' }}</h3>
           <div class="dl">
             <div><span>Phiếu thu chi</span><b>{{ c.phieu }}</b></div>
@@ -237,8 +237,8 @@ export class Dashboard {
 
   protected readonly xoa = computed(() => {
     const s = this.store;
-    if (!s.canView('duyetXoa')) return null;
-    if (s.canApprove('duyetXoa')) return { cuaToi: false, so: s.xoaChoDuyet().filter((y) => s.canDuyetXoa(y)).length };
+    if (!s.canView('duyetXoa') && !s.coQuyenDuyetXoa()) return null;
+    if (s.coQuyenDuyetXoa()) return { cuaToi: false, so: s.xoaChoDuyet().filter((y) => s.canDuyetXoa(y)).length };
     return { cuaToi: true, so: s.xoaChoDuyet().filter((y) => y.nguoiGui === s.meId()).length };
   });
 
@@ -253,6 +253,7 @@ export class Dashboard {
             text: `HĐ bán ${h.soHD || '(chưa số)'} — ${c.quaHan} đợt thanh toán quá hạn`,
             sub: `${h.tenKH} · còn phải thu ${money(c.conPhaiThu)} đ`,
             link: `/hop-dong-ban/${h.id}`,
+            qp: { tab: '3' },
             tone: 'bad',
           });
       }
@@ -264,6 +265,7 @@ export class Dashboard {
             text: `HĐ mua ${m.soHD || '(chưa số)'} — ${c.quaHan} đợt trả NCC quá hạn`,
             sub: `${m.tenNCC} · còn phải trả ${money(c.conPhaiTra)} đ`,
             link: `/hop-dong-mua/${m.id}`,
+            qp: { tab: '4' },
             tone: 'bad',
           });
       }
@@ -275,7 +277,7 @@ export class Dashboard {
             text: `Phiếu ${p.soPhieu || p.loai} bị từ chối`,
             sub: `${viDate(p.ngayLap)} · ${p.lyDoTuChoi || p.noiDung}`,
             link: '/ke-toan',
-            qp: { tab: 'so-quy' },
+            qp: { tab: 'so-quy', id: p.id },
             tone: 'warn',
           });
       }
@@ -286,7 +288,8 @@ export class Dashboard {
           out.push({
             text: `Chi phí HĐ ${c.maCP || ''} bị từ chối`,
             sub: `${s.hdbById(c.hdbId)?.soHD ?? ''} · ${c.lyDoTuChoi || c.noiDung}`,
-            link: `/hop-dong-ban/${c.hdbId}`,
+            link: '/ke-toan',
+            qp: { tab: 'chi-phi', id: c.id },
             tone: 'warn',
           });
       }
@@ -306,6 +309,23 @@ export class Dashboard {
             link: `/hop-dong-ban/${h.id}`,
             tone: 'info',
           });
+      }
+    }
+    if (s.canView('phuTai')) {
+      const db = s.db();
+      for (const p of s.hopDongPhuTai()) {
+        if (p.trangThai !== 'Hoàn thành' || s.dangChoXoa('HopDongPhuTai', p.id)) continue;
+        const c = ptCalc(p, db);
+        const thieu = hoSoThieu(db, 'HDPT', p.id);
+        out.push({
+          text: `HĐ Phú Tài ${p.soHD} Hoàn thành — chưa tất toán`,
+          sub:
+            [c.khDaTra < c.sauVAT ? `KH còn phải trả PT ${money(c.sauVAT - c.khDaTra)} đ` : '', thieu.length ? `thiếu ${thieu.join(', ')}` : '']
+              .filter(Boolean)
+              .join(' · ') || 'Kiểm tra Phú Tài đã chuyển đủ phần Oxy được hưởng',
+          link: `/phu-tai/${p.id}`,
+          tone: 'info',
+        });
       }
     }
     return out;

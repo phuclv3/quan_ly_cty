@@ -8,7 +8,8 @@ import { DOI_TUONG_LABEL, DoiTuong, YeuCauXoa } from '../core/models';
 import { Confirm } from '../shared/confirm';
 import { FilterBar, Facet, LOC_RONG, Loc, khopQ, khopSel } from '../shared/filter-bar';
 import { Pager, paginate } from '../shared/pager';
-import { TrangThai } from '../shared/ui-kit';
+import { Modal, TrangThai } from '../shared/ui-kit';
+import { linkPhieuKho } from '../kho/kho-util';
 
 type Tab = 'cho-duyet' | 'da-xu-ly';
 
@@ -22,7 +23,7 @@ interface LinkDT {
   selector: 'app-duyet-xoa',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'page' },
-  imports: [RouterLink, FilterBar, Pager, TrangThai],
+  imports: [RouterLink, FilterBar, Pager, TrangThai, Modal],
   template: `
     <div class="page-head">
       <div>
@@ -67,9 +68,10 @@ interface LinkDT {
               <td>{{ store.nhanDoiTuong(y.loai) }}</td>
               <td>
                 {{ y.moTa }}
-                @if (link(y); as l) {
-                  <a class="linkish" [routerLink]="l.path" [queryParams]="l.query">Mở</a>
-                }
+                <span class="btn-row" style="justify-content:flex-start">
+                  <button type="button" class="linkish" (click)="xem.set(y)">Xem</button>
+                  @if (link(y); as l) { <a class="linkish" [routerLink]="l.path" [queryParams]="l.query">Mở bản ghi</a> }
+                </span>
               </td>
               <td>{{ y.lyDo }}</td>
               <td>
@@ -85,8 +87,8 @@ interface LinkDT {
                 @if (y.trangThai === 'Chờ duyệt') {
                   <div class="btn-row" style="justify-content:flex-start">
                     @if (store.canDuyetXoa(y)) {
-                      <button class="btn sm ok" (click)="duyet(y)">Duyệt</button>
-                      <button class="btn sm danger" (click)="tuChoi(y)">Từ chối</button>
+                      <button class="btn sm danger" (click)="duyet(y)">Duyệt xoá</button>
+                      <button class="btn sm quiet" (click)="tuChoi(y)">Từ chối</button>
                     }
                     @if (y.nguoiGui === store.meId()) {
                       <button class="btn sm quiet" (click)="rut(y)">Rút yêu cầu</button>
@@ -104,6 +106,43 @@ interface LinkDT {
       </table>
     </div>
     <app-pager [pager]="pg" />
+
+    <app-modal [open]="!!xem()" [title]="'Yêu cầu xoá ' + (xem()?.id ?? '')" [sub]="xem() ? store.nhanDoiTuong(xem()!.loai) : ''" size="md" (closed)="xem.set(null)">
+      @if (xem(); as y) {
+        <div class="form-grid">
+          <div class="field wide"><span class="lbl">Đối tượng</span><div class="ro">{{ y.moTa }}</div></div>
+          <div class="field"><span class="lbl">Người gửi</span><div class="ro">{{ store.userName(y.nguoiGui) }} · {{ viMoment(y.ngayGui) }}</div></div>
+          <div class="field"><span class="lbl">Trạng thái</span><div class="ro"><app-tt [v]="y.trangThai" /></div></div>
+          <div class="field wide"><span class="lbl">Lý do xoá</span><div class="ro">{{ y.lyDo }}</div></div>
+        </div>
+        @let tt = store.tomTatDoiTuong(y.loai, y.maDoiTuong);
+        @if (tt.length) {
+          <h3 class="section-title">Bản ghi hiện tại</h3>
+          <table class="tbl compact"><tbody>
+            @for (r of tt; track r[0]) { <tr><th scope="row">{{ r[0] }}</th><td>{{ r[1] }}</td></tr> }
+          </tbody></table>
+        } @else if (y.trangThai === 'Chờ duyệt' && !link(y)) {
+          <p class="note warn">Không còn tìm thấy bản ghi.</p>
+        }
+        @if (y.trangThai === 'Chờ duyệt') {
+          @let ah = store.anhHuongXoa(y);
+          @if (ah.length) {
+            <div class="note warn"><b>Duyệt sẽ kéo theo:</b><ul style="margin:4px 0 0 18px">@for (a of ah; track a) { <li>{{ a }}</li> }</ul></div>
+          }
+        }
+      }
+      <div foot class="btn-row">
+        @if (xem(); as y) {
+          @if (link(y); as l) { <a class="btn quiet" [routerLink]="l.path" [queryParams]="l.query">Mở bản ghi</a> }
+          <span style="flex:1"></span>
+          <button type="button" class="btn quiet" (click)="xem.set(null)">Đóng</button>
+          @if (y.trangThai === 'Chờ duyệt' && store.canDuyetXoa(y)) {
+            <button type="button" class="btn quiet" (click)="tuChoi(y)">Từ chối</button>
+            <button type="button" class="btn danger-solid" (click)="duyet(y)">Duyệt xoá</button>
+          }
+        }
+      </div>
+    </app-modal>
   `,
 })
 export class DuyetXoaPage {
@@ -117,7 +156,9 @@ export class DuyetXoaPage {
   protected readonly tab = computed<Tab>(() => (this.qp().get('tab') === 'da-xu-ly' ? 'da-xu-ly' : 'cho-duyet'));
   protected readonly loc = signal<Loc>(nhoLoc('duyet-xoa', LOC_RONG));
 
-  protected readonly duyetDuoc = computed(() => this.store.canApprove('duyetXoa'));
+  /** Duyệt được mọi loại (NT-11) hoặc chứng từ kế toán (NT-11-KT). */
+  protected readonly duyetDuoc = computed(() => this.store.coQuyenDuyetXoa());
+  protected readonly xem = signal<YeuCauXoa | null>(null);
 
   /** Người không duyệt được yêu cầu nào thì chỉ thấy yêu cầu của mình. */
   private readonly thayDuoc = computed(() => {
@@ -175,12 +216,12 @@ export class DuyetXoaPage {
         return s.ptById(id) ? { path: `/phu-tai/${id}` } : null;
       case 'PhieuKho': {
         const p = s.db().phieuKho.find((x) => x.id === id);
-        return p ? { path: '/kho', query: { tab: p.loai === 'Nhập' ? 'nhap' : 'xuat' } } : null;
+        return p ? { path: '/kho', query: linkPhieuKho(p) } : null;
       }
       case 'PhieuThuChi':
-        return s.phieuById(id) ? { path: '/ke-toan', query: { tab: 'so-quy' } } : null;
+        return s.phieuById(id) ? { path: '/ke-toan', query: { tab: 'so-quy', id } } : null;
       case 'ChiPhiThucHienHD':
-        return s.db().chiPhiHD.some((x) => x.id === id) ? { path: '/ke-toan', query: { tab: 'chi-phi' } } : null;
+        return s.db().chiPhiHD.some((x) => x.id === id) ? { path: '/ke-toan', query: { tab: 'chi-phi', id } } : null;
       case 'HoaDon': {
         const h = s.db().hoaDon.find((x) => x.id === id);
         return h ? theoChu(h.chu, h.chuId) : null;
@@ -189,26 +230,42 @@ export class DuyetXoaPage {
         const h = s.db().hoSo.find((x) => x.id === id.split(':')[0]);
         return h ? theoChu(h.chu, h.chuId) : null;
       }
-      case 'DongTienPhuTai':
-        return s.db().dongTienPT.some((x) => x.id === id) ? { path: '/phu-tai' } : null;
+      case 'DongTienPhuTai': {
+        const d = s.db().dongTienPT.find((x) => x.id === id);
+        return d ? { path: '/phu-tai', query: d.hdptId ? { tab: 'dong-tien', hd: d.hdptId } : { tab: 'dong-tien' } } : null;
+      }
+      case 'DM_KhachHang':
+        return s.khById(id) ? { path: '/danh-muc', query: { tab: 'kh', id } } : null;
+      case 'DM_NCC':
+        return s.nccById(id) ? { path: '/danh-muc', query: { tab: 'ncc', id } } : null;
+      case 'DM_LoaiChiPhi':
+        return s.lcpById(id) ? { path: '/danh-muc', query: { tab: 'lcp' } } : null;
+      case 'DM_NguonTien':
+        return s.nguonById(id) ? { path: '/ke-toan', query: { tab: 'nguon' } } : null;
+      case 'DM_Kho':
+        return s.khoById(id) ? { path: '/kho', query: { tab: 'dm-kho' } } : null;
+      case 'DM_LoaiHang':
+        return s.loaiHangById(id) ? { path: '/kho', query: { tab: 'loai-hang' } } : null;
       default:
-        return y.loai.startsWith('DM_') ? { path: '/danh-muc' } : null;
+        return null;
     }
   }
 
   protected async duyet(y: YeuCauXoa): Promise<void> {
+    const ah = this.store.anhHuongXoa(y);
     const ok = await this.confirm.ask({
       title: `Duyệt xoá ${this.store.nhanDoiTuong(y.loai).toLowerCase()} "${y.moTa}"?`,
       message:
         y.loai === 'PhieuKho'
           ? 'Phiếu kho chuyển "Đã huỷ" và tồn kho được tính lại ngay; SL đã nhập / lần giao của HĐ liên quan cập nhật theo.'
           : 'Bản ghi bị xoá hẳn, không khôi phục được. Số dư nguồn tiền, tồn kho, công nợ liên quan được tính lại ngay theo dữ liệu còn lại.',
-      warn: `Lý do người gửi: ${y.lyDo}`,
+      warn: [`Lý do người gửi: ${y.lyDo}`, ...ah].join(' · '),
       ok: 'Duyệt xoá',
     });
     if (!ok) return;
     const e = this.store.duyetXoa(y.id);
     this.store.say(e ?? 'Đã duyệt xoá');
+    if (!e) this.xem.set(null);
   }
 
   protected async tuChoi(y: YeuCauXoa): Promise<void> {
@@ -223,6 +280,7 @@ export class DuyetXoaPage {
     if (lyDo === null) return;
     const e = this.store.tuChoiXoa(y.id, lyDo);
     this.store.say(e ?? 'Đã từ chối yêu cầu xoá');
+    if (!e) this.xem.set(null);
   }
 
   protected async rut(y: YeuCauXoa): Promise<void> {

@@ -5,7 +5,7 @@ import { LCP_VAN_CHUYEN, PhieuThuChi } from '../core/models';
 import { tamUngTreo } from '../core/calc';
 import { daysFromToday, money, sum, todayIso, viDate } from '../core/util';
 import { MoneyInput, Pick, PickOption, TrangThai } from '../shared/ui-kit';
-import { esc, inGiay, kyTen } from './kt-print';
+import { donVi, esc, inGiay, kyTen } from './kt-print';
 
 type Muc = 'tam-ung' | 'so-du' | 'van-chuyen';
 
@@ -33,21 +33,26 @@ interface NhomTU {
         <p class="sub muted">Phiếu Tạm ứng Đã duyệt chưa có Quyết toán Đã duyệt. Số ngày treo tính từ Ngày lập.</p>
         <div class="tbl-wrap">
           <table class="tbl freeze">
-            <thead><tr><th>Người nhận</th><th>Số phiếu</th><th>Ngày</th><th class="num">Số tiền tạm ứng</th><th class="num">Số ngày treo</th></tr></thead>
+            <thead><tr><th>Người nhận</th><th>Số phiếu</th><th>Ngày</th><th class="num">Số tiền tạm ứng</th><th class="num">Số ngày treo</th><th></th></tr></thead>
             @for (g of tamUng(); track g.ten) {
               <tbody>
                 @for (p of g.rows; track p.id; let i = $index) {
                   <tr [class.overdue]="treo(p) > 30">
                     <td>@if (i === 0) { <b>{{ g.ten }}</b> }</td>
-                    <td>{{ p.soPhieu }}</td><td>{{ viDate(p.ngayLap) }}</td><td class="num">{{ money(p.soTienChi) }}</td><td class="num">{{ treo(p) }}</td>
+                    <td><a class="linkish" routerLink="/ke-toan" [queryParams]="{ tab: 'so-quy', id: p.id }">{{ p.soPhieu }}</a></td><td>{{ viDate(p.ngayLap) }}</td><td class="num">{{ money(p.soTienChi) }}</td><td class="num">{{ treo(p) }}</td>
+                    <td>
+                      @if (store.canView('soQuy') && store.level('soQuy') !== 'view') {
+                        <a class="btn sm quiet" routerLink="/ke-toan" [queryParams]="{ tab: 'so-quy', lapQT: p.id }">Lập quyết toán</a>
+                      }
+                    </td>
                   </tr>
                 }
-                <tr><th colspan="3" class="muted">Cộng {{ g.ten }}</th><th class="num">{{ money(g.tong) }}</th><th></th></tr>
+                <tr><th colspan="3" class="muted">Cộng {{ g.ten }}</th><th class="num">{{ money(g.tong) }}</th><th colspan="2"></th></tr>
               </tbody>
             } @empty {
-              <tbody><tr><td colspan="5" class="empty">Không có tạm ứng treo</td></tr></tbody>
+              <tbody><tr><td colspan="6" class="empty">Không có tạm ứng treo</td></tr></tbody>
             }
-            <tfoot><tr><th colspan="3">Tổng</th><td class="num">{{ money(tongTU()) }}</td><td></td></tr></tfoot>
+            <tfoot><tr><th colspan="3">Tổng</th><td class="num">{{ money(tongTU()) }}</td><td colspan="2"></td></tr></tfoot>
           </table>
         </div>
       }
@@ -217,7 +222,7 @@ export class BaoCaoKtTab {
       .join('');
     const d = todayIso().split('-');
     const body = `
-      <div class="head"><div><b>OXY MECIE</b></div><div class="r">Ngày ${d[2]} tháng ${d[1]} năm ${d[0]}</div></div>
+      <div class="head">${donVi()}<div class="r">Ngày ${d[2]} tháng ${d[1]} năm ${d[0]}</div></div>
       <h1>BẢNG QUYẾT TOÁN CHI PHÍ VẬN CHUYỂN</h1>
       <p class="c">Hợp đồng bán số <b>${esc(h.soHD)}</b> — Khách hàng: ${esc(h.tenKH)}</p>
       <table class="l">

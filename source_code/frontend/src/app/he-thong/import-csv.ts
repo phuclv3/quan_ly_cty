@@ -4,6 +4,7 @@ import { Store } from '../core/store';
 import { fold } from '../core/util';
 import { Confirm } from '../shared/confirm';
 import { docCsv } from './import-map';
+import { csv, downloadFile, fileName } from '../shared/export';
 
 type Dich = 'kh' | 'ncc';
 type Truong = 'ten' | 'mst' | 'diaChi' | 'dienThoai' | 'email';
@@ -20,6 +21,15 @@ interface DongXem {
   so: number;
   v: Record<Truong, string>;
   loi: string[];
+}
+
+/** Kết quả theo từng dòng của lần "Chạy thật" (NT-13). */
+interface KetQua {
+  tep: string;
+  dat: number;
+  hong: number;
+  boQua: number;
+  rows: { so: number; ten: string; kq: 'Đã ghi' | 'Không ghi được' | 'Bỏ qua'; chiTiet: string }[];
 }
 
 /** NT-13 — công cụ "Chạy thử CSV" cho danh mục Khách hàng / Nhà cung cấp. */
@@ -64,9 +74,12 @@ interface DongXem {
           <span class="grow"></span>
           <button class="btn quiet" (click)="xoa()">Bỏ tệp</button>
           @if (store.canEdit('import')) {
-            <button class="btn" [disabled]="hopLe().length === 0" (click)="chayThat()">Chạy thật ({{ hopLe().length }})</button>
+            <button class="btn" [disabled]="hopLe().length === 0 || !ghiDuoc()" (click)="chayThat()">Chạy thật ({{ hopLe().length }})</button>
           }
         </div>
+        @if (store.canEdit('import') && !ghiDuoc()) {
+          <div class="note warn">Tài khoản có quyền Import nhưng không có quyền sửa danh mục {{ dich() === 'kh' ? 'Khách hàng (HDB-13)' : 'Nhà cung cấp (HDM-10)' }} — không ghi được.</div>
+        }
 
         <div class="tbl-wrap">
           <table class="tbl compact">
@@ -94,6 +107,32 @@ interface DongXem {
         @if (xem().length > 200) { <p class="sub">Chỉ hiện 200 dòng đầu trong {{ xem().length }} dòng.</p> }
       } @else if (loiTep()) {
         <div class="note bad" style="margin-top:10px">{{ loiTep() }}</div>
+      }
+
+      @if (ketQua(); as kq) {
+        <h4 style="margin-top:14px">Kết quả lần chạy {{ kq.tep }}</h4>
+        <div class="row" style="gap:10px;flex-wrap:wrap;margin-bottom:8px">
+          <span class="tag ok">{{ kq.dat }} dòng đã ghi</span>
+          @if (kq.hong) { <span class="tag bad">{{ kq.hong }} dòng không ghi được</span> }
+          @if (kq.boQua) { <span class="tag warn">{{ kq.boQua }} dòng lỗi bị bỏ qua</span> }
+          <span class="grow"></span>
+          <button class="btn sm quiet" (click)="taiKetQua()">Tải kết quả (CSV)</button>
+          <button class="btn sm quiet" (click)="ketQua.set(null)">Ẩn</button>
+        </div>
+        <div class="tbl-wrap">
+          <table class="tbl compact">
+            <thead><tr><th>Dòng</th><th>Tên</th><th>Kết quả</th><th>Chi tiết</th></tr></thead>
+            <tbody>
+              @for (r of kq.rows.slice(0, 300); track r.so) {
+                <tr>
+                  <td class="num">{{ r.so }}</td><td>{{ r.ten }}</td>
+                  <td><span class="tag" [class.ok]="r.kq === 'Đã ghi'" [class.bad]="r.kq === 'Không ghi được'" [class.warn]="r.kq === 'Bỏ qua'">{{ r.kq }}</span></td>
+                  <td class="sub">{{ r.chiTiet }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
       }
     </div>
   `,
@@ -134,6 +173,9 @@ export class ImportCsv {
       return { so, v, loi };
     });
   });
+  /** Ghi được vào danh mục đích (quyền Import NT-13 chưa đủ — cần cả quyền sửa danh mục). */
+  protected readonly ghiDuoc = computed(() => this.store.canEdit(this.dich() === 'kh' ? 'khachHang' : 'ncc'));
+  protected readonly ketQua = signal<KetQua | null>(null);
   protected readonly hopLe = computed(() => this.xem().filter((d) => d.loi.length === 0));
   protected readonly soLoi = computed(() => this.xem().length - this.hopLe().length);
 
@@ -187,18 +229,31 @@ export class ImportCsv {
     const ghiChu = `Import CSV ${this.tenTep()}`;
     let dat = 0;
     let hong = 0;
+    const rows: KetQua['rows'] = this.xem()
+      .filter((d) => d.loi.length > 0)
+      .map((d) => ({ so: d.so, ten: d.v.ten, kq: 'Bỏ qua' as const, chiTiet: d.loi.join(' · ') }));
     for (const d of ds) {
       const { ten, mst, diaChi, dienThoai, email } = d.v;
-      const e = kh
-        ? this.store.saveKhachHang({ id: '', ten, mst, diaChi, nguoiLienHe: '', dienThoai, email, ghiChu } satisfies KhachHang)
-        : this.store.saveNCC({ id: '', ten, mst, diaChi, quocGia: '', nguoiLienHe: '', dienThoai, email, ghiChu } satisfies NhaCungCap);
+      const rec: KhachHang | NhaCungCap = kh
+        ? ({ id: '', ten, mst, diaChi, nguoiLienHe: '', dienThoai, email, ghiChu } satisfies KhachHang)
+        : ({ id: '', ten, mst, diaChi, quocGia: '', nguoiLienHe: '', dienThoai, email, ghiChu } satisfies NhaCungCap);
+      const e = kh ? this.store.saveKhachHang(rec as KhachHang) : this.store.saveNCC(rec as NhaCungCap);
       if (e) hong++;
       else dat++;
+      rows.push({ so: d.so, ten, kq: e ? 'Không ghi được' : 'Đã ghi', chiTiet: e ?? `Mã ${rec.id}` });
     }
     const boQua = this.soLoi();
+    this.ketQua.set({ tep: this.tenTep(), dat, hong, boQua, rows: rows.sort((a, b) => a.so - b.so) });
     this.xoa();
     this.store.say(
       `Đã nhập ${dat} ${kh ? 'khách hàng' : 'nhà cung cấp'}${hong ? ` · ${hong} dòng không ghi được` : ''}${boQua ? ` · bỏ qua ${boQua} dòng lỗi` : ''}`,
     );
+  }
+
+  protected taiKetQua(): void {
+    const kq = this.ketQua();
+    if (!kq) return;
+    const rows: (string | number)[][] = [['Dòng', 'Tên', 'Kết quả', 'Chi tiết'], ...kq.rows.map((r) => [r.so, r.ten, r.kq, r.chiTiet])];
+    downloadFile(fileName('ket-qua-import', 'csv'), 'text/csv', csv(rows));
   }
 }

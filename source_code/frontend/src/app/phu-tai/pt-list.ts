@@ -3,15 +3,17 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { map } from 'rxjs';
 import { Store } from '../core/store';
+import { dirtyOf } from '../shared/unsaved';
 import { nhoLoc } from '../core/ui';
-import { ptCalc, soDuQuyPT } from '../core/calc';
-import { DongTienPT, TRANG_THAI_PT } from '../core/models';
+import { PtCalc, ptCalc, soDuQuyPT } from '../core/calc';
+import { DongTienPT, HopDongPhuTai, TRANG_THAI_PT } from '../core/models';
 import { money, pct, todayIso, viDate, vndShort } from '../core/util';
 import { FilterBar, Facet, LOC_RONG, Loc, khopQ, khopSel, khopThoiGian } from '../shared/filter-bar';
 import { Kpi, Modal, MoneyInput, Pick, PickOption, TrangThai } from '../shared/ui-kit';
 import { Pager, paginate } from '../shared/pager';
 import { Confirm } from '../shared/confirm';
 import { guiXoa } from '../shared/ho-so';
+import { SortTh, Sorter } from '../shared/sort';
 
 type TabL = 'hd' | 'dong-tien';
 
@@ -34,7 +36,7 @@ const formRong = (): FormDT => ({ ngay: todayIso(), chieu: 'Thu về PT', hdptId
   selector: 'app-pt-list',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'page' },
-  imports: [RouterLink, FilterBar, Kpi, Modal, MoneyInput, Pick, TrangThai, Pager],
+  imports: [RouterLink, FilterBar, Kpi, Modal, MoneyInput, Pick, TrangThai, Pager, SortTh],
   template: `
     <div class="page-head">
       <div>
@@ -65,7 +67,7 @@ const formRong = (): FormDT => ({ ngay: todayIso(), chieu: 'Thu về PT', hdptId
       <div class="kpis">
         <app-kpi label="Số HĐ" [value]="'' + kpi().so" sub="theo bộ lọc" />
         <app-kpi label="Tổng giá bán (trước VAT)" [value]="vndShort(kpi().giaBan)" sub="không tính HĐ Huỷ" />
-        <app-kpi label="Tổng Oxy được hưởng (gộp)" [value]="vndShort(kpi().oxyGop)" [tone]="kpi().oxyGop < 0 ? 'bad' : 'ok'" />
+        <app-kpi label="Tổng Oxy được hưởng (gộp)" sub="trước hoa hồng — cột LN thực Oxy là sau hoa hồng" [value]="vndShort(kpi().oxyGop)" [tone]="kpi().oxyGop < 0 ? 'bad' : 'ok'" />
         <app-kpi label="Số dư quỹ ảo Phú Tài" [value]="vndShort(quy().soDu)" [sub]="'Thu ' + money(quy().thu) + ' · Chi ' + money(quy().chi)" />
       </div>
       <app-filter [(loc)]="loc" memo="pt-list" [facets]="facets()" />
@@ -73,10 +75,10 @@ const formRong = (): FormDT => ({ ngay: todayIso(), chieu: 'Thu về PT', hdptId
         <table class="tbl freeze">
           <thead>
             <tr>
-              <th>Số HĐ</th><th>Khách hàng cuối</th><th>Ngày ký</th>
-              <th class="num">Giá bán trước VAT</th><th class="num">Giá đầu vào</th>
-              <th class="num">LN trước thuế</th><th class="num">LN thực Oxy</th>
-              <th class="num">KH đã trả PT</th><th>Trạng thái</th>
+              <th app-sort-th [sx]="sx" k="soHD">Số HĐ</th><th app-sort-th [sx]="sx" k="kh">Khách hàng cuối</th><th app-sort-th [sx]="sx" k="ngay">Ngày ký</th>
+              <th app-sort-th [sx]="sx" k="giaBan" class="num">Giá bán trước VAT</th><th app-sort-th [sx]="sx" k="dauVao" class="num">Giá đầu vào</th>
+              <th app-sort-th [sx]="sx" k="lnTruoc" class="num">LN trước thuế</th><th app-sort-th [sx]="sx" k="lnThuc" class="num" title="Oxy được hưởng (gộp) − Hoa hồng">LN thực Oxy (sau hoa hồng)</th>
+              <th app-sort-th [sx]="sx" k="khTra" class="num">KH đã trả PT</th><th app-sort-th [sx]="sx" k="tt">Trạng thái</th>
             </tr>
           </thead>
           <tbody>
@@ -167,7 +169,7 @@ const formRong = (): FormDT => ({ ngay: todayIso(), chieu: 'Thu về PT', hdptId
                 </td>
               </tr>
             } @empty {
-              <tr><td colspan="9" class="empty muted">Chưa có dòng tiền nào khớp bộ lọc</td></tr>
+              <tr><td colspan="9" class="empty muted">{{ store.dongTienPT().length ? 'Chưa có dòng tiền nào khớp bộ lọc' : 'Chưa có dòng tiền nào' }}</td></tr>
             }
           </tbody>
           @if (soRows().length) {
@@ -185,7 +187,7 @@ const formRong = (): FormDT => ({ ngay: todayIso(), chieu: 'Thu về PT', hdptId
       <p class="sub">Cột "Số dư luỹ kế" tính theo thứ tự ngày trên toàn bộ dòng của (các) HĐ đang lọc — không phụ thuộc bộ lọc thời gian.</p>
     }
 
-    <app-modal [open]="form() !== null" title="Thêm dòng điều chỉnh quỹ ảo" sub="Dòng nhập tay — bắt buộc lý do" size="sm" (closed)="form.set(null)">
+    <app-modal [open]="form() !== null" title="Thêm dòng điều chỉnh quỹ ảo" sub="Dòng nhập tay — bắt buộc lý do" size="sm" [dirty]="dirtyForm()" (closed)="form.set(null)">
       @if (form(); as fm) {
         <div class="form-grid">
           <div class="field">
@@ -201,7 +203,7 @@ const formRong = (): FormDT => ({ ngay: todayIso(), chieu: 'Thu về PT', hdptId
           </div>
           <div class="field wide">
             <span class="lbl">HĐ Phú Tài liên quan (tuỳ chọn)</span>
-            <app-pick [options]="hdOpts()" [value]="fm.hdptId" [allowEmpty]="true" placeholder="— Không gắn HĐ —" (valueChange)="setF('hdptId', $event)" />
+            <app-pick [options]="hdOptsTay()" [value]="fm.hdptId" [allowEmpty]="true" placeholder="— Không gắn HĐ —" (valueChange)="setF('hdptId', $event)" />
           </div>
           <div class="field wide">
             <label for="dt-tien">Số tiền (VNĐ)</label>
@@ -215,7 +217,7 @@ const formRong = (): FormDT => ({ ngay: todayIso(), chieu: 'Thu về PT', hdptId
         @if (loiForm()) { <div class="note bad" style="margin-top:10px">{{ loiForm() }}</div> }
       }
       <div foot class="btn-row">
-        <button type="button" class="btn quiet" (click)="form.set(null)">Thôi</button>
+        <button type="button" class="btn quiet" (click)="form.set(null)">Huỷ</button>
         <button type="button" class="btn" (click)="luuDong()">Thêm dòng</button>
       </div>
     </app-modal>
@@ -242,13 +244,26 @@ export class PtList {
   protected readonly facets = computed<Facet[]>(() => [
     { key: 'tt', label: 'Trạng thái', options: TRANG_THAI_PT.map((t) => ({ value: t, label: t })) },
   ]);
+  protected readonly sx = new Sorter<{ p: HopDongPhuTai; c: PtCalc }>({
+    soHD: (r) => r.p.soHD,
+    kh: (r) => r.p.tenKH,
+    ngay: (r) => r.p.ngayKy,
+    giaBan: (r) => r.p.truocVAT,
+    dauVao: (r) => r.c.giaDauVao,
+    lnTruoc: (r) => r.c.lnTruoc,
+    lnThuc: (r) => r.c.lnThuc,
+    khTra: (r) => r.c.khDaTra,
+    tt: (r) => TRANG_THAI_PT.indexOf(r.p.trangThai),
+  });
   protected readonly rows = computed(() => {
     const db = this.store.db();
     const l = this.loc();
-    return db.hopDongPhuTai
-      .filter((p) => khopQ(l, p.soHD, p.tenKH, p.mst, p.ghiChu) && khopThoiGian(l, p.ngayKy) && khopSel(l, 'tt', p.trangThai))
+    const list = db.hopDongPhuTai
+      // Tìm cả theo số HĐ mua / NCC đầu vào (05 §3.1).
+      .filter((p) => khopQ(l, p.soHD, p.tenKH, p.mst, p.ghiChu, ...p.hdMua.flatMap((id) => { const m = this.store.hdmById(id); return m ? [m.soHD, m.tenNCC] : []; })) && khopThoiGian(l, p.ngayKy) && khopSel(l, 'tt', p.trangThai))
       .map((p) => ({ p, c: ptCalc(p, db) }))
       .sort((a, b) => ((a.p.ngayKy ?? a.p.taoLuc) < (b.p.ngayKy ?? b.p.taoLuc) ? 1 : -1));
+    return this.sx.apply(list);
   });
   protected readonly pg = paginate(this.rows);
   protected readonly kpi = computed(() => {
@@ -278,6 +293,10 @@ export class PtList {
   protected readonly denNgay = signal('');
   protected readonly hdOpts = computed<PickOption[]>(() =>
     this.store.hopDongPhuTai().map((p) => ({ value: p.id, label: p.soHD, hint: p.tenKH })),
+  );
+  /** Dòng nhập tay chỉ gắn được vào HĐ chưa khoá (không đổi số liệu HĐ đã tất toán / huỷ). */
+  protected readonly hdOptsTay = computed<PickOption[]>(() =>
+    this.store.hopDongPhuTai().filter((p) => !this.store.ptKhoa(p)).map((p) => ({ value: p.id, label: p.soHD, hint: p.tenKH })),
   );
   protected readonly facetsDT = computed<Facet[]>(() => [
     { key: 'hd', label: 'HĐ', options: this.hdOpts() },
@@ -331,7 +350,17 @@ export class PtList {
   });
 
   protected readonly form = signal<FormDT | null>(null);
+  protected readonly dirtyForm = dirtyOf(this.form);
   protected readonly loiForm = signal('');
+
+  constructor() {
+    // Liên kết sâu từ chi tiết HĐ: ?tab=dong-tien&hd=<id> lọc sẵn sổ quỹ ảo theo HĐ đó.
+    const hd = this.route.snapshot.queryParamMap.get('hd');
+    if (hd && this.store.ptById(hd)) {
+      this.locDT.update((l) => ({ ...l, sel: { ...l.sel, hd: [hd] } }));
+      void this.router.navigate([], { relativeTo: this.route, queryParams: { hd: null }, queryParamsHandling: 'merge', replaceUrl: true });
+    }
+  }
 
   protected soHD(id?: string): string {
     return id ? (this.store.ptById(id)?.soHD ?? id) : '';
@@ -348,7 +377,8 @@ export class PtList {
   protected moForm(): void {
     const hd = this.locDT().sel['hd'] ?? [];
     this.loiForm.set('');
-    this.form.set({ ...formRong(), hdptId: hd.length === 1 ? hd[0] : '' });
+    const p = hd.length === 1 ? this.store.ptById(hd[0]) : undefined;
+    this.form.set({ ...formRong(), hdptId: p && !this.store.ptKhoa(p) ? p.id : '' });
   }
 
   protected setF<K extends keyof FormDT>(k: K, v: FormDT[K]): void {

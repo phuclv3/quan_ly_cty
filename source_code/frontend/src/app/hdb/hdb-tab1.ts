@@ -3,23 +3,25 @@ import { Store } from '../core/store';
 import { atLeast } from '../core/perm';
 import { HopDongBan } from '../core/models';
 import { Pick, PickOption } from '../shared/ui-kit';
+import { ThemDoiTac } from '../shared/them-doi-tac';
 
 /** HDB-02 — Tab 1 Thông tin chung. */
 @Component({
   selector: 'app-hdb-tab1',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Pick],
+  imports: [Pick, ThemDoiTac],
   template: `
     <section class="card">
       <h2 class="section-title">Thông tin chung</h2>
       <div class="form-grid">
         <div class="field">
-          <label for="hdb-so">Số HĐ bán *</label>
+          <label for="hdb-so">Số HĐ bán <span class="req">*</span></label>
           <input id="hdb-so" [value]="f().soHD" [disabled]="!edit()" (input)="set('soHD', $any($event.target).value)" />
         </div>
         <div class="field wide">
-          <label for="hdb-kh">Khách hàng *</label>
+          <label for="hdb-kh">Khách hàng <span class="req">*</span></label>
           <app-pick inputId="hdb-kh" [options]="khOpts()" [value]="f().maKH" [disabled]="!edit()" placeholder="— Chọn khách hàng —" (valueChange)="chonKH($event)" />
+          @if (edit()) { <app-them-doi-tac loai="kh" (daTao)="chonKH($event)" /> }
           @if (lechDM()) { <span class="hint">Danh mục đã đổi so với bản sao lúc ký — HĐ giữ thông tin cũ. <button type="button" class="linkish" [disabled]="!edit()" (click)="chonKH(f().maKH)">Cập nhật theo danh mục</button></span> }
         </div>
         <div class="field">

@@ -1,12 +1,12 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, input, linkedSignal, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { tongSL } from '../core/calc';
 import { KHO_CHUYEN_THANG, PhieuKho } from '../core/models';
 import { Perm } from '../core/perm';
 import { Store } from '../core/store';
 import { nhoLoc } from '../core/ui';
-import { money, sum, viDate } from '../core/util';
+import { money, sum, viDate, viMoment } from '../core/util';
 import { Confirm } from '../shared/confirm';
 import { csv, downloadFile, fileName } from '../shared/export';
 import { Facet, FilterBar, LOC_RONG, Loc, khopQ, khopSel, khopThoiGian } from '../shared/filter-bar';
@@ -29,7 +29,7 @@ const quyenSua = (p: PhieuKho): Perm =>
       <div class="section-title">
         <span class="sub">{{ rows().length }} phiếu · Tổng SL {{ money(tongAll()) }}</span>
         <div class="btn-row">
-          <button type="button" class="btn sm quiet" (click)="xuatCsv()">Xuất Excel</button>
+          <button type="button" class="btn sm quiet" (click)="xuatCsv()">Xuất CSV</button>
           @if (store.canEdit('khoPhieuTay')) {
             <button type="button" class="btn" (click)="moTay.set(true)">Lập phiếu điều chỉnh</button>
           }
@@ -60,7 +60,7 @@ const quyenSua = (p: PhieuKho): Perm =>
                 </td>
               </tr>
             } @empty {
-              <tr><td colspan="9" class="empty">Không có phiếu nào khớp bộ lọc</td></tr>
+              <tr><td colspan="9" class="empty">{{ coPhieu() ? 'Không có phiếu nào khớp bộ lọc' : 'Chưa có phiếu ' + (loai() === 'Nhập' ? 'nhập' : 'xuất') + ' kho nào' }}</td></tr>
             }
           </tbody>
         </table>
@@ -72,7 +72,7 @@ const quyenSua = (p: PhieuKho): Perm =>
       </div>
     </div>
 
-    <app-modal [open]="!!sel()" [title]="'Phiếu ' + (loai() === 'Nhập' ? 'nhập' : 'xuất') + ' kho ' + (sel()?.soPhieu ?? '')" [sub]="sel()?.nguonGoc ?? ''" size="lg" (closed)="dong()">
+    <app-modal [open]="!!sel()" [title]="'Phiếu ' + (loai() === 'Nhập' ? 'nhập' : 'xuất') + ' kho ' + (sel()?.soPhieu ?? '')" [sub]="sel()?.nguonGoc ?? ''" size="lg" [dirty]="dirty()" (closed)="dong()">
       @if (sel(); as p) {
         <div class="no-print">
           <div class="btn-row" style="justify-content:flex-start;margin-bottom:10px">
@@ -92,6 +92,15 @@ const quyenSua = (p: PhieuKho): Perm =>
             </div>
             <div class="field"><span class="lbl">Người thực hiện</span><div class="ro">{{ store.userName(p.nguoiThucHien) }}</div></div>
             @if (p.lyDo) { <div class="field wide"><span class="lbl">Lý do điều chỉnh</span><div class="ro">{{ p.lyDo }}</div></div> }
+            @if (yeuCau(p); as y) {
+              <div class="field wide">
+                <span class="lbl">{{ y.trangThai === 'Đã duyệt' ? 'Đã huỷ' : 'Yêu cầu huỷ' }}</span>
+                <div class="ro">
+                  {{ store.userName(y.nguoiGui) }} gửi yêu cầu lúc {{ viMoment(y.ngayGui) }} — lý do: {{ y.lyDo }}
+                  @if (y.nguoiDuyet && y.trangThai === 'Đã duyệt') { · {{ store.userName(y.nguoiDuyet) }} duyệt lúc {{ viMoment(y.ngayDuyet) }} }
+                </div>
+              </div>
+            }
             <div class="field wide">
               <label for="pk-gc">Ghi chú</label>
               <textarea id="pk-gc" rows="2" [value]="ghiChu()" [disabled]="!suaDuoc(p)" (input)="ghiChu.set($any($event.target).value)"></textarea>
@@ -188,6 +197,32 @@ export class PhieuKhoTab {
   protected readonly ngay = signal('');
   protected readonly ghiChu = signal('');
   protected readonly moTay = signal(false);
+  protected readonly viMoment = viMoment;
+  protected readonly coPhieu = computed(() => this.store.phieuKho().some((p) => p.loai === this.loai()));
+  protected readonly dirty = computed(() => {
+    const p = this.sel();
+    return !!p && this.suaDuoc(p) && (this.ngay() !== p.ngay || (this.ghiChu().trim() || undefined) !== p.ghiChu);
+  });
+
+  constructor() {
+    // Liên kết sâu: ?id=<phiếu> mở popup phiếu (từ HĐ, Duyệt xoá, Trang chủ).
+    const route = inject(ActivatedRoute);
+    const router = inject(Router);
+    const id = route.snapshot.queryParamMap.get('id');
+    if (!id) return;
+    const p = this.store.phieuKho().find((x) => x.id === id);
+    if (p) this.mo(p);
+    else this.store.say('Không tìm thấy phiếu kho');
+    void router.navigate([], { relativeTo: route, queryParams: { id: null }, queryParamsHandling: 'merge', replaceUrl: true });
+  }
+
+  /** Yêu cầu huỷ gần nhất (đang chờ hoặc đã duyệt) — để biết ai huỷ, khi nào, vì sao. */
+  protected yeuCau(p: PhieuKho) {
+    return this.store
+      .yeuCauXoa()
+      .filter((y) => y.loai === 'PhieuKho' && y.maDoiTuong === p.id && (y.trangThai === 'Đã duyệt' || y.trangThai === 'Chờ duyệt'))
+      .sort((a, b) => (a.ngayGui < b.ngayGui ? 1 : -1))[0];
+  }
 
   protected hd(p: PhieuKho) {
     return hdCuaPhieu(this.store, p);

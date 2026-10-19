@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { guestGuard, permGuard, signedInGuard } from './core/guard';
+import { unsavedGuard } from './shared/unsaved';
 
 const T = (s: string) => `${s} · Oxy Mecie`;
 
@@ -9,7 +10,8 @@ export const routes: Routes = [
     path: '',
     canActivate: [signedInGuard],
     loadComponent: () => import('./shell').then((m) => m.Shell),
-    children: [
+    // Mọi màn con: rời màn khi còn thay đổi chưa lưu thì hỏi (NT-05).
+    children: ([
       { path: '', title: T('Trang chủ'), loadComponent: () => import('./home/dashboard').then((m) => m.Dashboard) },
       {
         path: 'hop-dong-ban',
@@ -64,7 +66,7 @@ export const routes: Routes = [
       {
         path: 'duyet-xoa',
         title: T('Duyệt xoá'),
-        canActivate: [permGuard('duyetXoa')],
+        canActivate: [permGuard('duyetXoa', 'duyetXoaKT')],
         loadComponent: () => import('./he-thong/duyet-xoa').then((m) => m.DuyetXoaPage),
       },
       {
@@ -79,7 +81,7 @@ export const routes: Routes = [
         canActivate: [permGuard('cauHinh', 'import')],
         loadComponent: () => import('./he-thong/cau-hinh').then((m) => m.CauHinhPage),
       },
-    ],
+    ] as Routes).map((r) => ({ ...r, canDeactivate: [unsavedGuard] })),
   },
   { path: '**', redirectTo: '' },
 ];

@@ -5,6 +5,7 @@ import { Db, HopDongMua } from '../core/models';
 import { dotMuaDaTra, hdbCalc, hdmCalc, soNgayQuaHan } from '../core/calc';
 import { matches, money, sum, viDate } from '../core/util';
 import { Kpi } from '../shared/ui-kit';
+import { Pager, paginate } from '../shared/pager';
 import { csv, downloadFile, fileName } from '../shared/export';
 
 interface CnRow {
@@ -56,7 +57,7 @@ function gom(rows: CnRow[]): Nhom[] {
 @Component({
   selector: 'app-kt-cong-no',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, Kpi],
+  imports: [RouterLink, Kpi, Pager],
   template: `
     <div class="row" style="margin-bottom:12px">
       <div class="btn-row" role="tablist">
@@ -67,7 +68,7 @@ function gom(rows: CnRow[]): Nhom[] {
       <label class="check-row"><input type="checkbox" [checked]="nhom()" (change)="nhom.set($any($event.target).checked)" /> Gộp theo {{ sub() === 'thu' ? 'khách hàng' : 'NCC' }}</label>
       <label class="check-row"><input type="checkbox" [checked]="conNo()" (change)="conNo.set($any($event.target).checked)" /> Chỉ HĐ còn nợ</label>
       <span style="flex:1"></span>
-      <button type="button" class="btn quiet" (click)="xuat()">Xuất Excel</button>
+      <button type="button" class="btn quiet" (click)="xuat()">Xuất CSV</button>
     </div>
 
     <div class="kpis">
@@ -94,7 +95,7 @@ function gom(rows: CnRow[]): Nhom[] {
               <tr><th colspan="2">{{ g.ten }} <span class="muted">({{ g.rows.length }} HĐ)</span></th><th class="num">{{ money(g.giaTri) }}</th><th class="num">{{ money(g.da) }}</th><th class="num">{{ money(g.con) }}</th><th colspan="2"></th></tr>
               @for (r of g.rows; track r.id) {
                 <tr class="click" [class.overdue]="r.quaHan > 0" (click)="mo(r)">
-                  <td><a [routerLink]="[duongDan(), r.id]" (click)="$event.stopPropagation()"><b>{{ r.soHD }}</b></a></td><td>{{ r.doiTac }}</td><td class="num">{{ money(r.giaTri) }}</td><td class="num">{{ money(r.da) }}</td>
+                  <td><a [routerLink]="[duongDan(), r.id]" [queryParams]="{ tab: tabDich() }" (click)="$event.stopPropagation()"><b>{{ r.soHD }}</b></a></td><td>{{ r.doiTac }}</td><td class="num">{{ money(r.giaTri) }}</td><td class="num">{{ money(r.da) }}</td>
                   <td class="num" [class.neg]="r.con < 0">{{ money(r.con) }}</td><td>{{ viDate(r.han) }}</td><td class="num">{{ r.quaHan || '' }}</td>
                 </tr>
               }
@@ -102,20 +103,21 @@ function gom(rows: CnRow[]): Nhom[] {
           }
         } @else {
           <tbody>
-            @for (r of rows(); track r.id) {
+            @for (r of pg.items(); track r.id) {
               <tr class="click" [class.overdue]="r.quaHan > 0" (click)="mo(r)">
-                <td><a [routerLink]="[duongDan(), r.id]" (click)="$event.stopPropagation()"><b>{{ r.soHD }}</b></a></td><td>{{ r.doiTac }}</td><td class="num">{{ money(r.giaTri) }}</td><td class="num">{{ money(r.da) }}</td>
+                <td><a [routerLink]="[duongDan(), r.id]" [queryParams]="{ tab: tabDich() }" (click)="$event.stopPropagation()"><b>{{ r.soHD }}</b></a></td><td>{{ r.doiTac }}</td><td class="num">{{ money(r.giaTri) }}</td><td class="num">{{ money(r.da) }}</td>
                 <td class="num" [class.neg]="r.con < 0">{{ money(r.con) }}</td><td>{{ viDate(r.han) }}</td><td class="num">{{ r.quaHan || '' }}</td>
               </tr>
             }
           </tbody>
         }
-        @if (!rows().length) { <tbody><tr><td colspan="7" class="empty">Không có công nợ</td></tr></tbody> }
+        @if (!rows().length) { <tbody><tr><td colspan="7" class="empty">{{ q() || conNo() ? 'Không có công nợ khớp bộ lọc' : 'Không có công nợ' }}</td></tr></tbody> }
         <tfoot>
           <tr><th colspan="2">Tổng toàn bộ</th><td class="num">{{ money(tong().giaTri) }}</td><td class="num">{{ money(tong().da) }}</td><td class="num">{{ money(tong().con) }}</td><td colspan="2"></td></tr>
         </tfoot>
       </table>
     </div>
+    @if (!nhom()) { <app-pager [pager]="pg" /> }
     <p class="sub muted" style="margin-top:8px">
       @if (sub() === 'thu') { Còn phải thu = Giá trị HĐ bán sau VAT − Σ thực thu các đợt. Không tính HĐ Báo giá. Muốn sửa thì sửa đợt thanh toán trong HĐ gốc. }
       @else { Còn phải trả = Giá trị HĐ mua − Σ đã trả NCC (phiếu chi đã duyệt). Không tính HĐ Thuộc Phú Tài và HĐ Huỷ. }
@@ -166,6 +168,7 @@ export class CongNoTab {
       .filter((r) => (!this.conNo() || r.con > 0) && matches(q, r.soHD, r.doiTac))
       .sort((a, b) => b.quaHan - a.quaHan || b.con - a.con);
   });
+  protected readonly pg = paginate(this.rows);
   protected readonly nhoms = computed(() => gom(this.rows()));
   protected readonly tong = computed(() => {
     const r = this.rows();
@@ -176,9 +179,13 @@ export class CongNoTab {
   protected duongDan(): string {
     return this.sub() === 'thu' ? '/hop-dong-ban' : '/hop-dong-mua';
   }
+  /** Mở thẳng tab thanh toán của HĐ: HĐ bán tab 3, HĐ mua tab 4. */
+  protected tabDich(): string {
+    return this.sub() === 'thu' ? '3' : '4';
+  }
 
   protected mo(r: CnRow): void {
-    void this.router.navigate([this.duongDan(), r.id]);
+    void this.router.navigate([this.duongDan(), r.id], { queryParams: { tab: this.tabDich() } });
   }
 
   protected xuat(): void {

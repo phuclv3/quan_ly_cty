@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Store } from '../core/store';
 import { NhaCungCap } from '../core/models';
 import { hdmTong } from '../core/calc';
@@ -24,7 +24,7 @@ type F = Exclude<keyof NhaCungCap, 'id'>;
     <div class="between">
       <app-filter [(loc)]="loc" memo="dm-ncc" [time]="false" placeholder="Tìm mã, tên, MST, quốc gia, người liên hệ…" />
       <div class="btn-row" style="margin-bottom:12px">
-        <button type="button" class="btn quiet" (click)="xuat()">Xuất Excel</button>
+        <button type="button" class="btn quiet" (click)="xuat()">Xuất CSV</button>
         @if (store.canEdit('ncc')) { <button type="button" class="btn" (click)="mo(null)">+ Thêm nhà cung cấp</button> }
       </div>
     </div>
@@ -49,7 +49,8 @@ type F = Exclude<keyof NhaCungCap, 'id'>;
                 @if (store.canEdit('ncc') && !store.dangChoXoa('DM_NCC', n.id)) {
                   <div class="row" style="flex-wrap:nowrap">
                     <button type="button" class="btn sm quiet" (click)="mo(n)">Sửa</button>
-                    <button type="button" class="btn sm danger" (click)="xoa(n)">Xoá</button>
+                    @let vuong = store.lyDoKhongXoa('DM_NCC', n.id);
+                    <button type="button" class="btn sm danger" [disabled]="!!vuong" [attr.title]="vuong ? vuong + ' — không xoá được' : null" (click)="xoa(n)">Xoá</button>
                   </div>
                 }
               </td>
@@ -79,7 +80,8 @@ type F = Exclude<keyof NhaCungCap, 'id'>;
     </div>
     <app-pager [pager]="pg" />
 
-    <app-modal [open]="!!f()" [title]="f()?.id ? 'Sửa nhà cung cấp ' + f()!.id : 'Thêm nhà cung cấp'" (closed)="dong()">
+    <app-modal [open]="!!f()" [title]="f()?.id ? 'Sửa nhà cung cấp ' + f()!.id : 'Thêm nhà cung cấp'" [dirty]="dirty()" (closed)="dong()">
+      @if (err()) { <div class="note bad">{{ err() }}</div> }
       @if (f(); as d) {
         <div class="form-grid">
           <div class="field wide"><label for="ncc-ten">Tên nhà cung cấp <span class="req">bắt buộc</span></label><input id="ncc-ten" [value]="d.ten" (input)="set('ten', $any($event.target).value)" /></div>
@@ -117,6 +119,20 @@ export class DmNcc {
   protected readonly mo1 = signal<string | null>(null);
   protected readonly f = signal<NhaCungCap | null>(null);
   protected readonly trung = signal<NhaCungCap | null>(null);
+  protected readonly err = signal('');
+  private readonly goc = signal('');
+  protected readonly dirty = computed(() => !!this.f() && JSON.stringify(this.f()) !== this.goc());
+
+  constructor() {
+    // Liên kết sâu (?tab=…&id=…, VD từ Duyệt xoá): tìm sẵn và mở rộng dòng bản ghi.
+    const route = inject(ActivatedRoute);
+    const id = route.snapshot.queryParamMap.get('id');
+    if (id) {
+      this.loc.set({ ...LOC_RONG, q: id });
+      this.mo1.set(id);
+      void inject(Router).navigate([], { relativeTo: route, queryParams: { id: null }, queryParamsHandling: 'merge', replaceUrl: true });
+    }
+  }
 
   protected readonly soHD = computed(() => {
     const m = new Map<string, number>();
@@ -138,7 +154,9 @@ export class DmNcc {
 
   protected mo(n: NhaCungCap | null): void {
     this.trung.set(null);
+    this.err.set('');
     this.f.set(structuredClone(n ?? BLANK));
+    this.goc.set(JSON.stringify(this.f()));
   }
   protected dong(): void {
     this.f.set(null);
@@ -165,7 +183,7 @@ export class DmNcc {
     }
     const err = this.store.saveNCC(draft);
     if (err) {
-      this.store.say(err);
+      this.err.set(err);
       return;
     }
     this.store.say(d.id ? 'Đã lưu nhà cung cấp' : 'Đã thêm nhà cung cấp');

@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { KHO_CHUYEN_THANG, Kho } from '../core/models';
 import { Store } from '../core/store';
+import { dirtyOf } from '../shared/unsaved';
 import { Confirm } from '../shared/confirm';
 import { guiXoa } from '../shared/ho-so';
 import { Modal, TrangThai } from '../shared/ui-kit';
@@ -54,7 +55,7 @@ import { Modal, TrangThai } from '../shared/ui-kit';
       Kho đã có phiếu không xoá được — chỉ Ngưng.
     </div>
 
-    <app-modal [open]="!!f()" [title]="f()?.id ? 'Sửa kho ' + f()!.id : 'Thêm kho'" size="sm" (closed)="f.set(null)">
+    <app-modal [open]="!!f()" [title]="f()?.id ? 'Sửa kho ' + f()!.id : 'Thêm kho'" size="sm" [dirty]="dirty()" (closed)="f.set(null)">
       @if (f(); as k) {
         <div class="form-grid">
           <div class="field"><span class="lbl">Mã kho</span><div class="ro">{{ k.id || 'Tự sinh khi lưu' }}</div></div>
@@ -65,7 +66,7 @@ import { Modal, TrangThai } from '../shared/ui-kit';
         @if (err()) { <div class="note bad">{{ err() }}</div> }
       }
       <div foot class="btn-row">
-        <button type="button" class="btn quiet" (click)="f.set(null)">Thôi</button>
+        <button type="button" class="btn quiet" (click)="f.set(null)">Huỷ</button>
         <button type="button" class="btn" (click)="luu()">Lưu</button>
       </div>
     </app-modal>
@@ -77,6 +78,7 @@ export class DmKhoTab {
   protected readonly ctId = KHO_CHUYEN_THANG;
   protected readonly edit = computed(() => this.store.canEdit('khoDanhMuc'));
   protected readonly f = signal<Kho | null>(null);
+  protected readonly dirty = dirtyOf(this.f);
   protected readonly err = signal('');
 
   protected readonly rows = computed(() => {

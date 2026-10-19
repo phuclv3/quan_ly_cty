@@ -4,6 +4,8 @@ import { NguonTien } from '../core/models';
 import { SoDuNguon } from '../core/calc';
 import { money, sum, todayIso, vnd, viDate } from '../core/util';
 import { Modal, MoneyInput, TrangThai } from '../shared/ui-kit';
+import { Confirm } from '../shared/confirm';
+import { guiXoa } from '../shared/ho-so';
 
 interface Card {
   n: NguonTien;
@@ -45,7 +47,7 @@ interface Card {
     </div>
 
     @if (f(); as n) {
-      <app-modal [open]="true" [title]="isNew() ? 'Thêm nguồn tiền' : 'Sửa nguồn tiền ' + n.id" size="md" (closed)="f.set(null)">
+      <app-modal [open]="true" [title]="isNew() ? 'Thêm nguồn tiền' : 'Sửa nguồn tiền ' + n.id" size="md" [dirty]="dirty()" (closed)="f.set(null)">
         @if (err()) { <div class="note bad">{{ err() }}</div> }
         @if (khoa()) { <div class="note info">Nguồn đã có phiếu Đã duyệt — khoá Số dư đầu kỳ và Ngày đầu kỳ.</div> }
         <div class="form-grid">
@@ -74,7 +76,11 @@ interface Card {
           </div>
         </div>
         <div foot>
-          <button type="button" class="btn quiet" (click)="f.set(null)">Thôi</button>
+          @if (!isNew() && !khoa() && !store.nguonDaPhatSinh(n.id) && store.level('duyetXoa') !== 'none' && !store.dangChoXoa('DM_NguonTien', n.id)) {
+            <button type="button" class="btn danger quiet" (click)="xoa(n)">Xoá</button>
+          }
+          <span style="flex:1"></span>
+          <button type="button" class="btn quiet" (click)="f.set(null)">Huỷ</button>
           <button type="button" class="btn" (click)="luu()">Lưu</button>
         </div>
       </app-modal>
@@ -102,16 +108,25 @@ export class NguonTienTab {
     return !!n && !this.isNew() && this.store.nguonDaPhatSinh(n.id);
   });
 
+  private readonly confirm = inject(Confirm);
+  private readonly goc = signal('');
+  protected readonly dirty = computed(() => !!this.f() && JSON.stringify(this.f()) !== this.goc());
+
   protected moi(): void {
     this.err.set('');
     this.isNew.set(true);
     this.f.set({ id: '', ten: '', loai: 'Tiền mặt', soDuDauKy: 0, ngayDauKy: todayIso(), trangThai: 'Đang dùng' });
+    this.goc.set(JSON.stringify(this.f()));
   }
   protected sua(n: NguonTien): void {
     if (!this.store.canEdit('nguonTien')) return;
     this.err.set('');
     this.isNew.set(false);
     this.f.set(structuredClone(n));
+    this.goc.set(JSON.stringify(this.f()));
+  }
+  protected async xoa(n: NguonTien): Promise<void> {
+    if (await guiXoa(this.confirm, this.store, 'DM_NguonTien', n.id, `Nguồn tiền ${n.ten}`)) this.f.set(null);
   }
   protected set<K extends keyof NguonTien>(k: K, v: NguonTien[K]): void {
     this.f.update((n) => (n ? { ...n, [k]: v } : n));

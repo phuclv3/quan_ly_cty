@@ -16,6 +16,7 @@ import { HdbGiaoHang } from './hdb-giao-hang';
 import { HdbTab3 } from './hdb-tab3';
 import { HdbTab4 } from './hdb-tab4';
 import { ghepNhap, vanTay } from './hdb-shared';
+import { Unsaved, canhBaoChuaLuu } from '../shared/unsaved';
 
 const TABS = [
   { k: '1', t: 'Thông tin chung' },
@@ -65,7 +66,7 @@ const TABS = [
       </div>
 
       @if (choXoa()) { <p class="note bad"><app-icon name="lock" [size]="16" /> HĐ đang có yêu cầu xoá chờ duyệt — khoá sửa.</p> }
-      @else if (saved()?.trangThai === 'Đã tất toán') { <p class="note info"><app-icon name="lock" [size]="16" /> HĐ đã tất toán — khoá toàn bộ. Chỉ Giám đốc mở lại.</p> }
+      @else if (saved()?.trangThai === 'Đã tất toán') { <p class="note info"><app-icon name="lock" [size]="16" /> HĐ đã tất toán — khoá toàn bộ. Mở lại cần quyền "Mở lại HĐ đã tất toán" (HDB-03-ML).</p> }
 
       @if (saved(); as s) {
         <section class="card no-print">
@@ -98,7 +99,7 @@ const TABS = [
       }
 
       <div class="tabs" role="tablist">
-        @for (t of tabs; track t.k) {
+        @for (t of tabs(); track t.k) {
           <button type="button" role="tab" [class.on]="tab() === t.k" [disabled]="!saved() && t.k !== '1' && t.k !== '3'" (click)="setTab(t.k)">{{ t.k }}. {{ t.t }}</button>
         }
       </div>
@@ -129,7 +130,12 @@ const TABS = [
         }
         @case ('5') {
           <section class="card">
-            <h2 class="section-title">HĐ mua liên quan</h2>
+            <div class="section-title">
+              <h2>HĐ mua liên quan</h2>
+              @if (saved() && store.canEdit('hdm') && !khoa()) {
+                <a class="btn sm" routerLink="/hop-dong-mua/moi" [queryParams]="{ hdb: saved()!.id }"><app-icon name="plus" [size]="16" /> Tạo HĐ mua cho HĐ này</a>
+              }
+            </div>
             <div class="tbl-wrap">
               <table class="tbl compact">
                 <thead><tr><th>Số HĐ mua</th><th>NCC</th><th class="num">Giá trị VNĐ</th><th class="num">Đã trả</th><th>Nhập hàng</th><th>Trạng thái</th></tr></thead>
@@ -146,7 +152,7 @@ const TABS = [
                       <td><app-tt [v]="r.m.trangThai" /></td>
                     </tr>
                   } @empty {
-                    <tr><td colspan="6" class="muted">Chưa có HĐ mua nào gắn với HĐ này (liên kết tạo ở HĐ mua)</td></tr>
+                    <tr><td colspan="6" class="muted">Chưa có HĐ mua nào gắn với HĐ này. Tạo HĐ mua bằng nút phía trên, hoặc chọn HĐ bán này ở Tab 1 của HĐ mua.</td></tr>
                   }
                 </tbody>
               </table>
@@ -165,14 +171,13 @@ export class HdbDetail {
 
   protected readonly money = money;
   protected readonly pct = pct;
-  protected readonly tabs = TABS;
   protected readonly trangThais = TRANG_THAI_HDB;
 
   private readonly id = toSignal(this.route.paramMap.pipe(map((m) => m.get('id') ?? 'moi')), { initialValue: this.route.snapshot.paramMap.get('id') ?? 'moi' });
   private readonly qTab = toSignal(this.route.queryParamMap.pipe(map((m) => m.get('tab'))), { initialValue: this.route.snapshot.queryParamMap.get('tab') });
   protected readonly tab = computed(() => {
     const t = this.qTab() ?? '1';
-    const ok = TABS.some((x) => x.k === t) ? t : '1';
+    const ok = this.tabs().some((x) => x.k === t) ? t : '1';
     return !this.saved() && ok !== '1' && ok !== '3' ? '1' : ok;
   });
 
@@ -199,6 +204,21 @@ export class HdbDetail {
     const s = this.saved();
     return s ? vanTay(this.f()) !== vanTay(s) : true;
   });
+  /** Có dữ liệu người dùng vừa nhập mà chưa lưu (HĐ mới để trống thì không tính). */
+  private readonly chuaLuu = computed(() => {
+    if (!this.edit1() && !this.edit3()) return false;
+    if (this.saved()) return this.dirty();
+    const h = this.f();
+    return !!(h.soHD || h.maKH || h.truocVAT || h.thucTeTruocVAT || h.dotTT.length || h.ghiChu || h.ngayKy) || this.fileCho().length > 0;
+  });
+  private readonly unsaved = inject(Unsaved);
+  /** Tab 3 / 4 (giá trị, công nợ, chi phí, lợi nhuận) chỉ hiện khi có quyền xem HDB-07. */
+  protected readonly xemTien = computed(() => this.store.canView('hdbTab3'));
+  protected readonly tabs = computed(() => TABS.filter((t) => this.xemTien() || (t.k !== '3' && t.k !== '4')));
+
+  constructor() {
+    canhBaoChuaLuu(() => this.chuaLuu());
+  }
 
   protected readonly c = computed(() => hdbCalc(this.f(), this.store.db()));
   /** File hợp đồng chọn khi HĐ chưa lưu — tải lên ngay sau lần Lưu đầu. */
@@ -253,7 +273,7 @@ export class HdbDetail {
       void taiFileCho(this.store, 'HDB', out.id, this.fileCho());
       this.fileCho.set([]);
       this.f.set(structuredClone(this.store.hdbById(out.id)!));
-      void this.router.navigate(['/hop-dong-ban', out.id], { queryParams: { tab: this.tab() }, replaceUrl: true });
+      void this.unsaved.diSauKhiLuu(() => this.router.navigate(['/hop-dong-ban', out.id], { queryParams: { tab: this.tab() }, replaceUrl: true }));
     }
     return true;
   }
@@ -275,7 +295,7 @@ export class HdbDetail {
       k === 'Hoàn thành'
         ? 'Xác nhận đã giao đủ hàng cho khách.'
         : k === 'Đã tất toán'
-          ? 'Sau khi tất toán, HĐ bị khoá toàn bộ; chỉ Giám đốc mở lại được.'
+          ? 'Sau khi tất toán, HĐ bị khoá toàn bộ; chỉ người có quyền "Mở lại HĐ đã tất toán" (HDB-03-ML) mở lại được.'
           : undefined;
     const warn = k === 'Hoàn thành' && this.c().hoSoThieu.length ? `Thiếu hồ sơ: ${this.c().hoSoThieu.join(', ')}` : undefined;
     if (!(await this.confirm.ask({ title: `Chuyển HĐ ${s.soHD} sang "${k}"?`, message: msg, warn, ok: 'Chuyển' }))) return;

@@ -55,7 +55,8 @@ const NHOM: NhomChiPhi[] = ['Vận hành', 'Thực hiện HĐ'];
       }
     </div>
 
-    <app-modal [open]="!!f()" size="sm" [title]="f()?.id ? 'Sửa loại chi phí ' + f()!.id : 'Thêm loại chi phí'" (closed)="f.set(null)">
+    <app-modal [open]="!!f()" size="sm" [title]="f()?.id ? 'Sửa loại chi phí ' + f()!.id : 'Thêm loại chi phí'" [dirty]="dirty()" (closed)="f.set(null)">
+      @if (err()) { <div class="note bad">{{ err() }}</div> }
       @if (f(); as d) {
         <div class="field"><label for="lcp-ten">Tên loại <span class="req">bắt buộc</span></label><input id="lcp-ten" [value]="d.ten" (input)="set({ ten: $any($event.target).value })" /></div>
         <div class="field">
@@ -80,6 +81,9 @@ export class DmLoaiChiPhi {
   private readonly confirm = inject(Confirm);
   protected readonly nhom = NHOM;
   protected readonly f = signal<LoaiChiPhi | null>(null);
+  protected readonly err = signal('');
+  private readonly goc = signal('');
+  protected readonly dirty = computed(() => !!this.f() && JSON.stringify(this.f()) !== this.goc());
 
   /** Số phiếu thu chi + chi phí HĐ đang dùng loại này. */
   protected readonly daDung = computed(() => {
@@ -94,7 +98,9 @@ export class DmLoaiChiPhi {
     return this.store.loaiChiPhi().filter((l) => l.nhom === g);
   }
   protected mo(l: LoaiChiPhi | null): void {
+    this.err.set('');
     this.f.set(structuredClone(l ?? { id: '', ten: '', nhom: 'Vận hành', dangDung: true }));
+    this.goc.set(JSON.stringify(this.f()));
   }
   protected set(p: Partial<LoaiChiPhi>): void {
     this.f.update((d) => (d ? { ...d, ...p } : d));
@@ -104,7 +110,7 @@ export class DmLoaiChiPhi {
     if (!d) return;
     const err = this.store.saveLoaiChiPhi({ ...d, ten: d.ten.trim() });
     if (err) {
-      this.store.say(err);
+      this.err.set(err);
       return;
     }
     this.store.say('Đã lưu loại chi phí');

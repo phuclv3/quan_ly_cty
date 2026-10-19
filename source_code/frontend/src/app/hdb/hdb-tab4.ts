@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { Store } from '../core/store';
 import { HopDongBan, LCP_VAN_CHUYEN } from '../core/models';
 import { hdbBuocLoiNhuan, hdbCalc } from '../core/calc';
@@ -24,7 +24,9 @@ import { Icon } from '../shared/icon';
           <h2>Chi phí thực hiện HĐ</h2>
           <div class="btn-row">
             <button type="button" class="btn sm quiet" (click)="qt.set(true)"><app-icon name="truck" [size]="15" /> Quyết toán vận chuyển</button>
-            <a class="btn sm quiet" routerLink="/ke-toan" [queryParams]="{ tab: 'chi-phi', hdb: h().id }">Nhập chi phí ở Kế toán ›</a>
+            @if (nhapDuoc()) {
+              <a class="btn sm quiet" routerLink="/ke-toan" [queryParams]="{ tab: 'chi-phi', hdb: h().id }">Nhập chi phí ở Kế toán ›</a>
+            }
           </div>
         </div>
         <div class="tbl-wrap">
@@ -32,8 +34,10 @@ import { Icon } from '../shared/icon';
             <thead><tr><th>Ngày</th><th>Mã CP</th><th>Loại</th><th>Nội dung</th><th class="num">Số tiền</th><th>Trạng thái</th></tr></thead>
             <tbody>
               @for (x of cps(); track x.id) {
-                <tr>
-                  <td>{{ viDate(x.ngay) }}</td><td>{{ x.maCP }}</td><td>{{ store.lcpTen(x.loaiChiPhi) }}</td>
+                <tr [class.click]="xemCP()" (click)="moCP(x.id)">
+                  <td>{{ viDate(x.ngay) }}</td>
+                  <td>@if (xemCP()) { <a class="linkish" routerLink="/ke-toan" [queryParams]="{ tab: 'chi-phi', id: x.id }" (click)="$event.stopPropagation()">{{ x.maCP }}</a> } @else { {{ x.maCP }} }</td>
+                  <td>{{ store.lcpTen(x.loaiChiPhi) }}</td>
                   <td>{{ x.noiDung }}</td><td class="num">{{ money(x.soTien) }}</td><td><app-tt [v]="x.trangThai" /></td>
                 </tr>
               } @empty {
@@ -91,7 +95,17 @@ export class HdbTab4 {
   protected readonly today = todayIso();
   protected readonly qt = signal(false);
 
+  private readonly router = inject(Router);
   protected readonly c = computed(() => hdbCalc(this.h(), this.store.db()));
+  /** Chỉ hiện lối nhập chi phí khi có quyền KT-12 cho HĐ này và HĐ còn mở, từ Hiệu lực trở đi. */
+  protected readonly nhapDuoc = computed(() => {
+    const h = this.h();
+    return this.store.canEdit('cpHD', h.sale) && h.trangThai !== 'Báo giá' && !this.store.hdbKhoa(h);
+  });
+  protected readonly xemCP = computed(() => this.store.canView('cpHD'));
+  protected moCP(id: string): void {
+    if (this.xemCP()) void this.router.navigate(['/ke-toan'], { queryParams: { tab: 'chi-phi', id } });
+  }
   protected readonly buoc = computed(() => hdbBuocLoiNhuan(this.h(), this.c()));
   protected readonly cps = computed(() =>
     this.store

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { map } from 'rxjs';
@@ -34,7 +34,7 @@ interface Dong {
   template: `
     <div class="page-head">
       <div><div class="crumbs"><a routerLink="/">Trang chủ</a> › Báo cáo › {{ tabTen() }}</div><h1>Báo cáo</h1></div>
-      <div class="actions"><button type="button" class="btn quiet" (click)="xuat()"><app-icon name="download" [size]="16" /> Xuất Excel</button></div>
+      <div class="actions"><button type="button" class="btn quiet" (click)="xuat()"><app-icon name="download" [size]="16" /> Xuất CSV</button></div>
     </div>
     <div class="tabs" role="tablist">
       @for (t of tabs; track t.k) {
@@ -82,7 +82,7 @@ interface Dong {
             <tbody>
               @for (r of namRows(); track r.h.id) {
                 <tr class="click" (click)="moHD(r.h.id)">
-                  <td><a [routerLink]="['/hop-dong-ban', r.h.id]" (click)="$event.stopPropagation()"><b>{{ r.h.soHD }}</b></a><span class="sub">{{ r.h.tenKH }}</span></td>
+                  <td><a [routerLink]="['/hop-dong-ban', r.h.id]" [queryParams]="{ tab: '3' }" (click)="$event.stopPropagation()"><b>{{ r.h.soHD }}</b></a><span class="sub">{{ r.h.tenKH }}</span></td>
                   <td>{{ store.userName(r.h.sale) }}</td>
                   <td>{{ viDate(r.h.ngayKy) }}</td>
                   <td><app-tt [v]="r.h.trangThai" /></td>
@@ -111,7 +111,7 @@ interface Dong {
             <tbody>
               @for (r of namRows(); track r.h.id) {
                 <tr class="click" (click)="moHD(r.h.id)">
-                  <td><a [routerLink]="['/hop-dong-ban', r.h.id]" (click)="$event.stopPropagation()"><b>{{ r.h.soHD }}</b></a><span class="sub">{{ r.h.tenKH }}</span></td>
+                  <td><a [routerLink]="['/hop-dong-ban', r.h.id]" [queryParams]="{ tab: '3' }" (click)="$event.stopPropagation()"><b>{{ r.h.soHD }}</b></a><span class="sub">{{ r.h.tenKH }}</span></td>
                   <td>{{ viDate(r.h.ngayKy) }}</td>
                   <td class="num">{{ money(r.h.truocVAT) }}</td>
                   <td class="num">
@@ -146,7 +146,7 @@ interface Dong {
             <tbody>
               @for (r of ttRows(); track r.h.id) {
                 <tr class="click" [class.overdue]="r.tienQuaHan > 0" (click)="moHD(r.h.id)">
-                  <td><a [routerLink]="['/hop-dong-ban', r.h.id]" (click)="$event.stopPropagation()"><b>{{ r.h.soHD }}</b></a><span class="sub">{{ r.h.tenKH }}</span></td>
+                  <td><a [routerLink]="['/hop-dong-ban', r.h.id]" [queryParams]="{ tab: '3' }" (click)="$event.stopPropagation()"><b>{{ r.h.soHD }}</b></a><span class="sub">{{ r.h.tenKH }}</span></td>
                   <td>{{ store.userName(r.h.sale) }}</td>
                   <td class="num">{{ money(r.c.sauVAT) }}</td>
                   <td><div class="cell-bar"><div class="bar"><i [style.width.%]="w(r.c.pctThu)"></i></div><b class="sub">{{ pct(r.c.pctThu) }}</b></div></td>
@@ -186,9 +186,15 @@ export class BaoCaoPage {
   });
   protected readonly tabTen = computed(() => TABS.find((x) => x.k === this.tab())?.t ?? '');
 
-  protected readonly nam = signal(String(new Date().getFullYear()));
-  protected readonly q = signal('');
-  protected readonly sale = signal<string[]>([]);
+  // Bộ lọc ghi lên URL (?nam=&q=&sale=) — mở HĐ rồi bấm Back vẫn giữ lọc.
+  private readonly qp0 = this.route.snapshot.queryParamMap;
+  protected readonly nam = signal(this.qp0.get('nam') ?? String(new Date().getFullYear()));
+  protected readonly q = signal(this.qp0.get('q') ?? '');
+  protected readonly sale = signal<string[]>(this.qp0.getAll('sale'));
+  private readonly ghiUrl = effect(() => {
+    const queryParams = { nam: this.nam(), q: this.q() || null, sale: this.sale().length ? this.sale() : null };
+    untracked(() => void this.router.navigate([], { relativeTo: this.route, queryParams, queryParamsHandling: 'merge', replaceUrl: true }));
+  });
   protected readonly rieng = computed(() => this.store.ownOnly('baoCao'));
 
   /** HĐ trong phạm vi xem, đã áp tìm kiếm + Sale, kèm số tự tính. */
@@ -274,7 +280,7 @@ export class BaoCaoPage {
     void this.router.navigate([], { relativeTo: this.route, queryParams: { tab: t }, queryParamsHandling: 'merge', replaceUrl: true });
   }
   protected moHD(id: string): void {
-    void this.router.navigate(['/hop-dong-ban', id]);
+    void this.router.navigate(['/hop-dong-ban', id], { queryParams: { tab: '3' } });
   }
 
   protected xuat(): void {

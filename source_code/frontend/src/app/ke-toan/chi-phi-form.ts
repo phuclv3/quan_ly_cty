@@ -7,15 +7,17 @@ import { money, sum, viMoment } from '../core/util';
 import { Modal, MoneyInput, Pick, PickOption, TrangThai } from '../shared/ui-kit';
 import { Confirm } from '../shared/confirm';
 import { guiXoa } from '../shared/ho-so';
+import { LichSu } from '../shared/lich-su';
+import { TepDinhKem } from '../shared/tep-dinh-kem';
 
 /** Popup Nhập chi phí thực hiện HĐ (KT-13, KT-15). */
 @Component({
   selector: 'app-chi-phi-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Modal, MoneyInput, Pick, TrangThai, RouterLink],
+  imports: [Modal, MoneyInput, Pick, TrangThai, RouterLink, LichSu, TepDinhKem],
   template: `
     @if (f(); as c) {
-      <app-modal [open]="true" [title]="c.id ? 'Chi phí ' + c.maCP : 'Nhập chi phí thực hiện HĐ'" size="md" (closed)="closed.emit()">
+      <app-modal [open]="true" [title]="c.id ? 'Chi phí ' + c.maCP : 'Nhập chi phí thực hiện HĐ'" size="md" [dirty]="dirty()" (closed)="closed.emit()">
         @if (c.trangThai === 'Từ chối' && c.lyDoTuChoi) {
           <div class="note bad">Bị từ chối bởi {{ store.userName(c.nguoiDuyet) }} ({{ viMoment(c.ngayDuyet) }}): {{ c.lyDoTuChoi }}</div>
         }
@@ -26,27 +28,34 @@ import { guiXoa } from '../shared/ho-so';
         <div class="form-grid">
           <div class="field"><span class="lbl">Mã CP</span><div class="ro">{{ c.maCP || 'Tự sinh khi lưu (CP' + c.ngay.slice(2, 4) + '-nnnn)' }}</div></div>
           <div class="field">
-            <label>Số HĐ bán</label>
+            <label>Số HĐ bán <span class="req">*</span></label>
             <app-pick [options]="hdOpts()" [disabled]="!edit()" [value]="c.hdbId" (valueChange)="set('hdbId', $event)" />
-            @if (hd(); as h) { <a class="hint linkish" [routerLink]="['/hop-dong-ban', h.id]" (click)="closed.emit()">Mở HĐ {{ h.soHD }}</a> }
+            @if (hd(); as h) { <a class="hint linkish" [routerLink]="['/hop-dong-ban', h.id]" [queryParams]="{ tab: 4 }">Mở HĐ {{ h.soHD }}</a> }
           </div>
           <div class="field"><label for="cf-ngay">Ngày</label><input id="cf-ngay" type="date" [disabled]="!edit()" [value]="c.ngay" (input)="set('ngay', $any($event.target).value)" /></div>
           <div class="field"><span class="lbl">Trạng thái</span><div class="ro">@if (choXoa()) { <app-tt v="Chờ xoá" /> } @else { <app-tt [v]="c.trangThai" /> }</div></div>
-          <div class="field"><label>Loại chi phí thực hiện</label><app-pick [options]="lcpOpts()" [disabled]="!edit()" [value]="c.loaiChiPhi" (valueChange)="set('loaiChiPhi', $event)" /></div>
-          <div class="field"><label>Số tiền</label><app-money [disabled]="!edit()" [value]="c.soTien" (valueChange)="set('soTien', $event)" /></div>
-          <div class="field"><label>Nguồn tiền chi ra</label><app-pick [options]="nguonOpts()" [disabled]="!edit()" [value]="c.nguonTien" (valueChange)="set('nguonTien', $event)" /></div>
+          <div class="field"><label>Loại chi phí thực hiện <span class="req">*</span></label><app-pick [options]="lcpOpts()" [disabled]="!edit()" [value]="c.loaiChiPhi" (valueChange)="set('loaiChiPhi', $event)" /></div>
+          <div class="field"><label>Số tiền <span class="req">*</span></label><app-money [disabled]="!edit()" [value]="c.soTien" (valueChange)="set('soTien', $event)" /></div>
+          <div class="field"><label>Nguồn tiền chi ra <span class="req">*</span></label><app-pick [options]="nguonOpts()" [disabled]="!edit()" [value]="c.nguonTien" (valueChange)="set('nguonTien', $event)" /></div>
           <div class="field"><span class="lbl">Người thực hiện</span><div class="ro">{{ store.userName(c.nguoiThucHien) }}</div></div>
           @if (c.loaiChiPhi === HH) {
-            <div class="field"><label for="cf-nn">Người nhận (bắt buộc)</label><input id="cf-nn" [disabled]="!edit()" [value]="c.nguoiNhan || ''" (input)="set('nguoiNhan', $any($event.target).value)" /></div>
+            <div class="field"><label for="cf-nn">Người nhận <span class="req">*</span></label><input id="cf-nn" [disabled]="!edit()" [value]="c.nguoiNhan || ''" (input)="set('nguoiNhan', $any($event.target).value)" /></div>
           }
           @if (c.loaiChiPhi === VC) {
             <div class="field"><label for="cf-vc">Đơn vị vận chuyển</label><input id="cf-vc" [disabled]="!edit()" [value]="c.donViVanChuyen || ''" (input)="set('donViVanChuyen', $any($event.target).value)" /></div>
           }
-          <div class="field wide"><label for="cf-nd">Nội dung</label><textarea id="cf-nd" rows="2" [disabled]="!edit()" [value]="c.noiDung" (input)="set('noiDung', $any($event.target).value)"></textarea></div>
+          <div class="field wide"><label for="cf-nd">Nội dung <span class="req">*</span></label><textarea id="cf-nd" rows="2" [disabled]="!edit()" [value]="c.noiDung" (input)="set('noiDung', $any($event.target).value)"></textarea></div>
           <div class="field wide"><label for="cf-gc">Ghi chú</label><input id="cf-gc" [disabled]="!edit()" [value]="c.ghiChu || ''" (input)="set('ghiChu', $any($event.target).value)" /></div>
           @if (c.nguoiDuyet && c.trangThai === 'Đã duyệt') {
             <div class="field"><span class="lbl">Người duyệt</span><div class="ro">{{ store.userName(c.nguoiDuyet) }} · {{ viMoment(c.ngayDuyet) }}</div></div>
           }
+          @if (duyetDuoc() && hd(); as h) {
+            <div class="field wide"><span class="lbl">Ngữ cảnh HĐ {{ h.soHD }}</span>
+              <div class="ro">Giá trị sau VAT {{ money(ngucanh().sauVAT) }} đ · CP đã duyệt {{ money(ngucanh().cpDuyet) }} đ · LN gộp tạm tính {{ money(ngucanh().lnGop) }} đ</div>
+            </div>
+          }
+          <app-tep-dinh-kem class="wide" [files]="c.files" [edit]="edit()" (filesChange)="set('files', $event)" />
+          <app-lich-su class="wide" [rows]="c.lichSu ?? []" [mo]="c.trangThai === 'Từ chối' || duyetDuoc()" />
         </div>
         @if (c.loaiChiPhi === HH) {
           <p class="hint muted">Hoa hồng ghi ở đây, không lập thêm phiếu Chi ở Sổ quỹ (tránh trừ quỹ 2 lần) — duyệt xong trừ thẳng Nguồn tiền đã chọn.</p>
@@ -57,10 +66,14 @@ import { guiXoa } from '../shared/ho-so';
             <button type="button" class="btn danger quiet" (click)="xoa()">Xoá</button>
           }
           <span style="flex:1"></span>
-          <button type="button" class="btn quiet" (click)="closed.emit()">Đóng</button>
+          <button type="button" class="btn quiet" (click)="closed.emit()">{{ edit() ? 'Huỷ' : 'Đóng' }}</button>
           @if (edit()) {
             <button type="button" class="btn quiet" (click)="luu(false)">Lưu nháp</button>
             <button type="button" class="btn" (click)="luu(true)">Gửi duyệt</button>
+          }
+          @if (duyetDuoc() && c.trangThai === 'Chờ duyệt' && !choXoa()) {
+            <button type="button" class="btn danger quiet" (click)="tuChoi.emit()">Từ chối</button>
+            <button type="button" class="btn ok" (click)="duyet.emit()">Duyệt</button>
           }
         </div>
       </app-modal>
@@ -71,7 +84,12 @@ export class ChiPhiForm {
   protected readonly store = inject(Store);
   private readonly confirm = inject(Confirm);
   readonly chiPhi = input<ChiPhiHD | null>(null);
+  /** Mở từ tab Chờ duyệt: hiện nút Duyệt / Từ chối và ngữ cảnh HĐ (KT-14). */
+  readonly duyetDuoc = input(false);
   readonly closed = output<void>();
+  readonly duyet = output<void>();
+  readonly tuChoi = output<void>();
+  protected readonly money = money;
 
   protected readonly HH = LCP_HOA_HONG;
   protected readonly VC = LCP_VAN_CHUYEN;
@@ -81,6 +99,11 @@ export class ChiPhiForm {
     return c ? structuredClone(c) : null;
   });
   protected readonly err = linkedSignal({ source: this.chiPhi, computation: () => '' });
+  protected readonly dirty = computed(() => this.edit() && JSON.stringify(this.f()) !== JSON.stringify(this.chiPhi()));
+  protected readonly ngucanh = computed(() => {
+    const h = this.hd();
+    return h ? hdbCalc(h, this.store.db()) : hdbCalc(this.store.newHdb(), this.store.db());
+  });
 
   protected readonly edit = computed(() => {
     const c = this.chiPhi();

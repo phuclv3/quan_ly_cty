@@ -12,6 +12,9 @@ import { Confirm } from '../shared/confirm';
 import { Icon } from '../shared/icon';
 import { FileHd, ThongTinHd, XemFileHd, taiFileCho } from '../shared/file-hd';
 import { parseDanExcel } from './hdm-util';
+import { ThemDoiTac } from '../shared/them-doi-tac';
+import { Unsaved, canhBaoChuaLuu } from '../shared/unsaved';
+import { linkPhieuKho } from '../kho/kho-util';
 
 type Tab = '1' | '2' | '3' | '4';
 const FLOW: TrangThaiHDM[] = ['Nháp', 'Đã ký', 'Đang nhận hàng', 'Đã nhận đủ', 'Đã tất toán'];
@@ -35,7 +38,7 @@ interface TraForm {
   selector: 'app-hdm-detail',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'page' },
-  imports: [RouterLink, Kpi, Modal, MoneyInput, Pick, TrangThai, HoSoPanel, Icon, FileHd, XemFileHd],
+  imports: [RouterLink, Kpi, Modal, MoneyInput, Pick, TrangThai, HoSoPanel, Icon, FileHd, XemFileHd, ThemDoiTac],
   template: `
     @if (!isNew() && !saved()) {
       <div class="page-head"><div><div class="crumbs"><a routerLink="/">Trang chủ</a> › <a routerLink="/hop-dong-mua">Hợp đồng mua</a></div><h1>Không tìm thấy HĐ mua</h1></div></div>
@@ -71,6 +74,17 @@ interface TraForm {
       @if (choXoa()) { <div class="note bad">HĐ đang có yêu cầu xoá chờ duyệt — tạm khoá sửa.</div> }
       @else if (locked()) { <div class="note info">HĐ ở trạng thái {{ saved()?.trangThai }} — đã khoá sửa.</div> }
       @if (dirty() && !isNew()) { <div class="note warn">Có thay đổi chưa lưu.</div> }
+      @if (ptDung(); as pt) {
+        <div class="note info">
+          Giá đầu vào của HĐ Phú Tài
+          @if (store.canView('phuTai')) { <a class="linkish" [routerLink]="['/phu-tai', pt.id]" [queryParams]="{ tab: 3 }">{{ pt.soHD }}</a> } @else { {{ pt.soHD }} }.
+        </div>
+      } @else if (ptVe(); as pt) {
+        <div class="note info">
+          Tạo từ HĐ Phú Tài {{ pt.soHD }} — lưu xong, chọn HĐ mua này ở
+          <a class="linkish" [routerLink]="['/phu-tai', pt.id]" [queryParams]="{ tab: 3 }">Tab 3 của HĐ Phú Tài</a>.
+        </div>
+      }
 
       <div class="kpis">
         <app-kpi label="Tổng giá trị (VNĐ)" [value]="money(c.tong)" [sub]="m.nhapTay ? 'Nhập tay' : 'Σ thành tiền các dòng'" />
@@ -118,6 +132,7 @@ interface TraForm {
                 <div class="field span-2">
                   <label for="ncc">Chọn nhà cung cấp <span class="req">*</span></label>
                   <app-pick inputId="ncc" [options]="nccOpts()" [value]="m.maNCC" [disabled]="!edit()" (valueChange)="chonNCC($event)" />
+                  @if (edit()) { <app-them-doi-tac loai="ncc" (daTao)="chonNCC($event)" /> }
                 </div>
                 <div class="field"><span class="lbl">MST</span><div class="ro">{{ m.mst || '—' }}</div></div>
                 <div class="field"><span class="lbl">Tên NCC</span><div class="ro multi">{{ m.tenNCC || '—' }}</div></div>
@@ -129,12 +144,13 @@ interface TraForm {
               <legend>Phân loại &amp; ghi chú</legend>
               <div class="form-grid cols-3">
                 <div class="field span-3">
-                  <label class="check-card" [class.on]="m.thuocPhuTai" [class.off]="!edit() || (!m.thuocPhuTai && !doiPTDuoc())">
-                    <input type="checkbox" [checked]="m.thuocPhuTai" [disabled]="!edit() || (!m.thuocPhuTai && !doiPTDuoc())" (change)="set('thuocPhuTai', $any($event.target).checked)" />
+                  <label class="check-card" [class.on]="m.thuocPhuTai" [class.off]="!edit() || (!m.thuocPhuTai && !doiPTDuoc()) || (m.thuocPhuTai && !!ptDung())">
+                    <input type="checkbox" [checked]="m.thuocPhuTai" [disabled]="!edit() || (!m.thuocPhuTai && !doiPTDuoc()) || (m.thuocPhuTai && !!ptDung())" (change)="set('thuocPhuTai', $any($event.target).checked)" />
                     <span>
                       <b>Thuộc Phú Tài</b>
                       <span class="hint">Bật → HĐ không tính công nợ phải trả, không sinh phiếu nhập kho và phiếu chi của Oxy; chỉ dùng làm giá đầu vào cho HĐ Phú Tài.</span>
                       @if (!m.thuocPhuTai && !doiPTDuoc()) { <span class="err">HĐ đã có phiếu nhập kho hoặc phiếu chi — không bật được.</span> }
+                      @if (m.thuocPhuTai && ptDung(); as pt) { <span class="err">Đang là giá đầu vào của HĐ Phú Tài {{ pt.soHD }} — bỏ khỏi HĐ Phú Tài trước khi tắt.</span> }
                     </span>
                   </label>
                 </div>
@@ -159,10 +175,13 @@ interface TraForm {
             </div>
             <div class="note info">“Đang nhận hàng” và “Đã nhận đủ” tự chuyển theo phiếu nhập kho (Tab 3). “Đã tất toán” cần Còn phải trả = 0, Xuất hoá đơn = Đã và đủ hồ sơ bắt buộc.</div>
             @if (!isNew() && !locked() && store.canEdit('hdm')) {
+              @if (choTatToan() && thieuTatToan().length) {
+                <p class="note warn">Còn thiếu để chuyển “Đã tất toán”: {{ thieuTatToan().join(' · ') }}</p>
+              }
               <div class="btn-row">
                 @if (trangThai() === 'Nháp') { <button type="button" class="btn" (click)="chuyen('Đã ký')">Chuyển “Đã ký”</button> }
-                @if (trangThai() === 'Đã ký' || trangThai() === 'Đang nhận hàng' || trangThai() === 'Đã nhận đủ') {
-                  <button type="button" class="btn ok" (click)="chuyen('Đã tất toán')">Chuyển “Đã tất toán”</button>
+                @if (choTatToan()) {
+                  <button type="button" class="btn ok" [disabled]="thieuTatToan().length > 0" (click)="chuyen('Đã tất toán')">Chuyển “Đã tất toán”</button>
                 }
                 <button type="button" class="btn danger" (click)="chuyen('Huỷ')">Huỷ HĐ</button>
               </div>
@@ -216,7 +235,10 @@ interface TraForm {
                     <td><app-pick [options]="lhOpts()" [value]="d.loaiHang" [disabled]="!edit() || da > 0" (valueChange)="chonLoai(i, $event)" /></td>
                     <td><input [value]="d.tenHang" [disabled]="!edit()" (input)="setDong(i, { tenHang: $any($event.target).value })" aria-label="Tên hàng" /></td>
                     <td><input [value]="d.thongSo" [disabled]="!edit() || da > 0" [placeholder]="thuocTinh(d.loaiHang)" (input)="setDong(i, { thongSo: $any($event.target).value })" aria-label="Thông số" /></td>
-                    <td><input type="number" min="0" class="num" [value]="d.soLuong" [disabled]="!edit()" (input)="setDong(i, { soLuong: +$any($event.target).value || 0 })" aria-label="Số lượng" /></td>
+                    <td>
+                      <input type="number" [min]="da" class="num" [value]="d.soLuong" [disabled]="!edit()" (input)="setDong(i, { soLuong: +$any($event.target).value || 0 })" aria-label="Số lượng" />
+                      @if (da > 0 && d.soLuong < da) { <span class="err">≥ {{ num(da) }} (đã nhập)</span> }
+                    </td>
                     <td><input [value]="d.dvt" [disabled]="!edit()" (input)="setDong(i, { dvt: $any($event.target).value })" aria-label="Đơn vị tính" /></td>
                     <td><app-money [value]="d.donGia" [decimals]="d.loaiTien === 'VNĐ' ? 0 : 2" [disabled]="!edit()" (valueChange)="setDong(i, { donGia: $event })" /></td>
                     <td>
@@ -267,13 +289,18 @@ interface TraForm {
                 <thead><tr><th>Số phiếu</th><th>Ngày</th><th>Vị trí kho</th><th class="num">Tổng SL</th><th>Người thực hiện</th><th>Trạng thái</th><th></th></tr></thead>
                 <tbody>
                   @for (p of phieuNhap(); track p.id) {
+                    @let tay = p.nguonGoc !== 'Tự động HĐ Mua';
                     <tr>
-                      <td><b>{{ p.soPhieu }}</b></td><td>{{ viDate(p.ngay) }}</td><td>{{ store.khoTen(p.kho) }}</td><td class="num">{{ num(tongSL(p)) }}</td>
+                      <td>
+                        @if (store.canView('khoTon')) { <a [routerLink]="'/kho'" [queryParams]="linkPK(p)"><b>{{ p.soPhieu }}</b></a> } @else { <b>{{ p.soPhieu }}</b> }
+                        @if (tay) { <span class="tag mute" title="Phiếu điều chỉnh tay gắn HĐ — không tính vào SL đã nhập của dòng hàng">Điều chỉnh tay</span> }
+                      </td>
+                      <td>{{ viDate(p.ngay) }}</td><td>{{ store.khoTen(p.kho) }}</td><td class="num">{{ num(tongSL(p)) }}</td>
                       <td>{{ store.userName(p.nguoiThucHien) }}</td>
                       <td><app-tt [v]="p.trangThai" /> @if (store.dangChoXoa('PhieuKho', p.id)) { <app-tt v="Chờ xoá" /> }</td>
                       <td>
-                        @if (p.trangThai === 'Hiệu lực' && !store.dangChoXoa('PhieuKho', p.id) && store.canEdit('hdmNhapKho') && store.level('duyetXoa') !== 'none') {
-                          <button type="button" class="btn sm danger" (click)="huyPhieu(p.id, p.soPhieu)">Bỏ nhập</button>
+                        @if (p.trangThai === 'Hiệu lực' && !store.dangChoXoa('PhieuKho', p.id) && store.canEdit(tay ? 'khoPhieuTay' : 'hdmNhapKho') && store.level('duyetXoa') !== 'none') {
+                          <button type="button" class="btn sm danger" (click)="huyPhieu(p.id, p.soPhieu)">{{ tay ? 'Huỷ phiếu' : 'Bỏ nhập' }}</button>
                         }
                       </td>
                     </tr>
@@ -332,15 +359,21 @@ interface TraForm {
                 @for (d of m.dotTT; track d.dot; let i = $index) {
                   @let daTra = daTraDot(d);
                   @let phieu = store.phieuById(d.phieuChiId);
+                  @let khoaDot = store.dotMuaKhoa(d);
                   <tr [class.overdue]="quaHan(d)">
                     <td>Đợt {{ d.dot }} @if (quaHan(d)) { <app-tt v="Quá hạn" /> }</td>
-                    <td><app-money [value]="d.soTien" [disabled]="!edit4()" (valueChange)="setDot(i, { soTien: $event })" /></td>
-                    <td><input type="date" [value]="d.han ?? ''" [disabled]="!edit4()" (input)="setDot(i, { han: $any($event.target).value || undefined })" aria-label="Hạn trả" /></td>
+                    <td><app-money [value]="d.soTien" [disabled]="!edit4() || khoaDot" (valueChange)="setDot(i, { soTien: $event })" /></td>
+                    <td><input type="date" [value]="d.han ?? ''" [disabled]="!edit4() || khoaDot" [attr.title]="khoaDot ? 'Đợt đã có phiếu chi — khoá số tiền và hạn' : null" (input)="setDot(i, { han: $any($event.target).value || undefined })" aria-label="Hạn trả" /></td>
                     <td>{{ viDate(d.ngayTra) }}</td>
                     <td class="num">{{ d.soTienTra ? money(d.soTienTra) : '—' }}</td>
                     @if (!m.thuocPhuTai) {
                       <td>{{ d.nguonTien ? store.nguonTen(d.nguonTien) : '—' }}</td>
-                      <td>@if (phieu) { {{ phieu.soPhieu }} <app-tt [v]="phieu.trangThai" /> } @else { <span class="muted">—</span> }</td>
+                      <td>
+                        @if (phieu) {
+                          @if (xemPhieu()) { <a class="linkish" routerLink="/ke-toan" [queryParams]="{ tab: 'so-quy', id: phieu.id }">{{ phieu.soPhieu }}</a> } @else { {{ phieu.soPhieu }} }
+                          <app-tt [v]="phieu.trangThai" />
+                        } @else { <span class="muted">—</span> }
+                      </td>
                     }
                     <td class="num">{{ money(daTra) }}</td>
                     <td><input [value]="d.ghiChu ?? ''" [disabled]="!edit4()" (input)="setDot(i, { ghiChu: $any($event.target).value })" aria-label="Ghi chú đợt" /></td>
@@ -384,8 +417,14 @@ interface TraForm {
               <tbody>
                 @for (x of m.checklist; track x.ten; let i = $index) {
                   <tr>
-                    <td><label class="check-row"><input type="checkbox" [checked]="x.xong" [disabled]="!edit4()" (change)="tichCL(i, $any($event.target).checked)" /> {{ x.ten }}</label></td>
-                    <td><input type="date" [value]="x.ngay ?? ''" [disabled]="!edit4() || !x.xong" (input)="setCL(i, $any($event.target).value || undefined)" [attr.aria-label]="'Ngày ' + x.ten" /></td>
+                    @let tuDong = x.ten === 'Đã nhập kho' && !m.thuocPhuTai;
+                    <td>
+                      <label class="check-row" [attr.title]="tuDong ? 'Tự tích khi nhập đủ hàng (Tab 3)' : null">
+                        <input type="checkbox" [checked]="x.xong" [disabled]="!edit4() || tuDong" (change)="tichCL(i, $any($event.target).checked)" /> {{ x.ten }}
+                        @if (tuDong) { <span class="sub muted">(tự động theo phiếu nhập)</span> }
+                      </label>
+                    </td>
+                    <td><input type="date" [value]="x.ngay ?? ''" [disabled]="!edit4() || !x.xong || tuDong" (input)="setCL(i, $any($event.target).value || undefined)" [attr.aria-label]="'Ngày ' + x.ten" /></td>
                   </tr>
                 }
               </tbody>
@@ -394,11 +433,11 @@ interface TraForm {
         }
       }
 
-      <app-modal [open]="danOpen()" title="Dán từ Excel" (closed)="danOpen.set(false)">
+      <app-modal [open]="danOpen()" title="Dán từ Excel" [dirty]="!!danText().trim()" (closed)="danOpen.set(false)">
         <p class="sub">Mỗi dòng một mặt hàng, các cột cách nhau bằng Tab theo thứ tự: <b>Tên hàng · Thông số · SL · Đơn giá · Loại tiền · Tỷ giá</b>. Loại hàng tự đoán theo tên — kiểm tra lại sau khi dán.</p>
         <textarea rows="10" style="width: 100%" [value]="danText()" (input)="danText.set($any($event.target).value)" aria-label="Dữ liệu dán"></textarea>
         <div foot class="btn-row">
-          <button type="button" class="btn quiet" (click)="danOpen.set(false)">Thôi</button>
+          <button type="button" class="btn quiet" (click)="danOpen.set(false)">Huỷ</button>
           <button type="button" class="btn" [disabled]="!danText().trim()" (click)="dan()">Thêm dòng</button>
         </div>
       </app-modal>
@@ -441,7 +480,7 @@ interface TraForm {
           </div>
         }
         <div foot class="btn-row">
-          <button type="button" class="btn quiet" (click)="nhap.set(null)">Thôi</button>
+          <button type="button" class="btn quiet" (click)="nhap.set(null)">Huỷ</button>
           <button type="button" class="btn" (click)="xacNhanNhap()">Xác nhận nhập kho</button>
         </div>
       </app-modal>
@@ -469,7 +508,7 @@ interface TraForm {
           </div>
         }
         <div foot class="btn-row">
-          <button type="button" class="btn quiet" (click)="tra.set(null)">Thôi</button>
+          <button type="button" class="btn quiet" (click)="tra.set(null)">Huỷ</button>
           <button type="button" class="btn" (click)="xacNhanTra()">Ghi nhận</button>
         </div>
       </app-modal>
@@ -575,7 +614,43 @@ export class HdmDetail {
     const m = this.store.newHdm();
     const hdb = this.route.snapshot.queryParamMap.get('hdb');
     if (hdb && this.store.hdbById(hdb)) m.hdbId = hdb;
+    // Tạo từ HĐ Phú Tài (?pt=<id>): bật sẵn cờ "Thuộc Phú Tài".
+    if (this.ptVe()) m.thuocPhuTai = true;
     return m;
+  }
+
+  /** HĐ Phú Tài đang dùng HĐ mua này làm giá đầu vào (liên kết ngược). */
+  protected readonly ptDung = computed(() => {
+    const id = this.saved()?.id;
+    return id ? this.store.hopDongPhuTai().find((p) => p.hdMua.includes(id)) : undefined;
+  });
+  /** HĐ Phú Tài mở màn này để tạo HĐ mua (?pt=). */
+  protected readonly ptVe = computed(() => this.store.ptById(this.route.snapshot.queryParamMap.get('pt') ?? undefined));
+  protected readonly choTatToan = computed(() => ['Đã ký', 'Đang nhận hàng', 'Đã nhận đủ'].includes(this.trangThai()));
+  /** Điều kiện còn thiếu để tất toán — hiện trước khi bấm (như HĐ bán). */
+  protected readonly thieuTatToan = computed(() => {
+    const s = this.saved();
+    if (!s) return [];
+    const c = hdmCalc(s, this.store.db());
+    const out: string[] = [];
+    if (c.conPhaiTra > 0) out.push(`Còn phải trả NCC ${vnd(c.conPhaiTra)}`);
+    if (s.xuatHoaDon !== 'Đã') out.push('NCC chưa xuất hoá đơn');
+    const thieu = hoSoThieu(this.store.db(), 'HDM', s.id);
+    if (thieu.length) out.push(`Thiếu hồ sơ: ${thieu.join(', ')}`);
+    return out;
+  });
+  protected readonly xemPhieu = computed(() => this.store.canView('soQuy') && this.store.level('soQuy') !== 'draft');
+  protected readonly linkPK = linkPhieuKho;
+  private readonly unsaved = inject(Unsaved);
+
+  constructor() {
+    canhBaoChuaLuu(() => {
+      if (this.isNew()) {
+        const m = this.f();
+        return this.edit() && (!!(m.soHD || m.maNCC || m.ghiChu || m.ngayKy || m.chiTiet.length || m.dotTT.length) || this.fileCho().length > 0);
+      }
+      return this.canSave() && this.dirty();
+    });
   }
 
   // ── Sửa nháp ─────────────────────────────────────────────────────────
@@ -700,7 +775,9 @@ export class HdmDetail {
     if (this.isNew()) {
       void taiFileCho(this.store, 'HDM', m.id, this.fileCho());
       this.fileCho.set([]);
-      void this.router.navigate(['/hop-dong-mua', m.id], { queryParams: { hdb: null }, queryParamsHandling: 'merge', replaceUrl: true });
+      void this.unsaved.diSauKhiLuu(() =>
+        this.router.navigate(['/hop-dong-mua', m.id], { queryParams: { hdb: null }, queryParamsHandling: 'merge', replaceUrl: true }),
+      );
     }
     return true;
   }

@@ -24,7 +24,7 @@ const TABS: { k: Tab; t: string; p: Perm }[] = [
   imports: [RouterLink, DmKhachHang, DmNcc, DmLoaiChiPhi],
   template: `
     <div class="page-head">
-      <div><div class="crumbs"><a routerLink="/">Trang chủ</a> › Danh mục › {{ tabTen() }}</div><h1>Danh mục</h1></div>
+      <div><div class="crumbs"><a routerLink="/">Trang chủ</a> › Hệ thống › Danh mục › {{ tabTen() }}</div><h1>Danh mục</h1></div>
     </div>
     <div class="tabs" role="tablist">
       @for (t of tabs(); track t.k) {

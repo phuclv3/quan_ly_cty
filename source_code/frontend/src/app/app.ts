@@ -1,8 +1,9 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, afterNextRender, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, afterNextRender, computed, effect, inject, signal, untracked } from '@angular/core';
 import { NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
 import { Icon } from './shared/icon';
 import { ConfirmHost } from './shared/confirm';
 import { Modal } from './shared/ui-kit';
+import { Unsaved } from './shared/unsaved';
 import { applyLabels } from './shared/stack-table';
 import { Auth } from './core/auth';
 import { Store } from './core/store';
@@ -30,7 +31,10 @@ import { MAT_KHAU_TOI_THIEU } from './core/crypto';
       </header>
     }
 
-    @if (store.ready()) {
+    @if (store.ready() && auth.mustChange()) {
+      <!-- NT-02: bắt buộc đổi mật khẩu — chưa vào app, không hiện dữ liệu phía sau. -->
+      <main class="main empty">Đổi mật khẩu để tiếp tục.</main>
+    } @else if (store.ready()) {
       <router-outlet />
     } @else if (store.loadError()) {
       <main class="main"><div class="note bad">Không tải được dữ liệu: {{ store.loadError() }}</div></main>
@@ -38,7 +42,7 @@ import { MAT_KHAU_TOI_THIEU } from './core/crypto';
       <main class="main empty" aria-busy="true">Đang tải dữ liệu…</main>
     }
 
-    <app-modal [open]="pwOpen()" [title]="auth.mustChange() ? 'Bắt buộc đổi mật khẩu' : 'Đổi mật khẩu'" size="sm" (closed)="closePw()">
+    <app-modal [open]="pwOpen()" [title]="auth.mustChange() ? 'Bắt buộc đổi mật khẩu' : 'Đổi mật khẩu'" size="sm" [closable]="!auth.mustChange()" [dirty]="pwDirty()" (closed)="closePw()">
       @if (auth.mustChange()) {
         <div class="note warn">Tài khoản vừa được cấp / đặt lại mật khẩu. Đổi mật khẩu để vào ứng dụng.</div>
       }
@@ -51,15 +55,18 @@ import { MAT_KHAU_TOI_THIEU } from './core/crypto';
         @if (auth.mustChange()) {
           <button type="button" class="btn quiet" (click)="auth.logout()">Đăng xuất</button>
         } @else {
-          <button type="button" class="btn quiet" (click)="closePw()">Thôi</button>
+          <button type="button" class="btn quiet" (click)="closePw()">Huỷ</button>
         }
         <button type="button" class="btn" (click)="savePw()">Đổi mật khẩu</button>
       </ng-container>
     </app-modal>
 
     <app-confirm-host />
-    @if (store.toast()) { <div class="toast" role="status">{{ store.toast() }}</div> }
+    @if (store.toast()) {
+      <div class="toast" [class.bad]="store.toastTone() === 'bad'" [attr.role]="store.toastTone() === 'bad' ? 'alert' : 'status'">{{ store.toast() }}</div>
+    }
   `,
+  host: { '(window:beforeunload)': 'truocKhiThoat($event)' },
 })
 export class App {
   protected readonly store = inject(Store);
@@ -77,8 +84,18 @@ export class App {
   protected readonly pwOpen = computed(() => this.auth.mustChange() || this.ui.doiMatKhau());
   protected readonly pw = signal({ cu: '', moi: '', lai: '' });
   protected readonly pwErr = signal<string | null>(null);
+  protected readonly pwDirty = computed(() => !this.auth.mustChange() && Object.values(this.pw()).some((v) => !!v));
+  private readonly unsaved = inject(Unsaved);
 
   constructor() {
+    // Mỗi lần mở popup đổi mật khẩu (từ menu): xoá chữ và lỗi cũ.
+    effect(() => {
+      if (!this.pwOpen()) return;
+      untracked(() => {
+        this.pw.set({ cu: '', moi: '', lai: '' });
+        this.pwErr.set(null);
+      });
+    });
     inject(Router).events.subscribe((e) => {
       if (e instanceof NavigationEnd) this.ui.closeDrawer();
     });
@@ -103,10 +120,11 @@ export class App {
     });
   }
 
-  protected openPw(): void {
-    this.pw.set({ cu: '', moi: '', lai: '' });
-    this.pwErr.set(null);
-    this.ui.doiMatKhau.set(true);
+  /** Đóng tab / tải lại khi còn thay đổi chưa lưu → trình duyệt hỏi (NT-05). */
+  protected truocKhiThoat(e: BeforeUnloadEvent): void {
+    if (!this.unsaved.any()) return;
+    e.preventDefault();
+    e.returnValue = '';
   }
   protected closePw(): void {
     if (this.auth.mustChange()) return;

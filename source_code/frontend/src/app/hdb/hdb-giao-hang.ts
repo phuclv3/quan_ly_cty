@@ -7,6 +7,8 @@ import { Confirm } from '../shared/confirm';
 import { guiXoa } from '../shared/ho-so';
 import { Modal, Pick, PickOption, TrangThai } from '../shared/ui-kit';
 import { Icon } from '../shared/icon';
+import { RouterLink } from '@angular/router';
+import { linkPhieuKho } from '../kho/kho-util';
 
 interface DongNhap {
   loaiHang: string;
@@ -18,7 +20,7 @@ interface DongNhap {
 @Component({
   selector: 'app-hdb-giao-hang',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Modal, Pick, TrangThai, Icon],
+  imports: [Modal, Pick, TrangThai, Icon, RouterLink],
   template: `
     <section class="card">
       <div class="section-title">
@@ -35,7 +37,7 @@ interface DongNhap {
             @for (p of phieus(); track p.id) {
               <tr>
                 <td>{{ viDate(p.ngay) }}</td>
-                <td><b>{{ p.soPhieu }}</b></td>
+                <td>@if (store.canView('khoTon')) { <a routerLink="/kho" [queryParams]="link(p)"><b>{{ p.soPhieu }}</b></a> } @else { <b>{{ p.soPhieu }}</b> }</td>
                 <td>{{ store.khoTen(p.kho) }}</td>
                 <td class="sub">{{ moTaDong(p) }}</td>
                 <td class="num">{{ num(tongSL(p)) }}</td>
@@ -57,14 +59,14 @@ interface DongNhap {
       </div>
     </section>
 
-    <app-modal [open]="open()" title="Ghi nhận giao hàng" [sub]="'HĐ ' + h().soHD" size="lg" (closed)="open.set(false)">
+    <app-modal [open]="open()" title="Ghi nhận giao hàng" [sub]="'HĐ ' + h().soHD" size="lg" [dirty]="dirty()" (closed)="open.set(false)">
       <div class="form-grid">
         <div class="field">
-          <label for="gh-ngay">Ngày giao *</label>
+          <label for="gh-ngay">Ngày giao <span class="req">*</span></label>
           <input id="gh-ngay" type="date" [value]="ngay()" (input)="ngay.set($any($event.target).value)" />
         </div>
         <div class="field">
-          <label for="gh-kho">Vị trí kho *</label>
+          <label for="gh-kho">Vị trí kho <span class="req">*</span></label>
           <select id="gh-kho" (change)="kho.set($any($event.target).value)">
             @for (k of store.khoDangDung(); track k.id) {
               <option [value]="k.id" [selected]="k.id === kho()">{{ k.id === KHO_CT ? k.ten + ' — không qua kho' : k.ten }}</option>
@@ -95,7 +97,7 @@ interface DongNhap {
         <p class="note warn">Số lượng xuất vượt tồn tại kho đã chọn (vẫn cho ghi nhận): {{ vuot().join('; ') }}</p>
       }
       <div foot class="btn-row">
-        <button type="button" class="btn quiet" (click)="open.set(false)">Thôi</button>
+        <button type="button" class="btn quiet" (click)="open.set(false)">Huỷ</button>
         <button type="button" class="btn" (click)="xacNhan()">Xác nhận — sinh phiếu Xuất kho</button>
       </div>
     </app-modal>
@@ -119,6 +121,9 @@ export class HdbGiaoHang {
   protected readonly ghiChu = signal('');
   protected readonly dong = signal<DongNhap[]>([]);
   protected readonly goiY = signal(false);
+  private readonly goc = signal('');
+  private readonly anh = computed(() => JSON.stringify([this.ngay(), this.kho(), this.ghiChu(), this.dong()]));
+  protected readonly dirty = computed(() => this.open() && this.anh() !== this.goc());
 
   protected readonly coTheGiao = computed(
     () => !this.khoa() && this.h().trangThai !== 'Báo giá' && this.store.canEdit('hdbGiaoHang', this.h().sale),
@@ -136,6 +141,8 @@ export class HdbGiaoHang {
       .map((l) => ({ value: l.id, label: l.ten, hint: `${l.nhom} · ${l.dvt}` })),
   );
   protected readonly vuot = computed(() => (this.open() ? this.store.vuotTon(this.kho(), this.dong().filter((d) => d.loaiHang && d.soLuong > 0)) : []));
+
+  protected readonly link = linkPhieuKho;
 
   protected moTaDong(p: PhieuKho): string {
     return p.dong.map((d) => `${this.store.loaiHangTen(d.loaiHang)}${d.thuocTinh ? ' ' + d.thuocTinh : ''} × ${num(d.soLuong)}`).join('; ');
@@ -167,6 +174,7 @@ export class HdbGiaoHang {
     this.ngay.set(todayIso());
     this.kho.set(this.store.khoDangDung()[0]?.id ?? '');
     this.ghiChu.set('');
+    this.goc.set(this.anh());
     this.open.set(true);
   }
 

@@ -6,6 +6,7 @@ import { money, pct, sum, todayIso, viDate } from '../core/util';
 import { BuocTable, Kpi, MoneyInput, TrangThai } from '../shared/ui-kit';
 import { Icon } from '../shared/icon';
 import { Confirm } from '../shared/confirm';
+import { RouterLink } from '@angular/router';
 
 interface ThuNhap {
   ngayThu: string;
@@ -17,7 +18,7 @@ interface ThuNhap {
 @Component({
   selector: 'app-hdb-tab3',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MoneyInput, BuocTable, Kpi, TrangThai, Icon],
+  imports: [MoneyInput, BuocTable, Kpi, TrangThai, Icon, RouterLink],
   template: `
     <div class="kpis">
       <app-kpi label="Giá trị sau VAT" [value]="money(c().sauVAT)" />
@@ -143,7 +144,11 @@ interface ThuNhap {
                 }
                 <td>
                   @let p = store.phieuById(d.phieuThuId);
-                  @if (p) { <span class="sub">{{ p.soPhieu }}</span> <app-tt [v]="p.trangThai" /> } @else { <span class="muted">—</span> }
+                  @if (p) {
+                    @if (xemPhieu()) { <a class="sub linkish" routerLink="/ke-toan" [queryParams]="{ tab: 'so-quy', id: p.id }">{{ p.soPhieu }}</a> }
+                    @else { <span class="sub">{{ p.soPhieu }}</span> }
+                    <app-tt [v]="p.trangThai" />
+                  } @else { <span class="muted">—</span> }
                 </td>
                 <td class="btn-row">
                   @if (thuSua(d)) { <button type="button" class="btn sm" (click)="ghiThu(d.dot)">Ghi thực thu</button> }
@@ -163,6 +168,9 @@ interface ThuNhap {
       }
       @if (store.canEdit('hdbThucThu') && chuaLuuDot()) {
         <p class="sub">Lưu HĐ trước khi ghi thực thu cho đợt mới / đợt vừa sửa.</p>
+      }
+      @if (store.canEdit('hdbThucThu') && saved()?.trangThai === 'Báo giá') {
+        <p class="sub">HĐ ở Báo giá — chỉ ghi thực thu từ Hiệu lực trở đi.</p>
       }
       <p class="sub">Ghi thực thu sinh 1 phiếu Thu "Chờ duyệt" ở Sổ quỹ; số dư nguồn tiền tăng khi phiếu được duyệt.</p>
     </section>
@@ -287,8 +295,11 @@ export class HdbTab3 {
     return this.saved()?.dotTT.find((x) => x.dot === dot);
   }
   protected readonly chuaLuuDot = computed(() => this.f().dotTT.some((d) => !this.dotLuu(d.dot)));
+  /** Số phiếu Thu bấm được (mở popup ở Sổ quỹ) khi có quyền xem Sổ quỹ. */
+  protected readonly xemPhieu = computed(() => this.store.canView('soQuy') && this.store.level('soQuy') !== 'draft');
   protected thuSua(d: DotTTBan): boolean {
     if (this.khoa() || !this.store.canEdit('hdbThucThu')) return false;
+    if (!this.saved() || this.saved()!.trangThai === 'Báo giá') return false;
     const luu = this.dotLuu(d.dot);
     if (!luu) return false;
     const p = this.store.phieuById(luu.phieuThuId);
@@ -313,9 +324,15 @@ export class HdbTab3 {
     const s = this.saved();
     if (!d || !s) return;
     const t = this.thu(d);
+    const toiDa = this.store.hdbConThuDuoc(s, dot);
+    if (t.soTienThu > toiDa) {
+      this.store.say(`Số thu vượt phần còn phải thu của HĐ (tối đa ${money(toiDa)} đ)`);
+      return;
+    }
     const ok = await this.confirm.ask({
       title: `Ghi nhận thực thu đợt ${dot}: ${money(t.soTienThu)} đ?`,
       message: `Ngày thu ${viDate(t.ngayThu)} vào ${this.store.nguonTen(t.nguonTienNhan)}. Hệ thống tạo phiếu Thu Chờ duyệt ở Sổ quỹ; số dư quỹ chỉ tăng khi phiếu được duyệt.`,
+      warn: t.soTienThu !== d.soTien ? `Số thu khác số tiền của đợt (${money(d.soTien)} đ), lệch ${money(t.soTienThu - d.soTien)} đ.` : undefined,
       ok: 'Ghi nhận',
     });
     if (!ok) return;

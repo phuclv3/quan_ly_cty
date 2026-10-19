@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { LoaiHang, NHOM_HANG, NhomHang } from '../core/models';
 import { Store } from '../core/store';
+import { dirtyOf } from '../shared/unsaved';
 import { nhoLoc } from '../core/ui';
 import { Confirm } from '../shared/confirm';
 import { Facet, FilterBar, LOC_RONG, Loc, khopQ, khopSel } from '../shared/filter-bar';
@@ -67,7 +68,7 @@ interface Form {
     <app-pager [pager]="pg" />
     <p class="hint muted">Khí bên trong pha theo đơn → không tạo mã theo khí; biến thể = Loại hàng × giá trị thuộc tính (nhập khi lập phiếu / dòng hàng, VD "10L", "150bar"). Loại hàng đã dùng không xoá được — chỉ Ngưng.</p>
 
-    <app-modal [open]="!!f()" [title]="f()?.isNew ? 'Thêm loại hàng' : 'Sửa loại hàng ' + (f()?.l?.id ?? '')" (closed)="f.set(null)">
+    <app-modal [open]="!!f()" [title]="f()?.isNew ? 'Thêm loại hàng' : 'Sửa loại hàng ' + (f()?.l?.id ?? '')" [dirty]="dirty()" (closed)="f.set(null)">
       @if (f(); as x) {
         <div class="form-grid">
           <div class="field">
@@ -93,7 +94,7 @@ interface Form {
         @if (err()) { <div class="note bad">{{ err() }}</div> }
       }
       <div foot class="btn-row">
-        <button type="button" class="btn quiet" (click)="f.set(null)">Thôi</button>
+        <button type="button" class="btn quiet" (click)="f.set(null)">Huỷ</button>
         <button type="button" class="btn" (click)="luu()">Lưu</button>
       </div>
     </app-modal>
@@ -107,6 +108,7 @@ export class DmLoaiHangTab {
   protected readonly loc = signal<Loc>(nhoLoc('kho-loai-hang', LOC_RONG));
   protected readonly facets = computed<Facet[]>(() => [{ key: 'nhom', label: 'Nhóm', options: nhomOpts() }]);
   protected readonly f = signal<Form | null>(null);
+  protected readonly dirty = dirtyOf(this.f);
   protected readonly err = signal('');
 
   protected readonly rows = computed(() => {

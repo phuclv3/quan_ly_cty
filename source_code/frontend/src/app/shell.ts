@@ -44,7 +44,18 @@ interface NavItem {
           <button type="button" class="nav" title="Đăng xuất" (click)="auth.logout()"><app-icon name="logout" [size]="24" /><span class="lb">Đăng xuất</span></button>
         </div>
       </nav>
-      <main class="main"><router-outlet /></main>
+      <main class="main">
+        @if (chuaCapQuyen()) {
+          <!-- Spec 00 §3.3: tài khoản không còn nhóm quyền nào đang hoạt động. -->
+          <div class="card empty" role="alert">
+            <h1>Tài khoản chưa được cấp quyền</h1>
+            <p>Tài khoản của bạn chưa thuộc nhóm quyền nào đang hoạt động. Liên hệ người quản trị tài khoản để được cấp quyền.</p>
+            <button type="button" class="btn quiet" (click)="auth.logout()">Đăng xuất</button>
+          </div>
+        } @else {
+          <router-outlet />
+        }
+      </main>
 
       <!-- Điện thoại: thanh tab đáy — 4 mục hay dùng (theo quyền) + Menu mở toàn bộ danh sách. -->
       <nav class="tabbar" aria-label="Lối tắt">
@@ -70,9 +81,12 @@ export class Shell {
   private readonly choDuyetKT = computed(() =>
     this.store.canApprove('soQuyDuyet') ? this.store.phieuChoDuyet().length + this.store.cpChoDuyet().length : 0,
   );
+  /** Không thuộc nhóm quyền nào đang Hoạt động → không vào app (tránh trang chủ rỗng khó hiểu). */
+  protected readonly chuaCapQuyen = computed(() => !this.store.myGroups().some((g) => g.trangThai === 'Hoạt động'));
+
   private readonly choXoa = computed(() => {
     const ys = this.store.xoaChoDuyet();
-    return this.store.canApprove('duyetXoa')
+    return this.store.coQuyenDuyetXoa()
       ? ys.filter((y) => this.store.canDuyetXoa(y)).length
       : ys.filter((y) => y.nguoiGui === this.store.meId()).length;
   });
@@ -99,7 +113,7 @@ export class Shell {
       { path: '/phu-tai', label: 'Phú Tài', icon: 'handshake', perms: ['phuTai'], group: 'Vận hành' },
       { path: '/bao-cao', label: 'Báo cáo', icon: 'chart', perms: ['baoCao'], group: 'Vận hành' },
       { path: '/danh-muc', label: 'Danh mục', icon: 'list', perms: ['khachHang', 'ncc', 'nguonTien'], group: 'Hệ thống' },
-      { path: '/duyet-xoa', label: 'Duyệt xoá', icon: 'trash', perms: ['duyetXoa'], count: this.choXoa(), group: 'Hệ thống' },
+      { path: '/duyet-xoa', label: 'Duyệt xoá', icon: 'trash', perms: ['duyetXoa', 'duyetXoaKT'], count: this.choXoa(), group: 'Hệ thống' },
       { path: '/tai-khoan', label: 'Tài khoản & phân quyền', icon: 'users', perms: ['taiKhoan'], group: 'Hệ thống' },
       { path: '/cau-hinh', label: 'Cấu hình & Import', icon: 'settings', perms: ['cauHinh', 'import'], group: 'Hệ thống' },
     ];

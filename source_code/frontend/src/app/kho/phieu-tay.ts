@@ -28,11 +28,11 @@ const dongRong = (): DongNhap => ({ loaiHang: '', thuocTinh: '', soLuong: 0 });
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [Modal, Pick],
   template: `
-    <app-modal [open]="open()" title="Lập phiếu điều chỉnh" sub="Nguồn gốc: Nhập tay – điều chỉnh" size="lg" (closed)="closed.emit()">
+    <app-modal [open]="open()" title="Lập phiếu điều chỉnh" sub="Nguồn gốc: Nhập tay – điều chỉnh" size="lg" [dirty]="dirty()" (closed)="closed.emit()">
       <div class="form-grid">
-        <div class="field"><label for="pt-ngay">Ngày</label><input id="pt-ngay" type="date" [value]="f().ngay" (input)="set('ngay', $any($event.target).value)" /></div>
+        <div class="field"><label for="pt-ngay">Ngày <span class="req">*</span></label><input id="pt-ngay" type="date" [value]="f().ngay" (input)="set('ngay', $any($event.target).value)" /></div>
         <div class="field">
-          <label for="pt-loai">Loại</label>
+          <label for="pt-loai">Loại <span class="req">*</span></label>
           <select id="pt-loai" (change)="doiLoai($any($event.target).value)">
             <option value="Nhập" [selected]="f().loai === 'Nhập'">Nhập</option>
             <option value="Xuất" [selected]="f().loai === 'Xuất'">Xuất</option>
@@ -44,7 +44,7 @@ const dongRong = (): DongNhap => ({ loaiHang: '', thuocTinh: '', soLuong: 0 });
           <span class="hint">{{ f().loai === 'Xuất' ? 'Chọn từ HĐ bán' : 'Chọn từ HĐ mua' }}</span>
         </div>
         <div class="field">
-          <span class="lbl">Vị trí kho</span>
+          <span class="lbl">Vị trí kho <span class="req">*</span></span>
           <app-pick [options]="khoOpts()" [value]="f().kho" (valueChange)="set('kho', $event)" />
           @if (f().kho === ctId) { <span class="hint">Chuyển thẳng: không cộng/trừ tồn (KHO-07)</span> }
         </div>
@@ -58,7 +58,10 @@ const dongRong = (): DongNhap => ({ loaiHang: '', thuocTinh: '', soLuong: 0 });
             @for (d of f().dong; track $index; let i = $index) {
               <tr>
                 <td style="min-width:240px"><app-pick [options]="lhOpts()" [value]="d.loaiHang" (valueChange)="setDong(i, 'loaiHang', $event)" /></td>
-                <td><input [value]="d.thuocTinh" [placeholder]="goiY(d.loaiHang)" (input)="setDong(i, 'thuocTinh', $any($event.target).value)" aria-label="Thuộc tính" /></td>
+                <td>
+                  <input [value]="d.thuocTinh" [placeholder]="goiY(d.loaiHang)" [attr.list]="'pt-tt-' + i" (input)="setDong(i, 'thuocTinh', $any($event.target).value)" aria-label="Thuộc tính" />
+                  <datalist [id]="'pt-tt-' + i">@for (v of daDung(d.loaiHang); track v) { <option [value]="v"></option> }</datalist>
+                </td>
                 <td class="num"><input type="number" min="0" style="width:100px" [value]="d.soLuong || ''" (input)="setDong(i, 'soLuong', +$any($event.target).value)" aria-label="Số lượng" /></td>
                 <td><button type="button" class="btn sm quiet danger" [disabled]="f().dong.length === 1" (click)="xoaDong(i)">Xoá</button></td>
               </tr>
@@ -66,11 +69,11 @@ const dongRong = (): DongNhap => ({ loaiHang: '', thuocTinh: '', soLuong: 0 });
           </tbody>
         </table>
       </div>
-      <p class="hint muted">Chuẩn hoá cách ghi thuộc tính, VD "40L · 150bar".</p>
+      <p class="hint muted">Chuẩn hoá cách ghi thuộc tính, VD "40L · 150bar" — chọn từ gợi ý (giá trị đã dùng của loại hàng) để không tách thành biến thể mới.</p>
 
       <div class="form-grid">
         <div class="field wide">
-          <label for="pt-lydo">Lý do điều chỉnh (bắt buộc)</label>
+          <label for="pt-lydo">Lý do điều chỉnh <span class="req">*</span></label>
           <textarea id="pt-lydo" rows="2" placeholder="Kiểm kê, hàng mượn trả, sai lệch…" [value]="f().lyDo" (input)="set('lyDo', $any($event.target).value)"></textarea>
         </div>
         <div class="field wide"><label for="pt-gc">Ghi chú</label><textarea id="pt-gc" rows="2" [value]="f().ghiChu" (input)="set('ghiChu', $any($event.target).value)"></textarea></div>
@@ -80,7 +83,7 @@ const dongRong = (): DongNhap => ({ loaiHang: '', thuocTinh: '', soLuong: 0 });
       }
       @if (err()) { <div class="note bad">{{ err() }}</div> }
       <div foot class="btn-row">
-        <button type="button" class="btn quiet" (click)="closed.emit()">Thôi</button>
+        <button type="button" class="btn quiet" (click)="closed.emit()">Huỷ</button>
         <button type="button" class="btn" (click)="luu()">Lưu phiếu</button>
       </div>
     </app-modal>
@@ -94,14 +97,35 @@ export class PhieuTayForm {
   protected readonly ctId = KHO_CHUYEN_THANG;
   protected readonly f = signal<Form>(this.moi());
   protected readonly err = signal('');
+  private readonly goc = signal('');
+  protected readonly dirty = computed(() => this.open() && JSON.stringify(this.f()) !== this.goc());
 
   constructor() {
     effect(() => {
       if (this.open()) {
-        this.f.set(this.moi());
+        const f = this.moi();
+        this.f.set(f);
+        this.goc.set(JSON.stringify(f));
         this.err.set('');
       }
     });
+  }
+
+  /** Các giá trị thuộc tính đã dùng của loại hàng (phiếu kho + dòng HĐ mua) — gợi ý để ghi thống nhất. */
+  private readonly thuocTinhDaDung = computed(() => {
+    const m = new Map<string, Set<string>>();
+    const add = (lh: string, v: string) => {
+      const t = v.trim();
+      if (!lh || !t) return;
+      if (!m.has(lh)) m.set(lh, new Set());
+      m.get(lh)!.add(t);
+    };
+    for (const p of this.store.phieuKho()) for (const d of p.dong) add(d.loaiHang, d.thuocTinh);
+    for (const h of this.store.hopDongMua()) for (const d of h.chiTiet) add(d.loaiHang, d.thongSo);
+    return m;
+  });
+  protected daDung(lh: string): string[] {
+    return [...(this.thuocTinhDaDung().get(lh) ?? [])].sort().slice(0, 50);
   }
 
   private moi(): Form {
@@ -167,7 +191,11 @@ export class PhieuTayForm {
       dong: f.dong.map((d) => ({ loaiHang: d.loaiHang, thuocTinh: d.thuocTinh.trim(), soLuong: d.soLuong })),
     });
     if (e) return this.err.set(e);
-    this.store.say(`Đã lập phiếu ${f.loai.toLowerCase()} điều chỉnh`);
+    this.store.say(
+      f.loai === this.loaiMacDinh()
+        ? `Đã lập phiếu ${f.loai.toLowerCase()} điều chỉnh`
+        : `Đã lập phiếu ${f.loai.toLowerCase()} điều chỉnh — xem ở tab "Phiếu ${f.loai.toLowerCase()}"`,
+    );
     this.closed.emit();
   }
 }

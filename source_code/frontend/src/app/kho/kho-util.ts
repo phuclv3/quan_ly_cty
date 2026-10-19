@@ -32,6 +32,11 @@ export function theKho(db: Db, o: { loaiHang: string; thuocTinh: string; kho?: s
   return out;
 }
 
+/** Tham số liên kết sâu mở popup một phiếu kho: /kho?tab=nhap|xuat&id=… */
+export function linkPhieuKho(p: Pick<PhieuKho, 'id' | 'loai'>): { tab: string; id: string } {
+  return { tab: p.loai === 'Nhập' ? 'nhap' : 'xuat', id: p.id };
+}
+
 /** Số HĐ và đường dẫn của HĐ liên quan một phiếu kho. */
 export function hdCuaPhieu(store: Store, p: PhieuKho): { so: string; link: string[] } | null {
   if (!p.hdId) return null;

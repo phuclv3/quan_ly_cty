@@ -20,7 +20,7 @@ type Tab = 'nguon' | 'so-quy' | 'chi-phi' | 'cho-duyet' | 'cong-no' | 'bao-cao';
   imports: [RouterLink, NguonTienTab, SoQuyTab, ChiPhiTab, ChoDuyetTab, CongNoTab, BaoCaoKtTab],
   template: `
     <div class="page-head">
-      <div><div class="crumbs"><a routerLink="/">Trang chủ</a> › Kế toán</div><h1>Kế toán</h1></div>
+      <div><div class="crumbs"><a routerLink="/">Trang chủ</a> › Kế toán @if (tabTen()) { › {{ tabTen() }} }</div><h1>Kế toán</h1></div>
     </div>
     <div class="tabs" role="tablist">
       @for (t of tabs(); track t.k) {
@@ -66,6 +66,8 @@ export class KeToanPage {
     const list = this.tabs();
     return list.find((t) => t.k === q)?.k ?? list[0]?.k ?? null;
   });
+
+  protected readonly tabTen = computed(() => this.tabs().find((t) => t.k === this.tab())?.t ?? '');
 
   protected readonly soCho = computed(
     () =>

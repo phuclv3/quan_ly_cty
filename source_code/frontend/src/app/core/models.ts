@@ -258,6 +258,15 @@ export type TrangThaiDuyet = 'Nháp' | 'Chờ duyệt' | 'Đã duyệt' | 'Từ 
 export type LoaiPhieu = 'Thu' | 'Chi' | 'Tạm ứng' | 'Quyết toán tạm ứng' | 'Luân chuyển';
 export const LOAI_PHIEU: LoaiPhieu[] = ['Thu', 'Chi', 'Tạm ứng', 'Quyết toán tạm ứng', 'Luân chuyển'];
 
+/** Một bước trong vòng đời chứng từ (gửi duyệt / duyệt / từ chối) — giữ lại cả lý do từ chối cũ. */
+export interface LichSuDuyet {
+  luc: string;
+  /** Id tài khoản. */
+  nguoi: string;
+  hanhDong: 'Lưu nháp' | 'Gửi duyệt' | 'Duyệt' | 'Từ chối';
+  ghiChu?: string;
+}
+
 /** Phiếu do nghiệp vụ khác sinh ra (để truy ngược và không cho sửa tay). */
 export interface NguonPhatSinh {
   loai: 'HDM-DotTT' | 'HDB-DotTT';
@@ -291,6 +300,7 @@ export interface PhieuThuChi {
   phatSinh?: NguonPhatSinh;
   /** Dữ liệu import (NT-13). */
   import?: boolean;
+  lichSu?: LichSuDuyet[];
 }
 
 export interface ChiPhiHD {
@@ -311,6 +321,7 @@ export interface ChiPhiHD {
   lyDoTuChoi?: string;
   files: FileRef[];
   ghiChu?: string;
+  lichSu?: LichSuDuyet[];
 }
 
 // ── Kinh doanh ──────────────────────────────────────────────────────────
@@ -519,6 +530,7 @@ export interface TyLePTLog {
   sau: string;
   nguoi: string;
   luc: string;
+  lyDo?: string;
 }
 
 export interface HopDongPhuTai {
@@ -546,6 +558,8 @@ export interface HopDongPhuTai {
   ngayChiHH?: string;
   doiChieu: DoiChieuPT[];
   ghiChuHoSoThieu?: string;
+  /** Lý do huỷ HĐ (bắt buộc khi chuyển "Huỷ"). */
+  lyDoHuy?: string;
   taoLuc: string;
   import?: boolean;
 }

@@ -19,7 +19,7 @@ import {
   PhieuThuChi,
   ThamSoThue,
 } from './models';
-import { daysFromToday, sum, todayIso } from './util';
+import { daysFromToday, sum, todayIso, vnd } from './util';
 
 // ── Chung ───────────────────────────────────────────────────────────────
 
@@ -172,7 +172,7 @@ export function hdbThieuDeChuyen(h: HopDongBan, toi: HopDongBan['trangThai'], db
     if (h.truocVAT <= 0) out.push('Chưa có Giá trị HĐ');
   }
   if (toi === 'Đã tất toán') {
-    if (c.conPhaiThu > 0) out.push(`Còn phải thu ${c.conPhaiThu.toLocaleString('vi-VN')} đ`);
+    if (c.conPhaiThu > 0) out.push(`Còn phải thu ${vnd(c.conPhaiThu)}`);
     if (c.hoSoThieu.length) out.push(`Thiếu hồ sơ: ${c.hoSoThieu.join(', ')}`);
     if (c.cpCho > 0) out.push('Còn chi phí thực hiện Chờ duyệt');
   }

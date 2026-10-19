@@ -75,7 +75,7 @@ const BANG: { k: TableKey; nhan: string }[] = [
     @switch (tab()) {
       @case ('tham-so') {
         <div class="note info">HĐ đã tạo giữ tỷ lệ tại thời điểm tạo; tham số mới chỉ áp cho HĐ tạo sau. Mỗi lần sửa được ghi lịch sử.</div>
-        @if (!suaTS()) { <p class="muted">Bạn chỉ xem — chỉ Giám đốc sửa tham số.</p> }
+        @if (!suaTS()) { <p class="muted">Bạn chỉ xem — cần quyền "Sửa" chức năng Tham số cấu hình (NT-14).</p> }
         <div class="tbl-wrap">
           <table class="tbl freeze">
             <thead><tr><th>Tham số</th><th>Khoá</th><th>Giá trị</th><th>Ghi chú</th>@if (suaTS()) { <th></th> }</tr></thead>
@@ -234,7 +234,8 @@ export class CauHinhPage {
   }
 
   // ── Tham số (NT-14) ──
-  protected readonly suaTS = computed(() => this.store.isGD() && this.store.canEdit('cauHinh'));
+  /** Sửa tham số theo ma trận quyền NT-14 (không gắn cứng Giám đốc). */
+  protected readonly suaTS = computed(() => this.store.canEdit('cauHinh'));
   private readonly nhap_ = signal<Partial<Record<CauHinhKey, string>>>({});
 
   private goc(k: CauHinhKey): string {
