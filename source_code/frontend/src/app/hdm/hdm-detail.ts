@@ -65,7 +65,7 @@ interface TraForm {
             @if (dirty() && !isNew()) { <button type="button" class="btn quiet" (click)="boThayDoi()">Bỏ thay đổi</button> }
             <button type="button" class="btn" [disabled]="!dirty() && !isNew()" (click)="save()"><app-icon name="check" [size]="16" /> Lưu</button>
           }
-          @if (!isNew() && !choXoa() && store.canEdit('hdm') && store.level('duyetXoa') !== 'none') {
+          @if (!isNew() && !choXoa() && trangThai() !== 'Đã tất toán' && store.canEdit('hdm') && store.level('duyetXoa') !== 'none') {
             <button type="button" class="btn danger" (click)="xoa()"><app-icon name="trash" [size]="16" /> Xoá</button>
           }
         </div>
@@ -173,7 +173,10 @@ interface TraForm {
               }
               @if (trangThai() === 'Huỷ') { <span class="sep">·</span> <app-tt v="Huỷ" /> }
             </div>
-            <div class="note info">“Đang nhận hàng” và “Đã nhận đủ” tự chuyển theo phiếu nhập kho (Tab 3). “Đã tất toán” cần Còn phải trả = 0, Xuất hoá đơn = Đã và đủ hồ sơ bắt buộc.</div>
+            <div class="note info">“Đang nhận hàng” và “Đã nhận đủ” tự chuyển theo phiếu nhập kho (Tab 3). “Đã tất toán” cần đã nhận đủ hàng (HĐ của Oxy), Còn phải trả = 0, Xuất hoá đơn = Đã và đủ hồ sơ bắt buộc.</div>
+            @if (trangThai() === 'Đã tất toán' && !choXoa() && store.canEdit('moLaiHdm')) {
+              <div class="btn-row"><button type="button" class="btn quiet" (click)="moLai()">Mở lại HĐ</button></div>
+            }
             @if (!isNew() && !locked() && store.canEdit('hdm')) {
               @if (choTatToan() && thieuTatToan().length) {
                 <p class="note warn">Còn thiếu để chuyển “Đã tất toán”: {{ thieuTatToan().join(' · ') }}</p>
@@ -345,7 +348,7 @@ interface TraForm {
             <h3>Đợt thanh toán NCC</h3>
             @if (edit4() && m.dotTT.length < soDotToiDa()) { <button type="button" class="btn sm quiet" (click)="themDot()"><app-icon name="plus" [size]="16" /> Thêm đợt {{ m.dotTT.length + 1 }}</button> }
           </div>
-          @if (m.thuocPhuTai) { <div class="note info">Phú Tài trả, không tạo phiếu chi Oxy. Đợt tính đã trả theo Số tiền trả ghi nhận.</div> }
+          @if (m.thuocPhuTai) { <div class="note info">Phú Tài trả NCC — đây là <b>nơi ghi chuẩn</b> các lần Phú Tài trả cho HĐ mua này (HĐ Phú Tài Tab 3 tổng hợp từ đây). Không tạo phiếu chi Oxy; đợt tính đã trả theo Số tiền trả ghi nhận.</div> }
           <div class="tbl-wrap">
             <table class="tbl compact">
               <thead>
@@ -371,7 +374,10 @@ interface TraForm {
                       <td>
                         @if (phieu) {
                           @if (xemPhieu()) { <a class="linkish" routerLink="/ke-toan" [queryParams]="{ tab: 'so-quy', id: phieu.id }">{{ phieu.soPhieu }}</a> } @else { {{ phieu.soPhieu }} }
-                          <app-tt [v]="phieu.trangThai" />
+                          @if (store.dangChoXoa('PhieuThuChi', phieu.id)) { <app-tt v="Chờ xoá" /> } @else { <app-tt [v]="phieu.trangThai" /> }
+                          @if (phieu.trangThai === 'Đã duyệt' && edit4() && store.level('duyetXoa') !== 'none' && !store.dangChoXoa('PhieuThuChi', phieu.id)) {
+                            <button type="button" class="linkish sub" title="Phiếu đã duyệt mà ghi sai: gửi yêu cầu xoá, duyệt xong ghi nhận lại" (click)="xoaPhieuChi(phieu.id, phieu.soPhieu, d.dot)">Yêu cầu xoá phiếu</button>
+                          }
                         } @else { <span class="muted">—</span> }
                       </td>
                     }
@@ -580,7 +586,12 @@ export class HdmDetail {
   });
   protected readonly chon = signal<string[]>([]);
 
-  protected readonly nccOpts = computed<PickOption[]>(() => this.store.ncc().map((n) => ({ value: n.id, label: n.ten, hint: [n.mst, n.quocGia].filter(Boolean).join(' · ') })));
+  protected readonly nccOpts = computed<PickOption[]>(() =>
+    this.store
+      .ncc()
+      .filter((n) => n.trangThai !== 'Ngưng' || n.id === this.f().maNCC)
+      .map((n) => ({ value: n.id, label: n.ten, hint: [n.mst, n.quocGia, n.trangThai === 'Ngưng' ? 'Ngưng' : ''].filter(Boolean).join(' · ') })),
+  );
   protected readonly hdbOpts = computed<PickOption[]>(() => this.store.hopDongBan().map((h) => ({ value: h.id, label: h.soHD, hint: h.tenKH })));
   protected readonly lhOpts = computed<PickOption[]>(() =>
     this.store
@@ -633,6 +644,7 @@ export class HdmDetail {
     if (!s) return [];
     const c = hdmCalc(s, this.store.db());
     const out: string[] = [];
+    if (!s.thuocPhuTai && c.slMua > 0 && s.trangThai !== 'Đã nhận đủ' && c.slNhap < c.slMua) out.push(`Chưa nhận đủ hàng (${c.slNhap} / ${c.slMua})`);
     if (c.conPhaiTra > 0) out.push(`Còn phải trả NCC ${vnd(c.conPhaiTra)}`);
     if (s.xuatHoaDon !== 'Đã') out.push('NCC chưa xuất hoá đơn');
     const thieu = hoSoThieu(this.store.db(), 'HDM', s.id);
@@ -823,6 +835,14 @@ export class HdmDetail {
     this.store.say(err ?? `Đã chuyển “${toi}”`);
   }
 
+  protected async moLai(): Promise<void> {
+    const s = this.saved();
+    if (!s) return;
+    if (!(await this.confirm.ask({ title: `Mở lại HĐ mua ${s.soHD}?`, message: 'HĐ quay về trạng thái nhận hàng tương ứng và được sửa lại (đợt trả, phiếu chi…).', ok: 'Mở lại' }))) return;
+    const e = this.store.moLaiHdm(s.id);
+    this.store.say(e ?? 'Đã mở lại HĐ mua');
+  }
+
   protected async xoa(): Promise<void> {
     const s = this.saved();
     if (s) await guiXoa(this.confirm, this.store, 'HopDongMua', s.id, 'HĐ mua ' + s.soHD);
@@ -870,6 +890,11 @@ export class HdmDetail {
     this.store.say('Đã tạo phiếu nhập kho');
     this.nhap.set(null);
     this.chon.set([]);
+  }
+
+  /** F-03: phiếu Chi trả NCC đã duyệt nhưng sai → yêu cầu xoá; duyệt xong đợt trở về chưa trả để ghi lại. */
+  protected async xoaPhieuChi(id: string, soPhieu: string, dot: number): Promise<void> {
+    await guiXoa(this.confirm, this.store, 'PhieuThuChi', id, `Phiếu Chi ${soPhieu} — đợt ${dot} HĐ mua ${this.saved()?.soHD ?? ''}`);
   }
 
   protected async huyPhieu(id: string, soPhieu: string): Promise<void> {

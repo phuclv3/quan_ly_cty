@@ -238,7 +238,7 @@ export class Dashboard {
   protected readonly xoa = computed(() => {
     const s = this.store;
     if (!s.canView('duyetXoa') && !s.coQuyenDuyetXoa()) return null;
-    if (s.coQuyenDuyetXoa()) return { cuaToi: false, so: s.xoaChoDuyet().filter((y) => s.canDuyetXoa(y)).length };
+    if (s.coQuyenDuyetXoa()) return { cuaToi: false, so: s.xoaChoDuyet().filter((y) => s.duyetXoaDuoc(y)).length };
     return { cuaToi: true, so: s.xoaChoDuyet().filter((y) => y.nguoiGui === s.meId()).length };
   });
 

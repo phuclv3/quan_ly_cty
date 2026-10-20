@@ -15,13 +15,14 @@ import { ThemDoiTac } from '../shared/them-doi-tac';
       <h2 class="section-title">Thông tin chung</h2>
       <div class="form-grid">
         <div class="field">
-          <label for="hdb-so">Số HĐ bán <span class="req">*</span></label>
-          <input id="hdb-so" [value]="f().soHD" [disabled]="!edit()" (input)="set('soHD', $any($event.target).value)" />
+          <label for="hdb-so">Số HĐ bán <span class="req">* từ Hiệu lực</span></label>
+          <input id="hdb-so" [value]="f().soHD" [disabled]="!edit() || khoaDinhDanh()" placeholder="Báo giá có thể để trống" (input)="set('soHD', $any($event.target).value)" />
+          @if (khoaDinhDanh()) { <span class="hint">Khoá từ "Hiệu lực".</span> }
         </div>
         <div class="field wide">
           <label for="hdb-kh">Khách hàng <span class="req">*</span></label>
-          <app-pick inputId="hdb-kh" [options]="khOpts()" [value]="f().maKH" [disabled]="!edit()" placeholder="— Chọn khách hàng —" (valueChange)="chonKH($event)" />
-          @if (edit()) { <app-them-doi-tac loai="kh" (daTao)="chonKH($event)" /> }
+          <app-pick inputId="hdb-kh" [options]="khOpts()" [value]="f().maKH" [disabled]="!edit() || khoaDinhDanh()" placeholder="— Chọn khách hàng —" (valueChange)="chonKH($event)" />
+          @if (edit() && !khoaDinhDanh()) { <app-them-doi-tac loai="kh" (daTao)="chonKH($event)" /> }
           @if (lechDM()) { <span class="hint">Danh mục đã đổi so với bản sao lúc ký — HĐ giữ thông tin cũ. <button type="button" class="linkish" [disabled]="!edit()" (click)="chonKH(f().maKH)">Cập nhật theo danh mục</button></span> }
         </div>
         <div class="field">
@@ -61,9 +62,14 @@ export class HdbTab1 {
   protected readonly store = inject(Store);
   readonly f = model.required<HopDongBan>({ alias: 'draft' });
   readonly edit = input(false);
+  /** F-08: từ Hiệu lực khoá Số HĐ và Khách hàng. */
+  readonly khoaDinhDanh = input(false);
 
   protected readonly khOpts = computed<PickOption[]>(() =>
-    this.store.khachHang().map((k) => ({ value: k.id, label: k.ten, hint: k.mst || k.id })),
+    this.store
+      .khachHang()
+      .filter((k) => k.trangThai !== 'Ngưng' || k.id === this.f().maKH)
+      .map((k) => ({ value: k.id, label: k.ten, hint: (k.mst || k.id) + (k.trangThai === 'Ngưng' ? ' · Ngưng' : '') })),
   );
   protected readonly saleOpts = computed<PickOption[]>(() =>
     this.store

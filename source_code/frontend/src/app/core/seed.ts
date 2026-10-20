@@ -45,6 +45,7 @@ export const CAU_HINH_MAC_DINH: CauHinh = {
   TNDN_MUC2: 0.5,
   PT_THUE: 0.2,
   PT_GIU: 0.1,
+  PT_CACH_CHIA: 'Nhân',
   SO_DOT_TOI_DA: 3,
   TIEN_TO_TC: 'TC',
   TIEN_TO_CP: 'CP',

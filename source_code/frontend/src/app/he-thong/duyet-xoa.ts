@@ -86,7 +86,7 @@ interface LinkDT {
               <td>
                 @if (y.trangThai === 'Chờ duyệt') {
                   <div class="btn-row" style="justify-content:flex-start">
-                    @if (store.canDuyetXoa(y)) {
+                    @if (store.duyetXoaDuoc(y)) {
                       <button class="btn sm danger" (click)="duyet(y)">Duyệt xoá</button>
                       <button class="btn sm quiet" (click)="tuChoi(y)">Từ chối</button>
                     }
@@ -136,7 +136,7 @@ interface LinkDT {
           @if (link(y); as l) { <a class="btn quiet" [routerLink]="l.path" [queryParams]="l.query">Mở bản ghi</a> }
           <span style="flex:1"></span>
           <button type="button" class="btn quiet" (click)="xem.set(null)">Đóng</button>
-          @if (y.trangThai === 'Chờ duyệt' && store.canDuyetXoa(y)) {
+          @if (y.trangThai === 'Chờ duyệt' && store.duyetXoaDuoc(y)) {
             <button type="button" class="btn quiet" (click)="tuChoi(y)">Từ chối</button>
             <button type="button" class="btn danger-solid" (click)="duyet(y)">Duyệt xoá</button>
           }

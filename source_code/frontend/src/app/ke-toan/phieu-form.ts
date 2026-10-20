@@ -108,9 +108,13 @@ import { donVi, esc, inGiay, kyTen } from './kt-print';
 
         <div foot>
           @if (p.id) { <button type="button" class="btn quiet" (click)="inPhieu()">In phiếu</button> }
-          @if (p.id && !p.phatSinh && !choXoa() && store.level('duyetXoa') !== 'none') {
-            <button type="button" class="btn danger quiet" (click)="xoa()">Xoá</button>
+          @if (phieu()?.trangThai === 'Nháp' && p.id && edit()) {
+            <button type="button" class="btn danger quiet" (click)="xoaNhap()">Xoá nháp</button>
+          } @else if (p.id && (!p.phatSinh || p.trangThai === 'Đã duyệt') && !choXoa() && store.level('duyetXoa') !== 'none') {
+            <!-- F-03: phiếu sinh từ đợt TT đã duyệt mà sai → yêu cầu xoá, duyệt xong ghi lại ở HĐ. -->
+            <button type="button" class="btn danger quiet" (click)="xoa()">{{ p.phatSinh ? 'Yêu cầu xoá phiếu' : 'Xoá' }}</button>
           }
+          @if (rutDuoc()) { <button type="button" class="btn quiet" (click)="rutLai()">Rút lại về Nháp</button> }
           <span style="flex:1"></span>
           <button type="button" class="btn quiet" (click)="dong()">{{ edit() ? 'Huỷ' : 'Đóng' }}</button>
           @if (edit()) {
@@ -232,6 +236,28 @@ export class PhieuForm {
     }
     this.store.say(gui ? 'Đã gửi duyệt phiếu' : 'Đã lưu nháp phiếu');
     this.closed.emit();
+  }
+
+  /** Người lập rút phiếu Chờ duyệt về Nháp (không áp cho phiếu sinh tự động — sửa tại HĐ). */
+  protected readonly rutDuoc = computed(() => {
+    const p = this.phieu();
+    return !!p && p.trangThai === 'Chờ duyệt' && !p.phatSinh && !this.choXoa() && !this.duyetDuoc() && (p.nguoiDeNghi === this.store.meId() || this.store.canEdit('soQuy'));
+  });
+  protected async xoaNhap(): Promise<void> {
+    const p = this.phieu();
+    if (!p) return;
+    if (!(await this.confirm.ask({ title: `Xoá phiếu nháp ${p.soPhieu}?`, message: 'Phiếu chưa gửi duyệt nên xoá thẳng, không qua Duyệt xoá. Không hoàn tác được.', ok: 'Xoá nháp' }))) return;
+    const e = this.store.xoaNhapPhieu(p.id);
+    this.store.say(e ?? `Đã xoá phiếu nháp ${p.soPhieu}`);
+    if (!e) this.closed.emit();
+  }
+  protected async rutLai(): Promise<void> {
+    const p = this.phieu();
+    if (!p) return;
+    if (!(await this.confirm.ask({ title: `Rút phiếu ${p.soPhieu} về Nháp?`, message: 'Phiếu rời hàng chờ duyệt để bạn sửa rồi gửi lại.', ok: 'Rút lại' }))) return;
+    const e = this.store.rutLaiPhieu(p.id);
+    this.store.say(e ?? `Đã rút phiếu ${p.soPhieu} về Nháp`);
+    if (!e) this.closed.emit();
   }
 
   protected async xoa(): Promise<void> {

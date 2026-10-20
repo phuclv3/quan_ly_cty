@@ -37,7 +37,7 @@ type F = Exclude<keyof KhachHang, 'id'>;
           @for (k of pg.items(); track k.id) {
             <tr class="click" [class.sel]="mo1() === k.id" (click)="mo1.set(mo1() === k.id ? null : k.id)">
               <td class="mono">{{ k.id }}</td>
-              <td><b>{{ k.ten }}</b>@if (store.dangChoXoa('DM_KhachHang', k.id)) { <app-tt v="Chờ xoá" /> }</td>
+              <td><b>{{ k.ten }}</b>@if (k.trangThai === 'Ngưng') { <app-tt v="Ngưng" /> }@if (store.dangChoXoa('DM_KhachHang', k.id)) { <app-tt v="Chờ xoá" /> }</td>
               <td class="mono">{{ k.mst || '—' }}</td>
               <td>{{ k.diaChi }}</td>
               <td>{{ k.nguoiLienHe }}</td>
@@ -82,6 +82,14 @@ type F = Exclude<keyof KhachHang, 'id'>;
       @if (f(); as d) {
         <div class="form-grid">
           <div class="field wide"><label for="kh-ten">Tên khách hàng <span class="req">bắt buộc</span></label><input id="kh-ten" [value]="d.ten" (input)="set('ten', $any($event.target).value)" /></div>
+          <div class="field">
+            <label for="kh-tt">Trạng thái</label>
+            <select id="kh-tt" (change)="set('trangThai', $any($event.target).value)">
+              <option value="Đang dùng" [selected]="d.trangThai !== 'Ngưng'">Đang dùng</option>
+              <option value="Ngưng" [selected]="d.trangThai === 'Ngưng'">Ngưng</option>
+            </select>
+            <span class="hint">Ngưng: không chọn được cho HĐ mới; HĐ cũ giữ nguyên.</span>
+          </div>
           <div class="field"><label for="kh-mst">MST</label><input id="kh-mst" [value]="d.mst" (input)="set('mst', $any($event.target).value)" /></div>
           <div class="field"><label for="kh-lh">Người liên hệ</label><input id="kh-lh" [value]="d.nguoiLienHe" (input)="set('nguoiLienHe', $any($event.target).value)" /></div>
           <div class="field"><label for="kh-dt">Điện thoại</label><input id="kh-dt" [value]="d.dienThoai" (input)="set('dienThoai', $any($event.target).value)" /></div>

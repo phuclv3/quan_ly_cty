@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Auth } from '../core/auth';
-import { CauHinh, CauHinhKey, TableKey } from '../core/models';
+import { CACH_CHIA_PT, CachChiaPT, CauHinh, CauHinhKey, TableKey } from '../core/models';
 import { Store } from '../core/store';
 import { fold, pct, viMoment } from '../core/util';
 import { Confirm } from '../shared/confirm';
@@ -13,14 +13,15 @@ import { FILE_NGUON } from './import-map';
 import { ImportCsv } from './import-csv';
 
 type Tab = 'tham-so' | 'import' | 'du-lieu';
-type Kieu = 'pct' | 'int' | 'text';
+type Kieu = 'pct' | 'int' | 'text' | 'chon';
 
 const THAM_SO: { k: CauHinhKey; nhan: string; kieu: Kieu; hint: string }[] = [
   { k: 'TNDN_NGUONG', nhan: 'Mốc bậc thuế TNDN HĐ bán', kieu: 'pct', hint: 'Mốc = tỷ lệ × GTHĐ thực tế trước VAT (HDB-08)' },
   { k: 'TNDN_MUC1', nhan: 'Thuế suất phần chênh lệch đến mốc', kieu: 'pct', hint: 'Bậc 1' },
   { k: 'TNDN_MUC2', nhan: 'Thuế suất phần chênh lệch vượt mốc', kieu: 'pct', hint: 'Bậc 2' },
   { k: 'PT_THUE', nhan: 'Phú Tài — thuế TNDN trên LN trước thuế', kieu: 'pct', hint: 'Mặc định cho HĐ Phú Tài mới (PT-06)' },
-  { k: 'PT_GIU', nhan: 'Phú Tài giữ (phí quản lý) trên LN sau thuế', kieu: 'pct', hint: 'Oxy hưởng phần còn lại' },
+  { k: 'PT_GIU', nhan: 'Phú Tài giữ (phí quản lý)', kieu: 'pct', hint: 'Tính trên LN sau thuế (cách chia Nhân) hoặc LN trước thuế (cách chia Cộng)' },
+  { k: 'PT_CACH_CHIA', nhan: 'Phú Tài — cách chia lợi nhuận', kieu: 'chon', hint: 'Nhân: Oxy = (1 − thuế) × (1 − PT giữ) — 72% với 20% / 10%. Cộng: Oxy = 1 − thuế − PT giữ — 70%. Áp cho HĐ Phú Tài tạo sau.' },
   { k: 'SO_DOT_TOI_DA', nhan: 'Số đợt thanh toán tối đa / HĐ', kieu: 'int', hint: 'Áp cho HĐ bán và HĐ mua' },
   { k: 'TIEN_TO_TC', nhan: 'Tiền tố số phiếu thu chi', kieu: 'text', hint: 'VD TC26-0001' },
   { k: 'TIEN_TO_CP', nhan: 'Tiền tố mã chi phí thực hiện HĐ', kieu: 'text', hint: 'VD CP26-0001' },
@@ -86,6 +87,11 @@ const BANG: { k: TableKey; nhan: string }[] = [
                   <td class="mono sub">{{ t.k }}</td>
                   <td>
                     <div class="row" style="gap:6px;flex-wrap:nowrap">
+                      @if (t.kieu === 'chon') {
+                        <select style="max-width:130px" [disabled]="!suaTS()" (change)="nhap(t.k, $any($event.target).value)" [attr.aria-label]="t.nhan">
+                          @for (o of cachChia; track o) { <option [value]="o" [selected]="o === hienThi(t.k)">{{ o }}</option> }
+                        </select>
+                      } @else {
                       <input
                         [class.num]="t.kieu !== 'text'"
                         style="max-width:130px"
@@ -96,6 +102,7 @@ const BANG: { k: TableKey; nhan: string }[] = [
                         (keydown.enter)="luu(t.k)"
                         [attr.aria-label]="t.nhan"
                       />
+                      }
                       @if (t.kieu === 'pct') { <span>%</span> }
                     </div>
                   </td>
@@ -212,6 +219,7 @@ export class CauHinhPage {
 
   protected readonly viMoment = viMoment;
   protected readonly thamSo = THAM_SO;
+  protected readonly cachChia = CACH_CHIA_PT;
   protected readonly fileNguon = FILE_NGUON;
 
   private readonly qp = toSignal(this.route.queryParamMap, { initialValue: this.route.snapshot.queryParamMap });
@@ -262,6 +270,11 @@ export class CauHinhPage {
         const n = Number(raw.replace(/\s|%/g, '').replace(',', '.'));
         if (!raw || !Number.isFinite(n) || n < 0 || n > 100) return this.store.say(`${NHAN[k]}: nhập số phần trăm từ 0 đến 100`);
         v = Math.round(n * 1e4) / 1e6;
+        break;
+      }
+      case 'chon': {
+        if (!CACH_CHIA_PT.includes(raw as CachChiaPT)) return this.store.say(`${NHAN[k]}: chọn một trong ${CACH_CHIA_PT.join(' / ')}`);
+        v = raw as CachChiaPT;
         break;
       }
       case 'int': {

@@ -3,8 +3,8 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { map } from 'rxjs';
 import { Store } from '../core/store';
-import { hdmTong, ptCalc } from '../core/calc';
-import { HopDongPhuTai, LOAI_TIEN, TRANG_THAI_PT, TrangThaiPT } from '../core/models';
+import { hdmTong, ptCalc, soDuQuyPT } from '../core/calc';
+import { CACH_CHIA_PT, HopDongPhuTai, LOAI_TIEN, TRANG_THAI_PT, TrangThaiPT } from '../core/models';
 import { money, num, pct, todayIso, uid, viDate, viMoment } from '../core/util';
 import { BuocTable, MoneyInput, Pick, PickOption, TrangThai } from '../shared/ui-kit';
 import { Confirm } from '../shared/confirm';
@@ -49,7 +49,7 @@ const quyDoi = (soTien: number, loaiTien: string, tyGia: number) => Math.round(s
           @if (dirty() && p.id) { <button type="button" class="btn quiet" (click)="hoanTac()">Hoàn tác</button> }
           <button type="button" class="btn ok" [disabled]="!dirty()" (click)="luu()">Lưu</button>
         }
-        @if (p.id && store.canEdit('phuTai') && !choXoa()) {
+        @if (p.id && store.canEdit('phuTai') && !choXoa() && daLuu()?.trangThai !== 'Đã tất toán') {
           <button type="button" class="btn quiet danger" (click)="xoa()">Xoá</button>
         }
       </div>
@@ -115,6 +115,7 @@ const quyDoi = (soTien: number, loaiTien: string, tyGia: number) => Math.round(s
               @if (dirty()) { <span class="sub">Lưu thay đổi trước khi chuyển trạng thái.</span> }
             </div>
             <p class="sub">→ Hiệu lực cần Số HĐ, Ngày ký, Giá bán. → Đã tất toán: KH đã trả PT đủ và Phú Tài đã chuyển đủ phần Oxy được hưởng — ghi các lần Phú Tài chuyển cho Oxy là dòng "Chi từ PT" ở <a routerLink="/phu-tai" [queryParams]="{ tab: 'dong-tien', hd: p.id }">sổ quỹ ảo của HĐ</a>. "Đã tất toán" / "Huỷ" khoá HĐ.</p>
+            @if (p.id) { <p class="sub">Tiến độ tất toán: KH đã trả PT <b>{{ money(c.khDaTra) }}</b> / {{ money(c.sauVAT) }} · Phú Tài đã chuyển Oxy <b>{{ money(daChuyenOxy()) }}</b> / {{ money(c.oxyGop) }} (Oxy được hưởng gộp).</p> }
           }
         </section>
 
@@ -198,10 +199,10 @@ const quyDoi = (soTien: number, loaiTien: string, tyGia: number) => Math.round(s
           </table>
         </div>
         @if (hdmHuy().length) {
-          <div class="note warn" style="margin-top:10px">HĐ mua đã Huỷ vẫn đang được chọn và tính vào giá mua: {{ hdmHuy().join(', ') }} — bỏ chọn nếu không còn dùng.</div>
+          <div class="note warn" style="margin-top:10px">HĐ mua đã Huỷ đang được chọn — không tính vào giá mua: {{ hdmHuy().join(', ') }}. Bỏ chọn cho gọn.</div>
         }
         @if (hdmTrung().length) {
-          <div class="note warn" style="margin-top:10px">HĐ mua đang được chọn ở HĐ Phú Tài khác (giá đầu vào có thể bị tính 2 lần): {{ hdmTrung().join(', ') }}</div>
+          <div class="note warn" style="margin-top:10px">HĐ mua đang được chọn ở HĐ Phú Tài khác (dữ liệu cũ — giá đầu vào bị tính 2 lần, nên bỏ ở một bên): {{ hdmTrung().join(', ') }}</div>
         }
         <div class="form-grid" style="margin-top:12px">
           <div class="field"><span class="lbl">Giá mua hàng hoá</span><div class="ro num" title="Σ tổng VNĐ trước VAT của HĐ Mua đã chọn">{{ money(c.giaMua) }}</div></div>
@@ -240,38 +241,27 @@ const quyDoi = (soTien: number, loaiTien: string, tyGia: number) => Math.round(s
 
         <div class="section-title">
           <h2>Phú Tài trả NCC</h2>
-          @if (edit()) { <button type="button" class="btn sm" [disabled]="!p.hdMua.length" (click)="themTraNCC()">+ Thêm đợt</button> }
+          <span class="sub">Ghi ở Tab 4 "Thanh toán NCC" của từng HĐ mua — bảng này tổng hợp, chỉ xem</span>
         </div>
         <div class="tbl-wrap">
           <table class="tbl compact">
-            <thead><tr><th>HĐ Mua</th><th>Ngày</th><th class="num">Số tiền</th><th>Loại tiền</th><th class="num">Tỷ giá</th><th class="num">Quy đổi VNĐ</th><th></th></tr></thead>
+            <thead><tr><th>HĐ Mua</th><th>Đợt</th><th>Ngày trả</th><th class="num">Số tiền (VNĐ)</th><th></th></tr></thead>
             <tbody>
-              @for (x of p.dotTraNCC; track x.id; let i = $index) {
+              @for (x of traNCC(); track x.key) {
                 <tr>
-                  <td>
-                    <select [disabled]="!edit()" (change)="setRow('dotTraNCC', i, { hdmId: $any($event.target).value })" aria-label="HĐ Mua">
-                      @for (id of p.hdMua; track id) { <option [value]="id" [selected]="id === x.hdmId">{{ soHdm(id) }}</option> }
-                      @if (!p.hdMua.includes(x.hdmId)) { <option [value]="x.hdmId" selected>{{ soHdm(x.hdmId) }} (đã bỏ chọn)</option> }
-                    </select>
-                  </td>
-                  <td><input type="date" [value]="x.ngay" [disabled]="!edit()" (input)="setRow('dotTraNCC', i, { ngay: $any($event.target).value })" aria-label="Ngày" /></td>
-                  <td><app-money [decimals]="2" [value]="x.soTien" [disabled]="!edit()" (valueChange)="setRow('dotTraNCC', i, { soTien: $event })" /></td>
-                  <td>
-                    <select [disabled]="!edit()" (change)="setRow('dotTraNCC', i, { loaiTien: $any($event.target).value })" aria-label="Loại tiền">
-                      @for (l of loaiTien; track l) { <option [value]="l" [selected]="l === x.loaiTien">{{ l }}</option> }
-                    </select>
-                  </td>
-                  <td><app-money [decimals]="2" [value]="x.tyGia" [disabled]="!edit() || x.loaiTien === 'VNĐ'" (valueChange)="setRow('dotTraNCC', i, { tyGia: $event })" /></td>
-                  <td class="num">{{ money(qd(x.soTien, x.loaiTien, x.tyGia)) }}</td>
-                  <td>@if (edit()) { <button type="button" class="btn sm quiet danger" (click)="boRow('dotTraNCC', i)">Bỏ</button> }</td>
+                  <td>{{ x.soHD }}</td><td>{{ x.dot }}</td><td>{{ viDate(x.ngay) }}</td><td class="num">{{ money(x.soTien) }}</td>
+                  <td><a class="linkish" [routerLink]="['/hop-dong-mua', x.hdmId]" [queryParams]="{ tab: 4 }">Mở HĐ mua</a></td>
                 </tr>
               } @empty {
-                <tr><td colspan="7" class="muted">Chưa có đợt nào{{ p.hdMua.length ? '' : ' — chọn HĐ Mua trước' }}</td></tr>
+                <tr><td colspan="5" class="muted">Chưa ghi nhận lần trả nào{{ p.hdMua.length ? ' — ghi ở Tab 4 của HĐ mua' : ' — chọn HĐ Mua trước' }}</td></tr>
               }
             </tbody>
-            <tfoot><tr><th colspan="5">Tổng Phú Tài đã trả NCC (VNĐ)</th><td class="num"><b>{{ money(c.ptTraNCC) }}</b></td><td></td></tr></tfoot>
+            <tfoot><tr><th colspan="3">Tổng Phú Tài đã trả NCC (VNĐ)</th><td class="num"><b>{{ money(c.ptTraNCC) }}</b></td><td></td></tr></tfoot>
           </table>
         </div>
+        @if (p.dotTraNCC.length) {
+          <p class="note warn">HĐ còn {{ p.dotTraNCC.length }} dòng "Phú Tài trả NCC" nhập theo cách cũ (tại HĐ Phú Tài) — không còn được tính; ghi lại ở Tab 4 của HĐ mua tương ứng.</p>
+        }
       }
 
       @case ('4') {
@@ -279,14 +269,21 @@ const quyDoi = (soTien: number, loaiTien: string, tyGia: number) => Math.round(s
           <app-buoc [rows]="c.buoc" />
         </section>
         @if (c.lnTruoc <= 0) { <div class="note bad" style="margin-top:10px">Lỗ: Oxy chịu toàn bộ (D-21) — thuế = 0, Phú Tài giữ = 0.</div> }
-        <div class="note warn" style="margin-top:10px">
-          Q-03 chưa trả lời: spec cho Oxy được 72% LN trước thuế (thuế 20% → PT giữ 10% của LN sau thuế); app đang chạy tính PT 10% + thuế 20% trên chênh lệch → Oxy 70%. Màn này tính theo spec.
+        <div class="note info" style="margin-top:10px">
+          Cách chia của HĐ này: <b>{{ p.cachChia ?? 'Nhân' }}</b> — Oxy được hưởng <b>{{ pct(c.tyLeOxy) }}</b> LN trước thuế.
+          "Nhân": Phú Tài giữ % trên LN sau thuế (spec, 72% với 20% / 10%). "Cộng": thuế và phần Phú Tài giữ cùng tính trên LN trước thuế (70%). Mặc định cho HĐ mới đặt ở Cấu hình (PT_CACH_CHIA).
         </div>
 
         <div class="grid c2" style="margin-top:14px">
           <section class="card">
             <h3>Tỷ lệ chia (theo HĐ)</h3>
             <div class="form-grid">
+              <div class="field">
+                <label for="pt-cach">Cách chia</label>
+                <select id="pt-cach" [disabled]="!suaTyLe()" (change)="set('cachChia', $any($event.target).value)">
+                  @for (o of cachChiaDs; track o) { <option [value]="o" [selected]="o === (p.cachChia ?? 'Nhân')">{{ o }}</option> }
+                </select>
+              </div>
               <div class="field">
                 <label for="pt-thue">Tỷ lệ thuế Phú Tài (%)</label>
                 <input id="pt-thue" type="number" min="0" max="100" step="0.1" class="num" [value]="phanTram(p.tyLeThue)" [disabled]="!suaTyLe()" (change)="setTyLe('tyLeThue', $any($event.target).value)" />
@@ -342,6 +339,12 @@ const quyDoi = (soTien: number, loaiTien: string, tyGia: number) => Math.round(s
           Mỗi dòng có "Ngày Oxy chuyển PT" và Số tiền VNĐ &gt; 0 sẽ tự tạo một dòng "Thu về PT" trong Sổ dòng tiền quỹ ảo khi Lưu.
           <a routerLink="/phu-tai" [queryParams]="{ tab: 'dong-tien', hd: p.id }">Xem sổ quỹ ảo của HĐ này</a>
         </div>
+        @if (p.doiChieu.length && c.ptChuyenNCC !== c.ptTraNCC) {
+          <div class="note warn" style="margin-bottom:12px">
+            Đối chiếu ghi Phú Tài chuyển NCC {{ money(c.ptChuyenNCC) }} đ, nhưng các HĐ mua (nguồn chuẩn, Tab 4) ghi đã trả {{ money(c.ptTraNCC) }} đ —
+            lệch {{ money(c.ptChuyenNCC - c.ptTraNCC) }} đ. Kiểm tra lại sao kê / đợt trả.
+          </div>
+        }
         <div class="section-title">
           <h2>Đối chiếu thanh toán 3 bên</h2>
           @if (edit()) { <button type="button" class="btn sm" (click)="themDC()">+ Thêm dòng</button> }
@@ -429,7 +432,10 @@ export class PtDetail {
   });
 
   protected readonly khOpts = computed<PickOption[]>(() =>
-    this.store.khachHang().map((k) => ({ value: k.id, label: k.ten, hint: k.mst })),
+    this.store
+      .khachHang()
+      .filter((k) => k.trangThai !== 'Ngưng' || k.id === this.f().maKH)
+      .map((k) => ({ value: k.id, label: k.ten, hint: k.mst + (k.trangThai === 'Ngưng' ? ' · Ngưng' : '') })),
   );
   protected readonly hdmOpts = computed(() => {
     const db = this.store.db();
@@ -449,6 +455,17 @@ export class PtDetail {
       }));
   });
 
+  protected readonly cachChiaDs = CACH_CHIA_PT;
+  /** F-05: các lần Phú Tài trả NCC — đọc từ đợt trả (Tab 4) của các HĐ mua đã chọn. */
+  protected readonly traNCC = computed(() =>
+    this.store
+      .hopDongMua()
+      .filter((m) => this.f().hdMua.includes(m.id))
+      .flatMap((m) => m.dotTT.filter((d) => (d.soTienTra ?? 0) > 0).map((d) => ({ key: m.id + '-' + d.dot, hdmId: m.id, soHD: m.soHD, dot: d.dot, ngay: d.ngayTra, soTien: d.soTienTra ?? 0 })))
+      .sort((a, b) => (a.ngay ?? '').localeCompare(b.ngay ?? '')),
+  );
+  /** Σ "Chi từ PT" của HĐ = tiền Phú Tài đã chuyển trả Oxy (điều kiện tất toán). */
+  protected readonly daChuyenOxy = computed(() => soDuQuyPT(this.store.db(), { hdptId: this.f().id }).chi);
   protected readonly hdmHuy = computed(() => this.hdmOpts().filter((m) => m.trangThai === 'Huỷ' && this.f().hdMua.includes(m.id)).map((m) => m.soHD));
   protected readonly hdmTrung = computed(() => this.hdmOpts().filter((m) => m.khac && this.f().hdMua.includes(m.id)).map((m) => `${m.soHD} (${m.khac})`));
   private readonly unsaved = inject(Unsaved);
@@ -507,9 +524,6 @@ export class PtDetail {
   protected themCP(): void {
     this.them('chiPhi', { id: uid('CPPT'), loai: 'Vận chuyển', noiDung: '', ngay: todayIso(), soTien: 0 });
   }
-  protected themTraNCC(): void {
-    this.them('dotTraNCC', { id: uid('TN'), hdmId: this.f().hdMua[0] ?? '', ngay: todayIso(), soTien: 0, loaiTien: 'VNĐ', tyGia: 1 });
-  }
   protected themDC(): void {
     this.them('doiChieu', { id: uid('DC'), ngayOxyChuyen: todayIso(), soTienVND: 0, soTienNguyenTe: 0, loaiTien: 'VNĐ', tyGia: 1 });
   }
@@ -550,7 +564,7 @@ export class PtDetail {
     const moi = !ban.id;
     const cu = this.daLuu();
     let lyDoTyLe: string | undefined;
-    if (cu && (cu.tyLeThue !== ban.tyLeThue || cu.tyLeGiu !== ban.tyLeGiu)) {
+    if (cu && (cu.tyLeThue !== ban.tyLeThue || cu.tyLeGiu !== ban.tyLeGiu || (cu.cachChia ?? 'Nhân') !== (ban.cachChia ?? 'Nhân'))) {
       const r = await this.confirm.prompt({
         title: 'Lưu thay đổi tỷ lệ chia lợi nhuận?',
         message: 'Tỷ lệ mới áp ngay cho bảng tính của HĐ này và được ghi vào Lịch sử sửa tỷ lệ.',

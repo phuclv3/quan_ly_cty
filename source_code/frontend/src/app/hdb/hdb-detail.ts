@@ -4,7 +4,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { map } from 'rxjs';
 import { Store } from '../core/store';
 import { HopDongBan, TRANG_THAI_HDB, TrangThaiHDB } from '../core/models';
-import { hdbCalc, hdbThieuDeChuyen, hdmCalc } from '../core/calc';
+import { hdbCalc, hdbConChuaGiao, hdbThieuDeChuyen, hdmCalc } from '../core/calc';
 import { money, pct } from '../core/util';
 import { Confirm } from '../shared/confirm';
 import { HoSoPanel, guiXoa } from '../shared/ho-so';
@@ -42,7 +42,7 @@ const TABS = [
         <div>
           <div class="crumbs"><a routerLink="/">Trang chủ</a> › <a routerLink="/hop-dong-ban">Hợp đồng bán</a> › {{ saved()?.soHD || 'Tạo mới' }}</div>
           <h1>
-            {{ saved() ? 'HĐ bán ' + saved()!.soHD : 'HĐ bán mới' }}
+            {{ saved() ? 'HĐ bán ' + (saved()!.soHD || '(chưa có số)') : 'HĐ bán mới' }}
             @if (saved()) { <app-tt [v]="saved()!.trangThai" /> }
             @if (choXoa()) { <app-tt v="Chờ xoá" /> }
             @if (saved()?.import) { <app-tt v="Import" /> }
@@ -59,7 +59,7 @@ const TABS = [
           @if (edit1() || edit3()) {
             <button type="button" class="btn" [disabled]="!dirty()" (click)="luu()"><app-icon name="check" [size]="16" /> Lưu</button>
           }
-          @if (saved() && !choXoa() && store.level('duyetXoa') !== 'none' && store.canEdit('hdb', saved()!.sale)) {
+          @if (saved() && !choXoa() && saved()!.trangThai !== 'Đã tất toán' && store.level('duyetXoa') !== 'none' && store.canEdit('hdb', saved()!.sale)) {
             <button type="button" class="btn danger quiet" (click)="xoa()"><app-icon name="trash" [size]="16" /> Xoá</button>
           }
         </div>
@@ -82,7 +82,7 @@ const TABS = [
                 @if (store.canEdit('moLaiHdb') && !choXoa()) { <button type="button" class="btn sm quiet" (click)="moLai()">Mở lại</button> }
               } @else if (keTiep() && canFlow()) {
                 @if (keTiep() === 'Đang giao hàng') {
-                  <span class="sub">Tự chuyển "Đang giao hàng" khi ghi nhận lần giao đầu tiên.</span>
+                  <span class="sub">Tự chuyển "Đang giao hàng" khi ghi nhận lần giao đầu tiên. HĐ không giao hàng (không có HĐ mua liên quan) chuyển thẳng "Hoàn thành".</span>
                 } @else {
                   <button type="button" class="btn sm" [disabled]="thieu().length > 0" (click)="chuyen()">Chuyển → {{ keTiep() }}</button>
                 }
@@ -110,7 +110,7 @@ const TABS = [
 
       @switch (tab()) {
         @case ('1') {
-          <app-hdb-tab1 [(draft)]="f" [edit]="edit1()" />
+          <app-hdb-tab1 [(draft)]="f" [edit]="edit1()" [khoaDinhDanh]="!!saved() && saved()!.trangThai !== 'Báo giá'" />
           <app-file-hd chu="HDB" [chuId]="saved()?.id ?? ''" [edit]="edit1()" [info]="infoFile()" [(pending)]="fileCho" />
           @if (saved(); as s) { <app-hdb-giao-hang [h]="s" [khoa]="khoa()" /> }
           @else { <p class="sub">Lưu HĐ để ghi nhận giao hàng, hồ sơ và chi phí.</p> }
@@ -297,7 +297,15 @@ export class HdbDetail {
         : k === 'Đã tất toán'
           ? 'Sau khi tất toán, HĐ bị khoá toàn bộ; chỉ người có quyền "Mở lại HĐ đã tất toán" (HDB-03-ML) mở lại được.'
           : undefined;
-    const warn = k === 'Hoàn thành' && this.c().hoSoThieu.length ? `Thiếu hồ sơ: ${this.c().hoSoThieu.join(', ')}` : undefined;
+    const chuaGiao = k === 'Hoàn thành' ? hdbConChuaGiao(s, this.store.db()) : [];
+    const warn =
+      [
+        k === 'Hoàn thành' && this.c().hoSoThieu.length ? `Thiếu hồ sơ: ${this.c().hoSoThieu.join(', ')}` : '',
+        chuaGiao.length ? `Còn hàng theo HĐ mua chưa giao: ${chuaGiao.map((x) => `${this.store.loaiHangTen(x.loaiHang)} ${x.thuocTinh} × ${x.con}`).join('; ')}` : '',
+        k === 'Hoàn thành' && s.trangThai === 'Hiệu lực' ? 'HĐ không có HĐ mua / phiếu xuất — xác nhận đây là HĐ không giao hàng (dịch vụ).' : '',
+      ]
+        .filter(Boolean)
+        .join(' · ') || undefined;
     if (!(await this.confirm.ask({ title: `Chuyển HĐ ${s.soHD} sang "${k}"?`, message: msg, warn, ok: 'Chuyển' }))) return;
     const err = this.store.chuyenTrangThaiHdb(s.id, k);
     this.store.say(err ?? `Đã chuyển sang "${k}"`);

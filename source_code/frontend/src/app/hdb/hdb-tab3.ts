@@ -1,11 +1,12 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, model, signal } from '@angular/core';
 import { Store } from '../core/store';
 import { DotTTBan, HopDongBan, LCP_HOA_HONG } from '../core/models';
-import { Buoc, dotQuaHan, hdbCalc } from '../core/calc';
+import { Buoc, dotBanDaThu, dotQuaHan, hdbCalc } from '../core/calc';
 import { money, pct, sum, todayIso, viDate } from '../core/util';
 import { BuocTable, Kpi, MoneyInput, TrangThai } from '../shared/ui-kit';
 import { Icon } from '../shared/icon';
 import { Confirm } from '../shared/confirm';
+import { guiXoa } from '../shared/ho-so';
 import { RouterLink } from '@angular/router';
 
 interface ThuNhap {
@@ -22,8 +23,8 @@ interface ThuNhap {
   template: `
     <div class="kpis">
       <app-kpi label="Giá trị sau VAT" [value]="money(c().sauVAT)" />
-      <app-kpi label="Đã thu" [value]="money(c().daThu)" [sub]="pct(c().pctThu)" tone="ok" />
-      <app-kpi label="Công nợ phải thu" [value]="money(c().conPhaiThu)" sub="Sau VAT − Σ thực thu" [tone]="c().quaHan ? 'bad' : c().conPhaiThu > 0 ? 'warn' : 'ok'" />
+      <app-kpi label="Đã thu (phiếu đã duyệt)" [value]="money(c().daThu)" [sub]="pct(c().pctThu) + (c().daThuCho ? ' · chờ duyệt ' + money(c().daThuCho) : '')" tone="ok" />
+      <app-kpi label="Công nợ phải thu" [value]="money(c().conPhaiThu)" sub="Sau VAT − Σ thực thu đã duyệt" [tone]="c().quaHan ? 'bad' : c().conPhaiThu > 0 ? 'warn' : 'ok'" />
     </div>
 
     <div class="grid c2">
@@ -32,11 +33,12 @@ interface ThuNhap {
         <div class="form-grid">
           <div class="field">
             <label for="t3-truoc">Tổng GTHĐ trước VAT</label>
-            <app-money inputId="t3-truoc" [value]="f().truocVAT" [disabled]="!edit()" (valueChange)="set('truocVAT', $event)" />
+            <app-money inputId="t3-truoc" [value]="f().truocVAT" [disabled]="!edit() || khoaGiaTri()" (valueChange)="set('truocVAT', $event)" />
+            @if (khoaGiaTri()) { <span class="hint">Khoá vì HĐ đã có phiếu Thu.</span> }
           </div>
           <div class="field">
             <label for="t3-vat">VAT</label>
-            <select id="t3-vat" [disabled]="!edit()" (change)="setVat($any($event.target).value)">
+            <select id="t3-vat" [disabled]="!edit() || khoaGiaTri()" (change)="setVat($any($event.target).value)">
               @for (v of vats; track v) { <option [value]="v" [selected]="v === f().vat">{{ v }}%</option> }
             </select>
           </div>
@@ -147,7 +149,10 @@ interface ThuNhap {
                   @if (p) {
                     @if (xemPhieu()) { <a class="sub linkish" routerLink="/ke-toan" [queryParams]="{ tab: 'so-quy', id: p.id }">{{ p.soPhieu }}</a> }
                     @else { <span class="sub">{{ p.soPhieu }}</span> }
-                    <app-tt [v]="p.trangThai" />
+                    @if (store.dangChoXoa('PhieuThuChi', p.id)) { <app-tt v="Chờ xoá" /> } @else { <app-tt [v]="p.trangThai" /> }
+                    @if (p.trangThai === 'Đã duyệt' && !khoa() && store.canEdit('hdbThucThu') && store.level('duyetXoa') !== 'none' && !store.dangChoXoa('PhieuThuChi', p.id)) {
+                      <button type="button" class="linkish sub" title="Phiếu đã duyệt mà ghi sai: gửi yêu cầu xoá, duyệt xong ghi nhận lại" (click)="xoaPhieu(p.id, p.soPhieu, d.dot)">Yêu cầu xoá phiếu</button>
+                    }
                   } @else { <span class="muted">—</span> }
                 </td>
                 <td class="btn-row">
@@ -172,7 +177,7 @@ interface ThuNhap {
       @if (store.canEdit('hdbThucThu') && saved()?.trangThai === 'Báo giá') {
         <p class="sub">HĐ ở Báo giá — chỉ ghi thực thu từ Hiệu lực trở đi.</p>
       }
-      <p class="sub">Ghi thực thu sinh 1 phiếu Thu "Chờ duyệt" ở Sổ quỹ; số dư nguồn tiền tăng khi phiếu được duyệt.</p>
+      <p class="sub">Ghi thực thu sinh 1 phiếu Thu "Chờ duyệt" ở Sổ quỹ. Đợt chỉ tính "Đã thu" (công nợ, tất toán) và số dư nguồn tiền chỉ tăng khi phiếu được duyệt.</p>
     </section>
   `,
 })
@@ -190,6 +195,8 @@ export class HdbTab3 {
   protected readonly vats = [0, 8, 10] as const;
 
   protected readonly c = computed(() => hdbCalc(this.f(), this.store.db()));
+  /** F-08: đã có phiếu Thu (chưa bị từ chối) → khoá Giá trị trước VAT / VAT. */
+  protected readonly khoaGiaTri = computed(() => !!this.saved() && this.store.hdbCoPhieuThu(this.saved()!));
   protected readonly max = computed(() => this.store.cauHinh().SO_DOT_TOI_DA);
   protected readonly tongDot = computed(() => sum(this.f().dotTT, (d) => d.soTien));
 
@@ -286,7 +293,7 @@ export class HdbTab3 {
     this.f.update((h) => ({ ...h, dotTT: h.dotTT.filter((_, j) => j !== i) }));
   }
   protected quaHan(d: DotTTBan): boolean {
-    return dotQuaHan(d, d.soTienThu ?? 0);
+    return dotQuaHan(d, dotBanDaThu(d, this.store.db()));
   }
 
   // ── Thực thu (Kế toán) ──
@@ -319,6 +326,11 @@ export class HdbTab3 {
     if (!d) return;
     this.thuNhap.update((m) => ({ ...m, [dot]: { ...this.thu(d), ...p } }));
   }
+  /** F-03: phiếu Thu đã duyệt nhưng sai → yêu cầu xoá; duyệt xong đợt trở về chưa thu để ghi lại. */
+  protected async xoaPhieu(id: string, soPhieu: string, dot: number): Promise<void> {
+    await guiXoa(this.confirm, this.store, 'PhieuThuChi', id, `Phiếu Thu ${soPhieu} — đợt ${dot} HĐ bán ${this.saved()?.soHD ?? ''}`);
+  }
+
   protected async ghiThu(dot: number): Promise<void> {
     const d = this.f().dotTT.find((x) => x.dot === dot);
     const s = this.saved();

@@ -4,17 +4,18 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { map } from 'rxjs';
 import { Store } from '../core/store';
 import { HopDongBan } from '../core/models';
-import { HdbCalc, dotQuaHan, hdbCalc } from '../core/calc';
+import { HdbCalc, dotBanDaThu, dotQuaHan, hdbCalc, ptCalc } from '../core/calc';
 import { matches, money, pct, sum, viDate, vndShort } from '../core/util';
 import { Kpi, Multi, PickOption, TrangThai } from '../shared/ui-kit';
 import { Icon } from '../shared/icon';
 import { csv, downloadFile, fileName } from '../shared/export';
 
-type Tab = 'doanh-thu' | 'loi-nhuan' | 'thanh-toan';
+type Tab = 'doanh-thu' | 'loi-nhuan' | 'thanh-toan' | 'phu-tai';
 const TABS: { k: Tab; t: string }[] = [
   { k: 'doanh-thu', t: 'Doanh thu' },
   { k: 'loi-nhuan', t: 'Lợi nhuận HĐ' },
   { k: 'thanh-toan', t: 'Tiến độ thanh toán' },
+  { k: 'phu-tai', t: 'Kênh Phú Tài' },
 ];
 const DANG_TH: HopDongBan['trangThai'][] = ['Hiệu lực', 'Đang giao hàng', 'Hoàn thành'];
 
@@ -103,6 +104,7 @@ interface Dong {
           <app-kpi label="Giá bán (HĐ đã xác định giá vốn)" [value]="money(lnKpi().giaBan)" [sub]="lnKpi().xd + ' / ' + namRows().length + ' HĐ ký năm ' + nam()" />
           <app-kpi label="Lợi nhuận gộp" [value]="money(lnKpi().lnGop)" [sub]="'Biên ' + pct(lnKpi().giaBan ? lnKpi().lnGop / lnKpi().giaBan : 0)" [tone]="lnKpi().lnGop < 0 ? 'bad' : 'ok'" />
           <app-kpi label="Lợi nhuận sau thuế" [value]="money(lnKpi().lnSau)" [sub]="'Biên ' + pct(lnKpi().giaBan ? lnKpi().lnSau / lnKpi().giaBan : 0)" [tone]="lnKpi().lnSau < 0 ? 'bad' : 'ok'" />
+          @if (store.canView('phuTai')) { <app-kpi label="Cộng cả kênh Phú Tài" [value]="money(lnKpi().lnSau + ptKpi().lnThuc)" [sub]="'+ LN thực Oxy từ ' + ptRows().length + ' HĐ Phú Tài'" /> }
           <app-kpi label="Chưa xác định giá vốn" [value]="'' + (namRows().length - lnKpi().xd)" sub="Chưa xuất kho và chưa có HĐ mua liên quan" [tone]="namRows().length - lnKpi().xd > 0 ? 'warn' : ''" />
         </div>
         <div class="tbl-wrap">
@@ -132,6 +134,36 @@ interface Dong {
           LN gộp = Giá bán (trước VAT) − Giá vốn − Chi phí thực hiện HĐ đã duyệt. Giá vốn = Σ giá gốc phiếu xuất kho; chưa xuất thì Σ HĐ mua liên quan.
           LN sau thuế = LN gộp − Thuế TNDN trên chênh lệch (HDB-08). Biên = LN sau thuế / Giá bán. KPI chỉ cộng HĐ đã xác định giá vốn.
         </p>
+      }
+      @case ('phu-tai') {
+        <div class="kpis">
+          <app-kpi label="HĐ Phú Tài ký năm" [value]="'' + ptRows().length" [sub]="'năm ' + nam() + ' · không tính Huỷ'" />
+          <app-kpi label="Giá bán trước VAT" [value]="money(ptKpi().giaBan)" />
+          <app-kpi label="Oxy được hưởng (gộp)" [value]="money(ptKpi().oxyGop)" [tone]="ptKpi().oxyGop < 0 ? 'bad' : 'ok'" />
+          <app-kpi label="LN thực Oxy (sau hoa hồng)" [value]="money(ptKpi().lnThuc)" [tone]="ptKpi().lnThuc < 0 ? 'bad' : 'ok'" />
+        </div>
+        <div class="tbl-wrap">
+          <table class="tbl freeze">
+            <thead><tr><th>Số HĐ · Khách hàng cuối</th><th>Ngày ký</th><th>Cách chia</th><th class="num">Giá bán</th><th class="num">Giá đầu vào</th><th class="num">LN trước thuế</th><th class="num">Oxy hưởng (gộp)</th><th class="num">Hoa hồng</th><th class="num">LN thực Oxy</th><th>Trạng thái</th></tr></thead>
+            <tbody>
+              @for (r of ptRows(); track r.p.id) {
+                <tr class="click" (click)="moPT(r.p.id)">
+                  <td><a [routerLink]="['/phu-tai', r.p.id]" [queryParams]="{ tab: '4' }" (click)="$event.stopPropagation()"><b>{{ r.p.soHD }}</b></a><span class="sub">{{ r.p.tenKH }}</span></td>
+                  <td>{{ viDate(r.p.ngayKy) }}</td>
+                  <td>{{ r.p.cachChia ?? 'Nhân' }} ({{ pct(r.c.tyLeOxy) }})</td>
+                  <td class="num">{{ money(r.p.truocVAT) }}</td>
+                  <td class="num">{{ money(r.c.giaDauVao) }}</td>
+                  <td class="num" [class.neg]="r.c.lnTruoc < 0">{{ money(r.c.lnTruoc) }}</td>
+                  <td class="num" [class.neg]="r.c.oxyGop < 0">{{ money(r.c.oxyGop) }}</td>
+                  <td class="num">{{ money(r.c.hoaHong) }}</td>
+                  <td class="num" [class.neg]="r.c.lnThuc < 0"><b>{{ money(r.c.lnThuc) }}</b></td>
+                  <td><app-tt [v]="r.p.trangThai" /></td>
+                </tr>
+              } @empty { <tr><td colspan="10" class="empty">Không có HĐ Phú Tài ký trong năm {{ nam() }}.</td></tr> }
+            </tbody>
+          </table>
+        </div>
+        <p class="sub" style="margin-top:8px">Kênh Phú Tài: Phú Tài xuất hoá đơn cho khách cuối; Oxy hưởng phần lợi nhuận theo cách chia (Cấu hình PT_CACH_CHIA, lưu theo từng HĐ). Tìm kiếm áp theo số HĐ / khách hàng; bộ lọc Sale không áp cho kênh này.</p>
       }
       @case ('thanh-toan') {
         <div class="kpis">
@@ -173,7 +205,8 @@ export class BaoCaoPage {
   protected readonly store = inject(Store);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
-  protected readonly tabs = TABS;
+  /** Tab Kênh Phú Tài chỉ hiện khi có quyền xem PT-01. */
+  protected readonly tabs = TABS.filter((t) => t.k !== 'phu-tai' || this.store.canView('phuTai'));
   protected readonly money = money;
   protected readonly pct = pct;
   protected readonly short = vndShort;
@@ -182,7 +215,7 @@ export class BaoCaoPage {
   private readonly qTab = toSignal(this.route.queryParamMap.pipe(map((m) => m.get('tab'))), { initialValue: null });
   protected readonly tab = computed<Tab>(() => {
     const t = this.qTab();
-    return TABS.some((x) => x.k === t) ? (t as Tab) : 'doanh-thu';
+    return this.tabs.some((x) => x.k === t) ? (t as Tab) : 'doanh-thu';
   });
   protected readonly tabTen = computed(() => TABS.find((x) => x.k === this.tab())?.t ?? '');
 
@@ -213,8 +246,8 @@ export class BaoCaoPage {
         h,
         c: hdbCalc(h, db),
         tienQuaHan: sum(
-          h.dotTT.filter((d) => dotQuaHan(d, d.soTienThu ?? 0)),
-          (d) => d.soTien - (d.soTienThu ?? 0),
+          h.dotTT.filter((d) => dotQuaHan(d, dotBanDaThu(d, db))),
+          (d) => d.soTien - dotBanDaThu(d, db),
         ),
       }));
   });
@@ -279,6 +312,26 @@ export class BaoCaoPage {
   protected setTab(t: Tab): void {
     void this.router.navigate([], { relativeTo: this.route, queryParams: { tab: t }, queryParamsHandling: 'merge', replaceUrl: true });
   }
+  /** F-06: kênh Phú Tài — HĐ PT ký trong năm (không tính Huỷ), áp ô tìm kiếm. */
+  protected readonly ptRows = computed(() => {
+    if (!this.store.canView('phuTai')) return [];
+    const db = this.store.db();
+    const q = this.q();
+    return this.store
+      .hopDongPhuTai()
+      .filter((p) => p.trangThai !== 'Huỷ' && p.ngayKy?.startsWith(this.nam()) && matches(q, p.soHD, p.tenKH, p.mst))
+      .map((p) => ({ p, c: ptCalc(p, db) }))
+      .sort((a, b) => (b.p.ngayKy ?? '').localeCompare(a.p.ngayKy ?? ''));
+  });
+  protected readonly ptKpi = computed(() => ({
+    giaBan: sum(this.ptRows(), (r) => r.p.truocVAT),
+    oxyGop: sum(this.ptRows(), (r) => r.c.oxyGop),
+    lnThuc: sum(this.ptRows(), (r) => r.c.lnThuc),
+  }));
+  protected moPT(id: string): void {
+    void this.router.navigate(['/phu-tai', id], { queryParams: { tab: '4' } });
+  }
+
   protected moHD(id: string): void {
     void this.router.navigate(['/hop-dong-ban', id], { queryParams: { tab: '3' } });
   }
@@ -304,6 +357,12 @@ export class BaoCaoPage {
             xd ? r.c.lnGop : null, xd ? r.c.lnSauThue : null, xd && r.h.truocVAT ? pct(r.c.lnSauThue / r.h.truocVAT) : null,
           ]);
         }
+        break;
+      case 'phu-tai':
+        ten = `bao-cao-kenh-phu-tai-${this.nam()}`;
+        out = [['Số HĐ', 'Khách hàng cuối', 'Ngày ký', 'Cách chia', 'Giá bán', 'Giá đầu vào', 'LN trước thuế', 'Oxy hưởng (gộp)', 'Hoa hồng', 'LN thực Oxy', 'Trạng thái']];
+        for (const r of this.ptRows())
+          out.push([r.p.soHD, r.p.tenKH, viDate(r.p.ngayKy), r.p.cachChia ?? 'Nhân', r.p.truocVAT, r.c.giaDauVao, r.c.lnTruoc, r.c.oxyGop, r.c.hoaHong, r.c.lnThuc, r.p.trangThai]);
         break;
       default:
         ten = 'bao-cao-tien-do-thanh-toan';

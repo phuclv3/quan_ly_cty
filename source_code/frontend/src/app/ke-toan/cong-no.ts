@@ -119,7 +119,7 @@ function gom(rows: CnRow[]): Nhom[] {
     </div>
     @if (!nhom()) { <app-pager [pager]="pg" /> }
     <p class="sub muted" style="margin-top:8px">
-      @if (sub() === 'thu') { Còn phải thu = Giá trị HĐ bán sau VAT − Σ thực thu các đợt. Không tính HĐ Báo giá. Muốn sửa thì sửa đợt thanh toán trong HĐ gốc. }
+      @if (sub() === 'thu') { Còn phải thu = Giá trị HĐ bán sau VAT − Σ thực thu có phiếu Thu đã duyệt (phiếu chờ duyệt chưa tính). Không tính HĐ Báo giá. Muốn sửa thì sửa đợt thanh toán trong HĐ gốc. }
       @else { Còn phải trả = Giá trị HĐ mua − Σ đã trả NCC (phiếu chi đã duyệt). Không tính HĐ Thuộc Phú Tài và HĐ Huỷ. }
     </p>
   `,

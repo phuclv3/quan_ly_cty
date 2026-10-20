@@ -58,6 +58,23 @@ export function soNgayQuaHan(han?: string): number {
   return han ? Math.max(0, -daysFromToday(han)) : 0;
 }
 
+/**
+ * Số tiền đã thu của một đợt HĐ Bán — chỉ tính khi phiếu Thu được DUYỆT (F-02, đối xứng HDM-08).
+ * Đợt import không có phiếu Thu (dữ liệu lịch sử) tính theo số đã ghi.
+ */
+export function dotBanDaThu(d: DotTTBan, db: Db): number {
+  if (!d.phieuThuId) return d.soTienThu ?? 0;
+  const p = db.phieuThuChi.find((x) => x.id === d.phieuThuId);
+  return p && p.trangThai === 'Đã duyệt' ? p.soTienThu : 0;
+}
+
+/** Phần thực thu đã ghi nhận nhưng phiếu Thu còn Chờ duyệt. */
+export function dotBanChoDuyet(d: DotTTBan, db: Db): number {
+  if (!d.phieuThuId) return 0;
+  const p = db.phieuThuChi.find((x) => x.id === d.phieuThuId);
+  return p && p.trangThai === 'Chờ duyệt' ? p.soTienThu : 0;
+}
+
 export type GiaoHangTT = 'Chưa giao' | 'Đang giao' | 'Đã giao';
 
 export interface HdbCalc {
@@ -65,7 +82,10 @@ export interface HdbCalc {
   chenhLech: number;
   tyLeCL: number;
   thue: ReturnType<typeof thueTNDN>;
+  /** Chỉ phiếu Thu đã duyệt (F-02). */
   daThu: number;
+  /** Đã ghi nhận, phiếu Thu đang chờ duyệt — chưa tính vào Đã thu. */
+  daThuCho: number;
   conPhaiThu: number;
   pctThu: number;
   /** Tổng hoa hồng (tiền trả khách) mọi trạng thái trừ Từ chối, và phần đã duyệt. */
@@ -93,7 +113,8 @@ export function hdbCalc(h: HopDongBan, db: Db): HdbCalc {
   const chenhLech = h.thucTeTruocVAT > 0 ? h.truocVAT - h.thucTeTruocVAT : 0;
   const tyLeCL = h.thucTeTruocVAT > 0 ? chenhLech / h.thucTeTruocVAT : 0;
   const thue = thueTNDN(chenhLech, h.thucTeTruocVAT, h.thamSoThue);
-  const daThu = sum(h.dotTT, (d) => d.soTienThu ?? 0);
+  const daThu = sum(h.dotTT, (d) => dotBanDaThu(d, db));
+  const daThuCho = sum(h.dotTT, (d) => dotBanChoDuyet(d, db));
   const cps = db.chiPhiHD.filter((c) => c.hdbId === h.id);
   const hh = cps.filter((c) => c.loaiChiPhi === LCP_HOA_HONG && c.trangThai !== 'Từ chối');
   const cpDuyet = sum(
@@ -113,7 +134,7 @@ export function hdbCalc(h: HopDongBan, db: Db): HdbCalc {
   const lnGop = h.truocVAT - giaVon - cpDuyet;
   const hoaDons = db.hoaDon.filter((x) => x.chu === 'HDB' && x.chuId === h.id);
   const daXuatHD = sum(hoaDons, (x) => x.giaTri);
-  const chuaQua = h.dotTT.filter((d) => (d.soTienThu ?? 0) < d.soTien && d.han);
+  const chuaQua = h.dotTT.filter((d) => dotBanDaThu(d, db) < d.soTien && d.han);
   chuaQua.sort((a, b) => (a.han! < b.han! ? -1 : 1));
   return {
     sauVAT: sau,
@@ -121,6 +142,7 @@ export function hdbCalc(h: HopDongBan, db: Db): HdbCalc {
     tyLeCL,
     thue,
     daThu,
+    daThuCho,
     conPhaiThu: sau - daThu,
     pctThu: sau > 0 ? daThu / sau : 0,
     tienTraKhach: sum(hh, (c) => c.soTien),
@@ -146,7 +168,7 @@ export function hdbCalc(h: HopDongBan, db: Db): HdbCalc {
           : 'Chưa giao',
     soLanGiao: xk.length,
     dotGanNhat: chuaQua[0],
-    quaHan: h.dotTT.filter((d) => dotQuaHan(d, d.soTienThu ?? 0)).length,
+    quaHan: h.dotTT.filter((d) => dotQuaHan(d, dotBanDaThu(d, db))).length,
   };
 }
 
@@ -175,6 +197,7 @@ export function hdbThieuDeChuyen(h: HopDongBan, toi: HopDongBan['trangThai'], db
     if (c.conPhaiThu > 0) out.push(`Còn phải thu ${vnd(c.conPhaiThu)}`);
     if (c.hoSoThieu.length) out.push(`Thiếu hồ sơ: ${c.hoSoThieu.join(', ')}`);
     if (c.cpCho > 0) out.push('Còn chi phí thực hiện Chờ duyệt');
+    if (c.daThuCho > 0) out.push(`Còn phiếu Thu chờ duyệt ${vnd(c.daThuCho)} (chưa tính vào Đã thu)`);
   }
   return out;
 }
@@ -413,6 +436,8 @@ export interface PtCalc {
   lnSau: number;
   ptGiu: number;
   oxyGop: number;
+  /** Tỷ lệ Oxy được hưởng trên LN trước thuế theo cách chia (72% / 70% với tham số mặc định). */
+  tyLeOxy: number;
   hoaHong: number;
   lnThuc: number;
   khDaTra: number;
@@ -427,7 +452,7 @@ export interface PtCalc {
 /** PT-06: chia lợi nhuận từng bước. Lỗ: thuế = 0, Phú Tài giữ = 0, Oxy chịu toàn bộ (D-21). */
 export function ptCalc(p: HopDongPhuTai, db: Db): PtCalc {
   const giaMua = sum(
-    db.hopDongMua.filter((m) => p.hdMua.includes(m.id)),
+    db.hopDongMua.filter((m) => p.hdMua.includes(m.id) && m.trangThai !== 'Huỷ'),
     hdmTong,
   );
   const by = (l: string) => sum(p.chiPhi.filter((c) => c.loai === l), (c) => c.soTien);
@@ -437,10 +462,13 @@ export function ptCalc(p: HopDongPhuTai, db: Db): PtCalc {
   const giaDauVao = giaMua + vanChuyen + haiQuan + cpKhac;
   const lnTruoc = p.truocVAT - giaDauVao;
   const loi = lnTruoc > 0;
+  // Q-03 → tham số PT_CACH_CHIA: "Nhân" (PT giữ % của LN sau thuế) hoặc "Cộng" (PT giữ % của LN trước thuế).
+  const cong = (p.cachChia ?? 'Nhân') === 'Cộng';
   const thue = loi ? Math.round(lnTruoc * p.tyLeThue) : 0;
   const lnSau = lnTruoc - thue;
-  const ptGiu = loi ? Math.round(lnSau * p.tyLeGiu) : 0;
+  const ptGiu = loi ? Math.round((cong ? lnTruoc : lnSau) * p.tyLeGiu) : 0;
   const oxyGop = lnSau - ptGiu;
+  const tyLeOxy = cong ? 1 - p.tyLeThue - p.tyLeGiu : (1 - p.tyLeThue) * (1 - p.tyLeGiu);
   const hoaHong =
     p.hoaHongKieu === '%' ? Math.round(Math.max(0, oxyGop) * (p.hoaHongGiaTri / 100)) : p.hoaHongGiaTri;
   const lnThuc = oxyGop - hoaHong;
@@ -461,11 +489,16 @@ export function ptCalc(p: HopDongPhuTai, db: Db): PtCalc {
     lnSau,
     ptGiu,
     oxyGop,
+    tyLeOxy,
     hoaHong,
     lnThuc,
     khDaTra,
     pctKH: sau > 0 ? khDaTra / sau : 0,
-    ptTraNCC: sum(p.dotTraNCC, (d) => Math.round(d.soTien * (d.loaiTien === 'VNĐ' ? 1 : d.tyGia))),
+    // F-05: nguồn chuẩn "Phú Tài trả NCC" = đợt trả NCC (Tab 4) của các HĐ mua thuộc Phú Tài đã chọn.
+    ptTraNCC: sum(
+      db.hopDongMua.filter((m) => p.hdMua.includes(m.id)),
+      (m) => sum(m.dotTT, (d) => d.soTienTra ?? 0),
+    ),
     oxyChuyenPT,
     ptChuyenNCC,
     chenhDoiChieu: oxyChuyenPT - ptChuyenNCC,
@@ -477,8 +510,12 @@ export function ptCalc(p: HopDongPhuTai, db: Db): PtCalc {
         congThuc: loi ? `LN trước thuế × ${pT(1 - p.tyLeThue)} (Phú Tài đóng TNDN ${pT(p.tyLeThue)})` : 'Lỗ: không tính thuế',
         giaTri: lnSau,
       },
-      { nhan: '4. Phú Tài giữ (phí quản lý)', congThuc: loi ? `${pT(p.tyLeGiu)} × LN sau thuế` : 'Lỗ: Phú Tài không giữ', giaTri: ptGiu },
-      { nhan: '5. Oxy được hưởng (gộp)', congThuc: `${pT(1 - p.tyLeGiu)} × LN sau thuế`, giaTri: oxyGop },
+      {
+        nhan: '4. Phú Tài giữ (phí quản lý)',
+        congThuc: loi ? `${pT(p.tyLeGiu)} × ${cong ? 'LN trước thuế (cách chia "Cộng")' : 'LN sau thuế (cách chia "Nhân")'}` : 'Lỗ: Phú Tài không giữ',
+        giaTri: ptGiu,
+      },
+      { nhan: '5. Oxy được hưởng (gộp)', congThuc: `LN sau thuế − Phú Tài giữ = ${pT(tyLeOxy)} × LN trước thuế`, giaTri: oxyGop },
       {
         nhan: '6. Hoa hồng khách hàng',
         congThuc: p.hoaHongKieu === '%' ? `${p.hoaHongGiaTri}% × Oxy được hưởng (gộp)` : 'Nhập tay',
@@ -500,4 +537,38 @@ export function soDuQuyPT(db: Db, o: { hdptId?: string; denNgay?: string } = {})
     else chi += d.soTien;
   }
   return { thu, chi, soDu: thu - chi };
+}
+
+/**
+ * F-07: hàng theo các HĐ mua liên quan (không Huỷ) còn chưa giao cho HĐ bán — so khớp Loại hàng + Thông số
+ * với các phiếu xuất Hiệu lực. Dùng để cảnh báo khi chuyển "Hoàn thành".
+ */
+export function hdbConChuaGiao(h: HopDongBan, db: Db): { loaiHang: string; thuocTinh: string; con: number }[] {
+  const daGiao = new Map<string, number>();
+  for (const p of db.phieuKho) {
+    if (p.loai !== 'Xuất' || p.hdId !== h.id || p.trangThai !== 'Hiệu lực') continue;
+    for (const d of p.dong) {
+      const k = `${d.loaiHang}|${d.thuocTinh.trim()}`;
+      daGiao.set(k, (daGiao.get(k) ?? 0) + d.soLuong);
+    }
+  }
+  const out: { loaiHang: string; thuocTinh: string; con: number }[] = [];
+  for (const m of db.hopDongMua) {
+    if (m.hdbId !== h.id || m.trangThai === 'Huỷ') continue;
+    for (const d of m.chiTiet) {
+      const k = `${d.loaiHang}|${d.thongSo.trim()}`;
+      const tru = Math.min(daGiao.get(k) ?? 0, d.soLuong);
+      daGiao.set(k, (daGiao.get(k) ?? 0) - tru);
+      if (d.soLuong - tru > 0) out.push({ loaiHang: d.loaiHang, thuocTinh: d.thongSo.trim(), con: d.soLuong - tru });
+    }
+  }
+  return out;
+}
+
+/** F-07: HĐ bán không giao hàng (dịch vụ) — không có HĐ mua liên quan và chưa có phiếu xuất: được chuyển thẳng Hiệu lực → Hoàn thành. */
+export function hdbKhongGiaoHang(h: HopDongBan, db: Db): boolean {
+  return (
+    !db.hopDongMua.some((m) => m.hdbId === h.id && m.trangThai !== 'Huỷ') &&
+    !db.phieuKho.some((p) => p.loai === 'Xuất' && p.hdId === h.id && p.trangThai === 'Hiệu lực')
+  );
 }

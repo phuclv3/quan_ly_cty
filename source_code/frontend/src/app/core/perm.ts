@@ -54,6 +54,7 @@ export type Perm =
   | 'hdbThucThu'
   | 'hdbGiaoHang'
   | 'moLaiHdb'
+  | 'moLaiHdm'
   | 'hdm'
   | 'hdmTab4'
   | 'hdmNhapKho'
@@ -101,6 +102,7 @@ export const CHUC_NANG: ChucNang[] = [
   { ma: 'HDB-03-ML', perm: 'moLaiHdb', module: 'Kinh doanh', ten: 'Mở lại HĐ đã tất toán', moTa: 'HĐ quay về Hoàn thành để sửa', mucDo: ['none', 'edit'] },
   { ma: 'HDM-01', perm: 'hdm', module: 'Kinh doanh', ten: 'Hợp đồng mua — thông tin, hàng hoá, hồ sơ', moTa: 'Xem của mình: HĐ mua gắn HĐ bán của mình', mucDo: ['none', 'ownView', 'view', 'edit'] },
   { ma: 'HDM-08', perm: 'hdmTab4', module: 'Kinh doanh', ten: 'HĐ mua — thanh toán NCC', moTa: 'Tab 4: đợt trả NCC, xuất hoá đơn, checklist', mucDo: ['none', 'ownView', 'view', 'edit'] },
+  { ma: 'HDM-03-ML', perm: 'moLaiHdm', module: 'Kinh doanh', ten: 'Mở lại HĐ mua đã tất toán', moTa: 'HĐ quay về trạng thái nhận hàng để sửa đợt trả / phiếu chi', mucDo: ['none', 'edit'] },
   { ma: 'HDM-06', perm: 'hdmNhapKho', module: 'Kinh doanh', ten: 'HĐ mua — nhập kho', moTa: 'Sinh phiếu nhập kho', mucDo: ['none', 'edit'] },
   // Kho
   { ma: 'KHO-01', perm: 'khoDanhMuc', module: 'Kho', ten: 'Danh mục kho & loại hàng', moTa: '', mucDo: ['none', 'view', 'edit'] },

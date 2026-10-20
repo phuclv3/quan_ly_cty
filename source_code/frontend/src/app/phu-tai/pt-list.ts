@@ -120,9 +120,10 @@ const formRong = (): FormDT => ({ ngay: todayIso(), chieu: 'Thu về PT', hdptId
       </div>
       <app-pager [pager]="pg" />
     } @else {
-      <div class="note warn" style="margin-bottom:12px">
-        Ý nghĩa hai chiều "Thu về PT" / "Chi từ PT" đang chờ trả lời Q-04. Hiện tại: mỗi dòng "Oxy chuyển PT" ở Tab 5 của HĐ tự sinh một dòng "Thu về PT";
-        dòng tự động chỉ sửa ở nguồn. Sổ này độc lập với Nguồn tiền Oxy.
+      <div class="note info" style="margin-bottom:12px">
+        <b>Thu về PT</b> = tiền Oxy chuyển cho Phú Tài — tự sinh từ dòng "Oxy chuyển PT" ở Tab 5 của HĐ (chỉ sửa ở nguồn).
+        <b>Chi từ PT</b> = tiền Phú Tài chuyển trả Oxy (phần Oxy được hưởng) — nhập tay, gắn HĐ; đủ phần Oxy được hưởng (gộp) mới tất toán được HĐ.
+        Sổ này độc lập với Nguồn tiền Oxy.
       </div>
       <div class="kpis">
         <app-kpi label="Toàn quỹ — Thu về PT" [value]="vndShort(quy().thu)" [sub]="denNgay() ? 'tới ' + viDate(denNgay()) : 'tới hiện tại'" />

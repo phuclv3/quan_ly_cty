@@ -25,6 +25,14 @@ const TABS: { k: Tab; t: string; p: Perm }[] = [
   template: `
     <div class="page-head">
       <div><div class="crumbs"><a routerLink="/">Trang chủ</a> › Hệ thống › Danh mục › {{ tabTen() }}</div><h1>Danh mục</h1></div>
+      <!-- F-12: danh mục gắn nghiệp vụ nằm ở module của nó; lối tắt để tìm nhanh. -->
+      <div class="actions">
+        @if (store.canView('khoDanhMuc') && store.canView('khoTon')) {
+          <a class="btn quiet" routerLink="/kho" [queryParams]="{ tab: 'dm-kho' }">Danh mục kho ›</a>
+          <a class="btn quiet" routerLink="/kho" [queryParams]="{ tab: 'loai-hang' }">Loại hàng ›</a>
+        }
+        @if (store.canView('nguonTien')) { <a class="btn quiet" routerLink="/ke-toan" [queryParams]="{ tab: 'nguon' }">Nguồn tiền ›</a> }
+      </div>
     </div>
     <div class="tabs" role="tablist">
       @for (t of tabs(); track t.k) {

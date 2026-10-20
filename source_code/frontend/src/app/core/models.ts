@@ -64,12 +64,20 @@ export interface CauHinh {
   PT_THUE: number;
   /** Phú Tài giữ (phí quản lý) trên LN sau thuế. */
   PT_GIU: number;
+  /**
+   * Cách chia lợi nhuận Phú Tài (Q-03): "Nhân" — Oxy = (1 − thuế) × (1 − PT giữ), mặc định 72%;
+   * "Cộng" — Oxy = 1 − thuế − PT giữ, đều tính trên LN trước thuế, mặc định 70%.
+   */
+  PT_CACH_CHIA: CachChiaPT;
   SO_DOT_TOI_DA: number;
   TIEN_TO_TC: string;
   TIEN_TO_CP: string;
   TIEN_TO_NK: string;
   TIEN_TO_XK: string;
 }
+
+export type CachChiaPT = 'Nhân' | 'Cộng';
+export const CACH_CHIA_PT: CachChiaPT[] = ['Nhân', 'Cộng'];
 
 export type CauHinhKey = keyof CauHinh;
 
@@ -210,6 +218,8 @@ export interface KhachHang {
   dienThoai: string;
   email: string;
   ghiChu: string;
+  /** F-09: Ngưng → không chọn được cho HĐ mới (thiếu = Đang dùng). */
+  trangThai?: 'Đang dùng' | 'Ngưng';
 }
 
 export interface NhaCungCap {
@@ -222,6 +232,8 @@ export interface NhaCungCap {
   dienThoai: string;
   email: string;
   ghiChu: string;
+  /** F-09: Ngưng → không chọn được cho HĐ mới (thiếu = Đang dùng). */
+  trangThai?: 'Đang dùng' | 'Ngưng';
 }
 
 export interface Kho {
@@ -263,7 +275,7 @@ export interface LichSuDuyet {
   luc: string;
   /** Id tài khoản. */
   nguoi: string;
-  hanhDong: 'Lưu nháp' | 'Gửi duyệt' | 'Duyệt' | 'Từ chối';
+  hanhDong: 'Lưu nháp' | 'Gửi duyệt' | 'Rút lại' | 'Duyệt' | 'Từ chối';
   ghiChu?: string;
 }
 
@@ -551,6 +563,8 @@ export interface HopDongPhuTai {
   dotTraNCC: DotPTTraNCC[];
   tyLeThue: number;
   tyLeGiu: number;
+  /** Cách chia lưu theo HĐ lúc tạo (thiếu = "Nhân", như các HĐ trước khi có tham số). */
+  cachChia?: CachChiaPT;
   tyLeLog: TyLePTLog[];
   hoaHongKieu: 'Số tiền' | '%';
   hoaHongGiaTri: number;

@@ -126,7 +126,7 @@ export class HdbGiaoHang {
   protected readonly dirty = computed(() => this.open() && this.anh() !== this.goc());
 
   protected readonly coTheGiao = computed(
-    () => !this.khoa() && this.h().trangThai !== 'Báo giá' && this.store.canEdit('hdbGiaoHang', this.h().sale),
+    () => !this.khoa() && this.h().trangThai !== 'Báo giá' && this.h().trangThai !== 'Hoàn thành' && this.store.canEdit('hdbGiaoHang', this.h().sale),
   );
   protected readonly phieus = computed(() =>
     this.store

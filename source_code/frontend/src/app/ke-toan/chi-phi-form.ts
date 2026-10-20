@@ -62,9 +62,12 @@ import { TepDinhKem } from '../shared/tep-dinh-kem';
         }
 
         <div foot>
-          @if (c.id && !choXoa() && store.level('duyetXoa') !== 'none') {
+          @if (chiPhi()?.trangThai === 'Nháp' && c.id && edit()) {
+            <button type="button" class="btn danger quiet" (click)="xoaNhap()">Xoá nháp</button>
+          } @else if (c.id && !choXoa() && store.level('duyetXoa') !== 'none') {
             <button type="button" class="btn danger quiet" (click)="xoa()">Xoá</button>
           }
+          @if (rutDuoc()) { <button type="button" class="btn quiet" (click)="rutLai()">Rút lại về Nháp</button> }
           <span style="flex:1"></span>
           <button type="button" class="btn quiet" (click)="closed.emit()">{{ edit() ? 'Huỷ' : 'Đóng' }}</button>
           @if (edit()) {
@@ -175,6 +178,27 @@ export class ChiPhiForm {
     }
     this.store.say(gui ? 'Đã gửi duyệt chi phí' : 'Đã lưu nháp chi phí');
     this.closed.emit();
+  }
+
+  protected readonly rutDuoc = computed(() => {
+    const c = this.chiPhi();
+    return !!c && c.trangThai === 'Chờ duyệt' && !this.choXoa() && !this.duyetDuoc() && this.store.canEdit('cpHD', this.hd()?.sale);
+  });
+  protected async xoaNhap(): Promise<void> {
+    const c = this.chiPhi();
+    if (!c) return;
+    if (!(await this.confirm.ask({ title: `Xoá chi phí nháp ${c.maCP}?`, message: 'Chi phí chưa gửi duyệt nên xoá thẳng, không qua Duyệt xoá. Không hoàn tác được.', ok: 'Xoá nháp' }))) return;
+    const e = this.store.xoaNhapChiPhi(c.id);
+    this.store.say(e ?? `Đã xoá chi phí nháp ${c.maCP}`);
+    if (!e) this.closed.emit();
+  }
+  protected async rutLai(): Promise<void> {
+    const c = this.chiPhi();
+    if (!c) return;
+    if (!(await this.confirm.ask({ title: `Rút chi phí ${c.maCP} về Nháp?`, message: 'Chi phí rời hàng chờ duyệt để sửa rồi gửi lại.', ok: 'Rút lại' }))) return;
+    const e = this.store.rutLaiChiPhi(c.id);
+    this.store.say(e ?? `Đã rút chi phí ${c.maCP} về Nháp`);
+    if (!e) this.closed.emit();
   }
 
   protected async xoa(): Promise<void> {

@@ -87,7 +87,7 @@ export class Shell {
   private readonly choXoa = computed(() => {
     const ys = this.store.xoaChoDuyet();
     return this.store.coQuyenDuyetXoa()
-      ? ys.filter((y) => this.store.canDuyetXoa(y)).length
+      ? ys.filter((y) => this.store.duyetXoaDuoc(y)).length
       : ys.filter((y) => y.nguoiGui === this.store.meId()).length;
   });
 
