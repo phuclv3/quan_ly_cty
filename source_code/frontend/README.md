@@ -41,7 +41,7 @@ Màn **Tài khoản & phân quyền** (`/tai-khoan`):
 
 - Mức quyền: Xem · Xem của mình · Gửi yêu cầu · Lập nháp · Sửa của mình · Sửa · Duyệt.
 - Một tài khoản nhiều nhóm → lấy mức **cao nhất**; nhóm "Toàn quyền" → mức cao nhất mọi chức năng.
-- Các quy tắc trước đây gắn cứng với Giám đốc nay là chức năng phân quyền được: `HDB-03-ML` mở lại HĐ đã tất toán, `KT-07-TD` tự duyệt chứng từ của mình, `NT-11-KT` duyệt xoá chứng từ kế toán.
+- Các quy tắc trước đây gắn cứng với Giám đốc nay là chức năng phân quyền được: `HDB-03-ML` mở lại HĐ bán đã tất toán, `HDM-03-ML` mở lại HĐ mua đã tất toán, `KT-07-TD` tự duyệt chứng từ / yêu cầu xoá của mình, `NT-11-KT` duyệt xoá chứng từ kế toán.
 - Chặn tự khoá hệ thống: không lưu thay đổi nào làm mất người cuối cùng có quyền sửa `NT-03`.
 - Danh mục chức năng + 6 nhóm mặc định (sheet "Ma trận quyền", D-25, chờ Q-06) ở `src/app/core/perm.ts`.
 
@@ -98,7 +98,7 @@ public/brand/logo-oxy.png — logo
 | Hồ sơ | Tệp nằm ở IndexedDB máy này | Upload Drive công ty (chờ Q-02) |
 | Dữ liệu mẫu | Trích từ 5 file Excel; số dư đầu kỳ nguồn tiền (50tr / 900tr), tài khoản demo, Sale phụ trách HĐ bán là **giả định** | Nhập số dư thật, gán Sale thật (import chính thức NT-13, Q-07) |
 | Phiếu thu khi ghi nhận thực thu HĐ bán | Sinh phiếu Thu Chờ duyệt để số dư nguồn tiền tăng khi duyệt `[Inference]` — spec không nói rõ | Xác nhận với Kế toán |
-| Chia lợi nhuận Phú Tài | Theo spec (Oxy 72% LN trước thuế); file công nợ Phú Tài thực tế tính 70% | Chốt Q-03 |
+| Chia lợi nhuận Phú Tài | Tham số `PT_CACH_CHIA` ở Cấu hình: "Nhân" (spec, Oxy 72%) hoặc "Cộng" (file thực tế, 70%); lưu theo từng HĐ, sửa được với quyền PT-06 | Chọn mặc định ở Cấu hình |
 | Loại hàng | Thêm nhóm Khí chuẩn, Dung dịch chuẩn (có trong dữ liệu kho thật, spec chưa có) | Chốt Q-01 |
 
 Xoá dữ liệu trên máy để về dữ liệu mẫu: màn **Cấu hình & Import → Dữ liệu trên máy này → Nạp lại dữ liệu mẫu**

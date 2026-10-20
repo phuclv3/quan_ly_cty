@@ -84,6 +84,7 @@ INSERT INTO ChucNang VALUES ('HDB-04', N'Kinh doanh', N'HĐ bán — ghi nhận 
 INSERT INTO ChucNang VALUES ('HDB-03-ML', N'Kinh doanh', N'Mở lại HĐ đã tất toán', N'HĐ quay về Hoàn thành để sửa', 'edit');
 INSERT INTO ChucNang VALUES ('HDM-01', N'Kinh doanh', N'Hợp đồng mua — thông tin, hàng hoá, hồ sơ', N'Xem của mình: HĐ mua gắn HĐ bán của mình', 'ownView,view,edit');
 INSERT INTO ChucNang VALUES ('HDM-08', N'Kinh doanh', N'HĐ mua — thanh toán NCC', N'Tab 4: đợt trả NCC, xuất hoá đơn, checklist', 'ownView,view,edit');
+INSERT INTO ChucNang VALUES ('HDM-03-ML', N'Kinh doanh', N'Mở lại HĐ mua đã tất toán', N'HĐ quay về trạng thái nhận hàng để sửa đợt trả / phiếu chi', 'edit');
 INSERT INTO ChucNang VALUES ('HDM-06', N'Kinh doanh', N'HĐ mua — nhập kho', N'Sinh phiếu nhập kho', 'edit');
 INSERT INTO ChucNang VALUES ('KHO-01', N'Kho', N'Danh mục kho & loại hàng', N'', 'view,edit');
 INSERT INTO ChucNang VALUES ('KHO-06', N'Kho', N'Phiếu nhập / xuất điều chỉnh', N'Phiếu nhập tay — điều chỉnh', 'view,edit');
