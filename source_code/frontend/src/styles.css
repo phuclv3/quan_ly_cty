@@ -137,6 +137,9 @@ p { margin: 0; }
 button, input, select, textarea { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 .ico { flex: 0 0 auto; display: block; }
+/* Thẻ <app-icon> mặc định là inline chứa svg dạng block → lệch dòng khi nằm giữa chữ. Cho mọi icon căn giữa dòng. */
+app-icon { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; vertical-align: middle; line-height: 0; }
+.note > app-icon { margin-top: 3px; }
 
 .num { font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
 .mono { font-family: var(--mono); font-size: 0.9em; }
@@ -454,7 +457,10 @@ a.kpi:hover, button.kpi:hover { border-color: var(--brand); }
   border-radius: 10px; background: var(--brand); color: #fff; font-size: 12.5px; font-weight: 700; line-height: 1;
 }
 .search { position: relative; flex: 1 1 240px; max-width: 420px; display: flex; align-items: center; }
-.search .ico { position: absolute; left: 10px; color: var(--ink-3); }
+/* Trong thanh lọc: ô tìm giãn hết phần còn trống để hàng lọc dài tới mép phải */
+.filters > .search { flex: 1 1 260px; max-width: none; }
+/* Icon kính lúp: neo theo thẻ app-icon (không theo svg bên trong) để luôn giữa chiều cao ô tìm */
+.search > app-icon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--ink-3); pointer-events: none; z-index: 1; }
 .search input { width: 100%; height: 40px; }
 .search:has(> .ico) input, .search:has(> app-icon) input { padding-left: 34px !important; }
 
