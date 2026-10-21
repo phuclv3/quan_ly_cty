@@ -1,23 +1,27 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, model } from '@angular/core';
 import { Store } from '../core/store';
-import { atLeast } from '../core/perm';
 import { HopDongBan } from '../core/models';
-import { Pick, PickGo, PickOption } from '../shared/ui-kit';
+import { PickGo, PickOption } from '../shared/ui-kit';
 import { ThemDoiTac } from '../shared/them-doi-tac';
 
 /** HDB-02 — Tab 1 Thông tin chung. */
 @Component({
   selector: 'app-hdb-tab1',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Pick, PickGo, ThemDoiTac],
+  imports: [PickGo, ThemDoiTac],
   template: `
     <section class="card">
       <h2 class="section-title">Thông tin chung</h2>
       <div class="form-grid">
         <div class="field">
-          <label for="hdb-so">Số HĐ bán <span class="req">* từ Hiệu lực</span></label>
-          <input id="hdb-so" [value]="f().soHD" [disabled]="!edit() || khoaDinhDanh()" placeholder="Báo giá có thể để trống" (input)="set('soHD', $any($event.target).value)" />
-          @if (khoaDinhDanh()) { <span class="hint">Khoá từ "Hiệu lực".</span> }
+          <label for="hdb-so">Số HĐ bán @if (f().trangThai !== 'Báo giá') { <span class="req">*</span> }</label>
+          <input id="hdb-so" [value]="f().soHD" [disabled]="!edit() || khoaDinhDanh()" [placeholder]="f().trangThai === 'Báo giá' ? 'Chưa ký thì để trống' : 'Nhập số hợp đồng'" (input)="set('soHD', $any($event.target).value)" />
+          <!-- F-08: Báo giá chưa cần Số HĐ; bắt buộc khi chuyển Hiệu lực; từ Hiệu lực khoá Số HĐ + Khách hàng. -->
+          @if (khoaDinhDanh()) {
+            <span class="hint">HĐ đã Hiệu lực — Số HĐ và Khách hàng không sửa được nữa.</span>
+          } @else if (f().trangThai === 'Báo giá') {
+            <span class="hint">Đang ở Báo giá nên có thể để trống. Phải nhập trước khi chuyển sang <b>Hiệu lực</b> (sau đó không sửa được).</span>
+          }
         </div>
         <div class="field">
           <label for="hdb-ky">Ngày ký</label>
@@ -30,7 +34,8 @@ import { ThemDoiTac } from '../shared/them-doi-tac';
         </div>
         <div class="field">
           <label for="hdb-sale">Sale phụ trách</label>
-          <app-pick inputId="hdb-sale" [options]="saleOpts()" [value]="f().sale" [disabled]="!edit() || store.level('hdb') === 'own'" (valueChange)="set('sale', $event)" />
+          <app-pick-go inputId="hdb-sale" [options]="saleOpts()" [value]="f().sale" [disabled]="!edit() || store.level('hdb') === 'own'" placeholder="Gõ tên hoặc email Sale…" (valueChange)="set('sale', $event)" />
+          @if (edit() && store.level('hdb') === 'own') { <span class="hint">Sale chỉ lập / sửa HĐ của chính mình.</span> }
         </div>
         <div class="field wide">
           <label for="hdb-kh">Khách hàng <span class="req">*</span></label>
@@ -78,16 +83,8 @@ export class HdbTab1 {
           .join(' · '),
       })),
   );
-  protected readonly saleOpts = computed<PickOption[]>(() =>
-    this.store
-      .taiKhoan()
-      .filter(
-        (t) =>
-          t.id === this.f().sale ||
-          (t.trangThai === 'Hoạt động' && atLeast(this.store.levelOfUser(t, 'hdb'), 'own')),
-      )
-      .map((t) => ({ value: t.id, label: t.hoTen, hint: t.email })),
-  );
+  /** Danh mục Sale = Tài khoản có quyền HĐ bán (Store.saleOpts). */
+  protected readonly saleOpts = computed<PickOption[]>(() => this.store.saleOpts(this.f().sale));
   protected readonly lechDM = computed(() => {
     const h = this.f();
     const k = this.store.khById(h.maKH);

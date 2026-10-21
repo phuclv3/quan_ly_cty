@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal, viewChild } from '@angular/core';
 import { KHO_CHUYEN_THANG, Kho } from '../core/models';
 import { Store } from '../core/store';
 import { dirtyOf } from '../shared/unsaved';
@@ -55,12 +55,12 @@ import { Modal, TrangThai } from '../shared/ui-kit';
       Kho đã có phiếu không xoá được — chỉ Ngưng.
     </div>
 
-    <app-modal [open]="!!f()" [title]="f()?.id ? 'Sửa kho ' + f()!.id : 'Thêm kho'" size="sm" [dirty]="dirty()" (closed)="f.set(null)">
+    <app-modal #mKho [open]="!!f()" [title]="f()?.id ? 'Sửa kho ' + f()!.id : 'Thêm kho'" size="sm" [dirty]="dirty()" (closed)="f.set(null)">
       @if (f(); as k) {
         <div class="form-grid">
           <div class="field"><span class="lbl">Mã kho</span><div class="ro">{{ k.id || 'Tự sinh khi lưu' }}</div></div>
           <div class="field"><span class="lbl">Loại</span><div class="ro">Kho thường</div></div>
-          <div class="field wide"><label for="k-ten">Tên / địa điểm</label><input id="k-ten" [value]="k.ten" (input)="set({ ten: $any($event.target).value })" /></div>
+          <div class="field wide"><label for="k-ten">Tên / địa điểm <span class="req">*</span></label><input id="k-ten" [value]="k.ten" (input)="set({ ten: $any($event.target).value })" /></div>
           <label class="check-row wide"><input type="checkbox" [checked]="k.dangDung" (change)="set({ dangDung: $any($event.target).checked })" /> Đang dùng</label>
         </div>
         @if (err()) { <div class="note bad">{{ err() }}</div> }
@@ -73,6 +73,7 @@ import { Modal, TrangThai } from '../shared/ui-kit';
   `,
 })
 export class DmKhoTab {
+  private readonly mKho = viewChild<Modal>('mKho');
   protected readonly store = inject(Store);
   private readonly confirm = inject(Confirm);
   protected readonly ctId = KHO_CHUYEN_THANG;
@@ -101,6 +102,7 @@ export class DmKhoTab {
     this.f.update((k) => (k ? { ...k, ...p } : k));
   }
   protected luu(): void {
+    if (this.mKho()?.kt.hopLe() === false) return;
     const k = this.f();
     if (!k) return;
     const e = this.store.saveKho({ ...k, ten: k.ten.trim() });

@@ -44,8 +44,9 @@ import { fold, nextCode, nowIso, todayIso, uid, yy } from './util';
 /**
  * v2: phân quyền theo nhóm (NhomQuyen) thay cho vai trò cố định.
  * v3: khách hàng có trường theo dõi kinh doanh + data KH từ file Excel Kinh doanh (ghepDataKH).
+ * v4: tài khoản Sale theo danh mục "Người phụ trách" của file theo dõi KH (themTaiKhoanSale).
  */
-export const DB_VERSION = 3;
+export const DB_VERSION = 4;
 
 export const CAU_HINH_MAC_DINH: CauHinh = {
   TNDN_NGUONG: 0.2,
@@ -72,6 +73,36 @@ export const TAI_KHOAN_DEMO: { email: string; hoTen: string; nhom: string[]; nha
   { email: 'kho@oxymecie.vn', hoTen: 'Thủ kho (demo)', nhom: ['NQ-KHO'], nhan: 'Kho' },
   { email: 'chixem@oxymecie.vn', hoTen: 'Chỉ xem (demo)', nhom: ['NQ-XEM'], nhan: 'Chỉ xem' },
 ];
+
+/**
+ * Nhân viên kinh doanh theo cột "Người phụ trách" (sheet DANH MỤC, File_theo_doi_khach_hang_Kinh_doanh.xlsx).
+ * Là tài khoản thật (nhóm Sale) — Sale phụ trách của HĐ bán / Khách hàng lấy từ bảng Tài khoản.
+ * Email do hệ thống đặt tạm (file không có) — Admin sửa lại ở Tài khoản & phân quyền; đăng nhập lần đầu bắt đổi mật khẩu.
+ */
+export const TAI_KHOAN_SALE_KD: { email: string; hoTen: string }[] = [
+  { email: 'hongha@oxymecie.vn', hoTen: 'Hồng Hà' },
+  { email: 'linhchi@oxymecie.vn', hoTen: 'Linh Chi' },
+  { email: 'sales3@oxymecie.vn', hoTen: 'Sales 3' },
+];
+
+/** Thêm tài khoản Sale KD còn thiếu (so theo email). Dùng cho dữ liệu mẫu và nâng cấp dữ liệu trên máy. */
+export async function themTaiKhoanSale(db: Db): Promise<void> {
+  for (const t of TAI_KHOAN_SALE_KD) {
+    if (db.taiKhoan.some((x) => x.email.toLowerCase() === t.email)) continue;
+    const salt = randomHex();
+    db.taiKhoan.push({
+      id: uid('TK'),
+      email: t.email,
+      hoTen: t.hoTen,
+      nhom: ['NQ-SALE'],
+      trangThai: 'Hoạt động',
+      matKhauBam: await hashPassword(MAT_KHAU_DEMO, salt),
+      salt,
+      batDoiMK: true,
+      soLanSai: 0,
+    });
+  }
+}
 
 const CXD = '(Chưa xác định)';
 const pad4 = (n: number) => String(n).padStart(4, '0');
@@ -124,6 +155,7 @@ export async function buildSeed(): Promise<Db> {
     };
     db.taiKhoan.push(acc);
   }
+  await themTaiKhoanSale(db);
   const idOf = (email: string) => db.taiKhoan.find((t) => t.email === email)!.id;
   const SALE = idOf('sale@oxymecie.vn');
   const KT = idOf('ketoan@oxymecie.vn');

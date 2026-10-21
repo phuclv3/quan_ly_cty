@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal, viewChild } from '@angular/core';
 import { Store } from '../core/store';
 import { KhachHang, NhaCungCap } from '../core/models';
 import { Modal } from './ui-kit';
@@ -27,7 +27,7 @@ const RONG: Nhap = { ten: '', mst: '', diaChi: '', quocGia: '', nguoiLienHe: '',
     @if (coQuyen()) {
       <button type="button" class="linkish hint" (click)="mo()"><app-icon name="plus" [size]="14" /> Thêm {{ nhan() }} mới</button>
     }
-    <app-modal [open]="open()" [title]="'Thêm ' + nhan() + ' mới'" size="md" [dirty]="!!f().ten || !!f().mst" (closed)="open.set(false)">
+    <app-modal #mTDT [open]="open()" [title]="'Thêm ' + nhan() + ' mới'" size="md" [dirty]="!!f().ten || !!f().mst" (closed)="open.set(false)">
       @if (err()) { <div class="note bad">{{ err() }}</div> }
       @if (trung(); as t) {
         <div class="note warn">
@@ -55,6 +55,7 @@ const RONG: Nhap = { ten: '', mst: '', diaChi: '', quocGia: '', nguoiLienHe: '',
   `,
 })
 export class ThemDoiTac {
+  private readonly mTDT = viewChild<Modal>('mTDT');
   private readonly store = inject(Store);
   readonly loai = input<'kh' | 'ncc'>('kh');
   readonly daTao = output<string>();
@@ -83,6 +84,7 @@ export class ThemDoiTac {
     this.daTao.emit(id);
   }
   protected luu(): void {
+    if (this.mTDT()?.kt.hopLe() === false) return;
     const x = this.f();
     const chung = { id: '', ten: x.ten.trim(), mst: x.mst.trim(), diaChi: x.diaChi.trim(), nguoiLienHe: x.nguoiLienHe.trim(), dienThoai: x.dienThoai.trim(), email: x.email.trim(), ghiChu: '' };
     const draft: KhachHang | NhaCungCap = this.loai() === 'kh' ? chung : { ...chung, quocGia: x.quocGia.trim() };

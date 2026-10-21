@@ -1,18 +1,19 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal, viewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Icon } from './shared/icon';
 import { Auth } from './core/auth';
 import { MAT_KHAU_DEMO, TAI_KHOAN_DEMO } from './core/seed';
 import { CONG_TY } from './core/cong-ty';
+import { KiemTra } from './shared/kiem-tra';
 
 /** NT-01: đăng nhập email + mật khẩu (nút hiện/ẩn). Thông báo lỗi chung, không lộ email có tồn tại. */
 @Component({
   selector: 'app-login',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Icon],
+  imports: [Icon, KiemTra],
   template: `
     <div class="login-wrap">
-      <form class="card login-card" (submit)="$event.preventDefault(); go()">
+      <form class="card login-card" appKiemTra #ktLg="kiemTra" (submit)="$event.preventDefault(); go()">
         <div class="brand-big">
           <span class="brand-logo wide"><img src="brand/logo-oxymecie.png" alt="Logo Oxy Mecie" width="399" height="160" /></span>
           <div>
@@ -20,11 +21,11 @@ import { CONG_TY } from './core/cong-ty';
           </div>
         </div>
         <div class="field">
-          <label for="lg-email">Email</label>
+          <label for="lg-email">Email <span class="req">*</span></label>
           <input id="lg-email" type="email" autocomplete="username" required [value]="email()" (input)="email.set($any($event.target).value)" />
         </div>
         <div class="field">
-          <label for="lg-pw">Mật khẩu</label>
+          <label for="lg-pw">Mật khẩu <span class="req">*</span></label>
           <div class="pw">
             <input id="lg-pw" [type]="show() ? 'text' : 'password'" autocomplete="current-password" required [value]="pw()" (input)="pw.set($any($event.target).value)" />
             <button type="button" class="icon-btn" [attr.aria-label]="show() ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'" (click)="show.set(!show())"><app-icon [name]="show() ? 'lock' : 'eye'" /></button>
@@ -50,6 +51,7 @@ import { CONG_TY } from './core/cong-ty';
   `,
 })
 export class Login {
+  private readonly ktLg = viewChild('ktLg', { read: KiemTra });
   private readonly auth = inject(Auth);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
@@ -63,6 +65,7 @@ export class Login {
   protected readonly congTy = CONG_TY;
 
   protected async go(): Promise<void> {
+    if (this.ktLg()?.hopLe() === false) return;
     this.busy.set(true);
     const err = await this.auth.login(this.email(), this.pw());
     this.busy.set(false);

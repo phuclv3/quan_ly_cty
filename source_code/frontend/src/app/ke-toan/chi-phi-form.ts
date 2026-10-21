@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, linkedSignal, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, linkedSignal, output, viewChild } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Store } from '../core/store';
 import { ChiPhiHD, LCP_HOA_HONG, LCP_VAN_CHUYEN } from '../core/models';
@@ -17,7 +17,7 @@ import { TepDinhKem } from '../shared/tep-dinh-kem';
   imports: [Modal, MoneyInput, Pick, TrangThai, RouterLink, LichSu, TepDinhKem],
   template: `
     @if (f(); as c) {
-      <app-modal [open]="true" [title]="c.id ? 'Chi phí ' + c.maCP : 'Nhập chi phí thực hiện HĐ'" size="md" [dirty]="dirty()" (closed)="closed.emit()">
+      <app-modal #mCP [open]="true" [title]="c.id ? 'Chi phí ' + c.maCP : 'Nhập chi phí thực hiện HĐ'" size="md" [dirty]="dirty()" (closed)="closed.emit()">
         @if (c.trangThai === 'Từ chối' && c.lyDoTuChoi) {
           <div class="note bad">Bị từ chối bởi {{ store.userName(c.nguoiDuyet) }} ({{ viMoment(c.ngayDuyet) }}): {{ c.lyDoTuChoi }}</div>
         }
@@ -32,7 +32,7 @@ import { TepDinhKem } from '../shared/tep-dinh-kem';
             <app-pick [options]="hdOpts()" [disabled]="!edit()" [value]="c.hdbId" (valueChange)="set('hdbId', $event)" />
             @if (hd(); as h) { <a class="hint linkish" [routerLink]="['/hop-dong-ban', h.id]" [queryParams]="{ tab: 4 }">Mở HĐ {{ h.soHD }}</a> }
           </div>
-          <div class="field"><label for="cf-ngay">Ngày</label><input id="cf-ngay" type="date" [disabled]="!edit()" [value]="c.ngay" (input)="set('ngay', $any($event.target).value)" /></div>
+          <div class="field"><label for="cf-ngay">Ngày <span class="req">*</span></label><input id="cf-ngay" type="date" [disabled]="!edit()" [value]="c.ngay" (input)="set('ngay', $any($event.target).value)" /></div>
           <div class="field"><span class="lbl">Trạng thái</span><div class="ro">@if (choXoa()) { <app-tt v="Chờ xoá" /> } @else { <app-tt [v]="c.trangThai" /> }</div></div>
           <div class="field"><label>Loại chi phí thực hiện <span class="req">*</span></label><app-pick [options]="lcpOpts()" [disabled]="!edit()" [value]="c.loaiChiPhi" (valueChange)="set('loaiChiPhi', $event)" /></div>
           <div class="field"><label>Số tiền <span class="req">*</span></label><app-money [disabled]="!edit()" [value]="c.soTien" (valueChange)="set('soTien', $event)" /></div>
@@ -84,6 +84,7 @@ import { TepDinhKem } from '../shared/tep-dinh-kem';
   `,
 })
 export class ChiPhiForm {
+  private readonly mCP = viewChild<Modal>('mCP');
   protected readonly store = inject(Store);
   private readonly confirm = inject(Confirm);
   readonly chiPhi = input<ChiPhiHD | null>(null);
@@ -163,6 +164,7 @@ export class ChiPhiForm {
   }
 
   protected luu(gui: boolean): void {
+    if (gui && this.mCP()?.kt.hopLe() === false) return;
     const c = this.f();
     if (!c) return;
     const out: ChiPhiHD = {

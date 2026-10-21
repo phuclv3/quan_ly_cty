@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal, viewChild } from '@angular/core';
 import { LoaiHang, NHOM_HANG, NhomHang } from '../core/models';
 import { Store } from '../core/store';
 import { dirtyOf } from '../shared/unsaved';
@@ -68,15 +68,15 @@ interface Form {
     <app-pager [pager]="pg" />
     <p class="hint muted">Khí bên trong pha theo đơn → không tạo mã theo khí; biến thể = Loại hàng × giá trị thuộc tính (nhập khi lập phiếu / dòng hàng, VD "10L", "150bar"). Loại hàng đã dùng không xoá được — chỉ Ngưng.</p>
 
-    <app-modal [open]="!!f()" [title]="f()?.isNew ? 'Thêm loại hàng' : 'Sửa loại hàng ' + (f()?.l?.id ?? '')" [dirty]="dirty()" (closed)="f.set(null)">
+    <app-modal #mLh [open]="!!f()" [title]="f()?.isNew ? 'Thêm loại hàng' : 'Sửa loại hàng ' + (f()?.l?.id ?? '')" [dirty]="dirty()" (closed)="f.set(null)">
       @if (f(); as x) {
         <div class="form-grid">
           <div class="field">
-            <label for="lh-ma">Mã loại hàng</label>
+            <label for="lh-ma">Mã loại hàng <span class="req">*</span></label>
             @if (x.isNew) { <input id="lh-ma" [value]="x.l.id" (input)="set({ id: $any($event.target).value.toUpperCase() })" /> } @else { <div class="ro">{{ x.l.id }}</div> }
             <span class="hint">Mã duy nhất</span>
           </div>
-          <div class="field"><label for="lh-ten">Tên</label><input id="lh-ten" [value]="x.l.ten" (input)="set({ ten: $any($event.target).value })" /></div>
+          <div class="field"><label for="lh-ten">Tên <span class="req">*</span></label><input id="lh-ten" [value]="x.l.ten" (input)="set({ ten: $any($event.target).value })" /></div>
           <div class="field">
             <label for="lh-nhom">Nhóm</label>
             <select id="lh-nhom" (change)="set({ nhom: $any($event.target).value })">
@@ -101,6 +101,7 @@ interface Form {
   `,
 })
 export class DmLoaiHangTab {
+  private readonly mLh = viewChild<Modal>('mLh');
   protected readonly store = inject(Store);
   private readonly confirm = inject(Confirm);
   protected readonly nhoms = NHOM_HANG;
@@ -146,6 +147,7 @@ export class DmLoaiHangTab {
     this.f.update((x) => (x ? { ...x, thuocTinh: v } : x));
   }
   protected luu(): void {
+    if (this.mLh()?.kt.hopLe() === false) return;
     const x = this.f();
     if (!x) return;
     const l: LoaiHang = {

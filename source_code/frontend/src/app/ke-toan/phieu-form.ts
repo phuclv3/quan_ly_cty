@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, linkedSignal, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, linkedSignal, output, viewChild } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Store } from '../core/store';
 import { LOAI_PHIEU, LoaiPhieu, PhieuThuChi } from '../core/models';
@@ -18,7 +18,7 @@ import { donVi, esc, inGiay, kyTen } from './kt-print';
   imports: [Modal, MoneyInput, Pick, TrangThai, RouterLink, LichSu, TepDinhKem],
   template: `
     @if (f(); as p) {
-      <app-modal [open]="true" [title]="p.id ? 'Phiếu ' + p.soPhieu : 'Lập phiếu thu chi'" [sub]="p.loai" size="md" [dirty]="dirty()" (closed)="closed.emit()">
+      <app-modal #mPhieu [open]="true" [title]="p.id ? 'Phiếu ' + p.soPhieu : 'Lập phiếu thu chi'" [sub]="p.loai" size="md" [dirty]="dirty()" (closed)="closed.emit()">
         @if (p.phatSinh) {
           <div class="note info">
             Phiếu sinh tự động từ đợt {{ p.phatSinh.dot }} của
@@ -51,7 +51,7 @@ import { donVi, esc, inGiay, kyTen } from './kt-print';
               @for (l of loais; track l) { <option [value]="l" [selected]="l === p.loai">{{ l }}</option> }
             </select>
           </div>
-          <div class="field"><label for="pf-ngay">Ngày lập</label><input id="pf-ngay" type="date" [disabled]="!edit()" [value]="p.ngayLap" (input)="set('ngayLap', $any($event.target).value)" /></div>
+          <div class="field"><label for="pf-ngay">Ngày lập <span class="req">*</span></label><input id="pf-ngay" type="date" [disabled]="!edit()" [value]="p.ngayLap" (input)="set('ngayLap', $any($event.target).value)" /></div>
           <div class="field"><span class="lbl">Trạng thái</span><div class="ro">@if (choXoa()) { <app-tt v="Chờ xoá" /> } @else { <app-tt [v]="p.trangThai" /> }</div></div>
 
           @switch (p.loai) {
@@ -69,7 +69,8 @@ import { donVi, esc, inGiay, kyTen } from './kt-print';
               <div class="field wide"><label>Phiếu Tạm ứng gốc <span class="req">*</span></label><app-pick [options]="tamUngOpts()" [disabled]="!edit()" [value]="p.phieuTamUngGoc || ''" (valueChange)="chonGoc($event)" placeholder="— Chọn phiếu tạm ứng đã duyệt, chưa quyết toán —" /></div>
               <div class="field"><label>Nguồn tiền <span class="req">*</span></label><app-pick [options]="nguonOpts()" [disabled]="!edit()" [value]="p.nguonTien" (valueChange)="set('nguonTien', $event)" /></div>
               <div class="field"><span class="lbl">Số tiền tạm ứng</span><div class="ro num">{{ money(goc()?.soTienChi ?? 0) }}</div></div>
-              <div class="field">
+              <!-- 0 đ là hợp lệ khi đã xác nhận — Store kiểm (chưa nhập ≠ 0) -->
+              <div class="field" data-tuy-chon>
                 <label>Số tiền thực chi <span class="req">*</span></label><app-money [disabled]="!edit()" [value]="p.soTienThucChi ?? 0" (valueChange)="set('soTienThucChi', $event)" />
                 @if (edit() && p.soTienThucChi === undefined) { <span class="hint">Chưa nhập — thực chi 0 đ thì bấm <button type="button" class="linkish" (click)="set('soTienThucChi', 0)">ghi 0 đ</button>.</span> }
               </div>
@@ -131,6 +132,7 @@ import { donVi, esc, inGiay, kyTen } from './kt-print';
   `,
 })
 export class PhieuForm {
+  private readonly mPhieu = viewChild<Modal>('mPhieu');
   protected readonly store = inject(Store);
   private readonly confirm = inject(Confirm);
   readonly phieu = input<PhieuThuChi | null>(null);
@@ -226,6 +228,7 @@ export class PhieuForm {
   }
 
   protected luu(gui: boolean): void {
+    if (gui && this.mPhieu()?.kt.hopLe() === false) return;
     const p = this.f();
     if (!p) return;
     const e = this.store.savePhieu(p, gui);

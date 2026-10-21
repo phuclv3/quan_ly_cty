@@ -144,7 +144,17 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .sub { color: var(--ink-3); font-size: 15px; line-height: 1.6; }
 .neg { color: var(--bad-fg); }
 .pos { color: var(--ok-fg); }
-.req { color: var(--bad-fg); font-weight: 400; font-size: 12px; margin-left: 4px; }
+.req { color: var(--bad-fg); font-weight: 700; font-size: 16px; line-height: 1; margin-left: 3px; }
+/* Chữ phụ bên cạnh dấu * (VD "từ Hiệu lực") và nhãn "bắt buộc" của checklist hồ sơ */
+.req-note { color: var(--ink-3); font-weight: 400; font-size: 12.5px; margin-left: 4px; }
+.req-chu { color: var(--bad-fg); font-weight: 600; font-size: 12px; margin-left: 4px; }
+/* Ô bắt buộc còn trống sau khi bấm Lưu (shared/kiem-tra.ts) */
+.field.thieu > input, .field.thieu > select, .field.thieu > textarea, .field.thieu > app-money > input,
+.field.thieu .pick-btn, .field.thieu .go-in {
+  border-color: var(--bad-fg) !important; box-shadow: 0 0 0 3px color-mix(in srgb, var(--bad-fg) 16%, transparent);
+}
+.field.thieu > label, .field.thieu > .lbl { color: var(--bad-fg); }
+.field.thieu::after { content: '⚠ ' attr(data-loi); font-size: 13px; line-height: 1.4; color: var(--bad-fg); }
 .between { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .stack { display: grid; gap: 14px; }

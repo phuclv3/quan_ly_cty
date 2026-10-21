@@ -49,7 +49,7 @@ import {
   CHECKLIST_HDM,
 } from './models';
 import { CHUC_NANG, KE_TOAN_DUYET_XOA, Level, Perm, atLeast, levelOf } from './perm';
-import { CAU_HINH_MAC_DINH, DB_VERSION, buildSeed, ghepDataKH } from './seed';
+import { CAU_HINH_MAC_DINH, DB_VERSION, buildSeed, ghepDataKH, themTaiKhoanSale } from './seed';
 import {
   donGiaGoc,
   hdbCalc,
@@ -113,7 +113,13 @@ export class Store {
         ghepDataKH(d);
         // Quyền mới HDB-13-PB (phân bổ data KH): nhóm hệ thống Admin kinh doanh có sẵn như mẫu mặc định.
         const nhomQuyen = d.nhomQuyen.map((g) => (g.id === 'NQ-ADMIN' && !g.quyen['HDB-13-PB'] ? { ...g, quyen: { ...g.quyen, 'HDB-13-PB': 'edit' as const } } : g));
-        d = { ...d, nhomQuyen, version: DB_VERSION };
+        d = { ...d, nhomQuyen, version: 3 };
+      }
+      // v3 → v4: thêm tài khoản Sale KD (Hồng Hà, Linh Chi, Sales 3) nếu máy chưa có.
+      if (d && d.version === 3) {
+        d = { ...d, taiKhoan: [...d.taiKhoan] };
+        await themTaiKhoanSale(d);
+        d.version = DB_VERSION;
       }
       if (!d || d.version !== DB_VERSION) d = await buildSeed();
       // Tham số mới thêm sau (VD PT_CACH_CHIA) — dữ liệu cũ trên máy lấy giá trị mặc định.
@@ -268,6 +274,20 @@ export class Store {
   readonly dsSale = computed(() =>
     this.db().taiKhoan.filter((t) => t.trangThai === 'Hoạt động' && atLeast(this.levelOfUser(t, 'hdb'), 'own')),
   );
+
+  /**
+   * Lựa chọn "Sale phụ trách" (HĐ bán, Khách hàng) — danh mục = bảng Tài khoản (dsSale), sắp theo tên.
+   * Giá trị đang gán mà nay khoá / mất quyền vẫn giữ trong danh sách để hiện đúng tên.
+   */
+  saleOpts(dangChon?: string): { value: string; label: string; hint: string }[] {
+    const ds = this.dsSale();
+    const out = ds.map((t) => ({ value: t.id, label: t.hoTen, hint: t.email }));
+    if (dangChon && !ds.some((t) => t.id === dangChon)) {
+      const t = this.db().taiKhoan.find((x) => x.id === dangChon);
+      out.push({ value: dangChon, label: t?.hoTen ?? dangChon, hint: (t?.email ?? '') + ' · không còn hoạt động / không có quyền HĐ bán' });
+    }
+    return out.sort((a, b) => a.label.localeCompare(b.label, 'vi'));
+  }
 
   // ── Đếm việc chờ (menu, dashboard) ───────────────────────────────────
   readonly phieuChoDuyet = computed(() => this.db().phieuThuChi.filter((p) => p.trangThai === 'Chờ duyệt'));

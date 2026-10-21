@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, afterNextRender, computed, effect, inject, signal, untracked } from '@angular/core';
+import { afterNextRender, ChangeDetectionStrategy, Component, computed, DestroyRef, effect, inject, signal, untracked, viewChild } from '@angular/core';
 import { NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
 import { Icon } from './shared/icon';
 import { ConfirmHost } from './shared/confirm';
@@ -42,14 +42,14 @@ import { MAT_KHAU_TOI_THIEU } from './core/crypto';
       <main class="main empty" aria-busy="true">Đang tải dữ liệu…</main>
     }
 
-    <app-modal [open]="pwOpen()" [title]="auth.mustChange() ? 'Bắt buộc đổi mật khẩu' : 'Đổi mật khẩu'" size="sm" [closable]="!auth.mustChange()" [dirty]="pwDirty()" (closed)="closePw()">
+    <app-modal #mPw [open]="pwOpen()" [title]="auth.mustChange() ? 'Bắt buộc đổi mật khẩu' : 'Đổi mật khẩu'" size="sm" [closable]="!auth.mustChange()" [dirty]="pwDirty()" (closed)="closePw()">
       @if (auth.mustChange()) {
         <div class="note warn">Tài khoản vừa được cấp / đặt lại mật khẩu. Đổi mật khẩu để vào ứng dụng.</div>
       }
-      <div class="field"><label for="pw-old">Mật khẩu cũ</label><input id="pw-old" type="password" autocomplete="current-password" [value]="pw().cu" (input)="setPw('cu', $any($event.target).value)" /></div>
-      <div class="field"><label for="pw-new">Mật khẩu mới</label><input id="pw-new" type="password" autocomplete="new-password" [value]="pw().moi" (input)="setPw('moi', $any($event.target).value)" />
+      <div class="field"><label for="pw-old">Mật khẩu cũ <span class="req">*</span></label><input id="pw-old" type="password" autocomplete="current-password" [value]="pw().cu" (input)="setPw('cu', $any($event.target).value)" /></div>
+      <div class="field"><label for="pw-new">Mật khẩu mới <span class="req">*</span></label><input id="pw-new" type="password" autocomplete="new-password" [value]="pw().moi" (input)="setPw('moi', $any($event.target).value)" />
         <span class="hint">Ít nhất {{ min }} ký tự, khác mật khẩu cũ.</span></div>
-      <div class="field"><label for="pw-new2">Nhập lại mật khẩu mới</label><input id="pw-new2" type="password" autocomplete="new-password" [value]="pw().lai" (input)="setPw('lai', $any($event.target).value)" (keydown.enter)="savePw()" /></div>
+      <div class="field"><label for="pw-new2">Nhập lại mật khẩu mới <span class="req">*</span></label><input id="pw-new2" type="password" autocomplete="new-password" [value]="pw().lai" (input)="setPw('lai', $any($event.target).value)" (keydown.enter)="savePw()" /></div>
       @if (pwErr()) { <div class="note bad">{{ pwErr() }}</div> }
       <ng-container foot>
         @if (auth.mustChange()) {
@@ -69,6 +69,7 @@ import { MAT_KHAU_TOI_THIEU } from './core/crypto';
   host: { '(window:beforeunload)': 'truocKhiThoat($event)' },
 })
 export class App {
+  private readonly mPw = viewChild<Modal>('mPw');
   protected readonly store = inject(Store);
   protected readonly auth = inject(Auth);
   protected readonly ui = inject(Ui);
@@ -134,6 +135,7 @@ export class App {
     this.pw.update((p) => ({ ...p, [k]: v }));
   }
   protected async savePw(): Promise<void> {
+    if (this.mPw()?.kt.hopLe() === false) return;
     const p = this.pw();
     const err = await this.auth.doiMatKhau(p.cu, p.moi, p.lai);
     this.pwErr.set(err);

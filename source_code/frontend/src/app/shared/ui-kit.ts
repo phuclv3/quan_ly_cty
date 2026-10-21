@@ -14,9 +14,11 @@ import {
   model,
   output,
   signal,
+  untracked,
   viewChild,
 } from '@angular/core';
 import { Icon } from './icon';
+import { KiemTra } from './kiem-tra';
 import { Confirm } from './confirm';
 import { HOI_BO_THAY_DOI, canhBaoChuaLuu } from './unsaved';
 import { Buoc } from '../core/calc';
@@ -28,6 +30,8 @@ import { fold, money, parseMoney, pct } from '../core/util';
   selector: 'app-modal',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [Icon],
+  // Mỗi popup là một vùng kiểm tra ô bắt buộc (shared/kiem-tra.ts) — form gọi modal.kt.hopLe() khi lưu.
+  hostDirectives: [KiemTra],
   host: { '(document:keydown.escape)': 'esc()' },
   template: `
     @if (open()) {
@@ -59,9 +63,14 @@ export class Modal {
   /** false: không có ✕, bấm nền / Esc không đóng (VD bắt buộc đổi mật khẩu). */
   readonly closable = input(true);
   readonly closed = output<void>();
+  readonly kt = inject(KiemTra, { self: true });
 
   constructor() {
     canhBaoChuaLuu(() => this.open() && this.dirty());
+    // Nội dung popup do màn cha dựng sẵn và giữ lại giữa các lần mở — đóng thì bỏ báo thiếu cũ.
+    effect(() => {
+      if (!this.open()) untracked(() => this.kt.xoa());
+    });
   }
 
   protected async tryClose(): Promise<void> {
@@ -186,7 +195,7 @@ export interface PickOption {
   selector: 'app-pick',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [Icon],
-  host: { class: 'pick', '(document:click)': 'outside($event)' },
+  host: { class: 'pick', '[attr.data-trong]': "value() ? null : ''", '(document:click)': 'outside($event)' },
   template: `
     <button type="button" class="pick-btn" [id]="inputId()" [disabled]="disabled()" (click)="toggle()" [attr.aria-expanded]="open()">
       <span class="pick-val" [class.muted]="!current()">{{ current()?.label || placeholder() }}</span>
@@ -269,7 +278,7 @@ const GO_TOI_DA = 50;
   selector: 'app-pick-go',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [Icon],
-  host: { class: 'pick go', '[class.open]': 'open()', '(document:click)': 'outside($event)' },
+  host: { class: 'pick go', '[class.open]': 'open()', '[attr.data-trong]': "value() ? null : ''", '(document:click)': 'outside($event)' },
   template: `
     <input #inp type="text" role="combobox" autocomplete="off" class="go-in" [id]="inputId()" [disabled]="disabled()"
       [placeholder]="current() ? '' : placeholder()" [value]="open() ? query() : (current()?.label ?? '')"
@@ -385,7 +394,7 @@ export class PickGo {
   selector: 'app-multi',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [Icon],
-  host: { class: 'pick multi', '[class.has]': 'value().length > 0', '(document:click)': 'outside($event)' },
+  host: { class: 'pick multi', '[class.has]': 'value().length > 0', '[attr.data-trong]': "value().length ? null : ''", '(document:click)': 'outside($event)' },
   template: `
     <button type="button" class="pick-btn" (click)="open.set(!open())" [attr.aria-expanded]="open()" [class.has]="value().length > 0">
       <span class="pick-val">{{ label() }}@if (value().length) {: <b>{{ value().length === 1 ? nameOf(value()[0]) : value().length + ' mục' }}</b>}</span>

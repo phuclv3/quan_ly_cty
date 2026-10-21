@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Store } from '../core/store';
@@ -8,6 +8,7 @@ import { fold, viMoment } from '../core/util';
 import { Confirm } from '../shared/confirm';
 import { TrangThai } from '../shared/ui-kit';
 import { Icon } from '../shared/icon';
+import { KiemTra } from '../shared/kiem-tra';
 
 /** Màu nhãn theo mức quyền (dùng chung với Ma trận). */
 export const LEVEL_TONE: Record<Level, string> = {
@@ -28,7 +29,7 @@ export const LEVEL_TONE: Record<Level, string> = {
 @Component({
   selector: 'app-nhom-quyen',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TrangThai, Icon],
+  imports: [TrangThai, Icon, KiemTra],
   template: `
     <div class="nq">
       <!-- Danh sách nhóm -->
@@ -61,7 +62,7 @@ export const LEVEL_TONE: Record<Level, string> = {
               <h2>{{ moi() ? 'Nhóm quyền mới' : n.ten }}</h2>
               @if (dirty()) { <app-tt v="Chưa lưu" t="warn" /> }
             </div>
-            <div class="form-grid" style="margin-top:10px">
+            <div class="form-grid" style="margin-top:10px" appKiemTra #ktNq="kiemTra">
               <div class="field">
                 <label for="nq-ma">Mã nhóm <span class="req">*</span></label>
                 <input id="nq-ma" class="mono" [disabled]="!sua()" [value]="n.ma" placeholder="VD KE_TOAN" (input)="set('ma', $any($event.target).value.toUpperCase())" />
@@ -207,6 +208,7 @@ export const LEVEL_TONE: Record<Level, string> = {
   ],
 })
 export class NhomQuyenTab {
+  private readonly ktNq = viewChild('ktNq', { read: KiemTra });
   protected readonly store = inject(Store);
   private readonly confirm = inject(Confirm);
   private readonly route = inject(ActivatedRoute);
@@ -330,6 +332,7 @@ export class NhomQuyenTab {
   }
 
   protected async luu(): Promise<void> {
+    if (this.ktNq()?.hopLe() === false) return;
     const n = this.f();
     if (!n) return;
     const dsTV = this.store.taiKhoan().filter((t) => this.tv().includes(t.id)).length;

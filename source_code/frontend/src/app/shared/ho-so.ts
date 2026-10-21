@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal, viewChild } from '@angular/core';
 import { Icon } from './icon';
 import { MoneyInput, TrangThai } from './ui-kit';
 import { Confirm } from './confirm';
@@ -6,6 +6,7 @@ import { Store } from '../core/store';
 import { ChuHoSo, DoiTuong, FileRef, HO_SO_BAT_BUOC, HoaDon, LOAI_HO_SO, LoaiHoSo } from '../core/models';
 import { HO_SO_ACCEPT, moTep, taiZip, viSize } from '../core/files';
 import { money, sum, todayIso, viDate } from '../core/util';
+import { KiemTra } from './kiem-tra';
 
 /**
  * Tab "Lưu trữ hồ sơ": 4 nhóm Hợp đồng · BBGH/BBNT · Hoá đơn · Scan khác; mỗi nhóm có vùng
@@ -15,7 +16,7 @@ import { money, sum, todayIso, viDate } from '../core/util';
 @Component({
   selector: 'app-ho-so',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Icon, MoneyInput, TrangThai],
+  imports: [Icon, MoneyInput, TrangThai, KiemTra],
   template: `
     <div class="between">
       <p class="sub">
@@ -30,7 +31,7 @@ import { money, sum, todayIso, viDate } from '../core/util';
         @let hs = store.hoSoCua(chu(), chuId(), loai);
         <section class="card hoso" [class.missing]="batBuoc.includes(loai) && !hs?.daLuu">
           <header class="between">
-            <h3>{{ loai }} @if (batBuoc.includes(loai)) { <small class="req">bắt buộc</small> }</h3>
+            <h3>{{ loai }} @if (batBuoc.includes(loai)) { <small class="req-chu">bắt buộc</small> }</h3>
             <span class="flags">
               <label class="check-row"><input type="checkbox" [checked]="!!hs?.daLuu" [disabled]="!edit()" (change)="tichLuu(loai, $any($event.target).checked)" /> Đã lưu</label>
               <label class="check-row"><input type="checkbox" [checked]="!!hs?.daScan" [disabled]="!edit()" (change)="store.setHoSoCo(chu(), chuId(), loai, { daScan: $any($event.target).checked })" /> Đã scan</label>
@@ -80,12 +81,12 @@ import { money, sum, todayIso, viDate } from '../core/util';
               }
             </table>
             @if (edit()) {
-              <div class="inline-form">
-                <input placeholder="Số hoá đơn" [value]="hd().soHoaDon" (input)="hd.set({ ...hd(), soHoaDon: $any($event.target).value })" />
-                <input type="date" [value]="hd().ngayHoaDon" (input)="hd.set({ ...hd(), ngayHoaDon: $any($event.target).value })" aria-label="Ngày hoá đơn" />
-                <app-money [value]="hd().giaTri" (valueChange)="hd.set({ ...hd(), giaTri: $event })" placeholder="Giá trị" />
-                <button type="button" class="btn sm" (click)="themHD()"><app-icon name="plus" [size]="16" /> Thêm hoá đơn</button>
+              <div class="form-grid hd-form" appKiemTra #ktHD="kiemTra">
+                <div class="field"><label for="hd-so">Số hoá đơn <span class="req">*</span></label><input id="hd-so" [value]="hd().soHoaDon" (input)="hd.set({ ...hd(), soHoaDon: $any($event.target).value })" /></div>
+                <div class="field"><label for="hd-ngay">Ngày hoá đơn <span class="req">*</span></label><input id="hd-ngay" type="date" [value]="hd().ngayHoaDon" (input)="hd.set({ ...hd(), ngayHoaDon: $any($event.target).value })" /></div>
+                <div class="field"><label for="hd-gt">Giá trị (sau VAT)</label><app-money inputId="hd-gt" [value]="hd().giaTri" (valueChange)="hd.set({ ...hd(), giaTri: $event })" /></div>
               </div>
+              <div class="btn-row" style="margin-top:8px"><button type="button" class="btn sm" (click)="themHD()"><app-icon name="plus" [size]="16" /> Thêm hoá đơn</button></div>
             }
           }
         </section>
@@ -99,6 +100,7 @@ import { money, sum, todayIso, viDate } from '../core/util';
   `,
 })
 export class HoSoPanel {
+  private readonly ktHD = viewChild('ktHD', { read: KiemTra });
   protected readonly store = inject(Store);
   private readonly confirm = inject(Confirm);
   readonly chu = input.required<ChuHoSo>();
@@ -181,6 +183,7 @@ export class HoSoPanel {
   }
 
   protected themHD(): void {
+    if (this.ktHD()?.hopLe() === false) return;
     const err = this.store.saveHoaDon({ ...this.hd(), chu: this.chu(), chuId: this.chuId() });
     if (err) this.store.say(err);
     else {

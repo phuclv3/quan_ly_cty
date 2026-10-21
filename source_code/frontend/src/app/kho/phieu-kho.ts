@@ -1,5 +1,5 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, input, linkedSignal, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, linkedSignal, signal, viewChild } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { tongSL } from '../core/calc';
 import { KHO_CHUYEN_THANG, PhieuKho } from '../core/models';
@@ -72,7 +72,7 @@ const quyenSua = (p: PhieuKho): Perm =>
       </div>
     </div>
 
-    <app-modal [open]="!!sel()" [title]="'Phiếu ' + (loai() === 'Nhập' ? 'nhập' : 'xuất') + ' kho ' + (sel()?.soPhieu ?? '')" [sub]="sel()?.nguonGoc ?? ''" size="lg" [dirty]="dirty()" (closed)="dong()">
+    <app-modal #mPK [open]="!!sel()" [title]="'Phiếu ' + (loai() === 'Nhập' ? 'nhập' : 'xuất') + ' kho ' + (sel()?.soPhieu ?? '')" [sub]="sel()?.nguonGoc ?? ''" size="lg" [dirty]="dirty()" (closed)="dong()">
       @if (sel(); as p) {
         <div class="no-print">
           <div class="btn-row" style="justify-content:flex-start;margin-bottom:10px">
@@ -82,7 +82,7 @@ const quyenSua = (p: PhieuKho): Perm =>
           </div>
           <div class="form-grid">
             <div class="field">
-              <label for="pk-ngay">Ngày</label>
+              <label for="pk-ngay">Ngày <span class="req">*</span></label>
               <input id="pk-ngay" type="date" [value]="ngay()" [disabled]="!suaDuoc(p)" (input)="ngay.set($any($event.target).value)" />
             </div>
             <div class="field"><span class="lbl">Vị trí kho</span><div class="ro">{{ store.khoTen(p.kho) }}</div></div>
@@ -157,6 +157,7 @@ const quyenSua = (p: PhieuKho): Perm =>
   `,
 })
 export class PhieuKhoTab {
+  private readonly mPK = viewChild<Modal>('mPK');
   protected readonly store = inject(Store);
   private readonly confirm = inject(Confirm);
   readonly loai = input.required<PhieuKho['loai']>();
@@ -249,6 +250,7 @@ export class PhieuKhoTab {
     this.selId.set(null);
   }
   protected luu(p: PhieuKho): void {
+    if (this.mPK()?.kt.hopLe() === false) return;
     if (!this.ngay()) return this.store.say('Chưa chọn Ngày');
     const e = this.store.suaPhieuKho(p.id, { ngay: this.ngay(), ghiChu: this.ghiChu().trim() || undefined });
     this.store.say(e ?? `Đã lưu phiếu ${p.soPhieu}`);

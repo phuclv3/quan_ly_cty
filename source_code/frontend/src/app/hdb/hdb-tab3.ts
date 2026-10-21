@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, model, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, model, signal, viewChild } from '@angular/core';
 import { Store } from '../core/store';
 import { DotTTBan, HopDongBan, LCP_HOA_HONG } from '../core/models';
 import { Buoc, dotBanDaThu, dotQuaHan, hdbCalc } from '../core/calc';
@@ -8,6 +8,7 @@ import { Icon } from '../shared/icon';
 import { Confirm } from '../shared/confirm';
 import { guiXoa } from '../shared/ho-so';
 import { RouterLink } from '@angular/router';
+import { KiemTra } from '../shared/kiem-tra';
 
 interface ThuNhap {
   ngayThu: string;
@@ -19,7 +20,7 @@ interface ThuNhap {
 @Component({
   selector: 'app-hdb-tab3',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MoneyInput, BuocTable, Kpi, TrangThai, Icon, RouterLink],
+  imports: [MoneyInput, BuocTable, Kpi, TrangThai, Icon, RouterLink, KiemTra],
   template: `
     <div class="kpis">
       <app-kpi label="Giá trị sau VAT" [value]="money(c().sauVAT)" />
@@ -93,15 +94,18 @@ interface ThuNhap {
         <p class="note warn">Tổng tiền trả khách vượt mức gợi ý tối đa {{ money(c().tienTraKhach - c().traKhachToiDa) }} đ.</p>
       }
       @if (themHH()) {
-        <div class="inline-form">
-          <input placeholder="Người nhận *" aria-label="Người nhận" [value]="hh().nguoiNhan" (input)="setHH('nguoiNhan', $any($event.target).value)" />
-          <app-money placeholder="Số tiền *" [value]="hh().soTien" (valueChange)="setHH('soTien', $event)" />
-          <input type="date" aria-label="Ngày chi" [value]="hh().ngay" (input)="setHH('ngay', $any($event.target).value)" />
-          <select aria-label="Nguồn tiền" (change)="setHH('nguonTien', $any($event.target).value)">
-            @for (n of store.nguonDangDung(); track n.id) { <option [value]="n.id" [selected]="n.id === hh().nguonTien">{{ n.ten }}</option> }
-          </select>
-          <button type="button" class="btn sm" (click)="luuHH()"><app-icon name="plus" [size]="16" /> Thêm (gửi duyệt)</button>
+        <div class="form-grid hh-form" appKiemTra #ktHH="kiemTra">
+          <div class="field"><label for="hh-nn">Người nhận <span class="req">*</span></label><input id="hh-nn" [value]="hh().nguoiNhan" (input)="setHH('nguoiNhan', $any($event.target).value)" /></div>
+          <div class="field"><label for="hh-tien">Số tiền <span class="req">*</span></label><app-money inputId="hh-tien" [value]="hh().soTien" (valueChange)="setHH('soTien', $event)" /></div>
+          <div class="field"><label for="hh-ngay">Ngày chi <span class="req">*</span></label><input id="hh-ngay" type="date" [value]="hh().ngay" (input)="setHH('ngay', $any($event.target).value)" /></div>
+          <div class="field">
+            <label for="hh-nguon">Nguồn tiền <span class="req">*</span></label>
+            <select id="hh-nguon" (change)="setHH('nguonTien', $any($event.target).value)">
+              @for (n of store.nguonDangDung(); track n.id) { <option [value]="n.id" [selected]="n.id === hh().nguonTien">{{ n.ten }}</option> }
+            </select>
+          </div>
         </div>
+        <div class="btn-row" style="margin-top:8px"><button type="button" class="btn sm" (click)="luuHH()"><app-icon name="plus" [size]="16" /> Thêm (gửi duyệt)</button></div>
       } @else if (saved() && saved()!.trangThai === 'Báo giá') {
         <p class="sub">HĐ ở Báo giá — chỉ thêm tiền trả khách từ Hiệu lực trở đi.</p>
       }
@@ -182,6 +186,7 @@ interface ThuNhap {
   `,
 })
 export class HdbTab3 {
+  private readonly ktHH = viewChild('ktHH', { read: KiemTra });
   protected readonly store = inject(Store);
   private readonly confirm = inject(Confirm);
   readonly f = model.required<HopDongBan>({ alias: 'draft' });
@@ -230,6 +235,7 @@ export class HdbTab3 {
     this.hh.update((x) => ({ ...x, [k]: v }));
   }
   protected async luuHH(): Promise<void> {
+    if (this.ktHH()?.hopLe() === false) return;
     const o = { ...this.hh(), nguoiNhan: this.hh().nguoiNhan.trim() };
     if (!o.nguonTien) o.nguonTien = this.store.nguonDangDung()[0]?.id ?? '';
     const ok = await this.confirm.ask({

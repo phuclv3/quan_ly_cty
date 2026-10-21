@@ -17,11 +17,12 @@ import {
   TiepCan,
 } from '../core/models';
 import { money, viDate, viMoment } from '../core/util';
-import { MoneyInput, Pick, PickOption, TrangThai } from '../shared/ui-kit';
+import { MoneyInput, Pick, PickGo, PickOption, TrangThai } from '../shared/ui-kit';
 import { Confirm } from '../shared/confirm';
 import { guiXoa } from '../shared/ho-so';
 import { Unsaved, canhBaoChuaLuu } from '../shared/unsaved';
 import { Icon } from '../shared/icon';
+import { KiemTra } from '../shared/kiem-tra';
 
 const BLANK: KhachHang = { id: '', ten: '', mst: '', diaChi: '', nguoiLienHe: '', dienThoai: '', email: '', ghiChu: '' };
 type F = Exclude<keyof KhachHang, 'id' | 'chamSoc'>;
@@ -31,7 +32,8 @@ type F = Exclude<keyof KhachHang, 'id' | 'chamSoc'>;
   selector: 'app-kh-detail',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'page' },
-  imports: [RouterLink, Pick, MoneyInput, TrangThai, Icon],
+  hostDirectives: [KiemTra],
+  imports: [RouterLink, Pick, PickGo, MoneyInput, TrangThai, Icon],
   template: `
     @let k = f();
     <div class="page-head">
@@ -179,7 +181,7 @@ type F = Exclude<keyof KhachHang, 'id' | 'chamSoc'>;
           </div>
           <div class="field">
             <label for="kh-pt">Người phụ trách</label>
-            <app-pick inputId="kh-pt" [options]="saleOpts()" [value]="k.phuTrach ?? ''" [allowEmpty]="true" placeholder="— Chưa phân bổ —"
+            <app-pick-go inputId="kh-pt" [options]="saleOpts()" [value]="k.phuTrach ?? ''" placeholder="Chưa phân bổ — gõ tên Sale…"
               [disabled]="!edit() || !store.canEdit('phanBoKH')" (valueChange)="set('phuTrach', $event || undefined)" />
             @if (!store.canEdit('phanBoKH')) { <span class="hint">Cần quyền "Phân bổ data khách hàng" để đổi.</span> }
           </div>
@@ -276,6 +278,7 @@ type F = Exclude<keyof KhachHang, 'id' | 'chamSoc'>;
   `,
 })
 export class KhDetail {
+  private readonly kt = inject(KiemTra);
   protected readonly store = inject(Store);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -319,13 +322,7 @@ export class KhDetail {
   protected readonly choXoa = computed(() => !!this.saved() && this.store.dangChoXoa('DM_KhachHang', this.saved()!.id));
   protected readonly edit = computed(() => !this.choXoa() && (this.saved() ? this.store.canEditKH(this.saved()) : this.store.canEdit('khachHang')));
   protected readonly xemTien = computed(() => this.store.canView('hdbTab3'));
-  protected readonly saleOpts = computed<PickOption[]>(() => {
-    const ds = this.store.dsSale();
-    const cur = this.f().phuTrach;
-    const out = ds.map((t) => ({ value: t.id, label: t.hoTen, hint: t.email }));
-    if (cur && !ds.some((t) => t.id === cur)) out.push({ value: cur, label: this.store.userName(cur), hint: 'không còn hoạt động' });
-    return out;
-  });
+  protected readonly saleOpts = computed<PickOption[]>(() => this.store.saleOpts(this.f().phuTrach));
 
   protected readonly trung = signal<KhachHang | null>(null);
   protected readonly err = signal('');
@@ -358,9 +355,11 @@ export class KhDetail {
     this.f.set(structuredClone(s ?? this.blank()));
     this.trung.set(null);
     this.err.set('');
+    this.kt.xoa();
   }
 
   protected luu(boQuaTrung: boolean): void {
+    if (!this.kt.hopLe()) return;
     const d = this.f();
     const draft: KhachHang = { ...d, ten: d.ten.trim(), mst: d.mst.trim() };
     if (!boQuaTrung) {

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal, viewChild } from '@angular/core';
 import { Store } from '../core/store';
 import { LoaiChiPhi, NhomChiPhi } from '../core/models';
 import { Modal, TrangThai } from '../shared/ui-kit';
@@ -55,10 +55,10 @@ const NHOM: NhomChiPhi[] = ['Vận hành', 'Thực hiện HĐ'];
       }
     </div>
 
-    <app-modal [open]="!!f()" size="sm" [title]="f()?.id ? 'Sửa loại chi phí ' + f()!.id : 'Thêm loại chi phí'" [dirty]="dirty()" (closed)="f.set(null)">
+    <app-modal #mLcp [open]="!!f()" size="sm" [title]="f()?.id ? 'Sửa loại chi phí ' + f()!.id : 'Thêm loại chi phí'" [dirty]="dirty()" (closed)="f.set(null)">
       @if (err()) { <div class="note bad">{{ err() }}</div> }
       @if (f(); as d) {
-        <div class="field"><label for="lcp-ten">Tên loại <span class="req">bắt buộc</span></label><input id="lcp-ten" [value]="d.ten" (input)="set({ ten: $any($event.target).value })" /></div>
+        <div class="field"><label for="lcp-ten">Tên loại <span class="req">*</span></label><input id="lcp-ten" [value]="d.ten" (input)="set({ ten: $any($event.target).value })" /></div>
         <div class="field">
           <label for="lcp-nhom">Nhóm</label>
           <select id="lcp-nhom" [disabled]="!!d.id && !!daDung().get(d.id)" (change)="set({ nhom: $any($event.target).value })">
@@ -77,6 +77,7 @@ const NHOM: NhomChiPhi[] = ['Vận hành', 'Thực hiện HĐ'];
   `,
 })
 export class DmLoaiChiPhi {
+  private readonly mLcp = viewChild<Modal>('mLcp');
   protected readonly store = inject(Store);
   private readonly confirm = inject(Confirm);
   protected readonly nhom = NHOM;
@@ -106,6 +107,7 @@ export class DmLoaiChiPhi {
     this.f.update((d) => (d ? { ...d, ...p } : d));
   }
   protected luu(): void {
+    if (this.mLcp()?.kt.hopLe() === false) return;
     const d = this.f();
     if (!d) return;
     const err = this.store.saveLoaiChiPhi({ ...d, ten: d.ten.trim() });

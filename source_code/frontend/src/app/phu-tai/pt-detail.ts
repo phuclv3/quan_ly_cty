@@ -10,6 +10,7 @@ import { BuocTable, MoneyInput, Pick, PickOption, TrangThai } from '../shared/ui
 import { Confirm } from '../shared/confirm';
 import { HoSoPanel, guiXoa } from '../shared/ho-so';
 import { Unsaved, canhBaoChuaLuu } from '../shared/unsaved';
+import { KiemTra } from '../shared/kiem-tra';
 
 type ArrKey = 'chiPhi' | 'dotKH' | 'dotTraNCC' | 'doiChieu';
 type Row<K extends ArrKey> = HopDongPhuTai[K][number];
@@ -29,6 +30,7 @@ const quyDoi = (soTien: number, loaiTien: string, tyGia: number) => Math.round(s
   selector: 'app-pt-detail',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'page' },
+  hostDirectives: [KiemTra],
   imports: [RouterLink, BuocTable, MoneyInput, Pick, TrangThai, HoSoPanel],
   template: `
     @let p = f();
@@ -73,11 +75,11 @@ const quyDoi = (soTien: number, loaiTien: string, tyGia: number) => Math.round(s
         <section class="card">
           <div class="form-grid">
             <div class="field">
-              <label for="pt-so">Số HĐ *</label>
+              <label for="pt-so">Số HĐ <span class="req">*</span></label>
               <input id="pt-so" [value]="p.soHD" [disabled]="!edit()" (input)="set('soHD', $any($event.target).value)" />
             </div>
             <div class="field wide">
-              <span class="lbl">Khách hàng cuối *</span>
+              <span class="lbl">Khách hàng cuối <span class="req">*</span></span>
               <app-pick [options]="khOpts()" [value]="p.maKH" [disabled]="!edit()" (valueChange)="chonKH($event)" />
             </div>
             <div class="field">
@@ -390,6 +392,7 @@ const quyDoi = (soTien: number, loaiTien: string, tyGia: number) => Math.round(s
   `,
 })
 export class PtDetail {
+  private readonly kt = inject(KiemTra);
   protected readonly store = inject(Store);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -560,6 +563,7 @@ export class PtDetail {
   }
 
   protected async luu(): Promise<void> {
+    if (!this.kt.hopLe()) return;
     const ban = structuredClone(this.f());
     const moi = !ban.id;
     const cu = this.daLuu();

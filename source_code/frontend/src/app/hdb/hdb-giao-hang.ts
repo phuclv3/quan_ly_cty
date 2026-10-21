@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, signal, viewChild } from '@angular/core';
 import { Store } from '../core/store';
 import { HopDongBan, KHO_CHUYEN_THANG, PhieuKho } from '../core/models';
 import { tongSL } from '../core/calc';
@@ -59,7 +59,7 @@ interface DongNhap {
       </div>
     </section>
 
-    <app-modal [open]="open()" title="Ghi nhận giao hàng" [sub]="'HĐ ' + h().soHD" size="lg" [dirty]="dirty()" (closed)="open.set(false)">
+    <app-modal #mGH [open]="open()" title="Ghi nhận giao hàng" [sub]="'HĐ ' + h().soHD" size="lg" [dirty]="dirty()" (closed)="open.set(false)">
       <div class="form-grid">
         <div class="field">
           <label for="gh-ngay">Ngày giao <span class="req">*</span></label>
@@ -104,6 +104,7 @@ interface DongNhap {
   `,
 })
 export class HdbGiaoHang {
+  private readonly mGH = viewChild<Modal>('mGH');
   protected readonly store = inject(Store);
   private readonly confirm = inject(Confirm);
   readonly h = input.required<HopDongBan>();
@@ -189,6 +190,7 @@ export class HdbGiaoHang {
   }
 
   protected xacNhan(): void {
+    if (this.mGH()?.kt.hopLe() === false) return;
     if (!this.ngay()) {
       this.store.say('Chưa nhập Ngày giao');
       return;

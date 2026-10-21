@@ -17,6 +17,7 @@ import { HdbTab3 } from './hdb-tab3';
 import { HdbTab4 } from './hdb-tab4';
 import { ghepNhap, vanTay } from './hdb-shared';
 import { Unsaved, canhBaoChuaLuu } from '../shared/unsaved';
+import { KiemTra } from '../shared/kiem-tra';
 
 const TABS = [
   { k: '1', t: 'Thông tin chung' },
@@ -31,6 +32,7 @@ const TABS = [
   selector: 'app-hdb-detail',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'page' },
+  hostDirectives: [KiemTra],
   imports: [RouterLink, TrangThai, Icon, FileHd, XemFileHd, HoSoPanel, HdbTab1, HdbGiaoHang, HdbTab3, HdbTab4],
   styles: [`@media print { :host-context(body.in-qt) > :not(app-hdb-tab4) { display: none !important; } }`],
   template: `
@@ -164,6 +166,7 @@ const TABS = [
   `,
 })
 export class HdbDetail {
+  private readonly kt = inject(KiemTra);
   protected readonly store = inject(Store);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -263,6 +266,7 @@ export class HdbDetail {
 
   /** Lưu bản nháp; trả true nếu thành công. */
   protected luu(): boolean {
+    if (!this.kt.hopLe()) return false;
     const out = ghepNhap(structuredClone(this.f()), this.saved());
     const moi = !out.id;
     const err = this.store.saveHdb(out);
@@ -283,6 +287,7 @@ export class HdbDetail {
   protected huyNhap(): void {
     const s = this.saved();
     this.f.set(s ? structuredClone(s) : this.store.newHdb(this.khMoi));
+    this.kt.xoa();
   }
 
   protected async chuyen(): Promise<void> {

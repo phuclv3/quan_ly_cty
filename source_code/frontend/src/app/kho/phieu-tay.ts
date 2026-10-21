@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal, viewChild } from '@angular/core';
 import { KHO_CHUYEN_THANG, PhieuKho } from '../core/models';
 import { Store } from '../core/store';
 import { todayIso } from '../core/util';
@@ -28,7 +28,7 @@ const dongRong = (): DongNhap => ({ loaiHang: '', thuocTinh: '', soLuong: 0 });
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [Modal, Pick],
   template: `
-    <app-modal [open]="open()" title="Lập phiếu điều chỉnh" sub="Nguồn gốc: Nhập tay – điều chỉnh" size="lg" [dirty]="dirty()" (closed)="closed.emit()">
+    <app-modal #mTay [open]="open()" title="Lập phiếu điều chỉnh" sub="Nguồn gốc: Nhập tay – điều chỉnh" size="lg" [dirty]="dirty()" (closed)="closed.emit()">
       <div class="form-grid">
         <div class="field"><label for="pt-ngay">Ngày <span class="req">*</span></label><input id="pt-ngay" type="date" [value]="f().ngay" (input)="set('ngay', $any($event.target).value)" /></div>
         <div class="field">
@@ -90,6 +90,7 @@ const dongRong = (): DongNhap => ({ loaiHang: '', thuocTinh: '', soLuong: 0 });
   `,
 })
 export class PhieuTayForm {
+  private readonly mTay = viewChild<Modal>('mTay');
   protected readonly store = inject(Store);
   readonly open = input(false);
   readonly loaiMacDinh = input<PhieuKho['loai']>('Nhập');
@@ -179,6 +180,7 @@ export class PhieuTayForm {
   }
 
   protected luu(): void {
+    if (this.mTay()?.kt.hopLe() === false) return;
     const f = this.f();
     if (!f.ngay) return this.err.set('Chưa chọn Ngày');
     const e = this.store.savePhieuKhoTay({

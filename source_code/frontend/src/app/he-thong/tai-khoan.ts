@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal, viewChild } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Store } from '../core/store';
@@ -127,7 +127,7 @@ interface FormTK {
     }
 
     <!-- Thêm / sửa tài khoản -->
-    <app-modal [open]="!!form()" [title]="form()?.id ? 'Sửa tài khoản' : 'Thêm tài khoản'" size="md" [dirty]="dirtyForm()" (closed)="form.set(null)">
+    <app-modal #mTK [open]="!!form()" [title]="form()?.id ? 'Sửa tài khoản' : 'Thêm tài khoản'" size="md" [dirty]="dirtyForm()" (closed)="form.set(null)">
       @if (form(); as f) {
         <div class="form-grid">
           <div class="field">
@@ -204,6 +204,7 @@ interface FormTK {
   ],
 })
 export class TaiKhoanPage {
+  private readonly mTK = viewChild<Modal>('mTK');
   protected readonly store = inject(Store);
   private readonly auth = inject(Auth);
   private readonly confirm = inject(Confirm);
@@ -276,6 +277,7 @@ export class TaiKhoanPage {
   }
 
   protected async luu(): Promise<void> {
+    if (this.mTK()?.kt.hopLe() === false) return;
     const f = this.form();
     if (!f) return;
     this.dangLuu.set(true);

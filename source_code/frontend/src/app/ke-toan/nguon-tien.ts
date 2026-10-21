@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal, viewChild } from '@angular/core';
 import { Store } from '../core/store';
 import { NguonTien } from '../core/models';
 import { SoDuNguon } from '../core/calc';
@@ -47,12 +47,12 @@ interface Card {
     </div>
 
     @if (f(); as n) {
-      <app-modal [open]="true" [title]="isNew() ? 'Thêm nguồn tiền' : 'Sửa nguồn tiền ' + n.id" size="md" [dirty]="dirty()" (closed)="f.set(null)">
+      <app-modal #mNguon [open]="true" [title]="isNew() ? 'Thêm nguồn tiền' : 'Sửa nguồn tiền ' + n.id" size="md" [dirty]="dirty()" (closed)="f.set(null)">
         @if (err()) { <div class="note bad">{{ err() }}</div> }
         @if (khoa()) { <div class="note info">Nguồn đã có phiếu Đã duyệt — khoá Số dư đầu kỳ và Ngày đầu kỳ.</div> }
         <div class="form-grid">
-          <div class="field"><label for="nt-id">Mã nguồn</label><input id="nt-id" [disabled]="!isNew()" [value]="n.id" (input)="set('id', $any($event.target).value.trim())" /></div>
-          <div class="field"><label for="nt-ten">Tên</label><input id="nt-ten" placeholder="Tiền mặt, UNC-MSB…" [value]="n.ten" (input)="set('ten', $any($event.target).value)" /></div>
+          <div class="field"><label for="nt-id">Mã nguồn <span class="req">*</span></label><input id="nt-id" [disabled]="!isNew()" [value]="n.id" (input)="set('id', $any($event.target).value.trim())" /></div>
+          <div class="field"><label for="nt-ten">Tên <span class="req">*</span></label><input id="nt-ten" placeholder="Tiền mặt, UNC-MSB…" [value]="n.ten" (input)="set('ten', $any($event.target).value)" /></div>
           <div class="field">
             <label for="nt-loai">Loại</label>
             <select id="nt-loai" (change)="set('loai', $any($event.target).value)">
@@ -88,6 +88,7 @@ interface Card {
   `,
 })
 export class NguonTienTab {
+  private readonly mNguon = viewChild<Modal>('mNguon');
   protected readonly store = inject(Store);
   protected readonly money = money;
   protected readonly vnd = vnd;
@@ -132,6 +133,7 @@ export class NguonTienTab {
     this.f.update((n) => (n ? { ...n, [k]: v } : n));
   }
   protected luu(): void {
+    if (this.mNguon()?.kt.hopLe() === false) return;
     const n = this.f();
     if (!n) return;
     const out: NguonTien = n.loai === 'Ngân hàng' ? n : { ...n, soTaiKhoan: undefined, nganHang: undefined };

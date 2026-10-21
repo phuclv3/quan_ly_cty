@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal, viewChild } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { map } from 'rxjs';
@@ -188,11 +188,11 @@ const formRong = (): FormDT => ({ ngay: todayIso(), chieu: 'Thu về PT', hdptId
       <p class="sub">Cột "Số dư luỹ kế" tính theo thứ tự ngày trên toàn bộ dòng của (các) HĐ đang lọc — không phụ thuộc bộ lọc thời gian.</p>
     }
 
-    <app-modal [open]="form() !== null" title="Thêm dòng điều chỉnh quỹ ảo" sub="Dòng nhập tay — bắt buộc lý do" size="sm" [dirty]="dirtyForm()" (closed)="form.set(null)">
+    <app-modal #mDong [open]="form() !== null" title="Thêm dòng điều chỉnh quỹ ảo" sub="Dòng nhập tay — bắt buộc lý do" size="sm" [dirty]="dirtyForm()" (closed)="form.set(null)">
       @if (form(); as fm) {
         <div class="form-grid">
           <div class="field">
-            <label for="dt-ngay">Ngày</label>
+            <label for="dt-ngay">Ngày <span class="req">*</span></label>
             <input id="dt-ngay" type="date" [value]="fm.ngay" (input)="setF('ngay', $any($event.target).value)" />
           </div>
           <div class="field">
@@ -207,11 +207,11 @@ const formRong = (): FormDT => ({ ngay: todayIso(), chieu: 'Thu về PT', hdptId
             <app-pick [options]="hdOptsTay()" [value]="fm.hdptId" [allowEmpty]="true" placeholder="— Không gắn HĐ —" (valueChange)="setF('hdptId', $event)" />
           </div>
           <div class="field wide">
-            <label for="dt-tien">Số tiền (VNĐ)</label>
+            <label for="dt-tien">Số tiền (VNĐ) <span class="req">*</span></label>
             <app-money inputId="dt-tien" [value]="fm.soTien" (valueChange)="setF('soTien', $event)" />
           </div>
           <div class="field full">
-            <label for="dt-lydo">Lý do (bắt buộc)</label>
+            <label for="dt-lydo">Lý do <span class="req">*</span></label>
             <textarea id="dt-lydo" rows="3" [value]="fm.ghiChu" (input)="setF('ghiChu', $any($event.target).value)"></textarea>
           </div>
         </div>
@@ -225,6 +225,7 @@ const formRong = (): FormDT => ({ ngay: todayIso(), chieu: 'Thu về PT', hdptId
   `,
 })
 export class PtList {
+  private readonly mDong = viewChild<Modal>('mDong');
   protected readonly store = inject(Store);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -387,6 +388,7 @@ export class PtList {
   }
 
   protected luuDong(): void {
+    if (this.mDong()?.kt.hopLe() === false) return;
     const f = this.form();
     if (!f) return;
     const err = this.store.themDongTienTay({

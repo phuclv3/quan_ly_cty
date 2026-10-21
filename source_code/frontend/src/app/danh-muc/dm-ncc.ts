@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal, viewChild } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Store } from '../core/store';
 import { NhaCungCap } from '../core/models';
@@ -80,11 +80,11 @@ type F = Exclude<keyof NhaCungCap, 'id'>;
     </div>
     <app-pager [pager]="pg" />
 
-    <app-modal [open]="!!f()" [title]="f()?.id ? 'Sửa nhà cung cấp ' + f()!.id : 'Thêm nhà cung cấp'" [dirty]="dirty()" (closed)="dong()">
+    <app-modal #mNcc [open]="!!f()" [title]="f()?.id ? 'Sửa nhà cung cấp ' + f()!.id : 'Thêm nhà cung cấp'" [dirty]="dirty()" (closed)="dong()">
       @if (err()) { <div class="note bad">{{ err() }}</div> }
       @if (f(); as d) {
         <div class="form-grid">
-          <div class="field wide"><label for="ncc-ten">Tên nhà cung cấp <span class="req">bắt buộc</span></label><input id="ncc-ten" [value]="d.ten" (input)="set('ten', $any($event.target).value)" /></div>
+          <div class="field wide"><label for="ncc-ten">Tên nhà cung cấp <span class="req">*</span></label><input id="ncc-ten" [value]="d.ten" (input)="set('ten', $any($event.target).value)" /></div>
           <div class="field">
             <label for="ncc-tt">Trạng thái</label>
             <select id="ncc-tt" (change)="set('trangThai', $any($event.target).value)">
@@ -119,6 +119,7 @@ type F = Exclude<keyof NhaCungCap, 'id'>;
   `,
 })
 export class DmNcc {
+  private readonly mNcc = viewChild<Modal>('mNcc');
   protected readonly store = inject(Store);
   private readonly confirm = inject(Confirm);
   protected readonly money = money;
@@ -179,6 +180,7 @@ export class DmNcc {
     this.mo1.set(t.id);
   }
   protected luu(boQuaTrung: boolean): void {
+    if (this.mNcc()?.kt.hopLe() === false) return;
     const d = this.f();
     if (!d) return;
     const draft = { ...d, ten: d.ten.trim(), mst: d.mst.trim() };

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, linkedSignal, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, linkedSignal, signal, viewChild } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { map } from 'rxjs';
@@ -15,6 +15,7 @@ import { parseDanExcel } from './hdm-util';
 import { ThemDoiTac } from '../shared/them-doi-tac';
 import { Unsaved, canhBaoChuaLuu } from '../shared/unsaved';
 import { linkPhieuKho } from '../kho/kho-util';
+import { KiemTra } from '../shared/kiem-tra';
 
 type Tab = '1' | '2' | '3' | '4';
 const FLOW: TrangThaiHDM[] = ['Nháp', 'Đã ký', 'Đang nhận hàng', 'Đã nhận đủ', 'Đã tất toán'];
@@ -38,6 +39,7 @@ interface TraForm {
   selector: 'app-hdm-detail',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'page' },
+  hostDirectives: [KiemTra],
   imports: [RouterLink, Kpi, Modal, MoneyInput, Pick, TrangThai, HoSoPanel, Icon, FileHd, XemFileHd, ThemDoiTac],
   template: `
     @if (!isNew() && !saved()) {
@@ -448,7 +450,7 @@ interface TraForm {
         </div>
       </app-modal>
 
-      <app-modal [open]="!!nhap()" title="Nhập kho" sub="Sinh phiếu Nhập kho tự động từ HĐ mua" (closed)="nhap.set(null)">
+      <app-modal #mNhap [open]="!!nhap()" title="Nhập kho" sub="Sinh phiếu Nhập kho tự động từ HĐ mua" (closed)="nhap.set(null)">
         @if (nhap(); as n) {
           <div class="form-grid">
             <div class="field">
@@ -491,7 +493,7 @@ interface TraForm {
         </div>
       </app-modal>
 
-      <app-modal [open]="!!tra()" [title]="'Ghi nhận đã trả — Đợt ' + (tra()?.dot ?? '')" size="sm" (closed)="tra.set(null)">
+      <app-modal #mTra [open]="!!tra()" [title]="'Ghi nhận đã trả — Đợt ' + (tra()?.dot ?? '')" size="sm" (closed)="tra.set(null)">
         @if (tra(); as t) {
           <div class="stack">
             <div class="field">
@@ -522,6 +524,9 @@ interface TraForm {
   `,
 })
 export class HdmDetail {
+  private readonly mTra = viewChild<Modal>('mTra');
+  private readonly mNhap = viewChild<Modal>('mNhap');
+  private readonly kt = inject(KiemTra);
   protected readonly store = inject(Store);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -777,6 +782,7 @@ export class HdmDetail {
   }
 
   protected save(silent = false): boolean {
+    if (!this.kt.hopLe()) return false;
     const m = structuredClone(this.f());
     const err = this.store.saveHdm(m);
     if (err) {
@@ -870,6 +876,7 @@ export class HdmDetail {
   }
 
   protected xacNhanNhap(): void {
+    if (this.mNhap()?.kt.hopLe() === false) return;
     const n = this.nhap();
     const s = this.saved();
     if (!n || !s) return;
@@ -914,6 +921,7 @@ export class HdmDetail {
   }
 
   protected async xacNhanTra(): Promise<void> {
+    if (this.mTra()?.kt.hopLe() === false) return;
     const t = this.tra();
     const s = this.saved();
     if (!t || !s) return;
