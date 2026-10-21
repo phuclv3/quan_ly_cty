@@ -19,6 +19,8 @@ export const routes: Routes = [
         canActivate: [permGuard('khachHang')],
         loadComponent: () => import('./khach-hang/kh-list').then((m) => m.KhList),
       },
+      // Thêm khách hàng là popup ở danh sách — giữ đường dẫn cũ.
+      { path: 'khach-hang/moi', redirectTo: '/khach-hang?them=1' },
       {
         path: 'khach-hang/:id',
         title: T('Khách hàng'),
@@ -43,12 +45,8 @@ export const routes: Routes = [
         canActivate: [permGuard('ncc')],
         loadComponent: () => import('./danh-muc/danh-muc').then((m) => m.NccPage),
       },
-      {
-        path: 'loai-chi-phi',
-        title: T('Loại chi phí'),
-        canActivate: [permGuard('nguonTien')],
-        loadComponent: () => import('./danh-muc/danh-muc').then((m) => m.LoaiChiPhiPage),
-      },
+      // Loại chi phí là tab trong Kế toán — giữ đường dẫn cũ.
+      { path: 'loai-chi-phi', redirectTo: '/ke-toan?tab=lcp' },
       {
         path: 'hop-dong-mua',
         title: T('Hợp đồng mua'),
@@ -84,7 +82,7 @@ export const routes: Routes = [
       // Danh mục cũ đã tách vào menu Kinh doanh — giữ đường dẫn cũ (bookmark, ?tab=) chuyển sang màn mới.
       {
         path: 'danh-muc',
-        redirectTo: ({ queryParams }) => (queryParams['tab'] === 'lcp' ? '/loai-chi-phi' : queryParams['tab'] === 'kh' ? '/khach-hang' : '/nha-cung-cap'),
+        redirectTo: ({ queryParams }) => (queryParams['tab'] === 'lcp' ? '/ke-toan?tab=lcp' : queryParams['tab'] === 'kh' ? '/khach-hang' : '/nha-cung-cap'),
       },
       {
         path: 'duyet-xoa',
@@ -100,8 +98,8 @@ export const routes: Routes = [
       },
       {
         path: 'cau-hinh',
-        title: T('Cấu hình & Import'),
-        canActivate: [permGuard('cauHinh', 'import')],
+        title: T('Cấu hình'),
+        canActivate: [permGuard('cauHinh')],
         loadComponent: () => import('./he-thong/cau-hinh').then((m) => m.CauHinhPage),
       },
     ] as Routes).map((r) => ({ ...r, canDeactivate: [unsavedGuard] })),

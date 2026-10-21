@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Store } from '../core/store';
 import { CO_HOI, KhachHang, LOAI_SP_KH, NGUON_KH, PHAN_LOAI_KH, TIEP_CAN, TINH_THANH } from '../core/models';
 import { nhoLoc } from '../core/ui';
@@ -10,6 +10,7 @@ import { Pager, paginate } from '../shared/pager';
 import { SortTh, Sorter } from '../shared/sort';
 import { csv, downloadFile, fileName } from '../shared/export';
 import { Icon } from '../shared/icon';
+import { KhForm } from './kh-form';
 
 interface Row {
   k: KhachHang;
@@ -28,7 +29,7 @@ const opts = (xs: readonly string[]) => xs.map((x) => ({ value: x, label: x }));
   selector: 'app-kh-list',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'page' },
-  imports: [RouterLink, FilterBar, Kpi, TrangThai, Pager, SortTh, Icon],
+  imports: [RouterLink, FilterBar, Kpi, TrangThai, Pager, SortTh, Icon, KhForm],
   template: `
     <div class="page-head">
       <div>
@@ -39,7 +40,7 @@ const opts = (xs: readonly string[]) => xs.map((x) => ({ value: x, label: x }));
       <div class="actions">
         <button type="button" class="btn quiet" (click)="xuat()"><app-icon name="download" [size]="16" /> Xuất CSV</button>
         @if (store.canEdit('khachHang')) {
-          <a class="btn" routerLink="/khach-hang/moi"><app-icon name="plus" [size]="16" /> Thêm khách hàng</a>
+          <button type="button" class="btn" (click)="sua.set('')"><app-icon name="plus" [size]="16" /> Thêm khách hàng</button>
         }
       </div>
     </div>
@@ -72,8 +73,8 @@ const opts = (xs: readonly string[]) => xs.map((x) => ({ value: x, label: x }));
             @if (phanBo()) {
               <th style="width:36px"><input type="checkbox" aria-label="Chọn cả trang" [checked]="caTrang()" (change)="chonTrang($any($event.target).checked)" /></th>
             }
-            <th app-sort-th [sx]="sx" k="id">Mã KH</th>
-            <th app-sort-th [sx]="sx" k="ten">Khách hàng</th>
+            <th app-sort-th [sx]="sx" k="id" class="c-ma">Mã KH</th>
+            <th app-sort-th [sx]="sx" k="ten" class="c-ten">Khách hàng</th>
             <th app-sort-th [sx]="sx" k="tinh">Tỉnh / TP</th>
             <th>Liên hệ</th>
             <th app-sort-th [sx]="sx" k="tiepCan">Tiếp cận</th>
@@ -82,6 +83,7 @@ const opts = (xs: readonly string[]) => xs.map((x) => ({ value: x, label: x }));
             <th app-sort-th [sx]="sx" k="phuTrach">Phụ trách</th>
             <th app-sort-th [sx]="sx" k="cs">Chăm sóc gần nhất</th>
             <th app-sort-th [sx]="sx" k="soHD" class="num">HĐ bán</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
@@ -90,7 +92,7 @@ const opts = (xs: readonly string[]) => xs.map((x) => ({ value: x, label: x }));
               @if (phanBo()) {
                 <td (click)="$event.stopPropagation()"><input type="checkbox" [attr.aria-label]="'Chọn ' + r.k.ten" [checked]="chon().has(r.k.id)" (change)="flip(r.k.id)" /></td>
               }
-              <td class="mono"><a [routerLink]="['/khach-hang', r.k.id]" (click)="$event.stopPropagation()"><b>{{ r.k.id }}</b></a></td>
+              <td class="mono c-ma"><a [routerLink]="['/khach-hang', r.k.id]" (click)="$event.stopPropagation()"><b>{{ r.k.id }}</b></a></td>
               <td>
                 <b>{{ r.k.ten }}</b>
                 @if (r.k.trangThai === 'Ngưng') { <app-tt v="Ngưng" /> }
@@ -105,19 +107,28 @@ const opts = (xs: readonly string[]) => xs.map((x) => ({ value: x, label: x }));
               <td>@if (r.k.phuTrach) { {{ store.userName(r.k.phuTrach) }} } @else { <app-tt v="Data thô" /> }</td>
               <td>{{ viDate(r.csCuoi) }}</td>
               <td class="num">{{ r.soHD }}</td>
+              <td (click)="$event.stopPropagation()">
+                @if (store.canEditKH(r.k) && !r.xoa) { <button type="button" class="btn sm quiet" (click)="sua.set(r.k.id)">Sửa</button> }
+              </td>
             </tr>
           } @empty {
-            <tr><td [attr.colspan]="phanBo() ? 11 : 10" class="empty">Không có khách hàng phù hợp bộ lọc.</td></tr>
+            <tr><td [attr.colspan]="phanBo() ? 12 : 11" class="empty">Không có khách hàng phù hợp bộ lọc.</td></tr>
           }
         </tbody>
       </table>
     </div>
     <app-pager [pager]="pg" />
+
+    <!-- Thêm / sửa khách hàng: popup như các danh mục khác -->
+    <app-kh-form [khId]="sua()" (closed)="sua.set(null)" />
   `,
   styles: `
     .bulk { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 12px; }
     .bulk select { width: auto; min-width: 220px; }
-    .lh-cell { max-width: 260px; overflow-wrap: anywhere; }
+    .lh-cell { max-width: 240px; overflow-wrap: anywhere; }
+    /* Mã KH ngắn (KH0001) — cột gọn; tên công ty dài — cột rộng, xuống dòng đủ chữ */
+    .c-ma { width: 1%; white-space: nowrap; }
+    .c-ten { min-width: 340px; width: 34%; }
   `,
 })
 export class KhList {
@@ -131,6 +142,8 @@ export class KhList {
   protected readonly phanBo = computed(() => this.store.canEdit('phanBoKH'));
   protected readonly chon = signal<Set<string>>(new Set());
   protected readonly giaoCho = signal('');
+  /** Popup thêm / sửa: '' = thêm mới, mã KH = sửa, null = đóng. Mở sẵn khi vào ?them=1 (đường dẫn cũ /khach-hang/moi). */
+  protected readonly sua = signal<string | null>(inject(ActivatedRoute).snapshot.queryParamMap.get('them') ? '' : null);
 
   protected readonly all = computed<Row[]>(() => {
     const dem = new Map<string, number>();

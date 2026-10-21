@@ -37,7 +37,6 @@ export const atLeast = (l: Level, min: Level) => RANK[l] >= RANK[min];
 export type Perm =
   | 'taiKhoan'
   | 'cauHinh'
-  | 'import'
   | 'duyetXoa'
   | 'duyetXoaKT'
   | 'nguonTien'
@@ -82,7 +81,6 @@ export const CHUC_NANG: ChucNang[] = [
   // Hệ thống
   { ma: 'NT-03', perm: 'taiKhoan', module: 'Hệ thống', ten: 'Tài khoản, nhóm quyền & phân quyền', moTa: 'Tạo tài khoản, nhóm quyền, gán quyền và gán tài khoản vào nhóm', mucDo: ['none', 'view', 'edit'] },
   { ma: 'NT-14', perm: 'cauHinh', module: 'Hệ thống', ten: 'Tham số cấu hình', moTa: 'Bậc thuế TNDN, tỷ lệ Phú Tài, tiền tố số phiếu, số đợt tối đa', mucDo: ['none', 'view', 'edit'] },
-  { ma: 'NT-13', perm: 'import', module: 'Hệ thống', ten: 'Import dữ liệu', moTa: 'Chạy thử / chạy thật import từ CSV, Excel cũ', mucDo: ['none', 'edit'] },
   { ma: 'NT-11', perm: 'duyetXoa', module: 'Hệ thống', ten: 'Duyệt xoá', moTa: 'Gửi yêu cầu xoá; Duyệt = duyệt mọi loại đối tượng', mucDo: ['none', 'request', 'approve'] },
   { ma: 'NT-11-KT', perm: 'duyetXoaKT', module: 'Hệ thống', ten: 'Duyệt xoá chứng từ kế toán', moTa: 'Chỉ duyệt xoá phiếu thu chi, chi phí HĐ, nguồn tiền, loại chi phí', mucDo: ['none', 'approve'] },
   // Kế toán

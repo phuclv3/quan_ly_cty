@@ -4,20 +4,21 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { map } from 'rxjs';
 import { Store } from '../core/store';
 import { NguonTienTab } from './nguon-tien';
+import { DmLoaiChiPhi } from '../danh-muc/dm-loai-chi-phi';
 import { SoQuyTab } from './so-quy';
 import { ChiPhiTab } from './chi-phi';
 import { ChoDuyetTab } from './cho-duyet';
 import { CongNoTab } from './cong-no';
 import { BaoCaoKtTab } from './bao-cao-kt';
 
-type Tab = 'nguon' | 'so-quy' | 'chi-phi' | 'cho-duyet' | 'cong-no' | 'bao-cao';
+type Tab = 'nguon' | 'lcp' | 'so-quy' | 'chi-phi' | 'cho-duyet' | 'cong-no' | 'bao-cao';
 
-/** Màn Kế toán: các tab đồng bộ ?tab= (KT-01…KT-18, trừ KT-03 ở Danh mục). */
+/** Màn Kế toán: các tab đồng bộ ?tab= (KT-01…KT-18; Loại chi phí KT-03 cùng quyền KT-01 Nguồn tiền). */
 @Component({
   selector: 'app-ke-toan',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'page' },
-  imports: [RouterLink, NguonTienTab, SoQuyTab, ChiPhiTab, ChoDuyetTab, CongNoTab, BaoCaoKtTab],
+  imports: [RouterLink, NguonTienTab, DmLoaiChiPhi, SoQuyTab, ChiPhiTab, ChoDuyetTab, CongNoTab, BaoCaoKtTab],
   template: `
     <div class="page-head">
       <div><div class="crumbs"><a routerLink="/">Trang chủ</a> › Kế toán @if (tabTen()) { › {{ tabTen() }} }</div><h1>Kế toán</h1></div>
@@ -32,6 +33,7 @@ type Tab = 'nguon' | 'so-quy' | 'chi-phi' | 'cho-duyet' | 'cong-no' | 'bao-cao';
     </div>
     @switch (tab()) {
       @case ('nguon') { <app-kt-nguon /> }
+      @case ('lcp') { <app-dm-lcp /> }
       @case ('so-quy') { <app-kt-so-quy /> }
       @case ('chi-phi') { <app-kt-chi-phi /> }
       @case ('cho-duyet') { <app-kt-cho-duyet /> }
@@ -51,7 +53,7 @@ export class KeToanPage {
   protected readonly tabs = computed(() => {
     const s = this.store;
     const out: { k: Tab; t: string }[] = [];
-    if (s.canView('nguonTien')) out.push({ k: 'nguon', t: 'Nguồn tiền' });
+    if (s.canView('nguonTien')) out.push({ k: 'nguon', t: 'Nguồn tiền' }, { k: 'lcp', t: 'Danh mục loại chi phí' });
     if (s.canView('soQuy')) out.push({ k: 'so-quy', t: 'Sổ quỹ' });
     if (s.canView('cpHD')) out.push({ k: 'chi-phi', t: 'Chi phí HĐ' });
     if (s.canApprove('soQuyDuyet') || s.canApprove('cpHDDuyet')) out.push({ k: 'cho-duyet', t: 'Chờ duyệt' });

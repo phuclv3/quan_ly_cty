@@ -62,7 +62,7 @@ const dongRong = (): DongNhap => ({ loaiHang: '', thuocTinh: '', soLuong: 0 });
                   <input [value]="d.thuocTinh" [placeholder]="goiY(d.loaiHang)" [attr.list]="'pt-tt-' + i" (input)="setDong(i, 'thuocTinh', $any($event.target).value)" aria-label="Thuộc tính" />
                   <datalist [id]="'pt-tt-' + i">@for (v of daDung(d.loaiHang); track v) { <option [value]="v"></option> }</datalist>
                 </td>
-                <td class="num"><input type="number" min="0" style="width:100px" [value]="d.soLuong || ''" (input)="setDong(i, 'soLuong', +$any($event.target).value)" aria-label="Số lượng" /></td>
+                <td class="num"><input type="number" min="0" [value]="d.soLuong || ''" (input)="setDong(i, 'soLuong', +$any($event.target).value)" aria-label="Số lượng" /></td>
                 <td><button type="button" class="btn sm quiet danger" [disabled]="f().dong.length === 1" (click)="xoaDong(i)">Xoá</button></td>
               </tr>
             }

@@ -110,14 +110,13 @@ export class Shell {
       { path: '/hop-dong-ban', label: 'Hợp đồng bán', short: 'HĐ bán', icon: 'sell', perms: ['hdb'], group: 'Kinh doanh' },
       { path: '/hop-dong-mua', label: 'Hợp đồng mua', short: 'HĐ mua', icon: 'buy', perms: ['hdm'], group: 'Kinh doanh' },
       { path: '/nha-cung-cap', label: 'Nhà cung cấp', short: 'NCC', icon: 'truck', perms: ['ncc'], group: 'Kinh doanh' },
-      { path: '/loai-chi-phi', label: 'Loại chi phí', icon: 'list', perms: ['nguonTien'], group: 'Kinh doanh' },
       { path: '/kho', label: 'Kho', icon: 'box', perms: ['khoTon'], group: 'Vận hành' },
       { path: '/ke-toan', label: 'Kế toán', icon: 'wallet', perms: ['soQuy', 'congNo', 'cpHD', 'nguonTien'], count: this.choDuyetKT(), group: 'Vận hành' },
       { path: '/phu-tai', label: 'Phú Tài', icon: 'handshake', perms: ['phuTai'], group: 'Vận hành' },
       { path: '/bao-cao', label: 'Báo cáo', icon: 'chart', perms: ['baoCao'], group: 'Vận hành' },
       { path: '/duyet-xoa', label: 'Duyệt xoá', icon: 'trash', perms: ['duyetXoa', 'duyetXoaKT'], count: this.choXoa(), group: 'Hệ thống' },
       { path: '/tai-khoan', label: 'Tài khoản & phân quyền', icon: 'users', perms: ['taiKhoan'], group: 'Hệ thống' },
-      { path: '/cau-hinh', label: 'Cấu hình & Import', icon: 'settings', perms: ['cauHinh', 'import'], group: 'Hệ thống' },
+      { path: '/cau-hinh', label: 'Cấu hình', icon: 'settings', perms: ['cauHinh'], group: 'Hệ thống' },
     ];
     let shown = '';
     return all

@@ -73,7 +73,8 @@ export class Modal {
     });
   }
 
-  protected async tryClose(): Promise<void> {
+  /** Đóng như bấm ✕ (còn thay đổi thì hỏi trước) — nút Huỷ ở chân popup gọi được. */
+  async tryClose(): Promise<void> {
     if (!this.closable()) return;
     if (this.dirty() && !(await this.confirm.ask(HOI_BO_THAY_DOI))) return;
     this.closed.emit();
@@ -183,6 +184,50 @@ export class MoneyInput {
   }
 }
 
+// ── Vị trí popup thả xuống ──────────────────────────────────────────────
+
+/**
+ * Popup thả xuống (ô chọn) neo theo ô bằng position: fixed — không bị khung cuộn của bảng (.tbl-wrap),
+ * popup, cột ghim cắt mất. Phía dưới không đủ chỗ thì mở lên trên. Điện thoại (≤ 640px) dùng kiểu
+ * sheet đáy màn hình trong styles.css nên không đặt vị trí.
+ */
+function viTriPop(host: HTMLElement, rongBang = false): Record<string, string> {
+  if (window.innerWidth <= 640) return {};
+  const r = host.getBoundingClientRect();
+  const duoi = window.innerHeight - r.bottom;
+  const lenTren = duoi < 280 && r.top > duoi;
+  const cao = Math.max(160, Math.min(400, (lenTren ? r.top : duoi) - 12));
+  return {
+    position: 'fixed',
+    left: `${Math.max(8, Math.min(r.left, window.innerWidth - Math.max(r.width, 220) - 8))}px`,
+    top: lenTren ? 'auto' : `${r.bottom + 4}px`,
+    bottom: lenTren ? `${window.innerHeight - r.top + 4}px` : 'auto',
+    'min-width': `${r.width}px`,
+    ...(rongBang ? { width: `${r.width}px` } : {}),
+    // Chiều cao còn lại cho danh sách (styles.css: .pick-pop ul dùng --pop-h).
+    '--pop-h': `${cao}px`,
+    'z-index': '160',
+  };
+}
+
+/** Khi popup mở: cuộn (bất kỳ khung nào, trừ trong chính popup) hoặc đổi cỡ màn hình thì đóng. */
+function dongKhiCuon(open: () => boolean, el: () => HTMLElement, dong: () => void): void {
+  effect((onCleanup) => {
+    if (!open()) return;
+    const h = (e: Event) => {
+      const t = e.target as Node | null;
+      if (t instanceof Node && el().querySelector('.pick-pop')?.contains(t)) return;
+      dong();
+    };
+    window.addEventListener('scroll', h, true);
+    window.addEventListener('resize', h);
+    onCleanup(() => {
+      window.removeEventListener('scroll', h, true);
+      window.removeEventListener('resize', h);
+    });
+  });
+}
+
 // ── Ô chọn có tìm kiếm ─────────────────────────────────────────────────
 
 export interface PickOption {
@@ -203,7 +248,7 @@ export interface PickOption {
       <app-icon name="chevron" [size]="16" />
     </button>
     @if (open()) {
-      <div class="pick-pop">
+      <div class="pick-pop" [style]="pos()">
         <input #q class="pick-q" placeholder="Gõ để tìm…" [value]="query()" (input)="query.set(q.value)" (keydown.escape)="open.set(false)" (keydown.enter)="first()" />
         <ul role="listbox">
           @if (allowEmpty()) { <li><button type="button" (click)="choose('')" class="muted">— Bỏ chọn —</button></li> }
@@ -231,6 +276,7 @@ export class Pick {
   readonly inputId = input('');
   protected readonly open = signal(false);
   protected readonly query = signal('');
+  protected readonly pos = signal<Record<string, string>>({});
   private readonly q = viewChild<ElementRef<HTMLInputElement>>('q');
   private readonly el = inject<ElementRef<HTMLElement>>(ElementRef);
   protected readonly current = computed(() => this.options().find((o) => o.value === this.value()));
@@ -244,11 +290,13 @@ export class Pick {
   });
   constructor() {
     effect(() => {
-      if (this.open()) queueMicrotask(() => this.q()?.nativeElement.focus());
+      if (this.open()) queueMicrotask(() => this.q()?.nativeElement.focus({ preventScroll: true }));
     });
+    dongKhiCuon(this.open, () => this.el.nativeElement, () => this.open.set(false));
   }
   protected toggle(): void {
     this.query.set('');
+    if (!this.open()) this.pos.set(viTriPop(this.el.nativeElement));
     this.open.update((v) => !v);
   }
   protected choose(v: string): void {
@@ -292,7 +340,7 @@ const GO_TOI_DA = 50;
       <app-icon class="go-chev" name="chevron" [size]="16" />
     }
     @if (open()) {
-      <div class="pick-pop go-pop">
+      <div class="pick-pop go-pop" [style]="pos()">
         <ul role="listbox" [id]="inputId() + '-ds'">
           @for (o of ketQua().ds; track o.value; let i = $index) {
             <li>
@@ -321,6 +369,7 @@ export class PickGo {
   protected readonly query = signal('');
   /** Vị trí đang tô sáng trong danh sách kết quả. */
   protected readonly hl = signal(0);
+  protected readonly pos = signal<Record<string, string>>({});
   private readonly inp = viewChild<ElementRef<HTMLInputElement>>('inp');
   private readonly el = inject<ElementRef<HTMLElement>>(ElementRef);
   protected readonly current = computed(() => this.options().find((o) => o.value === this.value()));
@@ -343,14 +392,20 @@ export class PickGo {
     return { ds: khop.slice(0, GO_TOI_DA).map((x) => x.o), con: Math.max(0, khop.length - GO_TOI_DA) };
   });
 
+  constructor() {
+    dongKhiCuon(this.open, () => this.el.nativeElement, () => this.dong());
+  }
+
   protected moRa(): void {
     if (this.disabled() || this.open()) return;
+    this.pos.set(viTriPop(this.el.nativeElement, true));
     this.query.set('');
     const i = this.options().findIndex((o) => o.value === this.value());
     this.hl.set(i >= 0 && i < GO_TOI_DA ? i : 0);
     this.open.set(true);
   }
   protected go(v: string): void {
+    if (!this.open()) this.pos.set(viTriPop(this.el.nativeElement, true));
     this.query.set(v);
     this.hl.set(0);
     this.open.set(true);
@@ -396,7 +451,7 @@ export class PickGo {
   imports: [Icon],
   host: { class: 'pick multi', '[class.has]': 'value().length > 0', '[attr.data-trong]': "value().length ? null : ''", '(document:click)': 'outside($event)' },
   template: `
-    <button type="button" class="pick-btn" (click)="open.set(!open())" [attr.aria-expanded]="open()" [class.has]="value().length > 0">
+    <button type="button" class="pick-btn" (click)="bat()" [attr.aria-expanded]="open()" [class.has]="value().length > 0">
       <span class="pick-val">{{ label() }}@if (value().length) {: <b>{{ value().length === 1 ? nameOf(value()[0]) : value().length + ' mục' }}</b>}</span>
       <app-icon name="chevron" [size]="16" />
     </button>
@@ -404,7 +459,7 @@ export class PickGo {
       <button type="button" class="f-x" [attr.aria-label]="'Bỏ lọc ' + label()" [attr.title]="'Bỏ lọc ' + label()" (click)="value.set([]); open.set(false)"><app-icon name="x" [size]="14" /></button>
     }
     @if (open()) {
-      <div class="pick-pop">
+      <div class="pick-pop" [style]="pos()">
         <ul>
           @for (o of options(); track o.value) {
             <li>
@@ -425,7 +480,15 @@ export class Multi {
   readonly options = input.required<PickOption[]>();
   readonly value = model<string[]>([]);
   protected readonly open = signal(false);
+  protected readonly pos = signal<Record<string, string>>({});
   private readonly el = inject<ElementRef<HTMLElement>>(ElementRef);
+  constructor() {
+    dongKhiCuon(this.open, () => this.el.nativeElement, () => this.open.set(false));
+  }
+  protected bat(): void {
+    if (!this.open()) this.pos.set(viTriPop(this.el.nativeElement));
+    this.open.update((v) => !v);
+  }
   protected nameOf(v: string): string {
     return this.options().find((o) => o.value === v)?.label ?? v;
   }

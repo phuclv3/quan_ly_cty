@@ -8,18 +8,15 @@ import { fold, pct, viMoment } from '../core/util';
 import { Confirm } from '../shared/confirm';
 import { downloadFile, fileName } from '../shared/export';
 import { Pager, paginate } from '../shared/pager';
-import { Kpi } from '../shared/ui-kit';
-import { FILE_NGUON } from './import-map';
-import { ImportCsv } from './import-csv';
 
-type Tab = 'tham-so' | 'import' | 'du-lieu';
+type Tab = 'tham-so' | 'du-lieu';
 type Kieu = 'pct' | 'int' | 'text' | 'chon';
 
 const THAM_SO: { k: CauHinhKey; nhan: string; kieu: Kieu; hint: string }[] = [
-  { k: 'TNDN_NGUONG', nhan: 'Mốc bậc thuế TNDN HĐ bán', kieu: 'pct', hint: 'Mốc = tỷ lệ × GTHĐ thực tế trước VAT (HDB-08)' },
+  { k: 'TNDN_NGUONG', nhan: 'Mốc bậc thuế TNDN HĐ bán', kieu: 'pct', hint: 'Mốc = tỷ lệ × GTHĐ thực tế trước VAT' },
   { k: 'TNDN_MUC1', nhan: 'Thuế suất phần chênh lệch đến mốc', kieu: 'pct', hint: 'Bậc 1' },
   { k: 'TNDN_MUC2', nhan: 'Thuế suất phần chênh lệch vượt mốc', kieu: 'pct', hint: 'Bậc 2' },
-  { k: 'PT_THUE', nhan: 'Phú Tài — thuế TNDN trên LN trước thuế', kieu: 'pct', hint: 'Mặc định cho HĐ Phú Tài mới (PT-06)' },
+  { k: 'PT_THUE', nhan: 'Phú Tài — thuế TNDN trên LN trước thuế', kieu: 'pct', hint: 'Mặc định cho HĐ Phú Tài mới' },
   { k: 'PT_GIU', nhan: 'Phú Tài giữ (phí quản lý)', kieu: 'pct', hint: 'Tính trên LN sau thuế (cách chia Nhân) hoặc LN trước thuế (cách chia Cộng)' },
   { k: 'PT_CACH_CHIA', nhan: 'Phú Tài — cách chia lợi nhuận', kieu: 'chon', hint: 'Nhân: Oxy = (1 − thuế) × (1 − PT giữ) — 72% với 20% / 10%. Cộng: Oxy = 1 − thuế − PT giữ — 70%. Áp cho HĐ Phú Tài tạo sau.' },
   { k: 'SO_DOT_TOI_DA', nhan: 'Số đợt thanh toán tối đa / HĐ', kieu: 'int', hint: 'Áp cho HĐ bán và HĐ mua' },
@@ -53,38 +50,36 @@ const BANG: { k: TableKey; nhan: string }[] = [
   { k: 'hoaDon', nhan: 'Hoá đơn' },
 ];
 
-/** NT-14 Tham số cấu hình · NT-13 Import · dữ liệu trên máy. */
+/** NT-14 Tham số cấu hình · dữ liệu trên máy. */
 @Component({
   selector: 'app-cau-hinh',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'page' },
-  imports: [RouterLink, Pager, Kpi, ImportCsv],
+  imports: [RouterLink, Pager],
   template: `
     <div class="page-head">
       <div>
-        <div class="crumbs"><a routerLink="/">Trang chủ</a> › Hệ thống › Cấu hình & Import</div>
-        <h1>Cấu hình & Import</h1>
+        <div class="crumbs"><a routerLink="/">Trang chủ</a> › Hệ thống › Cấu hình</div>
+        <h1>Cấu hình</h1>
       </div>
     </div>
 
     <div class="tabs" role="tablist">
       @if (coTab('tham-so')) { <button role="tab" [class.on]="tab() === 'tham-so'" (click)="setTab('tham-so')">Tham số</button> }
-      @if (coTab('import')) { <button role="tab" [class.on]="tab() === 'import'" (click)="setTab('import')">Import dữ liệu</button> }
       @if (coTab('du-lieu')) { <button role="tab" [class.on]="tab() === 'du-lieu'" (click)="setTab('du-lieu')">Dữ liệu trên máy này</button> }
     </div>
 
     @switch (tab()) {
       @case ('tham-so') {
         <div class="note info">HĐ đã tạo giữ tỷ lệ tại thời điểm tạo; tham số mới chỉ áp cho HĐ tạo sau. Mỗi lần sửa được ghi lịch sử.</div>
-        @if (!suaTS()) { <p class="muted">Bạn chỉ xem — cần quyền "Sửa" chức năng Tham số cấu hình (NT-14).</p> }
+        @if (!suaTS()) { <p class="muted">Bạn chỉ xem — cần quyền "Sửa" chức năng Tham số cấu hình.</p> }
         <div class="tbl-wrap">
           <table class="tbl freeze">
-            <thead><tr><th>Tham số</th><th>Khoá</th><th>Giá trị</th><th>Ghi chú</th>@if (suaTS()) { <th></th> }</tr></thead>
+            <thead><tr><th>Tham số</th><th>Giá trị</th><th>Ghi chú</th>@if (suaTS()) { <th></th> }</tr></thead>
             <tbody>
               @for (t of thamSo; track t.k) {
                 <tr>
                   <td>{{ t.nhan }}</td>
-                  <td class="mono sub">{{ t.k }}</td>
                   <td>
                     <div class="row" style="gap:6px;flex-wrap:nowrap">
                       @if (t.kieu === 'chon') {
@@ -119,11 +114,11 @@ const BANG: { k: TableKey; nhan: string }[] = [
         <h3 class="section-title">Lịch sử sửa tham số</h3>
         <div class="tbl-wrap">
           <table class="tbl">
-            <thead><tr><th>Khoá</th><th>Giá trị cũ</th><th>Giá trị mới</th><th>Người sửa</th><th>Ngày sửa</th></tr></thead>
+            <thead><tr><th>Tham số</th><th>Giá trị cũ</th><th>Giá trị mới</th><th>Người sửa</th><th>Ngày sửa</th></tr></thead>
             <tbody>
               @for (l of pgLog.items(); track $index) {
                 <tr>
-                  <td>{{ nhanKhoa(l.khoa) }} <span class="sub mono">{{ l.khoa }}</span></td>
+                  <td>{{ nhanKhoa(l.khoa) }}</td>
                   <td>{{ giaTri(l.khoa, l.giaTriCu) }}</td>
                   <td>{{ giaTri(l.khoa, l.giaTriMoi) }}</td>
                   <td>{{ store.userName(l.nguoiSua) }}</td>
@@ -138,49 +133,9 @@ const BANG: { k: TableKey; nhan: string }[] = [
         <app-pager [pager]="pgLog" />
       }
 
-      @case ('import') {
-        <div class="kpis">
-          @for (c of demImport(); track c.nhan) { <app-kpi [label]="c.nhan + ' — cờ import'" [value]="'' + c.n" [sub]="'trên ' + c.tong + ' bản ghi'" /> }
-        </div>
-        <div class="card">
-          <h3>Quy tắc import (D-27, chờ xác nhận)</h3>
-          <ul style="margin:6px 0 0 18px">
-            <li>Import toàn bộ dữ liệu lịch sử, không nhập tay lại.</li>
-            <li>Trường bắt buộc mà dữ liệu cũ thiếu → điền "(Chưa xác định)" và gắn cờ "Dữ liệu import" để lọc bổ sung.</li>
-            <li>Phiếu thu chi cũ vào ở trạng thái Đã duyệt, Người duyệt = "Import" (số dư khớp sổ cũ).</li>
-            <li>Dòng "Rút tiền nhập quỹ" trong sổ tiền mặt → phiếu Luân chuyển Ngân hàng → Tiền mặt.</li>
-            <li>Cột tự tính (Chênh lệch, Thuế, Công nợ, Tồn…) chỉ dùng đối chiếu, không ghi đè công thức.</li>
-            <li>Chỉ chạy sau khi cấu trúc field (NT-10) đã chốt. Dữ liệu mẫu của bản này đã dựng sẵn từ các file dưới.</li>
-          </ul>
-        </div>
-
-        <h3 class="section-title">Mapping cột cũ → field mới</h3>
-        <div class="grid c2">
-          @for (f of fileNguon; track f.ten) {
-            <div class="card">
-              <h3>{{ f.ten }}</h3>
-              <p class="sub">{{ f.moTa }} → <b>{{ f.dich }}</b></p>
-              <div class="tbl-wrap">
-                <table class="tbl compact">
-                  <thead><tr><th>Cột cũ</th><th>Field mới</th><th>Ghi chú</th></tr></thead>
-                  <tbody>
-                    @for (c of f.cot; track c.cu) {
-                      <tr><td>{{ c.cu }}</td><td class="mono">{{ c.moi }}</td><td class="sub">{{ c.ghiChu || '' }}</td></tr>
-                    }
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          }
-        </div>
-
-        <h3 class="section-title">Công cụ</h3>
-        <app-import-csv />
-      }
-
       @case ('du-lieu') {
         <div class="note warn">
-          Bản chạy thử này lưu toàn bộ dữ liệu ngay trong trình duyệt của máy này (localStorage; tệp đính kèm ở IndexedDB).
+          Bản chạy thử này lưu toàn bộ dữ liệu ngay trong trình duyệt của máy này, kể cả tệp đính kèm.
           Máy khác / trình duyệt khác không thấy dữ liệu này; xoá dữ liệu duyệt web là mất. Hãy xuất bản sao định kỳ.
         </div>
         <div class="grid c2" style="margin-top:14px">
@@ -220,13 +175,11 @@ export class CauHinhPage {
   protected readonly viMoment = viMoment;
   protected readonly thamSo = THAM_SO;
   protected readonly cachChia = CACH_CHIA_PT;
-  protected readonly fileNguon = FILE_NGUON;
 
   private readonly qp = toSignal(this.route.queryParamMap, { initialValue: this.route.snapshot.queryParamMap });
   private readonly tabs = computed<Tab[]>(() => {
     const out: Tab[] = [];
     if (this.store.canView('cauHinh')) out.push('tham-so');
-    if (this.store.canView('import')) out.push('import');
     if (this.store.isGD()) out.push('du-lieu');
     return out;
   });
@@ -314,13 +267,6 @@ export class CauHinhPage {
   protected giaTri(k: CauHinhKey, v: string): string {
     return KIEU[k] === 'pct' && v !== '' && Number.isFinite(Number(v)) ? pct(Number(v), 2) : v;
   }
-
-  // ── Import (NT-13) ──
-  protected readonly demImport = computed(() => {
-    const d = this.store.db();
-    const c = (nhan: string, arr: readonly { import?: boolean }[]) => ({ nhan, n: arr.filter((x) => x.import).length, tong: arr.length });
-    return [c('HĐ bán', d.hopDongBan), c('HĐ mua', d.hopDongMua), c('HĐ Phú Tài', d.hopDongPhuTai), c('Phiếu thu chi', d.phieuThuChi)];
-  });
 
   // ── Dữ liệu trên máy ──
   protected readonly demBang = computed(() => {

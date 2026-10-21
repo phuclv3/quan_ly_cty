@@ -417,20 +417,17 @@ a.kpi:hover, button.kpi:hover { border-color: var(--brand); }
 /* ── Thanh tab (sticky) ────────────────────────────────────────────── */
 .tabs {
   position: sticky; top: var(--top-h); z-index: 30;
-  display: flex; gap: 2px; overflow-x: auto; scrollbar-width: thin;
-  background: var(--bg); border-bottom: 1px solid var(--line-2); margin: 0 0 16px; padding-top: 4px;
+  display: flex; gap: 2px; overflow-x: auto; overflow-y: hidden; scrollbar-width: none;
+  /* Vạch đáy vẽ bằng shadow trong để gạch tab đang chọn đè lên mà không cần margin âm (margin âm làm tràn dọc → hiện thanh cuộn). */
+  background: var(--bg); box-shadow: inset 0 -1px 0 var(--line-2); margin: 0 0 16px; padding-top: 4px;
 }
+.tabs::-webkit-scrollbar { display: none; }
 .tabs button, .tabs a {
-  border: 0; background: none; padding: 10px 14px; cursor: pointer; white-space: nowrap;
-  color: var(--ink-3); font-size: 16.5px; font-weight: 600; border-bottom: 3px solid transparent; margin-bottom: -1px; text-decoration: none;
+  border: 0; background: none; padding: 10px 14px; cursor: pointer; white-space: nowrap; flex: none;
+  color: var(--ink-3); font-size: 16.5px; font-weight: 600; border-bottom: 3px solid transparent; text-decoration: none;
   display: inline-flex; align-items: center; gap: 6px;
 }
 .tabs button:hover, .tabs a:hover { color: var(--ink); }
-.tabs .tab-lock { margin-left: 5px; color: var(--ink-3); }
-/* Tab cần lưu HĐ trước (HĐ mới) */
-.can-luu { display: flex; gap: 14px; align-items: flex-start; }
-.can-luu > app-icon { color: var(--ink-3); margin-top: 2px; }
-.can-luu h2 { font-size: 18px; margin-bottom: 4px; }
 .tabs .on { color: var(--brand); border-bottom-color: var(--brand); font-weight: 700; }
 
 /* ── Bộ lọc ────────────────────────────────────────────────────────── */
@@ -531,7 +528,35 @@ app-money input { width: 100%; }
 .pick-pop .check-row { padding: 6px 8px; width: 100%; border-radius: 6px; }
 .pick-pop .check-row:hover { background: var(--surf-3); }
 .pick-q { width: 100%; margin-bottom: 6px; }
+.pick-pop { overflow-x: hidden; }
+.pick-pop ul { max-height: min(300px, calc(var(--pop-h, 400px) - 70px)); overflow-x: hidden; }
+.pick-pop li > button { min-width: 0; overflow-wrap: anywhere; }
+/* Ô bảng đang mở ô chọn: nổi lên trên cột ghim / thanh nút dính (ô ghim tạo lớp xếp chồng riêng) */
+.tbl td:has(> .pick > .pick-pop), .tbl td:has(> app-pick > .pick-pop) { position: relative; z-index: 60; }
+.tbl.freeze td:first-child:has(.pick-pop) { z-index: 60; }
 .pick-empty { padding: 8px; }
+
+/* ── Màn tạo mới từng bước (shared/wizard.ts) ────────────────────────── */
+.wiz-foot {
+  position: sticky; bottom: 0; z-index: 5; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  margin-top: 16px; padding: 12px 16px; border: 1px solid var(--line); border-radius: var(--radius-sm, 10px);
+  background: var(--surf); box-shadow: 0 -4px 14px rgba(8, 16, 30, 0.06);
+}
+.wiz-foot .sp { flex: 1 1 auto; }
+.tiep-ico { transform: rotate(-90deg); }
+/* Popup nhập dòng từ Excel: các bước 1 · 2 · hoặc */
+.dan-buoc { display: grid; gap: 8px; padding: 12px 0; border-top: 1px solid var(--line); }
+.dan-buoc h3 { display: flex; align-items: center; gap: 8px; font-size: 15.5px; }
+.dan-buoc h3 .so { min-width: 26px; height: 26px; padding: 0 7px; border-radius: 13px; display: inline-grid; place-items: center; background: var(--brand-tint); color: var(--brand); font-size: 13px; }
+.dan-buoc > .btn { justify-self: start; }
+.tom-tat { display: grid; gap: 0; margin: 0; }
+.tom-tat > div { display: grid; grid-template-columns: minmax(140px, 220px) 1fr auto; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.tom-tat dt { color: var(--ink-3); font-weight: 600; }
+.tom-tat dd { margin: 0; overflow-wrap: anywhere; display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; }
+@media (max-width: 640px) {
+  .tom-tat > div { grid-template-columns: 1fr auto; }
+  .tom-tat dd { grid-column: 1; }
+}
 /* Ô chọn gõ trực tiếp (app-pick-go): gợi ý (MST · tỉnh…) hiện ở mép phải khi đã chọn */
 .field > .pick.go, .pick.go { display: block; width: 100%; }
 .go-in { width: 100%; padding-right: 40px !important; text-overflow: ellipsis; }
@@ -574,14 +599,38 @@ app-money input { width: 100%; }
 .tbl.freeze tfoot td:first-child, .tbl.freeze tfoot th:first-child { background: var(--surf-2); }
 .tbl input:not([type='checkbox']), .tbl select { min-height: 32px; padding: 3px 7px; width: 100%; }
 .tbl td > .pick { display: block; width: 100%; }
-/* Cột thứ 2 thường là tên khách hàng / NCC / nội dung — đủ rộng để không bị bóp nhiều dòng. */
+/*
+ * Cột thứ 2 thường là tên khách hàng / NCC / nội dung — đủ rộng để không bị bóp nhiều dòng.
+ * Bảng có cột tích chọn ở đầu (VD danh sách Khách hàng): cột 2 là mã, cột tên là cột 3.
+ */
 @media (min-width: 641px) {
-  .tbl.freeze tbody td:nth-child(2):not(.num) { min-width: 280px; }
+  .tbl.freeze tbody tr:not(:has(> td:first-child > input[type='checkbox']:only-child)) > td:nth-child(2):not(.num),
+  .tbl.freeze tbody tr:has(> td:first-child > input[type='checkbox']:only-child) > td:nth-child(3):not(.num) { min-width: 280px; }
   .tbl td.num, .tbl td .tag, .tbl td .chip { white-space: nowrap; }
 }
 .tbl .w-sm { width: 110px; }
 .tbl .w-md { width: 140px; }
 .tbl .w-lg { width: 220px; }
+/*
+ * Ô nhập trong bảng (dòng hàng, đợt thanh toán, chi phí…): input width:100% có độ rộng tối thiểu = 0 nên cột bị bóp
+ * còn cột chữ chiếm hết. Đặt độ rộng tối thiểu theo loại ô — bảng rộng hơn khung thì cuộn ngang trong .tbl-wrap.
+ */
+.tbl td > input:not([type='checkbox']):not([type='radio']), .tbl td > textarea { min-width: 120px; }
+.tbl td > input[type='number'] { min-width: 90px; }
+.tbl td > input[type='date'] { min-width: 150px; }
+.tbl td > select { min-width: 100px; }
+.tbl td > app-money { display: block; min-width: 120px; }
+.tbl td > .pick { min-width: 170px; }
+.tbl td > .ro { min-width: 80px; }
+.tbl th.w-sm { min-width: 100px; }
+.tbl th.w-md { min-width: 130px; }
+.tbl th.w-lg { min-width: 200px; }
+/* Nhãn dòng tổng, số chứng từ, nút chữ trong ô bảng: không ngắt dòng giữa chừng */
+.tbl tfoot th, .tbl td > a, .tbl td .linkish, .tbl td > .tag { white-space: nowrap; }
+/* Khối đặt ngay sau bảng (form thêm, ô số liệu) cách bảng một khoảng */
+.tbl-wrap + .kpis, .tbl-wrap + .form-grid, .tbl-wrap + .btn-row { margin-top: 12px; }
+/* Dòng có ô nhập: canh giữa theo chiều dọc để số / chữ thẳng hàng với ô */
+.tbl tbody tr:has(> td > input:not([type='checkbox']), > td > select, > td > app-money, > td > .pick) > td { vertical-align: middle; }
 .empty { padding: 28px 12px; text-align: center; color: var(--ink-3); }
 
 .bar { position: relative; height: 7px; border-radius: 4px; background: var(--surf-3); overflow: hidden; min-width: 70px; }
@@ -692,6 +741,7 @@ tr.hilite > td { background: var(--warn-bg) !important; }
 
 /* ── Phân trang (shared/pager.ts) ──────────────────────────────────── */
 .pager { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: space-between; padding: 10px 2px; }
+.pager-info { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .pager-size { display: inline-flex; align-items: center; gap: 6px; }
 .pager-pages { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
 
@@ -852,7 +902,7 @@ tr.hilite > td { background: var(--warn-bg) !important; }
   .tbl tbody tr > td:has(.btn)::before { display: none !important; }
   .tbl td .btn-row { justify-content: flex-start; }
   /* Ô nhập trong thẻ */
-  .tbl td input:not([type='checkbox']), .tbl td select, .tbl td textarea, .tbl td .pick, .tbl td app-money { width: 100% !important; max-width: none !important; }
+  .tbl td input:not([type='checkbox']), .tbl td select, .tbl td textarea, .tbl td .pick, .tbl td app-money { width: 100% !important; max-width: none !important; min-width: 0 !important; }
   .tbl td .pick-btn small { display: none; }
   .tbl td .bar { min-width: 0; width: 100%; }
   .tbl td .cell-bar { justify-items: stretch; }

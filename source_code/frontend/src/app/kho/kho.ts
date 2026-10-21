@@ -17,7 +17,7 @@ const TABS: { k: Tab; t: string }[] = [
   { k: 'xuat', t: 'Phiếu xuất' },
   { k: 'gia-tri', t: 'Giá trị theo HĐ' },
   { k: 'dm-kho', t: 'Danh mục kho' },
-  { k: 'loai-hang', t: 'Loại hàng' },
+  { k: 'loai-hang', t: 'Danh mục loại hàng' },
 ];
 
 /** Module Kho (KHO-01…KHO-10): một trang, các tab đồng bộ ?tab=. */

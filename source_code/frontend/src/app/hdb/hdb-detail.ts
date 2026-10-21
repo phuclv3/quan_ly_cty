@@ -15,6 +15,8 @@ import { HdbTab1 } from './hdb-tab1';
 import { HdbGiaoHang } from './hdb-giao-hang';
 import { HdbTab3 } from './hdb-tab3';
 import { HdbTab4 } from './hdb-tab4';
+import { HdbTaoMoi } from './hdb-tao-moi';
+import { HoSoCho, taiHoSoCho } from '../shared/wizard';
 import { ghepNhap, vanTay } from './hdb-shared';
 import { Unsaved, canhBaoChuaLuu } from '../shared/unsaved';
 import { KiemTra } from '../shared/kiem-tra';
@@ -33,7 +35,7 @@ const TABS = [
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'page' },
   hostDirectives: [KiemTra],
-  imports: [RouterLink, TrangThai, Icon, FileHd, XemFileHd, HoSoPanel, HdbTab1, HdbGiaoHang, HdbTab3, HdbTab4],
+  imports: [RouterLink, TrangThai, Icon, FileHd, XemFileHd, HoSoPanel, HdbTab1, HdbGiaoHang, HdbTab3, HdbTab4, HdbTaoMoi],
   styles: [`@media print { :host-context(body.in-qt) > :not(app-hdb-tab4) { display: none !important; } }`],
   template: `
     @if (!coQuyen()) {
@@ -42,7 +44,7 @@ const TABS = [
     } @else {
       <div class="page-head">
         <div>
-          <div class="crumbs"><a routerLink="/">Trang chủ</a> › <a routerLink="/hop-dong-ban">Hợp đồng bán</a> › {{ saved()?.soHD || 'Tạo mới' }}</div>
+          <div class="crumbs"><a routerLink="/">Trang chủ</a> › <a routerLink="/hop-dong-ban">Hợp đồng bán</a> › {{ saved() ? saved()!.soHD || '(chưa có số)' : 'Tạo mới' }}</div>
           <h1>
             {{ saved() ? 'HĐ bán ' + (saved()!.soHD || '(chưa có số)') : 'HĐ bán mới' }}
             @if (saved()) { <app-tt [v]="saved()!.trangThai" /> }
@@ -50,15 +52,16 @@ const TABS = [
             @if (saved()?.import) { <app-tt v="Import" /> }
           </h1>
           @if (saved()) { <p class="sub">{{ saved()!.tenKH }} · Sale: {{ store.userName(saved()!.sale) }}</p> }
+          @else { <p class="sub">Tạo theo từng bước — lưu xong mở HĐ để theo dõi giao hàng, thu tiền, chi phí.</p> }
         </div>
         <div class="actions">
           @if (saved()) {
             <button type="button" class="btn quiet" (click)="xemFile.set(true)"><app-icon name="eye" [size]="16" /> Xem file hợp đồng</button>
           }
-          @if (dirty() && (edit1() || edit3())) {
+          @if (saved() && dirty() && (edit1() || edit3())) {
             <button type="button" class="btn quiet" (click)="huyNhap()">Huỷ thay đổi</button>
           }
-          @if (edit1() || edit3()) {
+          @if (saved() && (edit1() || edit3())) {
             <button type="button" class="btn" [disabled]="!dirty()" (click)="luu()"><app-icon name="check" [size]="16" /> Lưu</button>
           }
           @if (saved() && !choXoa() && saved()!.trangThai !== 'Đã tất toán' && store.level('duyetXoa') !== 'none' && store.canEdit('hdb', saved()!.sale)) {
@@ -100,34 +103,17 @@ const TABS = [
         </section>
       }
 
+      @if (!saved()) {
+        <app-hdb-tao-moi [(draft)]="f" [edit1]="edit1()" [edit3]="edit3()" [xemTien]="xemTien()" [dangLuu]="dangLuu()" (tao)="taoMoi($event)" />
+      } @else {
       <div class="tabs" role="tablist">
         @for (t of tabs(); track t.k) {
-          <button type="button" role="tab" [class.on]="tab() === t.k" [attr.aria-selected]="tab() === t.k"
-            [attr.title]="!saved() && canLuu(t.k) ? 'Cần lưu HĐ trước — mở tab để xem hướng dẫn' : null" (click)="setTab(t.k)">
-            {{ t.k }}. {{ t.t }}@if (!saved() && canLuu(t.k)) { <app-icon name="lock" [size]="14" class="tab-lock" /> }
-          </button>
+          <button type="button" role="tab" [class.on]="tab() === t.k" [attr.aria-selected]="tab() === t.k" (click)="setTab(t.k)">{{ t.k }}. {{ t.t }}</button>
         }
       </div>
 
       @if (saved(); as s) {
         <app-xem-file-hd [(open)]="xemFile" [files]="store.hoSoCua('HDB', s.id, 'Hợp đồng')?.files ?? []" [info]="infoFile()" />
-      }
-
-      @if (!saved() && canLuu(tab())) {
-        <!-- HĐ chưa lưu: hồ sơ / chi phí / HĐ mua gắn theo mã HĐ nên cần lưu lần đầu để có mã. -->
-        <section class="card can-luu">
-          <app-icon name="lock" [size]="28" />
-          <div>
-            <h2>Lưu hợp đồng trước để mở "{{ tenTab(tab()) }}"</h2>
-            <p class="sub">{{ lyDoCanLuu[tab()] }} HĐ mới cần lưu lần đầu (Tab 1: chọn Khách hàng; Báo giá chưa cần Số HĐ) để hệ thống cấp mã HĐ.</p>
-            @if (edit1()) {
-              <div class="btn-row" style="margin-top:10px">
-                <button type="button" class="btn" (click)="luu()"><app-icon name="check" [size]="16" /> Lưu HĐ &amp; mở {{ tenTab(tab()) }}</button>
-                <button type="button" class="btn quiet" (click)="setTab('1')">Về Tab 1. Thông tin chung</button>
-              </div>
-            }
-          </div>
-        </section>
       }
 
       @switch (tab()) {
@@ -184,6 +170,7 @@ const TABS = [
           }
         }
       }
+      }
     }
   `,
 })
@@ -206,18 +193,7 @@ export class HdbDetail {
     const t = this.qTab() ?? '1';
     return this.tabs().some((x) => x.k === t) ? t : '1';
   });
-  /** Tab cần HĐ đã lưu (có mã) mới dùng được. */
-  protected canLuu(k: string): boolean {
-    return k === '2' || k === '4' || k === '5';
-  }
-  protected readonly lyDoCanLuu: Record<string, string> = {
-    '2': 'Hồ sơ (file HĐ, BBGH, hoá đơn…) được lưu theo mã HĐ.',
-    '4': 'Chi phí thực hiện được ghi theo mã HĐ.',
-    '5': 'HĐ mua được gắn theo mã HĐ bán.',
-  };
-  protected tenTab(k: string): string {
-    return TABS.find((t) => t.k === k)?.t ?? '';
-  }
+
 
   protected readonly saved = computed<HopDongBan | null>(() => {
     const id = this.id();
@@ -299,12 +275,6 @@ export class HdbDetail {
 
   /** Lưu bản nháp; trả true nếu thành công. */
   protected luu(): boolean {
-    if (this.tab() !== '1' && this.thieuTab1()) {
-      this.setTab('1');
-      setTimeout(() => this.kt.hopLe());
-      this.store.say('Còn thiếu thông tin bắt buộc ở Tab 1. Thông tin chung');
-      return false;
-    }
     if (!this.kt.hopLe()) return false;
     const out = ghepNhap(structuredClone(this.f()), this.saved());
     const moi = !out.id;
@@ -323,10 +293,24 @@ export class HdbDetail {
     return true;
   }
 
-  /** Ô bắt buộc của Tab 1 còn trống (Khách hàng; Số HĐ từ Hiệu lực) — dùng khi bấm Lưu ở tab khác. */
-  private thieuTab1(): boolean {
-    const h = this.f();
-    return !h.maKH || (h.trangThai !== 'Báo giá' && !h.soHD.trim());
+  protected readonly dangLuu = signal(false);
+
+  /** Bước cuối wizard: tạo HĐ, tải các tệp hồ sơ đã chọn, rồi mở HĐ ở dạng 5 tab. */
+  protected async taoMoi(cho: HoSoCho): Promise<void> {
+    const out = ghepNhap(structuredClone(this.f()), null);
+    const err = this.store.saveHdb(out);
+    if (err) {
+      this.store.say(err);
+      return;
+    }
+    this.dangLuu.set(true);
+    const n = await taiHoSoCho(this.store, 'HDB', out.id, cho);
+    this.dangLuu.set(false);
+    this.store.say(n ? `Đã tạo HĐ bán và lưu ${n} tệp hồ sơ` : 'Đã tạo HĐ bán');
+    this.f.set(structuredClone(this.store.hdbById(out.id)!));
+    void this.unsaved.diSauKhiLuu(() =>
+      this.router.navigate(['/hop-dong-ban', out.id], { queryParams: { tab: '1', kh: null }, queryParamsHandling: 'merge', replaceUrl: true }),
+    );
   }
 
   protected huyNhap(): void {

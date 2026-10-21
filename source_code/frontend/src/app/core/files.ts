@@ -128,16 +128,14 @@ function crc32(b: Uint8Array): number {
   return (c ^ 0xffffffff) >>> 0;
 }
 
-export async function taiZip(tenZip: string, entries: { path: string; file: FileRef }[]): Promise<number> {
+/** Đóng gói zip không nén (STORE) — dùng cho Tải tất cả hồ sơ và file .xlsx (shared/excel.ts). */
+export function taoZip(entries: { path: string; data: Uint8Array }[], type = 'application/zip'): Blob {
   const enc = new TextEncoder();
   const parts: Uint8Array[] = [];
   const central: Uint8Array[] = [];
   let offset = 0;
-  let count = 0;
   for (const e of entries) {
-    const blob = await getBlob(e.file.id);
-    if (!blob) continue;
-    const data = new Uint8Array(await blob.arrayBuffer());
+    const data = e.data;
     const name = enc.encode(e.path);
     const crc = crc32(data);
     const local = new DataView(new ArrayBuffer(30));
@@ -161,23 +159,35 @@ export async function taiZip(tenZip: string, entries: { path: string; file: File
     cen.setUint32(42, offset, true);
     central.push(new Uint8Array(cen.buffer), name);
     offset += 30 + name.length + data.length;
-    count++;
   }
   const cenSize = central.reduce((s, x) => s + x.length, 0);
   const end = new DataView(new ArrayBuffer(22));
   end.setUint32(0, 0x06054b50, true);
-  end.setUint16(8, count, true);
-  end.setUint16(10, count, true);
+  end.setUint16(8, entries.length, true);
+  end.setUint16(10, entries.length, true);
   end.setUint32(12, cenSize, true);
   end.setUint32(16, offset, true);
-  const blob = new Blob([...parts, ...central, new Uint8Array(end.buffer)] as BlobPart[], { type: 'application/zip' });
+  return new Blob([...parts, ...central, new Uint8Array(end.buffer)] as BlobPart[], { type });
+}
+
+/** Tải một Blob xuống máy với tên tệp cho trước. */
+export function taiBlob(ten: string, blob: Blob): void {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = tenZip;
+  a.download = ten;
   document.body.appendChild(a);
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 5000);
-  return count;
+}
+
+export async function taiZip(tenZip: string, entries: { path: string; file: FileRef }[]): Promise<number> {
+  const ds: { path: string; data: Uint8Array }[] = [];
+  for (const e of entries) {
+    const blob = await getBlob(e.file.id);
+    if (blob) ds.push({ path: e.path, data: new Uint8Array(await blob.arrayBuffer()) });
+  }
+  taiBlob(tenZip, taoZip(ds));
+  return ds.length;
 }

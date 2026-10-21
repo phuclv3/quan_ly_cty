@@ -38,16 +38,18 @@ export function doanLoaiHang(ten: string, ds: readonly LoaiHang[]): LoaiHang | u
   );
 }
 
+/** Thứ tự cột khi dán / tải file (HDM-05). */
+export const COT_DONG_HANG = ['Tên hàng', 'Thông số', 'SL', 'Đơn giá', 'Loại tiền', 'Tỷ giá'];
+
 /**
- * Mỗi dòng (cách nhau bằng Tab): Tên hàng, Thông số, SL, Đơn giá, Loại tiền, Tỷ giá.
- * Bỏ dòng trống và dòng tiêu đề (SL không phải số).
+ * Mỗi dòng: Tên hàng, Thông số, SL, Đơn giá, Loại tiền, Tỷ giá (cột thừa bỏ qua).
+ * Bỏ dòng trống (không đếm) và dòng tiêu đề / thiếu tên / SL không phải số > 0 (đếm vào boQua).
  */
-export function parseDanExcel(text: string, ds: readonly LoaiHang[]): { dong: DongHangMua[]; boQua: number } {
+export function parseDongHang(rows: readonly string[][], ds: readonly LoaiHang[]): { dong: DongHangMua[]; boQua: number } {
   const dong: DongHangMua[] = [];
   let boQua = 0;
-  for (const line of text.split(/\r?\n/)) {
-    if (!line.trim()) continue;
-    const c = line.split('\t').map((x) => x.trim());
+  for (const c of rows) {
+    if (!c.some((x) => x.trim())) continue;
     const ten = c[0] ?? '';
     const sl = parseSo(c[2]);
     if (!ten || !(sl > 0)) {
@@ -69,4 +71,9 @@ export function parseDanExcel(text: string, ds: readonly LoaiHang[]): { dong: Do
     });
   }
   return { dong, boQua };
+}
+
+/** Dữ liệu dán từ Excel: các cột cách nhau bằng Tab. */
+export function parseDanExcel(text: string, ds: readonly LoaiHang[]): { dong: DongHangMua[]; boQua: number } {
+  return parseDongHang(text.split(/\r?\n/).map((l) => l.split('\t').map((x) => x.trim())), ds);
 }

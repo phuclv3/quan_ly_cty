@@ -20,7 +20,7 @@ import { Directive, ElementRef, inject } from '@angular/core';
 @Directive({
   selector: '[appKiemTra]',
   exportAs: 'kiemTra',
-  host: { 'data-kiem-tra': '', '(input)': 'sau()', '(change)': 'sau()', '(click)': 'sau()' },
+  host: { 'data-kiem-tra': '', '(input)': 'sau()', '(change)': 'sau()', '(click)': 'sau()', '(keydown)': 'sau()' },
 })
 export class KiemTra {
   private readonly el = inject<ElementRef<HTMLElement>>(ElementRef);
@@ -88,6 +88,6 @@ function trong(f: HTMLElement): 'nhập' | 'chọn' | null {
 function tenNhan(nhan: HTMLElement): string {
   const c = nhan.cloneNode(true) as HTMLElement;
   c.querySelectorAll('.req, .hint, small').forEach((x) => x.remove());
-  const t = (c.textContent ?? '').replace(/\([^)]*\)/g, '').replace(/[:*]/g, '').replace(/\s+/g, ' ').trim();
+  const t = (c.textContent ?? '').replace(/\([^)]*\)/g, '').replace(/[:*]/g, '').replace(/\s+/g, ' ').trim().replace(/^(chọn|nhập)\s+/i, '');
   return t.length > 1 && t[1] === t[1].toLowerCase() ? t[0].toLowerCase() + t.slice(1) : t;
 }

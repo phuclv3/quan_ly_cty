@@ -239,7 +239,7 @@ export class DuyetXoaPage {
       case 'DM_NCC':
         return s.nccById(id) ? { path: '/nha-cung-cap', query: { id } } : null;
       case 'DM_LoaiChiPhi':
-        return s.lcpById(id) ? { path: '/loai-chi-phi', query: {} } : null;
+        return s.lcpById(id) ? { path: '/ke-toan', query: { tab: 'lcp' } } : null;
       case 'DM_NguonTien':
         return s.nguonById(id) ? { path: '/ke-toan', query: { tab: 'nguon' } } : null;
       case 'DM_Kho':

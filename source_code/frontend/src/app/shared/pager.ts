@@ -56,17 +56,19 @@ export function paginate<T>(source: Signal<readonly T[]> | (() => readonly T[]))
   template: `
     @if (p().total() > 0) {
       <nav class="pager" aria-label="Phân trang">
-        <span class="sub">
-          {{ p().from() }}–{{ p().to() }} / {{ p().total() }}
-        </span>
-        <label class="pager-size">
-          <span class="sub">Mỗi trang</span>
-          <select [value]="p().size()" (change)="p().setSize(+val($event))" aria-label="Số dòng mỗi trang">
-            @for (s of sizes; track s) {
-              <option [value]="s" [selected]="s === p().size()">{{ s }}</option>
-            }
-          </select>
-        </label>
+        <div class="pager-info">
+          <span class="sub">
+            {{ p().from() }}–{{ p().to() }} / {{ p().total() }}
+          </span>
+          <label class="pager-size">
+            <span class="sub">Mỗi trang</span>
+            <select [value]="p().size()" (change)="p().setSize(+val($event))" aria-label="Số dòng mỗi trang">
+              @for (s of sizes; track s) {
+                <option [value]="s" [selected]="s === p().size()">{{ s }}</option>
+              }
+            </select>
+          </label>
+        </div>
         <div class="pager-pages">
           <button
             type="button"
