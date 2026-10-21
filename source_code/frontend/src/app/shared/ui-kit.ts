@@ -255,6 +255,130 @@ export class Pick {
   }
 }
 
+// ── Ô chọn gõ trực tiếp (combobox) ────────────────────────────────────
+
+/** Bỏ dấu + bỏ khoảng trắng / chấm / gạch — gõ "0107 576" vẫn khớp MST "0107576519". */
+const gon = (s: string) => fold(s).replace(/[\s.\-/]/g, '');
+const GO_TOI_DA = 50;
+
+/**
+ * Chọn một mục bằng cách gõ ngay vào ô (tên, mã, MST… — mọi chữ trong label / hint / value), không dấu.
+ * ↑ ↓ di chuyển, Enter chọn, Esc huỷ. Dùng cho danh mục dài (VD khách hàng trên HĐ bán).
+ */
+@Component({
+  selector: 'app-pick-go',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [Icon],
+  host: { class: 'pick go', '[class.open]': 'open()', '(document:click)': 'outside($event)' },
+  template: `
+    <input #inp type="text" role="combobox" autocomplete="off" class="go-in" [id]="inputId()" [disabled]="disabled()"
+      [placeholder]="current() ? '' : placeholder()" [value]="open() ? query() : (current()?.label ?? '')"
+      aria-autocomplete="list" [attr.aria-expanded]="open()" [attr.aria-controls]="inputId() + '-ds'"
+      [attr.aria-activedescendant]="open() && ketQua().ds[hl()] ? inputId() + '-o' + hl() : null"
+      (focus)="moRa()" (click)="moRa()" (input)="go($any($event.target).value)" (keydown)="phim($event)" />
+    @if (!open() && current()?.hint) { <small class="go-hint muted">{{ current()?.hint }}</small> }
+    @if (value() && !disabled()) {
+      <button type="button" class="f-x" aria-label="Bỏ chọn" title="Bỏ chọn" (click)="choose('')"><app-icon name="x" [size]="14" /></button>
+    } @else {
+      <app-icon class="go-chev" name="chevron" [size]="16" />
+    }
+    @if (open()) {
+      <div class="pick-pop go-pop">
+        <ul role="listbox" [id]="inputId() + '-ds'">
+          @for (o of ketQua().ds; track o.value; let i = $index) {
+            <li>
+              <button type="button" role="option" tabindex="-1" [id]="inputId() + '-o' + i" [class.on]="o.value === value()" [class.hl]="i === hl()"
+                [attr.aria-selected]="o.value === value()" (mousedown)="$event.preventDefault()" (mouseenter)="hl.set(i)" (click)="choose(o.value)">
+                <span>{{ o.label }}</span>
+                @if (o.hint) { <small class="muted">{{ o.hint }}</small> }
+              </button>
+            </li>
+          } @empty {
+            <li class="muted pick-empty">Không có kết quả cho "{{ query() }}"</li>
+          }
+        </ul>
+        @if (ketQua().con > 0) { <div class="go-more muted">Còn {{ ketQua().con }} mục — gõ thêm tên hoặc MST để thu hẹp</div> }
+      </div>
+    }
+  `,
+})
+export class PickGo {
+  readonly options = input.required<PickOption[]>();
+  readonly value = model('');
+  readonly placeholder = input('Gõ để tìm…');
+  readonly disabled = input(false);
+  readonly inputId = input('pick-go');
+  protected readonly open = signal(false);
+  protected readonly query = signal('');
+  /** Vị trí đang tô sáng trong danh sách kết quả. */
+  protected readonly hl = signal(0);
+  private readonly inp = viewChild<ElementRef<HTMLInputElement>>('inp');
+  private readonly el = inject<ElementRef<HTMLElement>>(ElementRef);
+  protected readonly current = computed(() => this.options().find((o) => o.value === this.value()));
+  /** Khớp mọi từ; mục có tên / MST bắt đầu bằng chuỗi gõ xếp lên đầu. */
+  protected readonly ketQua = computed(() => {
+    const q = this.query().trim();
+    const words = fold(q).split(/\s+/).filter(Boolean);
+    const dau = gon(q);
+    const khop = this.options()
+      .map((o) => {
+        const all = `${o.label} ${o.hint ?? ''} ${o.value}`;
+        const hay = fold(all);
+        const hayGon = gon(all);
+        if (!words.every((w) => hay.includes(w) || hayGon.includes(gon(w)))) return null;
+        const truoc = dau && (gon(o.label).startsWith(dau) || gon(o.hint ?? '').replace(/^mst/, '').startsWith(dau)) ? 0 : 1;
+        return { o, truoc };
+      })
+      .filter((x): x is { o: PickOption; truoc: number } => !!x)
+      .sort((a, b) => a.truoc - b.truoc);
+    return { ds: khop.slice(0, GO_TOI_DA).map((x) => x.o), con: Math.max(0, khop.length - GO_TOI_DA) };
+  });
+
+  protected moRa(): void {
+    if (this.disabled() || this.open()) return;
+    this.query.set('');
+    const i = this.options().findIndex((o) => o.value === this.value());
+    this.hl.set(i >= 0 && i < GO_TOI_DA ? i : 0);
+    this.open.set(true);
+  }
+  protected go(v: string): void {
+    this.query.set(v);
+    this.hl.set(0);
+    this.open.set(true);
+  }
+  protected phim(e: KeyboardEvent): void {
+    const n = this.ketQua().ds.length;
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (!this.open()) return this.moRa();
+      if (n) this.hl.set((this.hl() + (e.key === 'ArrowDown' ? 1 : n - 1)) % n);
+      queueMicrotask(() => this.el.nativeElement.querySelector('.go-pop .hl')?.scrollIntoView({ block: 'nearest' }));
+    } else if (e.key === 'Enter') {
+      if (!this.open()) return;
+      e.preventDefault();
+      const o = this.ketQua().ds[this.hl()];
+      if (o) this.choose(o.value);
+    } else if (e.key === 'Escape') {
+      if (this.open()) e.stopPropagation();
+      this.dong();
+    } else if (e.key === 'Tab') {
+      this.dong();
+    }
+  }
+  protected choose(v: string): void {
+    this.value.set(v);
+    this.dong();
+    if (!v) queueMicrotask(() => this.inp()?.nativeElement.focus());
+  }
+  private dong(): void {
+    this.open.set(false);
+    this.query.set('');
+  }
+  protected outside(e: Event): void {
+    if (this.open() && !this.el.nativeElement.contains(e.target as Node)) this.dong();
+  }
+}
+
 // ── Chọn nhiều (bộ lọc) ─────────────────────────────────────────────────
 
 @Component({

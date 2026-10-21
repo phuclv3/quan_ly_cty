@@ -511,6 +511,17 @@ app-money input { width: 100%; }
 .pick-pop .check-row:hover { background: var(--surf-3); }
 .pick-q { width: 100%; margin-bottom: 6px; }
 .pick-empty { padding: 8px; }
+/* Ô chọn gõ trực tiếp (app-pick-go): gợi ý (MST · tỉnh…) hiện ở mép phải khi đã chọn */
+.field > .pick.go, .pick.go { display: block; width: 100%; }
+.go-in { width: 100%; padding-right: 40px !important; text-overflow: ellipsis; }
+.pick.go:has(.go-hint) .go-in { padding-right: min(46%, 320px) !important; }
+.go-hint { position: absolute; right: 38px; top: 50%; transform: translateY(-50%); max-width: calc(46% - 44px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; pointer-events: none; font-size: 13.5px; }
+.go-chev { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--ink-3); pointer-events: none; }
+.pick.go.open .go-chev { transform: translateY(-50%) rotate(180deg); }
+.go-pop { width: 100%; max-width: none; }
+.go-pop li > button.hl { background: var(--surf-3); }
+.go-pop li > button.on { background: var(--brand-tint); font-weight: 600; }
+.go-more { padding: 6px 8px 2px; font-size: 13px; border-top: 1px solid var(--line); margin-top: 4px; }
 
 /* ── Bảng ──────────────────────────────────────────────────────────── */
 .tbl-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surf); box-shadow: var(--shadow); }
