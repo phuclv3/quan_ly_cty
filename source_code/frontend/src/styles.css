@@ -426,6 +426,11 @@ a.kpi:hover, button.kpi:hover { border-color: var(--brand); }
   display: inline-flex; align-items: center; gap: 6px;
 }
 .tabs button:hover, .tabs a:hover { color: var(--ink); }
+.tabs .tab-lock { margin-left: 5px; color: var(--ink-3); }
+/* Tab cần lưu HĐ trước (HĐ mới) */
+.can-luu { display: flex; gap: 14px; align-items: flex-start; }
+.can-luu > app-icon { color: var(--ink-3); margin-top: 2px; }
+.can-luu h2 { font-size: 18px; margin-bottom: 4px; }
 .tabs .on { color: var(--brand); border-bottom-color: var(--brand); font-weight: 700; }
 
 /* ── Bộ lọc ────────────────────────────────────────────────────────── */

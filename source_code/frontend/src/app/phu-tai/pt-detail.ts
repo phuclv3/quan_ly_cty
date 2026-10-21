@@ -125,7 +125,10 @@ const quyDoi = (soTien: number, loaiTien: string, tyGia: number) => Math.round(s
         @if (p.id) {
           <app-ho-so chu="HDPT" [chuId]="p.id" [soHD]="p.soHD" [edit]="edit()" [giaTri]="c.sauVAT" [ghiChuThieu]="p.ghiChuHoSoThieu ?? ''" (ghiChuThieuChange)="set('ghiChuHoSoThieu', $event)" />
         } @else {
-          <div class="card empty muted">Lưu HĐ lần đầu để tải hồ sơ.</div>
+          <div class="card empty muted">
+            Hồ sơ được lưu theo mã HĐ — cần lưu HĐ lần đầu (Số HĐ, Khách hàng cuối) trước khi tải hồ sơ.
+            @if (edit()) { <div class="btn-row" style="justify-content:center;margin-top:10px"><button type="button" class="btn ok" (click)="luu()">Lưu HĐ &amp; mở hồ sơ</button></div> }
+          </div>
         }
       }
 

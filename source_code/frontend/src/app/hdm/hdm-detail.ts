@@ -198,7 +198,10 @@ interface TraForm {
           @if (saved(); as s) {
             <app-ho-so chu="HDM" [chuId]="s.id" [soHD]="s.soHD" [edit]="edit()" [giaTri]="c.tong" [ghiChuThieu]="m.ghiChuHoSoThieu ?? ''" (ghiChuThieuChange)="set('ghiChuHoSoThieu', $event)" />
           } @else {
-            <div class="card empty">Lưu HĐ trước khi tải hồ sơ.</div>
+            <div class="card empty">
+              Hồ sơ được lưu theo mã HĐ — cần lưu HĐ mua lần đầu (Số HĐ mua, Nhà cung cấp ở Tab 1) trước khi tải hồ sơ.
+              @if (edit()) { <div class="btn-row" style="justify-content:center;margin-top:10px"><button type="button" class="btn" (click)="save()"><app-icon name="check" [size]="16" /> Lưu HĐ &amp; mở hồ sơ</button></div> }
+            </div>
           }
         }
 
@@ -782,6 +785,14 @@ export class HdmDetail {
   }
 
   protected save(silent = false): boolean {
+    // Ô bắt buộc nằm ở Tab 1 — bấm Lưu ở tab khác mà thiếu thì quay về Tab 1 và báo ngay dưới ô.
+    const m0 = this.f();
+    if (this.tab() !== '1' && (!m0.soHD.trim() || !m0.maNCC)) {
+      this.setTab('1');
+      setTimeout(() => this.kt.hopLe());
+      this.store.say('Còn thiếu thông tin bắt buộc ở Tab 1. Thông tin chung');
+      return false;
+    }
     if (!this.kt.hopLe()) return false;
     const m = structuredClone(this.f());
     const err = this.store.saveHdm(m);

@@ -102,12 +102,32 @@ const TABS = [
 
       <div class="tabs" role="tablist">
         @for (t of tabs(); track t.k) {
-          <button type="button" role="tab" [class.on]="tab() === t.k" [disabled]="!saved() && t.k !== '1' && t.k !== '3'" (click)="setTab(t.k)">{{ t.k }}. {{ t.t }}</button>
+          <button type="button" role="tab" [class.on]="tab() === t.k" [attr.aria-selected]="tab() === t.k"
+            [attr.title]="!saved() && canLuu(t.k) ? 'Cần lưu HĐ trước — mở tab để xem hướng dẫn' : null" (click)="setTab(t.k)">
+            {{ t.k }}. {{ t.t }}@if (!saved() && canLuu(t.k)) { <app-icon name="lock" [size]="14" class="tab-lock" /> }
+          </button>
         }
       </div>
 
       @if (saved(); as s) {
         <app-xem-file-hd [(open)]="xemFile" [files]="store.hoSoCua('HDB', s.id, 'Hợp đồng')?.files ?? []" [info]="infoFile()" />
+      }
+
+      @if (!saved() && canLuu(tab())) {
+        <!-- HĐ chưa lưu: hồ sơ / chi phí / HĐ mua gắn theo mã HĐ nên cần lưu lần đầu để có mã. -->
+        <section class="card can-luu">
+          <app-icon name="lock" [size]="28" />
+          <div>
+            <h2>Lưu hợp đồng trước để mở "{{ tenTab(tab()) }}"</h2>
+            <p class="sub">{{ lyDoCanLuu[tab()] }} HĐ mới cần lưu lần đầu (Tab 1: chọn Khách hàng; Báo giá chưa cần Số HĐ) để hệ thống cấp mã HĐ.</p>
+            @if (edit1()) {
+              <div class="btn-row" style="margin-top:10px">
+                <button type="button" class="btn" (click)="luu()"><app-icon name="check" [size]="16" /> Lưu HĐ &amp; mở {{ tenTab(tab()) }}</button>
+                <button type="button" class="btn quiet" (click)="setTab('1')">Về Tab 1. Thông tin chung</button>
+              </div>
+            }
+          </div>
+        </section>
       }
 
       @switch (tab()) {
@@ -131,6 +151,7 @@ const TABS = [
           @if (saved(); as s) { <app-hdb-tab4 [h]="s" /> }
         }
         @case ('5') {
+          @if (saved()) {
           <section class="card">
             <div class="section-title">
               <h2>HĐ mua liên quan</h2>
@@ -160,6 +181,7 @@ const TABS = [
               </table>
             </div>
           </section>
+          }
         }
       }
     }
@@ -182,9 +204,20 @@ export class HdbDetail {
   private readonly khMoi = this.route.snapshot.queryParamMap.get('kh') ?? undefined;
   protected readonly tab = computed(() => {
     const t = this.qTab() ?? '1';
-    const ok = this.tabs().some((x) => x.k === t) ? t : '1';
-    return !this.saved() && ok !== '1' && ok !== '3' ? '1' : ok;
+    return this.tabs().some((x) => x.k === t) ? t : '1';
   });
+  /** Tab cần HĐ đã lưu (có mã) mới dùng được. */
+  protected canLuu(k: string): boolean {
+    return k === '2' || k === '4' || k === '5';
+  }
+  protected readonly lyDoCanLuu: Record<string, string> = {
+    '2': 'Hồ sơ (file HĐ, BBGH, hoá đơn…) được lưu theo mã HĐ.',
+    '4': 'Chi phí thực hiện được ghi theo mã HĐ.',
+    '5': 'HĐ mua được gắn theo mã HĐ bán.',
+  };
+  protected tenTab(k: string): string {
+    return TABS.find((t) => t.k === k)?.t ?? '';
+  }
 
   protected readonly saved = computed<HopDongBan | null>(() => {
     const id = this.id();
@@ -266,6 +299,12 @@ export class HdbDetail {
 
   /** Lưu bản nháp; trả true nếu thành công. */
   protected luu(): boolean {
+    if (this.tab() !== '1' && this.thieuTab1()) {
+      this.setTab('1');
+      setTimeout(() => this.kt.hopLe());
+      this.store.say('Còn thiếu thông tin bắt buộc ở Tab 1. Thông tin chung');
+      return false;
+    }
     if (!this.kt.hopLe()) return false;
     const out = ghepNhap(structuredClone(this.f()), this.saved());
     const moi = !out.id;
@@ -282,6 +321,12 @@ export class HdbDetail {
       void this.unsaved.diSauKhiLuu(() => this.router.navigate(['/hop-dong-ban', out.id], { queryParams: { tab: this.tab() }, replaceUrl: true }));
     }
     return true;
+  }
+
+  /** Ô bắt buộc của Tab 1 còn trống (Khách hàng; Số HĐ từ Hiệu lực) — dùng khi bấm Lưu ở tab khác. */
+  private thieuTab1(): boolean {
+    const h = this.f();
+    return !h.maKH || (h.trangThai !== 'Báo giá' && !h.soHD.trim());
   }
 
   protected huyNhap(): void {
