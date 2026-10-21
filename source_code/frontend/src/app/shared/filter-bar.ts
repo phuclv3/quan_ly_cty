@@ -50,26 +50,35 @@ export const khopQ = (l: Loc, ...fields: (string | number | null | undefined)[])
         <input type="search" [placeholder]="placeholder()" [value]="loc().q" (input)="set('q', $any($event.target).value)" aria-label="Tìm nhanh" />
       </label>
       @if (time()) {
-        <select aria-label="Năm" [value]="loc().nam" (change)="set('nam', $any($event.target).value)">
-          <option value="">Mọi năm</option>
-          @for (y of years(); track y) { <option [value]="y" [selected]="y === loc().nam">{{ y }}</option> }
-        </select>
-        <select aria-label="Quý" [value]="loc().quy" (change)="set('quy', $any($event.target).value)">
-          <option value="">Mọi quý</option>
-          @for (q of ['1', '2', '3', '4']; track q) { <option [value]="q" [selected]="q === loc().quy">Quý {{ q }}</option> }
-        </select>
-        <select aria-label="Tháng" [value]="loc().thang" (change)="set('thang', $any($event.target).value)">
-          <option value="">Mọi tháng</option>
-          @for (m of months; track m) { <option [value]="m" [selected]="m === loc().thang">Tháng {{ m }}</option> }
-        </select>
+        <span class="fsel" [class.has]="!!loc().nam">
+          <select aria-label="Năm" [value]="loc().nam" (change)="set('nam', $any($event.target).value)">
+            <option value="">Mọi năm</option>
+            @for (y of years(); track y) { <option [value]="y" [selected]="y === loc().nam">Năm {{ y }}</option> }
+          </select>
+          @if (loc().nam) { <button type="button" class="f-x" aria-label="Bỏ lọc năm" title="Bỏ lọc năm" (click)="set('nam', '')"><app-icon name="x" [size]="14" /></button> }
+        </span>
+        <span class="fsel" [class.has]="!!loc().quy">
+          <select aria-label="Quý" [value]="loc().quy" (change)="set('quy', $any($event.target).value)">
+            <option value="">Mọi quý</option>
+            @for (q of ['1', '2', '3', '4']; track q) { <option [value]="q" [selected]="q === loc().quy">Quý {{ q }}</option> }
+          </select>
+          @if (loc().quy) { <button type="button" class="f-x" aria-label="Bỏ lọc quý" title="Bỏ lọc quý" (click)="set('quy', '')"><app-icon name="x" [size]="14" /></button> }
+        </span>
+        <span class="fsel" [class.has]="!!loc().thang">
+          <select aria-label="Tháng" [value]="loc().thang" (change)="set('thang', $any($event.target).value)">
+            <option value="">Mọi tháng</option>
+            @for (m of months; track m) { <option [value]="m" [selected]="m === loc().thang">Tháng {{ m }}</option> }
+          </select>
+          @if (loc().thang) { <button type="button" class="f-x" aria-label="Bỏ lọc tháng" title="Bỏ lọc tháng" (click)="set('thang', '')"><app-icon name="x" [size]="14" /></button> }
+        </span>
       }
       @for (f of facets(); track f.key) {
         <app-multi [label]="f.label" [options]="f.options" [value]="loc().sel[f.key] || []" (valueChange)="setSel(f.key, $event)" />
       }
       <ng-content />
-      @if (dirty()) {
-        <button type="button" class="btn sm quiet" (click)="clear()"><app-icon name="x" [size]="16" /> Xoá lọc</button>
-      }
+      <button type="button" class="btn quiet f-clear" [disabled]="!soLoc()" (click)="clear()">
+        <app-icon name="x" [size]="16" /> Xoá lọc@if (soLoc()) { <span class="f-n">{{ soLoc() }}</span> }
+      </button>
     </div>
   `,
 })
@@ -85,9 +94,10 @@ export class FilterBar {
     const y = new Date().getFullYear();
     return [y + 1, y, y - 1, y - 2, y - 3].map(String);
   });
-  protected readonly dirty = computed(() => {
+  /** Số điều kiện lọc đang bật (ô tìm + từng bộ lọc có giá trị) — hiện trên nút "Xoá lọc". */
+  protected readonly soLoc = computed(() => {
     const l = this.loc();
-    return !!(l.q || l.nam || l.quy || l.thang || Object.values(l.sel).some((v) => v.length));
+    return [l.q.trim(), l.nam, l.quy, l.thang].filter(Boolean).length + Object.values(l.sel).filter((v) => v.length).length;
   });
   constructor() {
     effect(() => luuLoc(this.memo(), this.loc()));

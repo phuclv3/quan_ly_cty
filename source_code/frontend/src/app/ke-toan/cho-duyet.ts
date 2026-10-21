@@ -5,6 +5,7 @@ import { chenhLechQuyetToan } from '../core/calc';
 import { matches, money, sum, viDate } from '../core/util';
 import { Confirm } from '../shared/confirm';
 import { Pager, paginate } from '../shared/pager';
+import { Icon } from '../shared/icon';
 import { LCP_HOA_HONG } from '../core/models';
 import { hdbCalc } from '../core/calc';
 import { PhieuForm } from './phieu-form';
@@ -37,15 +38,19 @@ interface CdRow {
 @Component({
   selector: 'app-kt-cho-duyet',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [PhieuForm, ChiPhiForm, Pager],
+  imports: [PhieuForm, ChiPhiForm, Pager, Icon],
   template: `
     <div class="filters">
-      <label class="search"><input type="search" placeholder="Tìm số phiếu, nội dung, người lập…" [value]="q()" (input)="q.set($any($event.target).value)" /></label>
-      <select aria-label="Loại" [value]="kieu()" (change)="kieu.set($any($event.target).value)">
-        <option value="">Tất cả ({{ all().length }})</option>
-        @if (duyetP()) { <option value="P">Phiếu thu chi ({{ demP() }})</option> }
-        @if (duyetC()) { <option value="C">Chi phí HĐ ({{ all().length - demP() }})</option> }
-      </select>
+      <label class="search"><app-icon name="search" [size]="16" /><input type="search" placeholder="Tìm số phiếu, nội dung, người lập…" [value]="q()" (input)="q.set($any($event.target).value)" aria-label="Tìm nhanh" /></label>
+      <span class="fsel" [class.has]="!!kieu()">
+        <select aria-label="Loại" [value]="kieu()" (change)="kieu.set($any($event.target).value)">
+          <option value="">Tất cả ({{ all().length }})</option>
+          @if (duyetP()) { <option value="P" [selected]="kieu() === 'P'">Phiếu thu chi ({{ demP() }})</option> }
+          @if (duyetC()) { <option value="C" [selected]="kieu() === 'C'">Chi phí HĐ ({{ all().length - demP() }})</option> }
+        </select>
+        @if (kieu()) { <button type="button" class="f-x" aria-label="Bỏ lọc loại" title="Bỏ lọc loại" (click)="kieu.set('')"><app-icon name="x" [size]="14" /></button> }
+      </span>
+      <button type="button" class="btn quiet f-clear" [disabled]="!q().trim() && !kieu()" (click)="q.set(''); kieu.set('')"><app-icon name="x" [size]="16" /> Xoá lọc</button>
       <span style="flex:1"></span>
       @if (chon().size) {
         <span class="muted">Đã chọn {{ chon().size }} · {{ money(tongChon()) }} đ</span>

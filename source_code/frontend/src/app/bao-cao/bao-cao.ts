@@ -48,14 +48,19 @@ interface Dong {
         <input type="search" placeholder="Tìm số HĐ, khách hàng, MST, sale…" [value]="q()" (input)="q.set($any($event.target).value)" aria-label="Tìm nhanh" />
       </label>
       @if (tab() !== 'thanh-toan') {
-        <select aria-label="Năm ký" (change)="nam.set($any($event.target).value)">
-          @for (y of namDs(); track y) { <option [value]="y" [selected]="y === nam()">Năm ký {{ y }}</option> }
-        </select>
+        <span class="fsel">
+          <select aria-label="Năm ký" (change)="nam.set($any($event.target).value)">
+            @for (y of namDs(); track y) { <option [value]="y" [selected]="y === nam()">Năm ký {{ y }}</option> }
+          </select>
+        </span>
       } @else {
         <span class="chip">HĐ đang thực hiện (Hiệu lực / Đang giao hàng / Hoàn thành)</span>
       }
       @if (!rieng()) { <app-multi label="Sale" [options]="saleOpts()" [value]="sale()" (valueChange)="sale.set($event)" /> }
       @else { <span class="tag warn">Phạm vi: HĐ của mình</span> }
+      <button type="button" class="btn quiet f-clear" [disabled]="!soLoc()" (click)="xoaLoc()">
+        <app-icon name="x" [size]="16" /> Xoá lọc@if (soLoc()) { <span class="f-n">{{ soLoc() }}</span> }
+      </button>
     </div>
 
     @switch (tab()) {
@@ -224,6 +229,12 @@ export class BaoCaoPage {
   protected readonly nam = signal(this.qp0.get('nam') ?? String(new Date().getFullYear()));
   protected readonly q = signal(this.qp0.get('q') ?? '');
   protected readonly sale = signal<string[]>(this.qp0.getAll('sale'));
+  /** Năm ký luôn có giá trị (mặc định năm nay) — "Xoá lọc" chỉ tính ô tìm và Sale. */
+  protected readonly soLoc = computed(() => (this.q().trim() ? 1 : 0) + (this.sale().length ? 1 : 0));
+  protected xoaLoc(): void {
+    this.q.set('');
+    this.sale.set([]);
+  }
   private readonly ghiUrl = effect(() => {
     const queryParams = { nam: this.nam(), q: this.q() || null, sale: this.sale().length ? this.sale() : null };
     untracked(() => void this.router.navigate([], { relativeTo: this.route, queryParams, queryParamsHandling: 'merge', replaceUrl: true }));

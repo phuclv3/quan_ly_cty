@@ -14,6 +14,18 @@ export const routes: Routes = [
     children: ([
       { path: '', title: T('Trang chủ'), loadComponent: () => import('./home/dashboard').then((m) => m.Dashboard) },
       {
+        path: 'khach-hang',
+        title: T('Khách hàng'),
+        canActivate: [permGuard('khachHang')],
+        loadComponent: () => import('./khach-hang/kh-list').then((m) => m.KhList),
+      },
+      {
+        path: 'khach-hang/:id',
+        title: T('Khách hàng'),
+        canActivate: [permGuard('khachHang')],
+        loadComponent: () => import('./khach-hang/kh-detail').then((m) => m.KhDetail),
+      },
+      {
         path: 'hop-dong-ban',
         title: T('Hợp đồng bán'),
         canActivate: [permGuard('hdb')],
@@ -24,6 +36,18 @@ export const routes: Routes = [
         title: T('Hợp đồng bán'),
         canActivate: [permGuard('hdb')],
         loadComponent: () => import('./hdb/hdb-detail').then((m) => m.HdbDetail),
+      },
+      {
+        path: 'nha-cung-cap',
+        title: T('Nhà cung cấp'),
+        canActivate: [permGuard('ncc')],
+        loadComponent: () => import('./danh-muc/danh-muc').then((m) => m.NccPage),
+      },
+      {
+        path: 'loai-chi-phi',
+        title: T('Loại chi phí'),
+        canActivate: [permGuard('nguonTien')],
+        loadComponent: () => import('./danh-muc/danh-muc').then((m) => m.LoaiChiPhiPage),
       },
       {
         path: 'hop-dong-mua',
@@ -57,11 +81,10 @@ export const routes: Routes = [
         loadComponent: () => import('./phu-tai/pt-detail').then((m) => m.PtDetail),
       },
       { path: 'bao-cao', title: T('Báo cáo'), canActivate: [permGuard('baoCao')], loadComponent: () => import('./bao-cao/bao-cao').then((m) => m.BaoCaoPage) },
+      // Danh mục cũ đã tách vào menu Kinh doanh — giữ đường dẫn cũ (bookmark, ?tab=) chuyển sang màn mới.
       {
         path: 'danh-muc',
-        title: T('Danh mục'),
-        canActivate: [permGuard('khachHang', 'ncc', 'nguonTien')],
-        loadComponent: () => import('./danh-muc/danh-muc').then((m) => m.DanhMucPage),
+        redirectTo: ({ queryParams }) => (queryParams['tab'] === 'lcp' ? '/loai-chi-phi' : queryParams['tab'] === 'kh' ? '/khach-hang' : '/nha-cung-cap'),
       },
       {
         path: 'duyet-xoa',

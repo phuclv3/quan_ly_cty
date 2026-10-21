@@ -30,14 +30,22 @@ import {
   PhieuThuChi,
   TaiKhoan,
   CHECKLIST_HDM,
+  CO_HOI,
+  CoHoi,
+  TIEP_CAN,
+  TiepCan,
 } from './models';
 import { RAW } from './seed-data';
+import { RAW_KH_CRM } from './seed-kh';
 import { hashPassword, randomHex } from './crypto';
 import { nhomMacDinh } from './perm';
-import { fold, nowIso, todayIso, uid, yy } from './util';
+import { fold, nextCode, nowIso, todayIso, uid, yy } from './util';
 
-/** v2: phân quyền theo nhóm (NhomQuyen) thay cho vai trò cố định. */
-export const DB_VERSION = 2;
+/**
+ * v2: phân quyền theo nhóm (NhomQuyen) thay cho vai trò cố định.
+ * v3: khách hàng có trường theo dõi kinh doanh + data KH từ file Excel Kinh doanh (ghepDataKH).
+ */
+export const DB_VERSION = 3;
 
 export const CAU_HINH_MAC_DINH: CauHinh = {
   TNDN_NGUONG: 0.2,
@@ -552,10 +560,65 @@ export async function buildSeed(): Promise<Db> {
     trangThai: 'Chờ duyệt',
   });
   void KT;
+  ghepDataKH(db);
   return db;
 }
 
 // ── Hàm phụ ─────────────────────────────────────────────────────────────
+
+/**
+ * Ghép data khách hàng Kinh doanh (seed-kh.ts, từ File_theo_doi_khach_hang_Kinh_doanh.xlsx) vào danh mục KH.
+ *  - Trùng MST hoặc tên (bỏ dấu) với KH sẵn có → chỉ bổ sung trường còn trống, không ghi đè.
+ *  - Chưa có → thêm KH mới (cờ import).
+ *  - Ghi chú chăm sóc trong file → 1 dòng nhật ký chăm sóc, người ghi "Import".
+ *  - KH chưa có trạng thái theo dõi: có HĐ bán → "Hợp đồng", Sale phụ trách = Sale của HĐ mới nhất.
+ * Dùng cho cả dữ liệu mẫu lẫn nâng cấp dữ liệu v2 trên máy (Store.load).
+ */
+export function ghepDataKH(db: Db): void {
+  const tiepCan = (v?: string) => (TIEP_CAN as readonly string[]).includes(v ?? '') ? (v as TiepCan) : undefined;
+  const coHoi = (v?: string) => (CO_HOI as readonly string[]).includes(v ?? '') ? (v as CoHoi) : undefined;
+  for (const r of RAW_KH_CRM) {
+    const f = fold(r.ten);
+    let k = db.khachHang.find((x) => (!!r.mst && x.mst === r.mst) || fold(x.ten) === f);
+    if (!k) {
+      k = { ...kh(nextCode('KH', db.khachHang.map((x) => x.id)), r.ten, r.mst, r.diaChi), import: true };
+      db.khachHang.push(k);
+    }
+    k.diaChi ||= r.diaChi ?? '';
+    k.nguoiLienHe ||= r.nguoiLienHe ?? '';
+    k.dienThoai ||= r.dienThoai ?? '';
+    k.email ||= r.email ?? '';
+    k.tinh ??= r.tinh;
+    k.chucVu ??= r.chucVu;
+    k.phanLoai ??= r.phanLoai;
+    k.nguon ??= r.nguon;
+    k.loaiSP ??= r.loaiSP;
+    k.hinhThucHD ??= r.hinhThucHD;
+    k.tiepCan ??= tiepCan(r.tiepCan);
+    k.coHoi ??= coHoi(r.coHoi);
+    k.ngayTiepNhan ??= r.ngayTiepNhan;
+    k.ngayPhanBo ??= r.ngayPhanBo;
+    k.giaTriCoHoi ??= r.giaTri;
+    if (r.ghiChuCS) {
+      const luc = `${r.ngayTiepNhan ?? '2024-01-01'}T00:00:00.000Z`;
+      k.chamSoc = [...(k.chamSoc ?? []), { id: uid('CS'), luc, nguoi: 'Import', noiDung: r.ghiChuCS }];
+    }
+  }
+  for (const k of db.khachHang) {
+    const hds = db.hopDongBan.filter((h) => h.maKH === k.id).sort((a, b) => ((a.ngayKy ?? a.taoLuc) < (b.ngayKy ?? b.taoLuc) ? 1 : -1));
+    if (hds.length) {
+      if (!k.tiepCan || k.tiepCan === 'Chưa liên hệ') k.tiepCan = 'Hợp đồng';
+      if (!k.coHoi || CO_HOI.indexOf(k.coHoi) < CO_HOI.indexOf('Ký hợp đồng')) {
+        k.coHoi = hds.every((h) => h.trangThai === 'Hoàn thành' || h.trangThai === 'Đã tất toán') ? 'Hoàn thành' : 'Ký hợp đồng';
+      }
+      k.nguon ??= 'Khách cũ';
+      k.phuTrach ??= hds[0].sale || undefined;
+    }
+    k.tiepCan ??= 'Chưa liên hệ';
+    k.coHoi ??= 'Chưa tiếp cận';
+    k.trangThaiData = k.phuTrach ? 'Đã phân bổ' : (k.trangThaiData ?? 'Data thô');
+  }
+}
 
 function kh(id: string, ten: string, mst?: string, diaChi?: string): KhachHang {
   return { id, ten, mst: mst ?? '', diaChi: diaChi ?? '', nguoiLienHe: '', dienThoai: '', email: '', ghiChu: '' };

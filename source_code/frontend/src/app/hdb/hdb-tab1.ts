@@ -19,24 +19,6 @@ import { ThemDoiTac } from '../shared/them-doi-tac';
           <input id="hdb-so" [value]="f().soHD" [disabled]="!edit() || khoaDinhDanh()" placeholder="Báo giá có thể để trống" (input)="set('soHD', $any($event.target).value)" />
           @if (khoaDinhDanh()) { <span class="hint">Khoá từ "Hiệu lực".</span> }
         </div>
-        <div class="field wide">
-          <label for="hdb-kh">Khách hàng <span class="req">*</span></label>
-          <app-pick inputId="hdb-kh" [options]="khOpts()" [value]="f().maKH" [disabled]="!edit() || khoaDinhDanh()" placeholder="— Chọn khách hàng —" (valueChange)="chonKH($event)" />
-          @if (edit() && !khoaDinhDanh()) { <app-them-doi-tac loai="kh" (daTao)="chonKH($event)" /> }
-          @if (lechDM()) { <span class="hint">Danh mục đã đổi so với bản sao lúc ký — HĐ giữ thông tin cũ. <button type="button" class="linkish" [disabled]="!edit()" (click)="chonKH(f().maKH)">Cập nhật theo danh mục</button></span> }
-        </div>
-        <div class="field">
-          <span class="lbl">Tên khách hàng (bản sao)</span>
-          <div class="ro multi">{{ f().tenKH || '—' }}</div>
-        </div>
-        <div class="field">
-          <span class="lbl">MST</span>
-          <div class="ro">{{ f().mst || '—' }}</div>
-        </div>
-        <div class="field wide">
-          <span class="lbl">Địa chỉ</span>
-          <div class="ro">{{ f().diaChi || '—' }}</div>
-        </div>
         <div class="field">
           <label for="hdb-ky">Ngày ký</label>
           <input id="hdb-ky" type="date" [value]="f().ngayKy ?? ''" [disabled]="!edit()" (input)="set('ngayKy', $any($event.target).value || undefined)" />
@@ -51,6 +33,24 @@ import { ThemDoiTac } from '../shared/them-doi-tac';
           <app-pick inputId="hdb-sale" [options]="saleOpts()" [value]="f().sale" [disabled]="!edit() || store.level('hdb') === 'own'" (valueChange)="set('sale', $event)" />
         </div>
         <div class="field wide">
+          <label for="hdb-kh">Khách hàng <span class="req">*</span></label>
+          <app-pick inputId="hdb-kh" [options]="khOpts()" [value]="f().maKH" [disabled]="!edit() || khoaDinhDanh()" placeholder="— Chọn khách hàng —" (valueChange)="chonKH($event)" />
+          @if (edit() && !khoaDinhDanh()) { <app-them-doi-tac loai="kh" (daTao)="chonKH($event)" /> }
+          @if (lechDM()) { <span class="hint">Danh mục đã đổi so với bản sao lúc ký — HĐ giữ thông tin cũ. <button type="button" class="linkish" [disabled]="!edit()" (click)="chonKH(f().maKH)">Cập nhật theo danh mục</button></span> }
+        </div>
+        <div class="field wide">
+          <span class="lbl">Tên khách hàng (bản sao)</span>
+          <div class="ro multi">{{ f().tenKH || '—' }}</div>
+        </div>
+        <div class="field">
+          <span class="lbl">MST</span>
+          <div class="ro">{{ f().mst || '—' }}</div>
+        </div>
+        <div class="field wide">
+          <span class="lbl">Địa chỉ</span>
+          <div class="ro">{{ f().diaChi || '—' }}</div>
+        </div>
+        <div class="field full">
           <label for="hdb-gc">Ghi chú</label>
           <textarea id="hdb-gc" rows="2" [value]="f().ghiChu" [disabled]="!edit()" (input)="set('ghiChu', $any($event.target).value)"></textarea>
         </div>
@@ -69,7 +69,11 @@ export class HdbTab1 {
     this.store
       .khachHang()
       .filter((k) => k.trangThai !== 'Ngưng' || k.id === this.f().maKH)
-      .map((k) => ({ value: k.id, label: k.ten, hint: (k.mst || k.id) + (k.trangThai === 'Ngưng' ? ' · Ngưng' : '') })),
+      .map((k) => ({
+        value: k.id,
+        label: k.ten,
+        hint: [k.mst || k.id, k.tinh, k.phuTrach ? this.store.userName(k.phuTrach) : '', k.trangThai === 'Ngưng' ? 'Ngưng' : ''].filter(Boolean).join(' · '),
+      })),
   );
   protected readonly saleOpts = computed<PickOption[]>(() =>
     this.store

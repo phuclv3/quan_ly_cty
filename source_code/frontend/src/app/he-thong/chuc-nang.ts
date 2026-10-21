@@ -22,10 +22,14 @@ const mucCua = (g: NhomQuyen, c: ChucNang): Level => (g.trangThai !== 'Hoạt đ
     </div>
     <div class="filters">
       <label class="search"><app-icon name="search" [size]="16" /><input type="search" placeholder="Tìm mã, tên chức năng…" [value]="q()" (input)="q.set($any($event.target).value)" aria-label="Tìm chức năng" /></label>
-      <select aria-label="Module" [value]="mod()" (change)="mod.set($any($event.target).value)">
-        <option value="">Mọi module</option>
-        @for (m of modules; track m) { <option [value]="m" [selected]="m === mod()">{{ m }}</option> }
-      </select>
+      <span class="fsel" [class.has]="!!mod()">
+        <select aria-label="Module" [value]="mod()" (change)="mod.set($any($event.target).value)">
+          <option value="">Mọi module</option>
+          @for (m of modules; track m) { <option [value]="m" [selected]="m === mod()">{{ m }}</option> }
+        </select>
+        @if (mod()) { <button type="button" class="f-x" aria-label="Bỏ lọc module" title="Bỏ lọc module" (click)="mod.set('')"><app-icon name="x" [size]="14" /></button> }
+      </span>
+      <button type="button" class="btn quiet f-clear" [disabled]="!q().trim() && !mod()" (click)="q.set(''); mod.set('')"><app-icon name="x" [size]="16" /> Xoá lọc</button>
       <button type="button" class="btn quiet" (click)="xuat()"><app-icon name="download" [size]="16" /> Xuất CSV</button>
     </div>
     <div class="tbl-wrap">

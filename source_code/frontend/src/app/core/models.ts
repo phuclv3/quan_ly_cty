@@ -209,6 +209,39 @@ export interface LoaiChiPhi {
 export const LCP_HOA_HONG = 'CPTH-HH';
 export const LCP_VAN_CHUYEN = 'CPTH-VC';
 
+// ── Khách hàng & theo dõi kinh doanh (danh mục theo sheet "DANH MỤC" của file theo dõi KH) ──
+export const TIEP_CAN = ['Chưa liên hệ', 'Đang liên hệ', 'Hợp đồng', 'Huỷ'] as const;
+export type TiepCan = (typeof TIEP_CAN)[number];
+export const CO_HOI = ['Chưa tiếp cận', 'Đã báo giá', 'Đang đàm phán', 'Ký hợp đồng', 'Đã giao hàng', 'Hoàn thành', 'Huỷ'] as const;
+export type CoHoi = (typeof CO_HOI)[number];
+export const PHAN_LOAI_KH = ['End-user Tư nhân', 'End-user FDI', 'Thương mại'] as const;
+export const NGUON_KH = ['Hotline', 'Đối tác', 'Khách cũ', 'Tự tìm kiếm'] as const;
+export const HINH_THUC_HD = ['Trực tiếp', 'Đấu thầu'] as const;
+export const LOAI_SP_KH = ['Khí chuẩn', 'Khí công nghiệp', 'Dung dịch chuẩn', 'Khác'] as const;
+export const TRANG_THAI_DATA = ['Data thô', 'Đã phân bổ'] as const;
+export type TrangThaiData = (typeof TRANG_THAI_DATA)[number];
+export const TINH_THANH = [
+  'An Giang', 'Bà Rịa - Vũng Tàu', 'Bắc Giang', 'Bắc Kạn', 'Bạc Liêu', 'Bắc Ninh', 'Bến Tre', 'Bình Định', 'Bình Dương', 'Bình Phước',
+  'Bình Thuận', 'Cà Mau', 'Cần Thơ', 'Cao Bằng', 'Đà Nẵng', 'Đắk Lắk', 'Đắk Nông', 'Điện Biên', 'Đồng Nai', 'Đồng Tháp', 'Gia Lai',
+  'Hà Giang', 'Hà Nam', 'Hà Nội', 'Hà Tĩnh', 'Hải Dương', 'Hải Phòng', 'Hậu Giang', 'Hòa Bình', 'Hồ Chí Minh', 'Hưng Yên', 'Khánh Hòa',
+  'Kiên Giang', 'Kon Tum', 'Lai Châu', 'Lâm Đồng', 'Lạng Sơn', 'Lào Cai', 'Long An', 'Nam Định', 'Nghệ An', 'Ninh Bình', 'Ninh Thuận',
+  'Phú Thọ', 'Phú Yên', 'Quảng Bình', 'Quảng Nam', 'Quảng Ngãi', 'Quảng Ninh', 'Quảng Trị', 'Sóc Trăng', 'Sơn La', 'Tây Ninh',
+  'Thái Bình', 'Thái Nguyên', 'Thanh Hóa', 'Thừa Thiên Huế', 'Tiền Giang', 'Trà Vinh', 'Tuyên Quang', 'Vĩnh Long', 'Vĩnh Phúc',
+  'Yên Bái', 'Nước ngoài', 'Chưa xác định',
+];
+
+/** Một lần chăm sóc / trao đổi với khách (nhật ký, không sửa — chỉ thêm). */
+export interface ChamSocKH {
+  id: string;
+  /** ISO thời điểm ghi. */
+  luc: string;
+  /** Id tài khoản ghi; "Import" với dòng chuyển từ file Excel. */
+  nguoi: string;
+  noiDung: string;
+  /** Trạng thái cơ hội đổi sang ở lần ghi này (nếu có). */
+  coHoi?: CoHoi;
+}
+
 export interface KhachHang {
   id: string;
   ten: string;
@@ -220,6 +253,25 @@ export interface KhachHang {
   ghiChu: string;
   /** F-09: Ngưng → không chọn được cho HĐ mới (thiếu = Đang dùng). */
   trangThai?: 'Đang dùng' | 'Ngưng';
+  // ── Theo dõi kinh doanh (thiếu = chưa khai thác) ──
+  tinh?: string;
+  chucVu?: string;
+  phanLoai?: string;
+  nguon?: string;
+  loaiSP?: string;
+  hinhThucHD?: string;
+  tiepCan?: TiepCan;
+  coHoi?: CoHoi;
+  /** Id tài khoản Sale phụ trách; trống = data thô chưa phân bổ. */
+  phuTrach?: string;
+  trangThaiData?: TrangThaiData;
+  ngayTiepNhan?: string;
+  ngayPhanBo?: string;
+  /** Giá trị cơ hội (đã chào giá / dự kiến), VNĐ chưa VAT. */
+  giaTriCoHoi?: number;
+  chamSoc?: ChamSocKH[];
+  /** Bản ghi đến từ file theo dõi KH (Excel). */
+  import?: boolean;
 }
 
 export interface NhaCungCap {

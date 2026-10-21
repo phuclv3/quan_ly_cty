@@ -175,6 +175,8 @@ export class HdbDetail {
 
   private readonly id = toSignal(this.route.paramMap.pipe(map((m) => m.get('id') ?? 'moi')), { initialValue: this.route.snapshot.paramMap.get('id') ?? 'moi' });
   private readonly qTab = toSignal(this.route.queryParamMap.pipe(map((m) => m.get('tab'))), { initialValue: this.route.snapshot.queryParamMap.get('tab') });
+  /** Tạo HĐ từ màn Khách hàng: /hop-dong-ban/moi?kh=KH0001 → chọn sẵn khách. */
+  private readonly khMoi = this.route.snapshot.queryParamMap.get('kh') ?? undefined;
   protected readonly tab = computed(() => {
     const t = this.qTab() ?? '1';
     const ok = this.tabs().some((x) => x.k === t) ? t : '1';
@@ -195,7 +197,7 @@ export class HdbDetail {
   protected readonly f = linkedSignal<HopDongBan | null, HopDongBan>({
     source: this.saved,
     computation: (s, prev) => {
-      if (!s) return prev && !prev.value.id ? prev.value : this.store.newHdb();
+      if (!s) return prev && !prev.value.id ? prev.value : this.store.newHdb(this.khMoi);
       if (prev && prev.value.id === s.id && vanTay(prev.value) !== vanTay(prev.source)) return ghepNhap(prev.value, s);
       return structuredClone(s);
     },
@@ -280,7 +282,7 @@ export class HdbDetail {
 
   protected huyNhap(): void {
     const s = this.saved();
-    this.f.set(s ? structuredClone(s) : this.store.newHdb());
+    this.f.set(s ? structuredClone(s) : this.store.newHdb(this.khMoi));
   }
 
   protected async chuyen(): Promise<void> {

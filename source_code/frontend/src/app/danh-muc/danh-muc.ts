@@ -1,72 +1,34 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { map } from 'rxjs';
-import { Store } from '../core/store';
-import { Perm } from '../core/perm';
-import { DmKhachHang } from './dm-khach-hang';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { DmNcc } from './dm-ncc';
 import { DmLoaiChiPhi } from './dm-loai-chi-phi';
 
-type Tab = 'kh' | 'ncc' | 'lcp';
-
-const TABS: { k: Tab; t: string; p: Perm }[] = [
-  { k: 'kh', t: 'Khách hàng', p: 'khachHang' },
-  { k: 'ncc', t: 'Nhà cung cấp', p: 'ncc' },
-  { k: 'lcp', t: 'Loại chi phí', p: 'nguonTien' },
-];
-
-/** Danh mục: Khách hàng (HDB-13), Nhà cung cấp (HDM-10), Loại chi phí (KT-03). Tab đồng bộ ?tab=. */
+/** HDM-10 — Danh mục Nhà cung cấp (menu Kinh doanh). Liên kết sâu ?id= mở sẵn dòng (xem DmNcc). */
 @Component({
-  selector: 'app-danh-muc',
+  selector: 'app-ncc-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'page' },
-  imports: [RouterLink, DmKhachHang, DmNcc, DmLoaiChiPhi],
+  imports: [RouterLink, DmNcc],
   template: `
     <div class="page-head">
-      <div><div class="crumbs"><a routerLink="/">Trang chủ</a> › Hệ thống › Danh mục › {{ tabTen() }}</div><h1>Danh mục</h1></div>
-      <!-- F-12: danh mục gắn nghiệp vụ nằm ở module của nó; lối tắt để tìm nhanh. -->
-      <div class="actions">
-        @if (store.canView('khoDanhMuc') && store.canView('khoTon')) {
-          <a class="btn quiet" routerLink="/kho" [queryParams]="{ tab: 'dm-kho' }">Danh mục kho ›</a>
-          <a class="btn quiet" routerLink="/kho" [queryParams]="{ tab: 'loai-hang' }">Loại hàng ›</a>
-        }
-        @if (store.canView('nguonTien')) { <a class="btn quiet" routerLink="/ke-toan" [queryParams]="{ tab: 'nguon' }">Nguồn tiền ›</a> }
-      </div>
+      <div><div class="crumbs"><a routerLink="/">Trang chủ</a> › Kinh doanh › Nhà cung cấp</div><h1>Nhà cung cấp</h1></div>
     </div>
-    <div class="tabs" role="tablist">
-      @for (t of tabs(); track t.k) {
-        <button type="button" role="tab" [class.on]="tab() === t.k" [attr.aria-selected]="tab() === t.k" (click)="setTab(t.k)">{{ t.t }}</button>
-      }
-    </div>
-    @switch (tab()) {
-      @case ('kh') { <app-dm-kh /> }
-      @case ('ncc') { <app-dm-ncc /> }
-      @case ('lcp') { <app-dm-lcp /> }
-    }
+    <app-dm-ncc />
   `,
 })
-export class DanhMucPage {
-  protected readonly store = inject(Store);
-  private readonly route = inject(ActivatedRoute);
-  private readonly router = inject(Router);
-  protected readonly tabs = computed(() => TABS.filter((t) => this.store.canView(t.p)));
-  private readonly qTab = toSignal(this.route.queryParamMap.pipe(map((m) => m.get('tab'))), { initialValue: null });
-  protected readonly tab = computed<Tab | null>(() => {
-    const t = this.qTab();
-    const ok = this.tabs();
-    return ok.find((x) => x.k === t)?.k ?? ok[0]?.k ?? null;
-  });
-  protected readonly tabTen = computed(() => TABS.find((x) => x.k === this.tab())?.t ?? '');
+export class NccPage {}
 
-  constructor() {
-    effect(() => {
-      const t = this.tab();
-      if (t && this.qTab() && this.qTab() !== t) this.setTab(t);
-    });
-  }
-
-  protected setTab(t: Tab): void {
-    void this.router.navigate([], { relativeTo: this.route, queryParams: { tab: t }, queryParamsHandling: 'merge', replaceUrl: true });
-  }
-}
+/** KT-03 — Danh mục Loại chi phí (menu Kinh doanh; quyền theo KT-01 Nguồn tiền & loại chi phí). */
+@Component({
+  selector: 'app-lcp-page',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { class: 'page' },
+  imports: [RouterLink, DmLoaiChiPhi],
+  template: `
+    <div class="page-head">
+      <div><div class="crumbs"><a routerLink="/">Trang chủ</a> › Kinh doanh › Loại chi phí</div><h1>Loại chi phí</h1></div>
+    </div>
+    <app-dm-lcp />
+  `,
+})
+export class LoaiChiPhiPage {}

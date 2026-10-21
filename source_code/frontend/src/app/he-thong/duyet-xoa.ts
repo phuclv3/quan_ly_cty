@@ -113,7 +113,7 @@ interface LinkDT {
           <div class="field wide"><span class="lbl">Đối tượng</span><div class="ro">{{ y.moTa }}</div></div>
           <div class="field"><span class="lbl">Người gửi</span><div class="ro">{{ store.userName(y.nguoiGui) }} · {{ viMoment(y.ngayGui) }}</div></div>
           <div class="field"><span class="lbl">Trạng thái</span><div class="ro"><app-tt [v]="y.trangThai" /></div></div>
-          <div class="field wide"><span class="lbl">Lý do xoá</span><div class="ro">{{ y.lyDo }}</div></div>
+          <div class="field full"><span class="lbl">Lý do xoá</span><div class="ro">{{ y.lyDo }}</div></div>
         </div>
         @let tt = store.tomTatDoiTuong(y.loai, y.maDoiTuong);
         @if (tt.length) {
@@ -235,11 +235,11 @@ export class DuyetXoaPage {
         return d ? { path: '/phu-tai', query: d.hdptId ? { tab: 'dong-tien', hd: d.hdptId } : { tab: 'dong-tien' } } : null;
       }
       case 'DM_KhachHang':
-        return s.khById(id) ? { path: '/danh-muc', query: { tab: 'kh', id } } : null;
+        return s.khById(id) ? { path: '/khach-hang/' + id, query: {} } : null;
       case 'DM_NCC':
-        return s.nccById(id) ? { path: '/danh-muc', query: { tab: 'ncc', id } } : null;
+        return s.nccById(id) ? { path: '/nha-cung-cap', query: { id } } : null;
       case 'DM_LoaiChiPhi':
-        return s.lcpById(id) ? { path: '/danh-muc', query: { tab: 'lcp' } } : null;
+        return s.lcpById(id) ? { path: '/loai-chi-phi', query: {} } : null;
       case 'DM_NguonTien':
         return s.nguonById(id) ? { path: '/ke-toan', query: { tab: 'nguon' } } : null;
       case 'DM_Kho':

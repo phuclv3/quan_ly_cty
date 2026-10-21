@@ -48,6 +48,7 @@ export type Perm =
   | 'cpHDDuyet'
   | 'congNo'
   | 'khachHang'
+  | 'phanBoKH'
   | 'ncc'
   | 'hdb'
   | 'hdbTab3'
@@ -93,7 +94,8 @@ export const CHUC_NANG: ChucNang[] = [
   { ma: 'KT-14', perm: 'cpHDDuyet', module: 'Kế toán', ten: 'Duyệt chi phí thực hiện HĐ', moTa: 'Duyệt / từ chối chi phí thực hiện HĐ', mucDo: ['none', 'approve'] },
   { ma: 'KT-17', perm: 'congNo', module: 'Kế toán', ten: 'Công nợ phải thu / phải trả', moTa: 'Báo cáo công nợ 2 chiều', mucDo: ['none', 'ownView', 'view'] },
   // Kinh doanh
-  { ma: 'HDB-13', perm: 'khachHang', module: 'Kinh doanh', ten: 'Danh mục khách hàng', moTa: '', mucDo: ['none', 'view', 'edit'] },
+  { ma: 'HDB-13', perm: 'khachHang', module: 'Kinh doanh', ten: 'Khách hàng & theo dõi kinh doanh', moTa: 'Sửa của mình: KH mình phụ trách và data thô chưa phân bổ', mucDo: ['none', 'view', 'own', 'edit'] },
+  { ma: 'HDB-13-PB', perm: 'phanBoKH', module: 'Kinh doanh', ten: 'Phân bổ data khách hàng', moTa: 'Giao / đổi Sale phụ trách khách hàng', mucDo: ['none', 'edit'] },
   { ma: 'HDM-10', perm: 'ncc', module: 'Kinh doanh', ten: 'Danh mục nhà cung cấp', moTa: '', mucDo: ['none', 'view', 'edit'] },
   { ma: 'HDB-01', perm: 'hdb', module: 'Kinh doanh', ten: 'Hợp đồng bán — thông tin, hồ sơ', moTa: 'Của mình: chỉ HĐ mình là Sale phụ trách', mucDo: ['none', 'ownView', 'view', 'own', 'edit'] },
   { ma: 'HDB-07', perm: 'hdbTab3', module: 'Kinh doanh', ten: 'HĐ bán — giá trị & đợt thanh toán', moTa: 'Tab 3', mucDo: ['none', 'view', 'own', 'edit'] },
@@ -154,11 +156,11 @@ const MAU: { id: string; ma: string; ten: string; moTa: string; toanQuyen?: bool
   },
   {
     id: 'NQ-SALE', ma: 'SALE', ten: 'Sale', moTa: 'Chỉ HĐ bán mình phụ trách; danh mục khách hàng',
-    q: { duyetXoa: 'request', soQuy: 'draft', cpHD: 'own', congNo: 'ownView', khachHang: 'edit', hdb: 'own', hdbTab3: 'own', hdbGiaoHang: 'own', hdm: 'ownView', hdmTab4: 'ownView', khoDanhMuc: 'view', khoTon: 'view', baoCao: 'ownView' },
+    q: { duyetXoa: 'request', soQuy: 'draft', cpHD: 'own', congNo: 'ownView', khachHang: 'own', hdb: 'own', hdbTab3: 'own', hdbGiaoHang: 'own', hdm: 'ownView', hdmTab4: 'ownView', khoDanhMuc: 'view', khoTon: 'view', baoCao: 'ownView' },
   },
   {
     id: 'NQ-ADMIN', ma: 'ADMIN_KD', ten: 'Admin kinh doanh', moTa: 'HĐ bán / mua, hồ sơ, giao nhận',
-    q: { duyetXoa: 'request', soQuy: 'draft', cpHD: 'edit', congNo: 'view', khachHang: 'edit', ncc: 'edit', hdb: 'edit', hdbTab3: 'edit', hdbGiaoHang: 'edit', hdm: 'edit', hdmTab4: 'edit', hdmNhapKho: 'edit', khoDanhMuc: 'view', khoTon: 'view', phuTai: 'view', baoCao: 'view' },
+    q: { duyetXoa: 'request', soQuy: 'draft', cpHD: 'edit', congNo: 'view', khachHang: 'edit', phanBoKH: 'edit', ncc: 'edit', hdb: 'edit', hdbTab3: 'edit', hdbGiaoHang: 'edit', hdm: 'edit', hdmTab4: 'edit', hdmNhapKho: 'edit', khoDanhMuc: 'view', khoTon: 'view', phuTai: 'view', baoCao: 'view' },
   },
   {
     id: 'NQ-KHO', ma: 'KHO', ten: 'Kho', moTa: 'Tồn kho, nhập / xuất, phiếu điều chỉnh',

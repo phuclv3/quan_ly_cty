@@ -26,6 +26,9 @@ import {
   HopDongPhuTai,
   KHO_CHUYEN_THANG,
   KhachHang,
+  ChamSocKH,
+  CoHoi,
+  TiepCan,
   Kho,
   LCP_HOA_HONG,
   LichSuDuyet,
@@ -46,7 +49,7 @@ import {
   CHECKLIST_HDM,
 } from './models';
 import { CHUC_NANG, KE_TOAN_DUYET_XOA, Level, Perm, atLeast, levelOf } from './perm';
-import { CAU_HINH_MAC_DINH, DB_VERSION, buildSeed } from './seed';
+import { CAU_HINH_MAC_DINH, DB_VERSION, buildSeed, ghepDataKH } from './seed';
 import {
   donGiaGoc,
   hdbCalc,
@@ -105,6 +108,13 @@ export class Store {
         d = null;
       }
       // v1 = dữ liệu mẫu dựng bằng bộ import cũ (sai tổng HĐ mua VNĐ) + vai trò cố định → nạp lại mẫu đã sửa.
+      // v2 → v3: giữ dữ liệu đang có trên máy, chỉ ghép thêm data khách hàng Kinh doanh.
+      if (d && d.version === 2) {
+        ghepDataKH(d);
+        // Quyền mới HDB-13-PB (phân bổ data KH): nhóm hệ thống Admin kinh doanh có sẵn như mẫu mặc định.
+        const nhomQuyen = d.nhomQuyen.map((g) => (g.id === 'NQ-ADMIN' && !g.quyen['HDB-13-PB'] ? { ...g, quyen: { ...g.quyen, 'HDB-13-PB': 'edit' as const } } : g));
+        d = { ...d, nhomQuyen, version: DB_VERSION };
+      }
       if (!d || d.version !== DB_VERSION) d = await buildSeed();
       // Tham số mới thêm sau (VD PT_CACH_CHIA) — dữ liệu cũ trên máy lấy giá trị mặc định.
       else d = { ...d, cauHinh: { ...CAU_HINH_MAC_DINH, ...d.cauHinh } };
@@ -254,6 +264,10 @@ export class Store {
   readonly lcpVanHanh = computed(() => this.db().loaiChiPhi.filter((l) => l.nhom === 'Vận hành' && l.dangDung));
   readonly lcpThucHien = computed(() => this.db().loaiChiPhi.filter((l) => l.nhom === 'Thực hiện HĐ' && l.dangDung));
   readonly khoDangDung = computed(() => this.db().kho.filter((k) => k.dangDung));
+  /** Tài khoản nhận được KH / HĐ bán: đang hoạt động và có quyền HĐ bán từ "Sửa của mình" trở lên. */
+  readonly dsSale = computed(() =>
+    this.db().taiKhoan.filter((t) => t.trangThai === 'Hoạt động' && atLeast(this.levelOfUser(t, 'hdb'), 'own')),
+  );
 
   // ── Đếm việc chờ (menu, dashboard) ───────────────────────────────────
   readonly phieuChoDuyet = computed(() => this.db().phieuThuChi.filter((p) => p.trangThai === 'Chờ duyệt'));
@@ -308,13 +322,67 @@ export class Store {
     );
   }
 
+  /** Sửa được KH này: quyền Sửa, hoặc Sửa của mình khi KH do mình phụ trách / chưa phân bổ. */
+  canEditKH(k?: KhachHang | null): boolean {
+    return this.canEdit('khachHang', k?.phuTrach || undefined);
+  }
+
   saveKhachHang(k: KhachHang): Result {
-    const e = this.require('khachHang');
+    const cu = k.id ? this.khById(k.id) : undefined;
+    const e = this.require('khachHang', 'edit', cu?.phuTrach || undefined);
     if (e) return e;
     if (!k.ten.trim()) return 'Chưa nhập tên khách hàng';
+    const phanBo = this.canEdit('phanBoKH');
+    if (!phanBo) {
+      // Không có quyền phân bổ: giữ nguyên Sale phụ trách; KH mới do mình tạo thì mình phụ trách (nếu là Sale).
+      k.phuTrach = cu ? cu.phuTrach : this.ownOnly('khachHang') ? (this.meId() ?? undefined) : k.phuTrach;
+    }
+    if ((k.phuTrach || undefined) !== (cu?.phuTrach || undefined)) k.ngayPhanBo = k.phuTrach ? todayIso() : undefined;
+    k.trangThaiData = k.phuTrach ? 'Đã phân bổ' : 'Data thô';
+    if (!cu) k.ngayTiepNhan ||= todayIso();
+    k.tiepCan ??= 'Chưa liên hệ';
+    k.coHoi ??= 'Chưa tiếp cận';
     // Mã mới gán ngược vào object truyền vào (như saveHdb) để màn gọi biết bản ghi vừa tạo.
     if (!k.id) k.id = this.nextMa('KH', this.db().khachHang.map((x) => x.id));
     this.upsert('khachHang', { ...k });
+    return null;
+  }
+
+  /** Giao nhiều KH cho một Sale (trống = trả về data thô). */
+  phanBoKH(ids: readonly string[], sale: string): Result {
+    const e = this.require('phanBoKH');
+    if (e) return e;
+    if (!ids.length) return 'Chưa chọn khách hàng';
+    const set = new Set(ids);
+    const ngay = todayIso();
+    this.patch('khachHang', (rows) =>
+      rows.map((k) =>
+        set.has(k.id) && (k.phuTrach || '') !== sale
+          ? { ...k, phuTrach: sale || undefined, ngayPhanBo: sale ? ngay : undefined, trangThaiData: sale ? 'Đã phân bổ' : 'Data thô' }
+          : k,
+      ),
+    );
+    return null;
+  }
+
+  /** Ghi một lần chăm sóc; đổi trạng thái tiếp cận / cơ hội cùng lúc nếu chọn. */
+  ghiChamSoc(id: string, noiDung: string, doi: { tiepCan?: TiepCan; coHoi?: CoHoi } = {}): Result {
+    const k = this.khById(id);
+    if (!k) return 'Không tìm thấy khách hàng';
+    const e = this.require('khachHang', 'edit', k.phuTrach || undefined);
+    if (e) return e;
+    const nd = noiDung.trim();
+    const coHoi = doi.coHoi && doi.coHoi !== k.coHoi ? doi.coHoi : undefined;
+    const tiepCan = doi.tiepCan && doi.tiepCan !== k.tiepCan ? doi.tiepCan : undefined;
+    if (!nd && !coHoi && !tiepCan) return 'Chưa nhập nội dung chăm sóc';
+    const doiChu = [tiepCan && `Tiếp cận → ${tiepCan}`, coHoi && `Cơ hội → ${coHoi}`].filter(Boolean).join(' · ');
+    const dong: ChamSocKH = { id: uid('CS'), luc: nowIso(), nguoi: this.meId() ?? '', noiDung: nd || doiChu, coHoi };
+    this.upsert('khachHang', {
+      ...k,
+      tiepCan: tiepCan ?? k.tiepCan,
+      coHoi: coHoi ?? k.coHoi,
+      chamSoc: [dong, ...(k.chamSoc ?? [])],
+    });
     return null;
   }
   saveNCC(n: NhaCungCap): Result {
@@ -649,15 +717,17 @@ export class Store {
   // KINH DOANH — HĐ Bán (HDB-01…13)
   // ═════════════════════════════════════════════════════════════════════
 
-  newHdb(): HopDongBan {
+  /** HĐ bán mới; truyền mã KH (VD từ màn Khách hàng) thì chép sẵn Tên / MST / Địa chỉ. */
+  newHdb(maKH?: string): HopDongBan {
     const c = this.cauHinh();
+    const k = maKH ? this.khById(maKH) : undefined;
     return {
       id: '',
       soHD: '',
-      maKH: '',
-      tenKH: '',
-      mst: '',
-      diaChi: '',
+      maKH: k?.id ?? '',
+      tenKH: k?.ten ?? '',
+      mst: k?.mst ?? '',
+      diaChi: k?.diaChi ?? '',
       trangThai: 'Báo giá',
       sale: this.meId() ?? '',
       ghiChu: '',

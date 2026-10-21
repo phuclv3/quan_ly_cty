@@ -44,18 +44,18 @@ import { TepDinhKem } from '../shared/tep-dinh-kem';
           @if (c.loaiChiPhi === VC) {
             <div class="field"><label for="cf-vc">Đơn vị vận chuyển</label><input id="cf-vc" [disabled]="!edit()" [value]="c.donViVanChuyen || ''" (input)="set('donViVanChuyen', $any($event.target).value)" /></div>
           }
-          <div class="field wide"><label for="cf-nd">Nội dung <span class="req">*</span></label><textarea id="cf-nd" rows="2" [disabled]="!edit()" [value]="c.noiDung" (input)="set('noiDung', $any($event.target).value)"></textarea></div>
+          <div class="field full"><label for="cf-nd">Nội dung <span class="req">*</span></label><textarea id="cf-nd" rows="2" [disabled]="!edit()" [value]="c.noiDung" (input)="set('noiDung', $any($event.target).value)"></textarea></div>
           <div class="field wide"><label for="cf-gc">Ghi chú</label><input id="cf-gc" [disabled]="!edit()" [value]="c.ghiChu || ''" (input)="set('ghiChu', $any($event.target).value)" /></div>
           @if (c.nguoiDuyet && c.trangThai === 'Đã duyệt') {
             <div class="field"><span class="lbl">Người duyệt</span><div class="ro">{{ store.userName(c.nguoiDuyet) }} · {{ viMoment(c.ngayDuyet) }}</div></div>
           }
           @if (duyetDuoc() && hd(); as h) {
-            <div class="field wide"><span class="lbl">Ngữ cảnh HĐ {{ h.soHD }}</span>
+            <div class="field full"><span class="lbl">Ngữ cảnh HĐ {{ h.soHD }}</span>
               <div class="ro">Giá trị sau VAT {{ money(ngucanh().sauVAT) }} đ · CP đã duyệt {{ money(ngucanh().cpDuyet) }} đ · LN gộp tạm tính {{ money(ngucanh().lnGop) }} đ</div>
             </div>
           }
-          <app-tep-dinh-kem class="wide" [files]="c.files" [edit]="edit()" (filesChange)="set('files', $event)" />
-          <app-lich-su class="wide" [rows]="c.lichSu ?? []" [mo]="c.trangThai === 'Từ chối' || duyetDuoc()" />
+          <app-tep-dinh-kem class="full" [files]="c.files" [edit]="edit()" (filesChange)="set('files', $event)" />
+          <app-lich-su class="full" [rows]="c.lichSu ?? []" [mo]="c.trangThai === 'Từ chối' || duyetDuoc()" />
         </div>
         @if (c.loaiChiPhi === HH) {
           <p class="hint muted">Hoa hồng ghi ở đây, không lập thêm phiếu Chi ở Sổ quỹ (tránh trừ quỹ 2 lần) — duyệt xong trừ thẳng Nguồn tiền đã chọn.</p>

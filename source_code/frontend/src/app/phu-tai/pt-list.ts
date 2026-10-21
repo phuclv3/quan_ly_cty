@@ -210,7 +210,7 @@ const formRong = (): FormDT => ({ ngay: todayIso(), chieu: 'Thu về PT', hdptId
             <label for="dt-tien">Số tiền (VNĐ)</label>
             <app-money inputId="dt-tien" [value]="fm.soTien" (valueChange)="setF('soTien', $event)" />
           </div>
-          <div class="field wide">
+          <div class="field full">
             <label for="dt-lydo">Lý do (bắt buộc)</label>
             <textarea id="dt-lydo" rows="3" [value]="fm.ghiChu" (input)="setF('ghiChu', $any($event.target).value)"></textarea>
           </div>

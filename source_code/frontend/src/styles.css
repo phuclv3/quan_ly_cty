@@ -417,10 +417,35 @@ a.kpi:hover, button.kpi:hover { border-color: var(--brand); }
 
 /* ── Bộ lọc ────────────────────────────────────────────────────────── */
 .filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
-.filters select, .filters .pick-btn { min-height: 38px; }
+/* Bộ lọc: ô chọn đơn (.fsel) và chọn nhiều (app-multi) cùng một kiểu — mũi tên vẽ bằng CSS theo màu chủ đề;
+   đang lọc thì viền + nền màu thương hiệu và có nút ✕ bỏ riêng bộ lọc đó. */
+.filters select, .filters .pick-btn { height: 40px; min-height: 40px; }
+.fsel { position: relative; display: inline-flex; min-width: 0; }
+.fsel > select { appearance: none; -webkit-appearance: none; padding-right: 36px; cursor: pointer; font-size: 15.5px; }
+.fsel::after {
+  content: ''; position: absolute; right: 14px; top: 50%; width: 7px; height: 7px; pointer-events: none;
+  border-right: 1.75px solid var(--ink-3); border-bottom: 1.75px solid var(--ink-3); transform: translateY(-70%) rotate(45deg);
+}
+.fsel.has > select { border-color: var(--brand); background: var(--brand-tint); font-weight: 600; }
+.fsel.has::after { display: none; }
+.filters .pick-btn { padding-right: 12px; font-size: 15.5px; }
+.filters .multi.has .pick-btn { padding-right: 36px; }
+.filters .multi.has .pick-btn > app-icon { visibility: hidden; }
+.f-x {
+  position: absolute; right: 7px; top: 50%; transform: translateY(-50%); z-index: 1;
+  width: 24px; height: 24px; padding: 0; border: 0; border-radius: 50%; cursor: pointer;
+  display: grid; place-items: center; background: transparent; color: var(--brand);
+}
+.f-x:hover, .f-x:focus-visible { background: var(--brand); color: #fff; }
+.f-clear { white-space: nowrap; }
+.f-clear:disabled { opacity: 0.5; cursor: default; }
+.f-n {
+  display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 6px; margin-left: 2px;
+  border-radius: 10px; background: var(--brand); color: #fff; font-size: 12.5px; font-weight: 700; line-height: 1;
+}
 .search { position: relative; flex: 1 1 240px; max-width: 420px; display: flex; align-items: center; }
 .search .ico { position: absolute; left: 10px; color: var(--ink-3); }
-.search input { width: 100%; }
+.search input { width: 100%; height: 40px; }
 .search:has(> .ico) input, .search:has(> app-icon) input { padding-left: 34px !important; }
 
 /* ── Ô nhập ────────────────────────────────────────────────────────── */
@@ -441,8 +466,16 @@ input[type='file']::file-selector-button { font: inherit; font-weight: 600; marg
 .field > input, .field > select, .field > textarea, .field > app-money > input, .field > .pick { width: 100%; }
 .field .hint { font-size: 14px; color: var(--ink-3); }
 .field .err { font-size: 13px; color: var(--bad-fg); }
-.form-grid { display: grid; gap: 12px 14px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr)); align-items: start; }
-.form-grid .wide { grid-column: 1 / -1; }
+/* Lưới form: tối đa 4 cột (ô ≥ 220px). .wide = nửa hàng (2 cột), .full = cả hàng (textarea, ghi chú dài, tệp, lịch sử). */
+.form-grid {
+  container-type: inline-size; display: grid; gap: 12px 14px; align-items: start;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, max(220px, calc((100% - 42px) / 4))), 1fr));
+}
+.form-grid > .wide { grid-column: span 2; }
+.form-grid > .full { grid-column: 1 / -1; }
+@container (max-width: 453px) { .form-grid > .wide { grid-column: 1 / -1; } }
+.field > .linkish, .field > app-them-doi-tac { justify-self: start; }
+.linkish > app-icon { display: inline-flex; vertical-align: -2px; }
 .form-grid > .field:not(.wide) > .ro { display: block; height: 40px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 24px; }
 .form-grid > .field:not(.wide) > .ro.num { text-align: right; }
 .ro { min-height: 40px; padding: 7px 12px; display: flex; align-items: center; line-height: 1.5; overflow-wrap: anywhere; border-radius: 8px; background: var(--surf-2); border: 1px dashed var(--line-2); font-variant-numeric: tabular-nums; }
@@ -711,7 +744,8 @@ tr.hilite > td { background: var(--warn-bg) !important; }
 
   .filters { gap: 6px; }
   .filters .search { flex: 1 1 100%; max-width: none; }
-  .filters > select, .filters > .pick, .filters > app-multi { flex: 1 1 calc(50% - 6px); min-width: 0; }
+  .filters > select, .filters > .pick, .filters > app-multi, .filters > .fsel { flex: 1 1 calc(50% - 6px); min-width: 0; }
+  .filters > .fsel > select, .filters > app-multi > .pick-btn { width: 100%; }
   .filters > .btn { flex: 1 1 100%; }
   .pick-pop { position: fixed; left: 10px; right: 10px; top: auto; bottom: 10px; width: auto; max-width: none; max-height: 70dvh; overflow-y: auto; z-index: 150; }
   .pick-pop ul { max-height: 50dvh; }
@@ -721,6 +755,7 @@ tr.hilite > td { background: var(--warn-bg) !important; }
   .kpi-v { font-size: 18px; overflow-wrap: anywhere; }
   .kpi-s { font-size: 12.5px; }
   .form-grid { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  .form-grid > .wide { grid-column: 1 / -1; }
   .inline-form > * { flex: 1 1 100%; }
   .inline-form > .btn { flex: 1 1 100%; }
   .hoso-grid { grid-template-columns: minmax(0, 1fr); }
@@ -871,7 +906,7 @@ tr.hilite > td { background: var(--warn-bg) !important; }
 }
 
 /* Ô chỉ đọc nhiều dòng (tên KH / NCC): xuống dòng đủ chữ, cao hơn ô 1 dòng như MST */
-.form-grid > .field:not(.wide) > .ro.multi,
+.form-grid > .field > .ro.multi,
 .form-grid.cols-3 > .field > .ro.multi {
   height: auto; min-height: 64px; white-space: normal; overflow: visible;
   display: flex; align-items: flex-start; line-height: 1.45; font-weight: 600;

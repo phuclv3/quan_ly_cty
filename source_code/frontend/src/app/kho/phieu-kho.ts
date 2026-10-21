@@ -91,9 +91,9 @@ const quyenSua = (p: PhieuKho): Perm =>
               <div class="ro">@if (hd(p); as h) { <a [routerLink]="h.link">{{ h.so }}</a> } @else { — }</div>
             </div>
             <div class="field"><span class="lbl">Người thực hiện</span><div class="ro">{{ store.userName(p.nguoiThucHien) }}</div></div>
-            @if (p.lyDo) { <div class="field wide"><span class="lbl">Lý do điều chỉnh</span><div class="ro">{{ p.lyDo }}</div></div> }
+            @if (p.lyDo) { <div class="field full"><span class="lbl">Lý do điều chỉnh</span><div class="ro">{{ p.lyDo }}</div></div> }
             @if (yeuCau(p); as y) {
-              <div class="field wide">
+              <div class="field full">
                 <span class="lbl">{{ y.trangThai === 'Đã duyệt' ? 'Đã huỷ' : 'Yêu cầu huỷ' }}</span>
                 <div class="ro">
                   {{ store.userName(y.nguoiGui) }} gửi yêu cầu lúc {{ viMoment(y.ngayGui) }} — lý do: {{ y.lyDo }}
@@ -101,7 +101,7 @@ const quyenSua = (p: PhieuKho): Perm =>
                 </div>
               </div>
             }
-            <div class="field wide">
+            <div class="field full">
               <label for="pk-gc">Ghi chú</label>
               <textarea id="pk-gc" rows="2" [value]="ghiChu()" [disabled]="!suaDuoc(p)" (input)="ghiChu.set($any($event.target).value)"></textarea>
             </div>

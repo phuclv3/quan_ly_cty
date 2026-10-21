@@ -38,7 +38,8 @@ export type IconName =
   | 'import'
   | 'eye'
   | 'edit'
-  | 'lock';
+  | 'lock'
+  | 'contact';
 
 @Component({
   selector: 'app-icon',
@@ -54,6 +55,7 @@ export type IconName =
         @case ('wallet') { <rect x="2.8" y="5.6" width="18.4" height="14.2" rx="2.2" /><path d="M2.8 9.6h18.4" /><path d="M16.2 14.4h2" /> }
         @case ('handshake') { <path d="m11 17.6 1.6 1.6a1.6 1.6 0 0 0 2.3-2.3" /><path d="m13.4 15.2 2.2 2.2a1.6 1.6 0 0 0 2.3-2.3l-3.6-3.6-2 2a1.7 1.7 0 0 1-2.4-2.4l3-3a3 3 0 0 1 3.4-.5l3.4 1.6" /><path d="m2.4 10.4 4.6-4.6 3.2 1.4" /><path d="M5 12.6 9.8 17.4a1.6 1.6 0 0 0 2.3-2.3" /> }
         @case ('chart') { <path d="M4 20.4V13m5 7.4V8.6m5 11.8v-9m5 9V4.6" /><path d="M2.6 20.4h18.8" /> }
+        @case ('contact') { <rect x="4" y="2.8" width="15.6" height="18.4" rx="2.2" /><circle cx="11.8" cy="10" r="2.8" /><path d="M7.4 17.4c.6-2.3 2.3-3.6 4.4-3.6s3.8 1.3 4.4 3.6" /><path d="M2.6 7.4h2.8M2.6 12h2.8M2.6 16.6h2.8" /> }
         @case ('list') { <path d="M8.6 6.4h12M8.6 12h12M8.6 17.6h12" /><path d="M3.6 6.4h.01M3.6 12h.01M3.6 17.6h.01" /> }
         @case ('trash') { <path d="M4 6.6h16M9.4 6.6V4.2h5.2v2.4" /><path d="M6 6.6l.9 13.2a1.6 1.6 0 0 0 1.6 1.4h7a1.6 1.6 0 0 0 1.6-1.4L18 6.6" /><path d="M10 10.6v6.4M14 10.6v6.4" /> }
         @case ('users') { <circle cx="9.2" cy="8" r="3.4" /><path d="M2.8 20.6c0-3.6 2.9-5.8 6.4-5.8s6.4 2.2 6.4 5.8" /><path d="M16.8 5.2a3.4 3.4 0 0 1 0 6.4" /><path d="M18.6 15.4c1.8.8 2.8 2.5 2.8 5.2" /> }

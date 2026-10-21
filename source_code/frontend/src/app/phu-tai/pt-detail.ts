@@ -76,7 +76,7 @@ const quyDoi = (soTien: number, loaiTien: string, tyGia: number) => Math.round(s
               <label for="pt-so">Số HĐ *</label>
               <input id="pt-so" [value]="p.soHD" [disabled]="!edit()" (input)="set('soHD', $any($event.target).value)" />
             </div>
-            <div class="field">
+            <div class="field wide">
               <span class="lbl">Khách hàng cuối *</span>
               <app-pick [options]="khOpts()" [value]="p.maKH" [disabled]="!edit()" (valueChange)="chonKH($event)" />
             </div>
@@ -92,7 +92,7 @@ const quyDoi = (soTien: number, loaiTien: string, tyGia: number) => Math.round(s
               <label for="pt-hl">Ngày hiệu lực</label>
               <input id="pt-hl" type="date" [value]="p.ngayHieuLuc ?? ''" [disabled]="!edit()" (input)="set('ngayHieuLuc', $any($event.target).value || undefined)" />
             </div>
-            <div class="field wide">
+            <div class="field full">
               <label for="pt-gc">Ghi chú</label>
               <textarea id="pt-gc" rows="2" [value]="p.ghiChu" [disabled]="!edit()" (input)="set('ghiChu', $any($event.target).value)"></textarea>
             </div>

@@ -99,7 +99,7 @@ type F = Exclude<keyof NhaCungCap, 'id'>;
           <div class="field"><label for="ncc-dt">Điện thoại</label><input id="ncc-dt" [value]="d.dienThoai" (input)="set('dienThoai', $any($event.target).value)" /></div>
           <div class="field"><label for="ncc-em">Email</label><input id="ncc-em" type="email" [value]="d.email" (input)="set('email', $any($event.target).value)" /></div>
           <div class="field wide"><label for="ncc-dc">Địa chỉ</label><input id="ncc-dc" [value]="d.diaChi" (input)="set('diaChi', $any($event.target).value)" /></div>
-          <div class="field wide"><label for="ncc-gc">Ghi chú</label><textarea id="ncc-gc" rows="2" [value]="d.ghiChu" (input)="set('ghiChu', $any($event.target).value)"></textarea></div>
+          <div class="field full"><label for="ncc-gc">Ghi chú</label><textarea id="ncc-gc" rows="2" [value]="d.ghiChu" (input)="set('ghiChu', $any($event.target).value)"></textarea></div>
         </div>
         @if (trung(); as t) {
           <div class="note warn" style="display:grid">

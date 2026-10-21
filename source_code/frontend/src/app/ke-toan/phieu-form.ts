@@ -63,7 +63,7 @@ import { donVi, esc, inGiay, kyTen } from './kt-print';
               <div class="field"><label>Nguồn đi <span class="req">*</span></label><app-pick [options]="nguonOpts()" [disabled]="!edit()" [value]="p.nguonTien" (valueChange)="set('nguonTien', $event)" /></div>
               <div class="field"><label>Nguồn đến <span class="req">*</span></label><app-pick [options]="nguonOpts()" [disabled]="!edit()" [value]="p.nguonTienDen || ''" (valueChange)="set('nguonTienDen', $event)" /></div>
               <div class="field"><label>Số tiền <span class="req">*</span></label><app-money [disabled]="!edit()" [value]="p.soTienChi" (valueChange)="set('soTienChi', $event)" /></div>
-              <p class="hint wide muted">Giảm Nguồn đi và tăng Nguồn đến cùng lúc khi duyệt; không tính vào Tổng Thu / Tổng Chi.</p>
+              <p class="hint full muted">Giảm Nguồn đi và tăng Nguồn đến cùng lúc khi duyệt; không tính vào Tổng Thu / Tổng Chi.</p>
             }
             @case ('Quyết toán tạm ứng') {
               <div class="field wide"><label>Phiếu Tạm ứng gốc <span class="req">*</span></label><app-pick [options]="tamUngOpts()" [disabled]="!edit()" [value]="p.phieuTamUngGoc || ''" (valueChange)="chonGoc($event)" placeholder="— Chọn phiếu tạm ứng đã duyệt, chưa quyết toán —" /></div>
@@ -75,7 +75,7 @@ import { donVi, esc, inGiay, kyTen } from './kt-print';
               </div>
               <div class="field"><label>Loại chi phí <span class="req">*</span></label><app-pick [options]="lcpOpts()" [disabled]="!edit()" [value]="p.loaiChiPhi || ''" (valueChange)="set('loaiChiPhi', $event)" /></div>
               <div class="field"><span class="lbl">Chênh lệch</span><div class="ro num" [class.neg]="chenh() < 0" title="Chênh lệch = Tạm ứng − Thực chi">{{ money(chenh()) }}</div></div>
-              <div class="note wide" [class.info]="chenh() >= 0" [class.warn]="chenh() < 0">
+              <div class="note full" [class.info]="chenh() >= 0" [class.warn]="chenh() < 0">
                 Chênh lệch = Tạm ứng − Thực chi.
                 @if (chenh() > 0) { Dương: người nhận hoàn ứng {{ money(chenh()) }} đ — ghi Thu vào nguồn. }
                 @else if (chenh() < 0) { Âm: chi bổ sung {{ money(-chenh()) }} đ — ghi Chi từ nguồn. }
@@ -96,14 +96,14 @@ import { donVi, esc, inGiay, kyTen } from './kt-print';
             }
           }
 
-          <div class="field wide"><label for="pf-nd">Nội dung <span class="req">*</span></label><textarea id="pf-nd" rows="2" [disabled]="!edit()" [value]="p.noiDung" (input)="set('noiDung', $any($event.target).value)"></textarea></div>
+          <div class="field full"><label for="pf-nd">Nội dung <span class="req">*</span></label><textarea id="pf-nd" rows="2" [disabled]="!edit()" [value]="p.noiDung" (input)="set('noiDung', $any($event.target).value)"></textarea></div>
           <div class="field"><span class="lbl">Người đề nghị</span><div class="ro">{{ store.userName(p.nguoiDeNghi) }}</div></div>
           @if (p.nguoiDuyet && p.trangThai === 'Đã duyệt') {
             <div class="field"><span class="lbl">Người duyệt</span><div class="ro">{{ store.userName(p.nguoiDuyet) }} · {{ viMoment(p.ngayDuyet) }}</div></div>
           }
           <div class="field wide"><label for="pf-gc">Ghi chú</label><input id="pf-gc" [disabled]="!edit()" [value]="p.ghiChu || ''" (input)="set('ghiChu', $any($event.target).value)" /></div>
-          <app-tep-dinh-kem class="wide" [files]="p.files" [edit]="edit()" (filesChange)="set('files', $event)" />
-          <app-lich-su class="wide" [rows]="p.lichSu ?? []" [mo]="p.trangThai === 'Từ chối' || duyetDuoc()" />
+          <app-tep-dinh-kem class="full" [files]="p.files" [edit]="edit()" (filesChange)="set('files', $event)" />
+          <app-lich-su class="full" [rows]="p.lichSu ?? []" [mo]="p.trangThai === 'Từ chối' || duyetDuoc()" />
         </div>
 
         <div foot>

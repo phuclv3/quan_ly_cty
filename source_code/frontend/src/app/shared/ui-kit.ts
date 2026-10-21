@@ -105,6 +105,16 @@ const TONE: Record<string, string> = {
   'Thiếu hồ sơ': 'bad',
   'Quá hạn': 'bad',
   Ngưng: 'mute',
+  'Chưa liên hệ': 'mute',
+  'Đang liên hệ': 'info',
+  'Hợp đồng': 'ok',
+  'Chưa tiếp cận': 'mute',
+  'Đã báo giá': 'info',
+  'Đang đàm phán': 'warn',
+  'Ký hợp đồng': 'ok',
+  'Đã giao hàng': 'ok',
+  'Data thô': 'mute',
+  'Đã phân bổ': 'info',
   'Đã rút': 'mute',
   'Hiệu lực ': 'ok',
   'Thuộc Phú Tài': 'pt',
@@ -251,12 +261,15 @@ export class Pick {
   selector: 'app-multi',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [Icon],
-  host: { class: 'pick multi', '(document:click)': 'outside($event)' },
+  host: { class: 'pick multi', '[class.has]': 'value().length > 0', '(document:click)': 'outside($event)' },
   template: `
     <button type="button" class="pick-btn" (click)="open.set(!open())" [attr.aria-expanded]="open()" [class.has]="value().length > 0">
       <span class="pick-val">{{ label() }}@if (value().length) {: <b>{{ value().length === 1 ? nameOf(value()[0]) : value().length + ' mục' }}</b>}</span>
       <app-icon name="chevron" [size]="16" />
     </button>
+    @if (value().length) {
+      <button type="button" class="f-x" [attr.aria-label]="'Bỏ lọc ' + label()" [attr.title]="'Bỏ lọc ' + label()" (click)="value.set([]); open.set(false)"><app-icon name="x" [size]="14" /></button>
+    }
     @if (open()) {
       <div class="pick-pop">
         <ul>
