@@ -30,6 +30,7 @@ import {
   CoHoi,
   TiepCan,
   Kho,
+  KiemKe,
   LCP_HOA_HONG,
   LichSuDuyet,
   LoaiChiPhi,
@@ -49,9 +50,10 @@ import {
   CHECKLIST_HDM,
 } from './models';
 import { CHUC_NANG, KE_TOAN_DUYET_XOA, Level, Perm, atLeast, levelOf } from './perm';
-import { CAU_HINH_MAC_DINH, DB_VERSION, buildSeed, ghepDataKH, themTaiKhoanSale } from './seed';
+import { CAU_HINH_MAC_DINH, DB_VERSION, buildSeed, ghepDataKH, nangCapKhoV5, themTaiKhoanSale } from './seed';
 import {
-  donGiaGoc,
+  donGiaChuyenThang,
+  donGiaVND,
   hdbCalc,
   hdbKhongGiaoHang,
   hdbThieuDeChuyen,
@@ -62,13 +64,32 @@ import {
   soDuQuyPT,
   soDuNguon,
   tamUngChoQuyetToan,
-  tonTai,
+  lechKiemKe,
+  maLo,
+  tonTheoLo,
 } from './calc';
 import { deleteBlob, luuTep } from './files';
 import { fold, money, nowIso, todayIso, uid, vnd, yy } from './util';
 
 const KEY = 'app-oxy:db';
 type Result = string | null;
+
+/** Một dòng xuất kho do người dùng nhập: chỉ định lô, hoặc bỏ trống để tự trừ lô nhập trước (FIFO). */
+export interface DongXuat {
+  loaiHang: string;
+  lo?: string;
+  soLuong: number;
+  tenTrenHD?: string;
+}
+
+/** Một dòng nhập lô: mã hàng cố định + quy cách / nồng độ, SL, đơn giá, VAT nhập tay. */
+export interface DongNhapLo {
+  loaiHang: string;
+  thuocTinh: string;
+  soLuong: number;
+  donGia: number;
+  vat?: number;
+}
 
 @Injectable({ providedIn: 'root' })
 export class Store {
@@ -119,6 +140,12 @@ export class Store {
       if (d && d.version === 3) {
         d = { ...d, taiKhoan: [...d.taiKhoan] };
         await themTaiKhoanSale(d);
+        d.version = 4;
+      }
+      // v4 → v5: kho theo LÔ — ghép danh mục mã hàng cố định, gán mã lô / đơn giá cho phiếu cũ.
+      if (d && d.version === 4) {
+        d = structuredClone(d);
+        nangCapKhoV5(d);
         d.version = DB_VERSION;
       }
       if (!d || d.version !== DB_VERSION) d = await buildSeed();
@@ -174,6 +201,9 @@ export class Store {
   readonly hopDongBan = computed(() => this.db().hopDongBan);
   readonly hopDongMua = computed(() => this.db().hopDongMua);
   readonly phieuKho = computed(() => this.db().phieuKho);
+  readonly kiemKe = computed(() => this.db().kiemKe);
+  /** Tồn theo lô (mọi kho) — dùng chung cho các màn kho. */
+  readonly loKho = computed(() => tonTheoLo(this.db()));
   readonly hopDongPhuTai = computed(() => this.db().hopDongPhuTai);
   readonly dongTienPT = computed(() => this.db().dongTienPT);
 
@@ -452,7 +482,8 @@ export class Store {
   saveLoaiHang(l: LoaiHang, isNew: boolean): Result {
     const e = this.require('khoDanhMuc');
     if (e) return e;
-    if (!l.id.trim() || !l.ten.trim()) return 'Cần nhập Mã loại hàng và Tên';
+    if (!l.id.trim() || !l.ten.trim()) return 'Cần nhập Mã hàng và Tên';
+    if (/\s/.test(l.id)) return 'Mã hàng không chứa khoảng trắng (VD KC-NO-8L)';
     if (isNew && this.loaiHangById(l.id)) return `Mã ${l.id} đã có`;
     this.upsert('loaiHang', l);
     return null;
@@ -843,8 +874,8 @@ export class Store {
     return null;
   }
 
-  /** HDB-04: ghi nhận một lần giao → sinh 1 phiếu Xuất kho (giá gốc theo KHO-10). */
-  ghiNhanGiaoHang(hdbId: string, o: { ngay: string; kho: string; dong: Omit<DongPhieuKho, 'donGiaGoc'>[]; ghiChu?: string }): Result {
+  /** HDB-04: ghi nhận một lần giao → sinh 1 phiếu Xuất kho trừ theo lô (giá vốn = đơn giá lô, KHO-10). */
+  ghiNhanGiaoHang(hdbId: string, o: { ngay: string; kho: string; dong: DongXuat[]; ghiChu?: string }): Result {
     const h = this.hdbById(hdbId);
     if (!h) return 'Không tìm thấy HĐ';
     const e = this.require('hdbGiaoHang', 'edit', h.sale);
@@ -852,10 +883,10 @@ export class Store {
     if (h.trangThai === 'Báo giá') return 'HĐ chưa Hiệu lực';
     if (h.trangThai === 'Hoàn thành') return 'HĐ đã Hoàn thành — không ghi nhận giao thêm';
     if (this.hdbKhoa(h)) return 'HĐ đã khoá';
-    const dong = o.dong.filter((d) => d.loaiHang && d.soLuong > 0);
     if (!o.kho) return 'Chưa chọn Vị trí kho';
+    const dong = this.dongXuatTheoLo(o.kho, hdbId, o.dong);
+    if (typeof dong === 'string') return dong;
     if (dong.length === 0) return 'Cần ít nhất 1 dòng hàng có số lượng > 0';
-    const db = this.db();
     const p: PhieuKho = {
       id: uid('PK'),
       soPhieu: this.nextSo(this.cauHinh().TIEN_TO_XK, o.ngay),
@@ -867,22 +898,69 @@ export class Store {
       nguoiThucHien: this.meId()!,
       trangThai: 'Hiệu lực',
       ghiChu: o.ghiChu,
-      dong: dong.map((d) => ({
-        ...d,
-        donGiaGoc: donGiaGoc(db, { hdbId, loaiHang: d.loaiHang, thuocTinh: d.thuocTinh, kho: o.kho, ngay: o.ngay }).donGia,
-      })),
+      dong,
     };
     this.upsert('phieuKho', p);
     if (h.trangThai === 'Hiệu lực') this.upsert('hopDongBan', { ...h, trangThai: 'Đang giao hàng' });
     return null;
   }
 
-  /** Cảnh báo (không chặn) khi xuất vượt tồn — trả danh sách dòng vượt. */
-  vuotTon(kho: string, dong: { loaiHang: string; thuocTinh: string; soLuong: number }[]): string[] {
-    if (kho === KHO_CHUYEN_THANG) return [];
-    return dong
-      .filter((d) => d.soLuong > tonTai(this.db(), d.loaiHang, d.thuocTinh, kho))
-      .map((d) => `${this.loaiHangTen(d.loaiHang)} ${d.thuocTinh} (tồn ${tonTai(this.db(), d.loaiHang, d.thuocTinh, kho)})`);
+  /**
+   * Dòng xuất → dòng phiếu theo LÔ (sheet "2. XuatKho"): chỉ định lô thì trừ đúng lô đó, bỏ trống thì trừ
+   * lô nhập trước (FIFO, có thể tách nhiều dòng). Chặn xuất quá tồn lô. Giá vốn = đơn giá của lô.
+   * Kho Chuyển thẳng không có lô: giá gốc đích danh theo HĐ Mua liên quan (KHO-07).
+   */
+  private dongXuatTheoLo(kho: string, hdbId: string | undefined, vao: DongXuat[]): DongPhieuKho[] | string {
+    const db = this.db();
+    const lots = tonTheoLo(db).map((l) => ({ ...l }));
+    const out: DongPhieuKho[] = [];
+    for (const d of vao) {
+      if (!d.loaiHang || !(d.soLuong > 0)) continue;
+      const tenTrenHD = d.tenTrenHD?.trim() || undefined;
+      if (kho === KHO_CHUYEN_THANG) {
+        out.push({ loaiHang: d.loaiHang, thuocTinh: '', soLuong: d.soLuong, donGiaGoc: donGiaChuyenThang(db, hdbId, d.loaiHang), tenTrenHD });
+        continue;
+      }
+      const chon = d.lo ? lots.filter((l) => l.lo === d.lo) : lots;
+      if (d.lo && (!chon[0] || chon[0].kho !== kho || chon[0].loaiHang !== d.loaiHang)) return `Lô ${d.lo} không phải ${d.loaiHang} tại kho đã chọn`;
+      let con = d.soLuong;
+      for (const l of chon) {
+        if (con <= 0) break;
+        if (l.loaiHang !== d.loaiHang || l.kho !== kho || l.ton <= 0) continue;
+        const sl = Math.min(con, l.ton);
+        l.ton -= sl;
+        con -= sl;
+        out.push({ loaiHang: d.loaiHang, thuocTinh: l.quyCach, soLuong: sl, lo: l.lo, donGiaGoc: l.donGia, tenTrenHD });
+      }
+      if (con > 0)
+        return d.lo
+          ? `Lô ${d.lo} không đủ tồn (thiếu ${con}) — không xuất quá tồn`
+          : `${d.loaiHang}: tồn tại kho không đủ (thiếu ${con}) — cần nhập / đặt mua NCC trước khi xuất`;
+    }
+    return out;
+  }
+
+  /** Kiểm tra trước (không ghi) một bộ dòng xuất — trả lỗi đầu tiên hoặc null. */
+  loiXuat(kho: string, hdbId: string | undefined, dong: DongXuat[]): string | null {
+    if (!kho) return null;
+    const r = this.dongXuatTheoLo(kho, hdbId, dong);
+    return typeof r === 'string' ? r : null;
+  }
+
+  /** Mã lô cho dòng mới: "L<số hoá đơn>-<nn>" như file kho; không có số hoá đơn thì "<số phiếu>-<nn>". Không trùng lô cũ. */
+  private maLoMoi(soPhieu: string, soHoaDon: string | undefined, i: number, daCo: Set<string>): string {
+    const so = soHoaDon?.replace(/\D/g, '');
+    const goc = so ? `L${so}` : soPhieu;
+    const nn = String(i + 1).padStart(2, '0');
+    let ma = `${goc}-${nn}`;
+    for (let k = 2; daCo.has(ma); k++) ma = `${goc}-${nn}.${k}`;
+    daCo.add(ma);
+    return ma;
+  }
+  private loDaCo(): Set<string> {
+    const s = new Set<string>();
+    for (const p of this.db().phieuKho) if (p.loai === 'Nhập') p.dong.forEach((_, i) => s.add(maLo(p, i)));
+    return s;
   }
 
   /**
@@ -1126,7 +1204,7 @@ export class Store {
   }
 
   /** HDM-06: nhập kho các dòng chọn → 1 phiếu Nhập kho tự động. */
-  nhapKho(hdmId: string, o: { ngay: string; kho: string; dong: { dongId: string; soLuong: number }[]; ghiChu?: string }): Result {
+  nhapKho(hdmId: string, o: { ngay: string; kho: string; dong: { dongId: string; soLuong: number }[]; ghiChu?: string; soHoaDon?: string }): Result {
     const e = this.require('hdmNhapKho');
     if (e) return e;
     const m = this.hdmById(hdmId);
@@ -1142,12 +1220,17 @@ export class Store {
       if (!d) continue;
       const con = d.soLuong - slDaNhap(d.id, db);
       if (x.soLuong > con) return `"${d.tenHang}": SL thực nhập vượt SL còn lại (${con})`;
-      dong.push({ loaiHang: d.loaiHang, thuocTinh: d.thongSo, soLuong: x.soLuong, dongHDMua: d.id });
+      dong.push({ loaiHang: d.loaiHang, thuocTinh: d.thongSo, soLuong: x.soLuong, dongHDMua: d.id, donGia: Math.round(donGiaVND(d)) });
     }
     if (dong.length === 0) return 'Chưa có dòng nào có SL thực nhập > 0';
+    const soPhieu = this.nextSo(this.cauHinh().TIEN_TO_NK, o.ngay);
+    const daCo = this.loDaCo();
+    dong.forEach((d, i) => (d.lo = this.maLoMoi(soPhieu, o.soHoaDon, i, daCo)));
     const p: PhieuKho = {
       id: uid('PK'),
-      soPhieu: this.nextSo(this.cauHinh().TIEN_TO_NK, o.ngay),
+      soPhieu,
+      soHoaDon: o.soHoaDon?.trim() || undefined,
+      ncc: m.maNCC,
       ngay: o.ngay,
       loai: 'Nhập',
       nguonGoc: 'Tự động HĐ Mua',
@@ -1221,28 +1304,137 @@ export class Store {
   // KHO (KHO-01…10)
   // ═════════════════════════════════════════════════════════════════════
 
-  /** KHO-06: phiếu nhập / xuất tay (điều chỉnh) — chỉ Kho / Giám đốc. */
-  savePhieuKhoTay(p: Omit<PhieuKho, 'id' | 'soPhieu' | 'nguonGoc' | 'trangThai' | 'nguoiThucHien'>): Result {
+  /**
+   * KHO-06: phiếu nhập / xuất tay — chỉ Kho / Giám đốc.
+   * Nhập: mỗi dòng = một lô mới, bắt buộc đơn giá; có số hoá đơn NCC thì không cần lý do.
+   * Xuất: trừ theo lô (chặn quá tồn); có HĐ bán thì không cần lý do.
+   */
+  savePhieuKhoTay(
+    p: { ngay: string; loai: PhieuKho['loai']; hdId?: string; kho: string; lyDo?: string; ghiChu?: string; soHoaDon?: string; ncc?: string; kiemKeId?: string },
+    dongNhap: DongNhapLo[],
+    dongXuat: DongXuat[],
+    o: { choGia0?: boolean } = {},
+  ): Result | { id: string } {
     const e = this.require('khoPhieuTay');
     if (e) return e;
+    if (!p.ngay) return 'Chưa chọn Ngày';
     if (!p.kho) return 'Chưa chọn Vị trí kho';
-    if (!p.lyDo?.trim()) return 'Lý do điều chỉnh là bắt buộc';
-    const dong = p.dong.filter((d) => d.loaiHang && d.soLuong > 0);
+    const coChungTu = p.loai === 'Nhập' ? !!p.soHoaDon?.trim() : !!p.hdId;
+    if (!coChungTu && !p.lyDo?.trim()) return p.loai === 'Nhập' ? 'Cần Số hoá đơn NCC hoặc Lý do nhập' : 'Cần chọn HĐ bán hoặc ghi Lý do xuất';
+    const soPhieu = this.nextSo(p.loai === 'Nhập' ? this.cauHinh().TIEN_TO_NK : this.cauHinh().TIEN_TO_XK, p.ngay);
+    let dong: DongPhieuKho[];
+    if (p.loai === 'Nhập') {
+      const vao = dongNhap.filter((d) => d.loaiHang && d.soLuong > 0);
+      const thieuGia = vao.findIndex((d) => !(d.donGia > 0));
+      if (thieuGia >= 0 && !o.choGia0) return `Dòng ${thieuGia + 1}: chưa có đơn giá — nhập kho phải có đơn giá của lô`;
+      const daCo = this.loDaCo();
+      dong = vao.map((d, i) => ({
+        loaiHang: d.loaiHang,
+        thuocTinh: d.thuocTinh.trim(),
+        soLuong: d.soLuong,
+        donGia: Math.max(d.donGia || 0, 0),
+        vat: d.vat,
+        lo: this.maLoMoi(soPhieu, p.soHoaDon, i, daCo),
+      }));
+    } else {
+      const r = this.dongXuatTheoLo(p.kho, p.hdId, dongXuat);
+      if (typeof r === 'string') return r;
+      dong = r;
+    }
     if (dong.length === 0) return 'Cần ít nhất 1 dòng hàng có SL > 0';
-    const db = this.db();
     const out: PhieuKho = {
-      ...p,
-      dong:
-        p.loai === 'Xuất'
-          ? dong.map((d) => ({ ...d, donGiaGoc: donGiaGoc(db, { hdbId: p.hdId, loaiHang: d.loaiHang, thuocTinh: d.thuocTinh, kho: p.kho, ngay: p.ngay }).donGia }))
-          : dong,
       id: uid('PK'),
-      soPhieu: this.nextSo(p.loai === 'Nhập' ? this.cauHinh().TIEN_TO_NK : this.cauHinh().TIEN_TO_XK, p.ngay),
+      soPhieu,
+      ngay: p.ngay,
+      loai: p.loai,
+      hdId: p.hdId || undefined,
+      kho: p.kho,
+      lyDo: p.lyDo?.trim() || undefined,
+      ghiChu: p.ghiChu?.trim() || undefined,
+      soHoaDon: p.loai === 'Nhập' ? p.soHoaDon?.trim() || undefined : undefined,
+      ncc: p.loai === 'Nhập' ? p.ncc || undefined : undefined,
+      kiemKeId: p.kiemKeId,
+      dong,
       nguonGoc: 'Nhập tay – điều chỉnh',
       trangThai: 'Hiệu lực',
       nguoiThucHien: this.meId()!,
     };
     this.upsert('phieuKho', out);
+    return { id: out.id };
+  }
+
+  // ── Kiểm kê ──
+
+  saveKiemKe(k: Pick<KiemKe, 'ngay' | 'kho' | 'ghiChu' | 'dong'> & { id?: string }): Result {
+    const e = this.require('khoPhieuTay');
+    if (e) return e;
+    if (!k.ngay) return 'Chưa chọn Ngày kiểm kê';
+    if (!k.kho || k.kho === KHO_CHUYEN_THANG) return 'Chọn một kho thường để kiểm kê';
+    const dong = k.dong.filter((d) => d.loaiHang && d.soLuong >= 0);
+    if (dong.length === 0) return 'Cần ít nhất 1 dòng mã hàng';
+    const trung = dong.find((d, i) => dong.findIndex((x) => x.loaiHang === d.loaiHang) !== i);
+    if (trung) return `Mã ${trung.loaiHang} bị lặp — gộp lại một dòng`;
+    const cu = k.id ? this.db().kiemKe.find((x) => x.id === k.id) : undefined;
+    if (cu?.phieuDieuChinh?.length) return 'Đợt kiểm kê đã sinh phiếu điều chỉnh — không sửa được';
+    const out: KiemKe = {
+      ...(cu ?? { id: uid('KK'), soPhieu: this.nextSo('KK', k.ngay), nguoiThucHien: this.meId()! }),
+      ngay: k.ngay,
+      kho: k.kho,
+      ghiChu: k.ghiChu?.trim() || undefined,
+      dong: dong.map((d) => ({ loaiHang: d.loaiHang, soLuong: d.soLuong, ghiChu: d.ghiChu?.trim() || undefined })),
+    };
+    this.upsert('kiemKe', out);
+    return null;
+  }
+
+  xoaKiemKe(id: string): Result {
+    const e = this.require('khoPhieuTay');
+    if (e) return e;
+    const k = this.db().kiemKe.find((x) => x.id === id);
+    if (!k) return 'Không tìm thấy đợt kiểm kê';
+    if (this.db().phieuKho.some((p) => p.kiemKeId === id && p.trangThai === 'Hiệu lực')) return 'Đã có phiếu điều chỉnh Hiệu lực — huỷ phiếu trước';
+    this.drop('kiemKe', id);
+    return null;
+  }
+
+  /**
+   * Sinh phiếu điều chỉnh theo chênh lệch kiểm kê: thực tế > sổ → phiếu nhập (đơn giá = lô gần nhất của mã, chưa có thì 0);
+   * thực tế < sổ → phiếu xuất trừ lô nhập trước. Ngày phiếu = ngày kiểm kê.
+   */
+  dieuChinhKiemKe(id: string): Result {
+    const e = this.require('khoPhieuTay');
+    if (e) return e;
+    const k = this.db().kiemKe.find((x) => x.id === id);
+    if (!k) return 'Không tìm thấy đợt kiểm kê';
+    if (this.db().phieuKho.some((p) => p.kiemKeId === id && p.trangThai === 'Hiệu lực')) return 'Đợt này đã có phiếu điều chỉnh';
+    const lech = lechKiemKe(this.db(), k).filter((r) => r.lech !== 0);
+    if (!lech.length) return 'Không có chênh lệch — không cần điều chỉnh';
+    const lots = tonTheoLo(this.db());
+    const giaGanNhat = (lh: string) => [...lots].reverse().find((l) => l.loaiHang === lh)?.donGia ?? 0;
+    const lyDo = `Điều chỉnh theo kiểm kê ${k.soPhieu} ngày ${k.ngay.split('-').reverse().join('/')}`;
+    const ids: string[] = [];
+    const thua = lech.filter((r) => r.lech > 0);
+    const thieu = lech.filter((r) => r.lech < 0);
+    if (thieu.length) {
+      const r = this.savePhieuKhoTay(
+        { ngay: k.ngay, loai: 'Xuất', kho: k.kho, lyDo, kiemKeId: id },
+        [],
+        thieu.map((x) => ({ loaiHang: x.loaiHang, soLuong: -x.lech })),
+      );
+      if (typeof r === 'string') return r;
+      if (r) ids.push(r.id);
+    }
+    if (thua.length) {
+      const r = this.savePhieuKhoTay(
+        { ngay: k.ngay, loai: 'Nhập', kho: k.kho, lyDo, kiemKeId: id },
+        thua.map((x) => ({ loaiHang: x.loaiHang, thuocTinh: 'Theo kiểm kê', soLuong: x.lech, donGia: giaGanNhat(x.loaiHang) })),
+        [],
+        { choGia0: true },
+      );
+      if (typeof r === 'string') return r;
+      if (r) ids.push(r.id);
+    }
+    this.upsert('kiemKe', { ...k, phieuDieuChinh: ids });
     return null;
   }
 
@@ -1605,6 +1797,13 @@ export class Store {
       case 'PhieuThuChi':
         if (d.phieuThuChi.some((p) => p.phieuTamUngGoc === id && p.trangThai !== 'Từ chối')) return 'Phiếu tạm ứng đã có quyết toán';
         return null;
+      case 'PhieuKho': {
+        const p = d.phieuKho.find((x) => x.id === id);
+        if (!p || p.loai !== 'Nhập') return null;
+        const los = new Set(p.dong.map((_, i) => maLo(p, i)));
+        const x = d.phieuKho.find((q) => q.loai === 'Xuất' && q.trangThai === 'Hiệu lực' && q.dong.some((r) => r.lo && los.has(r.lo)));
+        return x ? `Lô của phiếu này đã xuất ở phiếu ${x.soPhieu} — huỷ phiếu xuất trước` : null;
+      }
       case 'DM_KhachHang':
         return d.hopDongBan.some((h) => h.maKH === id) || d.hopDongPhuTai.some((h) => h.maKH === id) ? 'Khách hàng đã có hợp đồng' : null;
       case 'DM_NCC':

@@ -1,45 +1,78 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal, viewChild } from '@angular/core';
-import { LoaiHang, NHOM_HANG, NhomHang } from '../core/models';
+import { tonKho } from '../core/calc';
+import { KHO_CHUYEN_THANG, LoaiHang, NHOM_HANG, NhomHang } from '../core/models';
 import { Store } from '../core/store';
 import { dirtyOf } from '../shared/unsaved';
 import { nhoLoc } from '../core/ui';
+import { money } from '../core/util';
 import { Confirm } from '../shared/confirm';
 import { Facet, FilterBar, LOC_RONG, Loc, khopQ, khopSel } from '../shared/filter-bar';
 import { guiXoa } from '../shared/ho-so';
 import { Pager, paginate } from '../shared/pager';
 import { Modal, TrangThai } from '../shared/ui-kit';
 import { nhomOpts } from './kho-util';
+import { thuocTinhTheoNhom } from '../core/seed';
 
 interface Form {
   isNew: boolean;
   l: LoaiHang;
-  thuocTinh: string;
+  bietDanh: string;
+  /** Người dùng đã tự sửa mã / tên → thôi tự gợi ý. */
+  maTay: boolean;
+  tenTay: boolean;
 }
 
-/** KHO-02: danh mục Loại hàng & thuộc tính biến thể. */
+const TIEN_TO: Record<NhomHang, string> = {
+  'Khí chuẩn': 'KC',
+  'Dung dịch chuẩn': 'DD',
+  'Vỏ bình': 'VO',
+  'Thiết bị tái sử dụng': 'TB',
+  'Phụ kiện': 'PK',
+};
+const VAT_LIEU: Record<string, string> = { NHOM: 'nhôm', THEP: 'thép' };
+
+/** Mã gợi ý theo quy ước file kho: <nhóm>-<loại khí / vật liệu>-<thể tích>, VD KC-SO2NOCO-8L, VO-NHOM-10L. */
+function goiYMa(l: LoaiHang): string {
+  const khi = (l.loaiKhi ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '') || (l.theTich ? '' : 'KHAC');
+  const tt = (l.theTich ?? '').toUpperCase().replace(/\s+/g, '').replace(/,/g, '.');
+  return [TIEN_TO[l.nhom], khi, tt].filter(Boolean).join('-');
+}
+function goiYTen(l: LoaiHang): string {
+  const tt = l.theTich ? ` ${l.theTich}` : '';
+  if (l.nhom === 'Vỏ bình') return `Vỏ bình${l.loaiKhi ? ' ' + (VAT_LIEU[l.loaiKhi.toUpperCase()] ?? l.loaiKhi) : ''}${tt}`;
+  return `${l.nhom}${l.loaiKhi ? ' ' + l.loaiKhi : ''}${tt}`;
+}
+
+/** KHO-02 (sheet "DM. Mã hàng"): danh mục mã hàng CỐ ĐỊNH — nhóm × loại khí / vật liệu × thể tích. */
 @Component({
   selector: 'app-kho-loai-hang',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [Modal, TrangThai, FilterBar, Pager],
   template: `
-    <div class="note warn">Danh mục loại hàng chưa chốt (Q-01): chờ công ty gửi danh sách thực tế, thuộc tính biến thể và đơn vị tính từng nhóm.</div>
-    <div class="section-title">
-      <span class="sub">{{ rows().length }} loại hàng</span>
-      @if (edit()) { <button type="button" class="btn" (click)="moi()">+ Thêm loại hàng</button> }
+    <div class="note info">
+      <b>Mã hàng là cố định</b> (VD KC-NO-8L = Khí chuẩn · NO · 8L · Bình). Nồng độ khách đặt và đơn giá <b>không</b> nằm ở mã —
+      ghi theo từng lô khi nhập kho, nên cùng một mã có nhiều lô giá khác nhau.
     </div>
-    <app-filter [(loc)]="loc" memo="kho-loai-hang" [time]="false" [facets]="facets()" placeholder="Tìm mã, tên, thuộc tính…" />
+    <div class="section-title">
+      <span class="sub">{{ rows().length }} mã hàng</span>
+      @if (edit()) { <button type="button" class="btn" (click)="moi()">+ Thêm mã hàng</button> }
+    </div>
+    <app-filter [(loc)]="loc" memo="kho-loai-hang" [time]="false" [facets]="facets()" placeholder="Tìm mã, tên, loại khí, tên tham chiếu…" />
     <div class="tbl-wrap">
       <table class="tbl freeze">
-        <thead><tr><th>Mã</th><th>Tên</th><th>Nhóm</th><th>ĐVT</th><th>Thuộc tính áp dụng</th><th>Đang dùng</th>@if (edit()) { <th></th> }</tr></thead>
+        <thead><tr><th>Mã hàng</th><th>Nhóm</th><th>Loại khí / vật liệu</th><th>Thể tích</th><th>ĐVT</th><th>Tên</th><th class="num">Tồn</th><th>Tên tham chiếu</th><th>Đang dùng</th>@if (edit()) { <th></th> }</tr></thead>
         <tbody>
           @for (l of pg.items(); track l.id) {
             <tr>
               <td><b>{{ l.id }}</b></td>
-              <td>{{ l.ten }}</td>
               <td>{{ l.nhom }}</td>
+              <td>{{ l.loaiKhi || '—' }}</td>
+              <td>{{ l.theTich || '—' }}</td>
               <td>{{ l.dvt }}</td>
-              <td>
-                @for (t of l.thuocTinh; track t) { <span class="tag mute">{{ t }}</span> } @empty { <span class="muted">—</span> }
+              <td>{{ l.ten }}</td>
+              <td class="num" [class.neg]="(ton().get(l.id) ?? 0) < 0">{{ money(ton().get(l.id) ?? 0) }}</td>
+              <td class="sub" [title]="(l.bietDanh ?? []).join('\\n')">
+                @if (l.bietDanh?.length) { {{ l.bietDanh![0] }}@if (l.bietDanh!.length > 1) { <span class="tag mute">+{{ l.bietDanh!.length - 1 }}</span> } } @else { — }
               </td>
               <td>
                 <app-tt [v]="l.dangDung ? 'Đang dùng' : 'Ngưng'" />
@@ -60,37 +93,49 @@ interface Form {
               }
             </tr>
           } @empty {
-            <tr><td colspan="7" class="empty">Không có loại hàng nào khớp bộ lọc</td></tr>
+            <tr><td colspan="10" class="empty">Không có mã hàng nào khớp bộ lọc</td></tr>
           }
         </tbody>
       </table>
     </div>
     <app-pager [pager]="pg" />
-    <p class="hint muted">Khí bên trong pha theo đơn → không tạo mã theo khí; biến thể = Loại hàng × giá trị thuộc tính (nhập khi lập phiếu / dòng hàng, VD "10L", "150bar"). Loại hàng đã dùng không xoá được — chỉ Ngưng.</p>
+    <p class="hint muted">Tên tham chiếu = các tên đang ghi trên hoá đơn / hợp đồng ứng với mã này (VD "Bình khí chuẩn NO", "NO calibration gas") — dùng để tìm mã khi lập phiếu, HĐ. Mã đã dùng không xoá được — chỉ Ngưng.</p>
 
-    <app-modal #mLh [open]="!!f()" [title]="f()?.isNew ? 'Thêm loại hàng' : 'Sửa loại hàng ' + (f()?.l?.id ?? '')" [dirty]="dirty()" (closed)="f.set(null)">
+    <app-modal #mLh [open]="!!f()" [title]="f()?.isNew ? 'Thêm mã hàng' : 'Sửa mã hàng ' + (f()?.l?.id ?? '')" [dirty]="dirty()" (closed)="f.set(null)">
       @if (f(); as x) {
+        <h3 class="section-title">Trường cố định</h3>
         <div class="form-grid">
           <div class="field">
-            <label for="lh-ma">Mã loại hàng <span class="req">*</span></label>
-            @if (x.isNew) { <input id="lh-ma" [value]="x.l.id" (input)="set({ id: $any($event.target).value.toUpperCase() })" /> } @else { <div class="ro">{{ x.l.id }}</div> }
-            <span class="hint">Mã duy nhất</span>
-          </div>
-          <div class="field"><label for="lh-ten">Tên <span class="req">*</span></label><input id="lh-ten" [value]="x.l.ten" (input)="set({ ten: $any($event.target).value })" /></div>
-          <div class="field">
-            <label for="lh-nhom">Nhóm</label>
-            <select id="lh-nhom" (change)="set({ nhom: $any($event.target).value })">
+            <label for="lh-nhom">Nhóm <span class="req">*</span></label>
+            <select id="lh-nhom" [disabled]="!x.isNew" (change)="set({ nhom: $any($event.target).value })">
               @for (n of nhoms; track n) { <option [value]="n" [selected]="n === x.l.nhom">{{ n }}</option> }
             </select>
           </div>
-          <div class="field"><label for="lh-dvt">Đơn vị tính</label><input id="lh-dvt" placeholder="bình, cái, bộ…" [value]="x.l.dvt" (input)="set({ dvt: $any($event.target).value })" /></div>
-          <div class="field wide">
-            <label for="lh-tt">Thuộc tính áp dụng</label>
-            <input id="lh-tt" placeholder="Nồng độ, Thể tích, Áp suất" [value]="x.thuocTinh" (input)="setTT($any($event.target).value)" />
-            <span class="hint">Cách nhau bằng dấu phẩy</span>
+          <div class="field">
+            <label for="lh-khi">{{ x.l.nhom === 'Vỏ bình' ? 'Vật liệu' : 'Loại khí / chỉ tiêu' }}</label>
+            <input id="lh-khi" [placeholder]="x.l.nhom === 'Vỏ bình' ? 'NHOM, THEP' : 'NO, SO2/NO/CO, COD…'" [value]="x.l.loaiKhi ?? ''" [disabled]="!x.isNew" (input)="set({ loaiKhi: $any($event.target).value.trim() || undefined })" />
+          </div>
+          <div class="field">
+            <label for="lh-tt">Thể tích</label>
+            <input id="lh-tt" placeholder="8L, 10L, 500ml" [value]="x.l.theTich ?? ''" [disabled]="!x.isNew" (input)="set({ theTich: $any($event.target).value.trim() || undefined })" />
+          </div>
+          <div class="field"><label for="lh-dvt">Đơn vị tính <span class="req">*</span></label><input id="lh-dvt" placeholder="Bình, Chai, Bộ…" [value]="x.l.dvt" (input)="set({ dvt: $any($event.target).value })" /></div>
+          <div class="field">
+            <label for="lh-ma">Mã hàng <span class="req">*</span></label>
+            @if (x.isNew) { <input id="lh-ma" [value]="x.l.id" (input)="setMa($any($event.target).value)" /> } @else { <div class="ro">{{ x.l.id }}</div> }
+            <span class="hint">{{ x.isNew ? 'Tự gợi ý theo nhóm · loại khí · thể tích — sửa được' : 'Mã cố định, không đổi sau khi tạo' }}</span>
+          </div>
+          <div class="field"><label for="lh-ten">Tên <span class="req">*</span></label><input id="lh-ten" [value]="x.l.ten" (input)="setTen($any($event.target).value)" /></div>
+        </div>
+        <h3 class="section-title">Tên tham chiếu</h3>
+        <div class="form-grid">
+          <div class="field full">
+            <label for="lh-bd">Tên đang dùng trên hoá đơn / hợp đồng</label>
+            <textarea id="lh-bd" rows="4" placeholder="Mỗi dòng một tên, VD: Bình khí chuẩn NO&#10;NO calibration gas" [value]="x.bietDanh" (input)="setBD($any($event.target).value)"></textarea>
           </div>
           <label class="check-row wide"><input type="checkbox" [checked]="x.l.dangDung" (change)="set({ dangDung: $any($event.target).checked })" /> Đang dùng</label>
         </div>
+        @if (!x.isNew) { <p class="hint muted">Nhóm, loại khí, thể tích là phần cấu thành mã — không sửa; cần khác thì tạo mã mới và Ngưng mã cũ.</p> }
         @if (err()) { <div class="note bad">{{ err() }}</div> }
       }
       <div foot class="btn-row">
@@ -105,22 +150,38 @@ export class DmLoaiHangTab {
   protected readonly store = inject(Store);
   private readonly confirm = inject(Confirm);
   protected readonly nhoms = NHOM_HANG;
+  protected readonly money = money;
   protected readonly edit = computed(() => this.store.canEdit('khoDanhMuc'));
   protected readonly loc = signal<Loc>(nhoLoc('kho-loai-hang', LOC_RONG));
-  protected readonly facets = computed<Facet[]>(() => [{ key: 'nhom', label: 'Nhóm', options: nhomOpts() }]);
+  protected readonly facets = computed<Facet[]>(() => [
+    { key: 'nhom', label: 'Nhóm', options: nhomOpts() },
+    { key: 'dd', label: 'Trạng thái', options: [{ value: 'Đang dùng', label: 'Đang dùng' }, { value: 'Ngưng', label: 'Ngưng' }] },
+  ]);
   protected readonly f = signal<Form | null>(null);
   protected readonly dirty = dirtyOf(this.f);
   protected readonly err = signal('');
 
+  /** Tồn theo mã hàng, mọi kho thường. */
+  protected readonly ton = computed(() => {
+    const m = new Map<string, number>();
+    for (const r of tonKho(this.store.db())) if (r.kho !== KHO_CHUYEN_THANG) m.set(r.loaiHang, (m.get(r.loaiHang) ?? 0) + r.ton);
+    return m;
+  });
   protected readonly rows = computed(() => {
     const l = this.loc();
+    const thu = new Map(NHOM_HANG.map((n, i) => [n, i]));
     return this.store
       .loaiHang()
-      .filter((x) => khopSel(l, 'nhom', x.nhom) && khopQ(l, x.id, x.ten, x.dvt, x.nhom, ...x.thuocTinh))
-      .sort((a, b) => a.id.localeCompare(b.id));
+      .filter(
+        (x) =>
+          khopSel(l, 'nhom', x.nhom) &&
+          khopSel(l, 'dd', x.dangDung ? 'Đang dùng' : 'Ngưng') &&
+          khopQ(l, x.id, x.ten, x.dvt, x.nhom, x.loaiKhi, x.theTich, ...(x.bietDanh ?? [])),
+      )
+      .sort((a, b) => (thu.get(a.nhom) ?? 9) - (thu.get(b.nhom) ?? 9) || a.id.localeCompare(b.id, 'en', { numeric: true }));
   });
   protected readonly pg = paginate(this.rows);
-  /** Loại hàng đã có trên phiếu kho hoặc dòng HĐ Mua → chỉ ngưng. */
+  /** Mã đã có trên phiếu kho hoặc dòng HĐ Mua → chỉ ngưng. */
   protected readonly daDung = computed(() => {
     const db = this.store.db();
     const s = new Set<string>();
@@ -134,39 +195,57 @@ export class DmLoaiHangTab {
   }
   protected moi(): void {
     this.err.set('');
-    this.f.set({ isNew: true, l: { id: '', ten: '', nhom: NHOM_HANG[0] as NhomHang, dvt: '', thuocTinh: [], dangDung: true }, thuocTinh: '' });
+    const l: LoaiHang = { id: '', ten: '', nhom: NHOM_HANG[0], dvt: 'Bình', thuocTinh: [], dangDung: true };
+    this.f.set({ isNew: true, l: { ...l, id: goiYMa(l), ten: goiYTen(l) }, bietDanh: '', maTay: false, tenTay: false });
   }
   protected sua(l: LoaiHang): void {
     this.err.set('');
-    this.f.set({ isNew: false, l: structuredClone(l), thuocTinh: l.thuocTinh.join(', ') });
+    this.f.set({ isNew: false, l: structuredClone(l), bietDanh: (l.bietDanh ?? []).join('\n'), maTay: true, tenTay: true });
   }
+  /** Đổi trường cố định → gợi ý lại mã / tên (nếu người dùng chưa tự sửa). */
   protected set(p: Partial<LoaiHang>): void {
-    this.f.update((x) => (x ? { ...x, l: { ...x.l, ...p } } : x));
+    this.f.update((x) => {
+      if (!x) return x;
+      const l = { ...x.l, ...p };
+      if (p.nhom && x.isNew) l.dvt = p.nhom === 'Dung dịch chuẩn' ? 'Chai' : p.nhom === 'Vỏ bình' || p.nhom === 'Khí chuẩn' ? 'Bình' : l.dvt;
+      if (x.isNew && !x.maTay) l.id = goiYMa(l);
+      if (x.isNew && !x.tenTay) l.ten = goiYTen(l);
+      return { ...x, l };
+    });
   }
-  protected setTT(v: string): void {
-    this.f.update((x) => (x ? { ...x, thuocTinh: v } : x));
+  protected setMa(v: string): void {
+    this.f.update((x) => (x ? { ...x, maTay: true, l: { ...x.l, id: v.toUpperCase().replace(/\s+/g, '') } } : x));
+  }
+  protected setTen(v: string): void {
+    this.f.update((x) => (x ? { ...x, tenTay: true, l: { ...x.l, ten: v } } : x));
+  }
+  protected setBD(v: string): void {
+    this.f.update((x) => (x ? { ...x, bietDanh: v } : x));
   }
   protected luu(): void {
     if (this.mLh()?.kt.hopLe() === false) return;
     const x = this.f();
     if (!x) return;
+    const bd = [...new Set(x.bietDanh.split('\n').map((t) => t.trim()).filter(Boolean))];
     const l: LoaiHang = {
       ...x.l,
       id: x.l.id.trim(),
       ten: x.l.ten.trim(),
       dvt: x.l.dvt.trim(),
-      thuocTinh: [...new Set(x.thuocTinh.split(',').map((t) => t.trim()).filter(Boolean))],
+      thuocTinh: x.isNew ? thuocTinhTheoNhom(x.l.nhom) : x.l.thuocTinh,
+      bietDanh: bd.length ? bd : undefined,
     };
+    if (!l.dvt) return this.err.set('Chưa nhập Đơn vị tính');
     const e = this.store.saveLoaiHang(l, x.isNew);
     if (e) return this.err.set(e);
-    this.store.say(`Đã lưu loại hàng ${l.id}`);
+    this.store.say(`Đã lưu mã hàng ${l.id}`);
     this.f.set(null);
   }
   protected batTat(l: LoaiHang): void {
     const e = this.store.saveLoaiHang({ ...l, dangDung: !l.dangDung }, false);
-    this.store.say(e ?? (l.dangDung ? `Đã ngưng ${l.ten}` : `Đã dùng lại ${l.ten}`));
+    this.store.say(e ?? (l.dangDung ? `Đã ngưng ${l.id}` : `Đã dùng lại ${l.id}`));
   }
   protected async xoa(l: LoaiHang): Promise<void> {
-    await guiXoa(this.confirm, this.store, 'DM_LoaiHang', l.id, `Loại hàng ${l.id} – ${l.ten}`);
+    await guiXoa(this.confirm, this.store, 'DM_LoaiHang', l.id, `Mã hàng ${l.id} – ${l.ten}`);
   }
 }

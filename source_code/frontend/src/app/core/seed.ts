@@ -37,6 +37,7 @@ import {
 } from './models';
 import { RAW } from './seed-data';
 import { RAW_KH_CRM } from './seed-kh';
+import { RAW_KIEM_KE, RAW_LO_NHAP, RAW_MA_HANG, RawMaHang } from './seed-kho';
 import { hashPassword, randomHex } from './crypto';
 import { nhomMacDinh } from './perm';
 import { fold, nextCode, nowIso, todayIso, uid, yy } from './util';
@@ -45,8 +46,9 @@ import { fold, nextCode, nowIso, todayIso, uid, yy } from './util';
  * v2: phân quyền theo nhóm (NhomQuyen) thay cho vai trò cố định.
  * v3: khách hàng có trường theo dõi kinh doanh + data KH từ file Excel Kinh doanh (ghepDataKH).
  * v4: tài khoản Sale theo danh mục "Người phụ trách" của file theo dõi KH (themTaiKhoanSale).
+ * v5: kho theo LÔ — danh mục mã hàng cố định + lô nhập có đơn giá (KhoOxyMecie_v3, nangCapKhoV5).
  */
-export const DB_VERSION = 4;
+export const DB_VERSION = 5;
 
 export const CAU_HINH_MAC_DINH: CauHinh = {
   TNDN_NGUONG: 0.2,
@@ -129,6 +131,7 @@ export async function buildSeed(): Promise<Db> {
     hopDongBan: [],
     hopDongMua: [],
     phieuKho: [],
+    kiemKe: [],
     hopDongPhuTai: [],
     dongTienPT: [],
     boDem: {},
@@ -230,17 +233,8 @@ export async function buildSeed(): Promise<Db> {
     return n;
   };
 
-  // ── Loại hàng ──
-  for (const l of RAW.loaiHang) {
-    db.loaiHang.push({
-      id: l.ma,
-      ten: l.ten,
-      nhom: (l.nhom as NhomHang) ?? 'Phụ kiện',
-      dvt: l.dvt ?? 'Cái',
-      thuocTinh: thuocTinhTheoNhom(l.nhom as NhomHang),
-      dangDung: true,
-    });
-  }
+  // ── Mã hàng cố định (sheet "DM. Mã hàng") ──
+  for (const r of RAW_MA_HANG) db.loaiHang.push(maHangTuRaw(r));
   db.loaiHang.push({ id: 'HH-KHAC', ten: 'Hàng khác (import)', nhom: 'Phụ kiện', dvt: 'Cái', thuocTinh: [], dangDung: true });
   const timLoaiHang = (ma: string): LoaiHang => {
     let l = db.loaiHang.find((x) => x.id === ma);
@@ -251,7 +245,7 @@ export async function buildSeed(): Promise<Db> {
         ten: m ? `Khí chuẩn ${m[1]} ${m[2]}` : ma,
         nhom: m ? 'Khí chuẩn' : ma.startsWith('VO') ? 'Vỏ bình' : 'Phụ kiện',
         dvt: 'Bình',
-        thuocTinh: m ? ['Nồng độ', 'Thể tích'] : [],
+        thuocTinh: m ? ['Nồng độ'] : [],
         dangDung: true,
       };
       db.loaiHang.push(l);
@@ -415,32 +409,32 @@ export async function buildSeed(): Promise<Db> {
     });
   }
 
-  // ── Kho: lô nhập theo hoá đơn Phú Tài Miền Nam (sheet 1. NhapKho) → HĐ Mua + phiếu nhập tự động ──
-  const nhom = new Map<string, typeof RAW.phieuKho>();
-  for (const r of RAW.phieuKho) {
-    const k = `${r.soHD}|${r.ngay}`;
+  // ── Kho: lô nhập theo hoá đơn (sheet "1. NhapKho") → HĐ Mua + phiếu nhập tự động, mỗi dòng = 1 lô ──
+  const nhom = new Map<string, typeof RAW_LO_NHAP>();
+  for (const r of RAW_LO_NHAP) {
+    const k = `${r.soHoaDon}|${r.ngay}`;
     nhom.set(k, [...(nhom.get(k) ?? []), r]);
   }
   for (const rows of nhom.values()) {
     const r0 = rows[0];
-    const n = timNCC(r0.ncc ?? 'Phú Tài Miền Nam');
+    const n = timNCC(r0.ncc || 'Phú Tài Miền Nam');
     const dongs = rows.map((r) => {
-      const l = timLoaiHang(r.hang);
+      const l = timLoaiHang(r.ma);
       return {
         id: uid('DM'),
         loaiHang: l.id,
         tenHang: l.ten,
-        thongSo: thuocTinhTuMa(r.hang),
+        thongSo: r.quyCach,
         soLuong: r.soLuong,
         dvt: l.dvt,
-        donGia: r.donGia ?? 0,
+        donGia: r.donGia,
         loaiTien: 'VNĐ' as LoaiTien,
         tyGia: 1,
-        ghiChu: r.maLo ? `Lô ${r.maLo}` : undefined,
+        ghiChu: `Lô ${r.lo}`,
       };
     });
     const m = pushHdm({
-      soHD: `${r0.soHD} (${n.ten})`,
+      soHD: `${r0.soHoaDon} (${n.ten})`,
       maNCC: n.id,
       tenNCC: n.ten,
       diaChi: n.diaChi,
@@ -467,9 +461,32 @@ export async function buildSeed(): Promise<Db> {
       nguoiThucHien: KHO,
       trangThai: 'Hiệu lực',
       ghiChu: 'Import KhoOxyMecie_v3',
-      dong: dongs.map((d) => ({ loaiHang: d.loaiHang, thuocTinh: d.thongSo, soLuong: d.soLuong, dongHDMua: d.id })),
+      soHoaDon: r0.soHoaDon,
+      ncc: n.id,
+      dong: dongs.map((d, i) => ({
+        loaiHang: d.loaiHang,
+        thuocTinh: d.thongSo,
+        soLuong: d.soLuong,
+        dongHDMua: d.id,
+        lo: rows[i].lo,
+        donGia: rows[i].donGia,
+        vat: rows[i].vat,
+      })),
     };
     db.phieuKho.push(pk);
+  }
+
+  // ── Kiểm kê thực tế (sheet "6. KiemKe") — chỉ để đối chiếu, chưa sinh phiếu điều chỉnh ──
+  if (RAW_KIEM_KE.dong.length) {
+    db.kiemKe.push({
+      id: uid('KK'),
+      soPhieu: so('KK', RAW_KIEM_KE.ngay),
+      ngay: RAW_KIEM_KE.ngay,
+      kho: 'KHO-OM',
+      nguoiThucHien: KHO,
+      ghiChu: 'Import KhoOxyMecie_v3 — mã hàng gán tự động theo tên + thể tích, cần Kho kiểm tra lại.',
+      dong: gopKiemKe(RAW_KIEM_KE.dong),
+    });
   }
 
   // ── Phú Tài ──
@@ -656,17 +673,113 @@ function kh(id: string, ten: string, mst?: string, diaChi?: string): KhachHang {
   return { id, ten, mst: mst ?? '', diaChi: diaChi ?? '', nguoiLienHe: '', dienThoai: '', email: '', ghiChu: '' };
 }
 
+/** Thể tích, vật liệu đã nằm trong mã hàng — khi nhập lô chỉ còn ghi nồng độ (khí, dung dịch). */
 export function thuocTinhTheoNhom(n: NhomHang): string[] {
-  if (n === 'Khí chuẩn') return ['Nồng độ', 'Thể tích'];
-  if (n === 'Dung dịch chuẩn') return ['Nồng độ', 'Thể tích'];
-  if (n === 'Vỏ bình') return ['Thể tích', 'Vật liệu'];
-  return [];
+  return n === 'Khí chuẩn' || n === 'Dung dịch chuẩn' ? ['Nồng độ'] : [];
 }
 
-/** 'KC-O2-10L' → '10L' (thuộc tính biến thể của phiếu kho import). */
-function thuocTinhTuMa(ma: string): string {
-  return ma.match(/-(\d+L)$/)?.[1] ?? '';
+const VAT_LIEU: Record<string, string> = { NHOM: 'nhôm', THEP: 'thép' };
+
+/** Tên hiển thị của mã hàng: "Khí chuẩn NO 8L", "Vỏ bình nhôm 10L"; mã "-KHAC" lấy tên tham chiếu đầu tiên. */
+function tenMaHang(r: RawMaHang): string {
+  const tt = r.theTich ? ` ${r.theTich}` : '';
+  if (r.nhom === 'Vỏ bình') return `Vỏ bình${r.loaiKhi ? ' ' + (VAT_LIEU[r.loaiKhi] ?? r.loaiKhi) : ''}${tt}`;
+  if (!r.loaiKhi) return r.bietDanh?.[0] ?? r.ma;
+  return `${r.nhom} ${r.loaiKhi}${tt}`;
 }
+
+function maHangTuRaw(r: RawMaHang): LoaiHang {
+  const nhom = r.nhom as NhomHang;
+  return {
+    id: r.ma,
+    ten: tenMaHang(r),
+    nhom,
+    dvt: r.dvt,
+    thuocTinh: thuocTinhTheoNhom(nhom),
+    dangDung: true,
+    loaiKhi: r.loaiKhi,
+    theTich: r.theTich,
+    bietDanh: r.bietDanh,
+  };
+}
+
+/** Kiểm kê đếm theo tên + xuất xứ → nhiều dòng cùng mã: gộp SL, nối ghi chú. */
+function gopKiemKe(rows: { ma: string; soLuong: number; ghiChu: string }[]): { loaiHang: string; soLuong: number; ghiChu?: string }[] {
+  const m = new Map<string, { loaiHang: string; soLuong: number; ghiChu?: string }>();
+  for (const r of rows) {
+    const g = m.get(r.ma);
+    if (g) {
+      g.soLuong += r.soLuong;
+      g.ghiChu = [g.ghiChu, `${r.ghiChu} × ${r.soLuong}`].filter(Boolean).join('; ');
+    } else m.set(r.ma, { loaiHang: r.ma, soLuong: r.soLuong, ghiChu: `${r.ghiChu} × ${r.soLuong}` });
+  }
+  return [...m.values()];
+}
+
+/**
+ * Nâng dữ liệu trên máy từ v4 lên v5 (kho theo LÔ), giữ nguyên chứng từ đã có:
+ *  - Ghép danh mục mã hàng cố định: mã đã có thì bổ sung loại khí / thể tích / tên tham chiếu, mã thiếu thì thêm.
+ *  - Dòng phiếu nhập chưa có mã lô / đơn giá: mã lô lấy từ ghi chú dòng HĐ mua ("Lô L259-05") hoặc
+ *    "<số phiếu>-<nn>"; đơn giá theo dòng HĐ mua (VNĐ).
+ *  - Dòng phiếu xuất chưa có mã lô: trừ lô nhập trước (FIFO) cùng mã hàng + kho, tách dòng nếu qua nhiều lô;
+ *    giá vốn = đơn giá lô. Không đủ tồn thì để nguyên dòng (không gán lô).
+ */
+export function nangCapKhoV5(d: Db): void {
+  d.kiemKe ??= [];
+  for (const r of RAW_MA_HANG) {
+    const moi = maHangTuRaw(r);
+    const cu = d.loaiHang.find((x) => x.id === r.ma);
+    if (cu) Object.assign(cu, { loaiKhi: moi.loaiKhi, theTich: moi.theTich, bietDanh: moi.bietDanh, thuocTinh: moi.thuocTinh });
+    else d.loaiHang.push(moi);
+  }
+  const dongMua = new Map<string, DongHangMua>();
+  for (const m of d.hopDongMua) for (const x of m.chiTiet) dongMua.set(x.id, x);
+  const ps = [...d.phieuKho].sort((a, b) => (a.ngay === b.ngay ? a.soPhieu.localeCompare(b.soPhieu) : a.ngay < b.ngay ? -1 : 1));
+  const daCo = new Set<string>();
+  const lo: { lo: string; loaiHang: string; kho: string; ton: number; donGia: number; quyCach: string; hl: boolean }[] = [];
+  for (const p of ps) {
+    if (p.loai !== 'Nhập') continue;
+    p.dong.forEach((x, i) => {
+      const dm = x.dongHDMua ? dongMua.get(x.dongHDMua) : undefined;
+      if (!x.lo) {
+        const tuGhiChu = dm?.ghiChu?.match(/Lô\s+(\S+)/)?.[1];
+        let ma = tuGhiChu && !daCo.has(tuGhiChu) ? tuGhiChu : `${p.soPhieu}-${String(i + 1).padStart(2, '0')}`;
+        for (let k = 2; daCo.has(ma); k++) ma = `${p.soPhieu}-${String(i + 1).padStart(2, '0')}.${k}`;
+        x.lo = ma;
+      }
+      daCo.add(x.lo);
+      if (x.donGia == null && dm) x.donGia = Math.round(dm.donGia * (dm.loaiTien === 'VNĐ' ? 1 : dm.tyGia || 0));
+      lo.push({ lo: x.lo, loaiHang: x.loaiHang, kho: p.kho, ton: x.soLuong, donGia: x.donGia ?? 0, quyCach: x.thuocTinh, hl: p.trangThai === 'Hiệu lực' });
+    });
+  }
+  for (const p of ps) {
+    if (p.loai !== 'Xuất' || p.kho === KHO_CHUYEN_THANG) continue;
+    const hl = p.trangThai === 'Hiệu lực';
+    const out: typeof p.dong = [];
+    for (const x of p.dong) {
+      if (x.lo) {
+        out.push(x);
+        continue;
+      }
+      const cs = lo.filter((l) => l.hl === hl && l.loaiHang === x.loaiHang && l.kho === p.kho && l.ton > 0);
+      if (sumTon(cs) < x.soLuong) {
+        out.push(x);
+        continue;
+      }
+      let con = x.soLuong;
+      for (const l of cs) {
+        if (con <= 0) break;
+        const sl = Math.min(con, l.ton);
+        l.ton -= sl;
+        con -= sl;
+        out.push({ ...x, soLuong: sl, lo: l.lo, donGiaGoc: l.donGia, thuocTinh: x.thuocTinh || l.quyCach });
+      }
+    }
+    p.dong = out;
+  }
+}
+
+const sumTon = (xs: { ton: number }[]) => xs.reduce((s, x) => s + x.ton, 0);
 
 function loaiChiPhiTu(raw?: string): string {
   const f = fold(raw);

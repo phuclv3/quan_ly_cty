@@ -8,24 +8,26 @@ import { PhieuKhoTab } from './phieu-kho';
 import { GiaTriHdTab } from './gia-tri-hd';
 import { DmKhoTab } from './dm-kho';
 import { DmLoaiHangTab } from './dm-loai-hang';
+import { KiemKeTab } from './kiem-ke';
 
-type Tab = 'ton' | 'nhap' | 'xuat' | 'gia-tri' | 'dm-kho' | 'loai-hang';
+type Tab = 'ton' | 'nhap' | 'xuat' | 'gia-tri' | 'kiem-ke' | 'dm-kho' | 'loai-hang';
 
 const TABS: { k: Tab; t: string }[] = [
   { k: 'ton', t: 'Tồn kho' },
   { k: 'nhap', t: 'Phiếu nhập' },
   { k: 'xuat', t: 'Phiếu xuất' },
-  { k: 'gia-tri', t: 'Giá trị theo HĐ' },
+  { k: 'gia-tri', t: 'Giá vốn theo HĐ' },
+  { k: 'kiem-ke', t: 'Kiểm kê' },
   { k: 'dm-kho', t: 'Danh mục kho' },
-  { k: 'loai-hang', t: 'Danh mục loại hàng' },
+  { k: 'loai-hang', t: 'Danh mục mã hàng' },
 ];
 
-/** Module Kho (KHO-01…KHO-10): một trang, các tab đồng bộ ?tab=. */
+/** Module Kho (KHO-01…KHO-10) theo LÔ — file KhoOxyMecie_v3: một trang, các tab đồng bộ ?tab=. */
 @Component({
   selector: 'app-kho',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'page' },
-  imports: [RouterLink, TonKhoTab, PhieuKhoTab, GiaTriHdTab, DmKhoTab, DmLoaiHangTab],
+  imports: [RouterLink, TonKhoTab, PhieuKhoTab, GiaTriHdTab, KiemKeTab, DmKhoTab, DmLoaiHangTab],
   template: `
     <div class="page-head">
       <div><div class="crumbs"><a routerLink="/">Trang chủ</a> › Kho › {{ tabTen() }}</div><h1>Kho</h1></div>
@@ -40,6 +42,7 @@ const TABS: { k: Tab; t: string }[] = [
       @case ('nhap') { <app-kho-phieu loai="Nhập" /> }
       @case ('xuat') { <app-kho-phieu loai="Xuất" /> }
       @case ('gia-tri') { <app-kho-gia-tri /> }
+      @case ('kiem-ke') { <app-kho-kiem-ke /> }
       @case ('dm-kho') { <app-kho-dm /> }
       @case ('loai-hang') { <app-kho-loai-hang /> }
     }

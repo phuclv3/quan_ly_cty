@@ -1,20 +1,24 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal, viewChild } from '@angular/core';
 import { Store } from '../core/store';
 import { HopDongBan, KHO_CHUYEN_THANG, PhieuKho } from '../core/models';
-import { tongSL } from '../core/calc';
+import { DongLo, loConHang, tonTai, tongSL } from '../core/calc';
 import { num, todayIso, viDate } from '../core/util';
 import { Confirm } from '../shared/confirm';
 import { guiXoa } from '../shared/ho-so';
 import { Modal, Pick, PickOption, TrangThai } from '../shared/ui-kit';
 import { Icon } from '../shared/icon';
 import { RouterLink } from '@angular/router';
-import { linkPhieuKho } from '../kho/kho-util';
+import { linkPhieuKho, maHangOpts } from '../kho/kho-util';
 
+/** Dòng giao: mã hàng → lô (bỏ trống = trừ lô nhập trước), SL, tên ghi trên HĐ. */
 interface DongNhap {
   loaiHang: string;
-  thuocTinh: string;
+  lo: string;
   soLuong: number;
+  tenTrenHD: string;
 }
+
+const dongRong = (): DongNhap => ({ loaiHang: '', lo: '', soLuong: 0, tenTrenHD: '' });
 
 /** HDB-04 — khu Giao hàng ở Tab 1: các lần giao (phiếu XK) + popup Ghi nhận giao hàng. */
 @Component({
@@ -67,7 +71,7 @@ interface DongNhap {
         </div>
         <div class="field">
           <label for="gh-kho">Vị trí kho <span class="req">*</span></label>
-          <select id="gh-kho" (change)="kho.set($any($event.target).value)">
+          <select id="gh-kho" (change)="doiKho($any($event.target).value)">
             @for (k of store.khoDangDung(); track k.id) {
               <option [value]="k.id" [selected]="k.id === kho()">{{ k.id === KHO_CT ? k.ten + ' — không qua kho' : k.ten }}</option>
             }
@@ -80,21 +84,34 @@ interface DongNhap {
       </div>
       @if (goiY()) { <p class="note info">Đã gợi ý sẵn các dòng từ HĐ Mua liên quan (trừ phần đã giao). Sửa / xoá dòng nếu cần.</p> }
       <table class="tbl compact">
-        <thead><tr><th style="width:46%">Loại hàng</th><th>Thuộc tính</th><th class="num w-sm">Số lượng</th><th style="width:40px"></th></tr></thead>
+        <thead><tr><th style="width:34%">Mã hàng</th><th>Lô</th><th class="num w-sm">Số lượng</th><th>Tên hàng trên HĐ</th><th style="width:40px"></th></tr></thead>
         <tbody>
           @for (d of dong(); track $index; let i = $index) {
             <tr>
-              <td><app-pick [options]="lhOpts()" [value]="d.loaiHang" (valueChange)="setDong(i, { loaiHang: $event })" /></td>
-              <td><input [value]="d.thuocTinh" placeholder="VD 40L · 150bar" (input)="setDong(i, { thuocTinh: $any($event.target).value })" /></td>
+              <td>
+                <app-pick [options]="lhOpts()" [value]="d.loaiHang" (valueChange)="setDong(i, { loaiHang: $event, lo: '' })" />
+                @if (d.loaiHang && kho() !== KHO_CT) { <span class="hint" [class.neg]="ton(d.loaiHang) < d.soLuong">Tồn tại kho: {{ num(ton(d.loaiHang)) }}</span> }
+              </td>
+              <td>
+                @if (kho() === KHO_CT) { <span class="muted">Không theo lô</span> } @else {
+                  <select (change)="setDong(i, { lo: $any($event.target).value })" aria-label="Lô" [disabled]="!d.loaiHang">
+                    <option value="" [selected]="!d.lo">Tự chọn lô nhập trước</option>
+                    @for (l of lots(d.loaiHang); track l.lo) {
+                      <option [value]="l.lo" [selected]="l.lo === d.lo">{{ l.lo }} · tồn {{ l.ton }}{{ l.quyCach ? ' · ' + l.quyCach.slice(0, 40) : '' }}</option>
+                    }
+                  </select>
+                }
+              </td>
               <td><input class="num" type="number" min="0" [value]="d.soLuong" (input)="setDong(i, { soLuong: +$any($event.target).value || 0 })" /></td>
+              <td><input [value]="d.tenTrenHD" placeholder="VD Bình khí chuẩn NO2 200ppm" (input)="setDong(i, { tenTrenHD: $any($event.target).value })" /></td>
               <td><button type="button" class="icon-btn sm" aria-label="Xoá dòng" (click)="xoaDong(i)"><app-icon name="trash" [size]="16" /></button></td>
             </tr>
           }
         </tbody>
       </table>
       <button type="button" class="btn sm quiet" (click)="themDong()"><app-icon name="plus" [size]="16" /> Thêm dòng</button>
-      @if (vuot().length) {
-        <p class="note warn">Số lượng xuất vượt tồn tại kho đã chọn (vẫn cho ghi nhận): {{ vuot().join('; ') }}</p>
+      @if (loi()) {
+        <p class="note bad">{{ loi() }}</p>
       }
       <div foot class="btn-row">
         <button type="button" class="btn quiet" (click)="open.set(false)">Huỷ</button>
@@ -135,18 +152,27 @@ export class HdbGiaoHang {
       .filter((p) => p.loai === 'Xuất' && p.hdId === this.h().id)
       .sort((a, b) => (a.ngay < b.ngay ? 1 : -1)),
   );
-  protected readonly lhOpts = computed<PickOption[]>(() =>
-    this.store
-      .loaiHang()
-      .filter((l) => l.dangDung)
-      .map((l) => ({ value: l.id, label: l.ten, hint: `${l.nhom} · ${l.dvt}` })),
+  protected readonly lhOpts = computed<PickOption[]>(() => maHangOpts(this.store.loaiHang().filter((l) => l.dangDung)));
+  /** Xuất quá tồn lô / thiếu tồn → báo ngay, xác nhận sẽ bị chặn. */
+  protected readonly loi = computed(() =>
+    this.open() ? (this.store.loiXuat(this.kho(), this.h().id, this.dong().map((d) => ({ ...d, lo: d.lo || undefined }))) ?? '') : '',
   );
-  protected readonly vuot = computed(() => (this.open() ? this.store.vuotTon(this.kho(), this.dong().filter((d) => d.loaiHang && d.soLuong > 0)) : []));
 
   protected readonly link = linkPhieuKho;
 
   protected moTaDong(p: PhieuKho): string {
-    return p.dong.map((d) => `${this.store.loaiHangTen(d.loaiHang)}${d.thuocTinh ? ' ' + d.thuocTinh : ''} × ${num(d.soLuong)}`).join('; ');
+    return p.dong.map((d) => `${d.loaiHang}${d.lo ? ' (lô ' + d.lo + ')' : ''} × ${num(d.soLuong)}`).join('; ');
+  }
+
+  protected ton(lh: string): number {
+    return tonTai(this.store.db(), lh, this.kho());
+  }
+  protected lots(lh: string): DongLo[] {
+    return lh ? loConHang(this.store.db(), lh, this.kho()) : [];
+  }
+  protected doiKho(v: string): void {
+    this.kho.set(v);
+    this.dong.update((arr) => arr.map((d) => ({ ...d, lo: '' })));
   }
 
   protected mo(): void {
@@ -154,26 +180,22 @@ export class HdbGiaoHang {
     const daGiao = new Map<string, number>();
     for (const p of this.phieus()) {
       if (p.trangThai !== 'Hiệu lực') continue;
-      for (const d of p.dong) {
-        const k = `${d.loaiHang}|${d.thuocTinh.trim()}`;
-        daGiao.set(k, (daGiao.get(k) ?? 0) + d.soLuong);
-      }
+      for (const d of p.dong) daGiao.set(d.loaiHang, (daGiao.get(d.loaiHang) ?? 0) + d.soLuong);
     }
     const goiY: DongNhap[] = [];
     for (const m of this.store.hopDongMua()) {
       if (m.hdbId !== id || m.trangThai === 'Huỷ') continue;
       for (const d of m.chiTiet) {
-        const k = `${d.loaiHang}|${d.thongSo.trim()}`;
-        const tru = Math.min(daGiao.get(k) ?? 0, d.soLuong);
-        daGiao.set(k, (daGiao.get(k) ?? 0) - tru);
+        const tru = Math.min(daGiao.get(d.loaiHang) ?? 0, d.soLuong);
+        daGiao.set(d.loaiHang, (daGiao.get(d.loaiHang) ?? 0) - tru);
         const con = d.soLuong - tru;
-        if (con > 0) goiY.push({ loaiHang: d.loaiHang, thuocTinh: d.thongSo.trim(), soLuong: con });
+        if (con > 0) goiY.push({ ...dongRong(), loaiHang: d.loaiHang, soLuong: con, tenTrenHD: d.tenHang });
       }
     }
     this.goiY.set(goiY.length > 0);
-    this.dong.set(goiY.length ? goiY : [{ loaiHang: '', thuocTinh: '', soLuong: 0 }]);
+    this.dong.set(goiY.length ? goiY : [dongRong()]);
     this.ngay.set(todayIso());
-    this.kho.set(this.store.khoDangDung()[0]?.id ?? '');
+    this.kho.set((this.store.khoDangDung().find((k) => k.id !== KHO_CHUYEN_THANG) ?? this.store.khoDangDung()[0])?.id ?? '');
     this.ghiChu.set('');
     this.goc.set(this.anh());
     this.open.set(true);
@@ -183,7 +205,7 @@ export class HdbGiaoHang {
     this.dong.update((arr) => arr.map((d, j) => (j === i ? { ...d, ...p } : d)));
   }
   protected themDong(): void {
-    this.dong.update((arr) => [...arr, { loaiHang: '', thuocTinh: '', soLuong: 0 }]);
+    this.dong.update((arr) => [...arr, dongRong()]);
   }
   protected xoaDong(i: number): void {
     this.dong.update((arr) => arr.filter((_, j) => j !== i));
@@ -198,7 +220,7 @@ export class HdbGiaoHang {
     const err = this.store.ghiNhanGiaoHang(this.h().id, {
       ngay: this.ngay(),
       kho: this.kho(),
-      dong: this.dong().map((d) => ({ ...d, thuocTinh: d.thuocTinh.trim() })),
+      dong: this.dong().map((d) => ({ loaiHang: d.loaiHang, lo: d.lo || undefined, soLuong: d.soLuong, tenTrenHD: d.tenTrenHD })),
       ghiChu: this.ghiChu().trim() || undefined,
     });
     if (err) {
@@ -206,7 +228,7 @@ export class HdbGiaoHang {
       return;
     }
     this.open.set(false);
-    this.store.say('Đã ghi nhận giao hàng — đã sinh phiếu Xuất kho');
+    this.store.say('Đã ghi nhận giao hàng — đã sinh phiếu Xuất kho (trừ theo lô)');
   }
 
   protected async huy(p: PhieuKho): Promise<void> {

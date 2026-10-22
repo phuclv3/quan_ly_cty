@@ -121,7 +121,7 @@ export const DOI_TUONG_LABEL: Record<DoiTuong, string> = {
   DM_NguonTien: 'Nguồn tiền',
   DM_LoaiChiPhi: 'Loại chi phí',
   DM_Kho: 'Kho',
-  DM_LoaiHang: 'Loại hàng',
+  DM_LoaiHang: 'Mã hàng',
 };
 
 export type TrangThaiYC = 'Chờ duyệt' | 'Đã duyệt' | 'Từ chối' | 'Đã rút';
@@ -305,14 +305,24 @@ export const KHO_CHUYEN_THANG = 'KHO-CT';
 export type NhomHang = 'Khí chuẩn' | 'Dung dịch chuẩn' | 'Vỏ bình' | 'Thiết bị tái sử dụng' | 'Phụ kiện';
 export const NHOM_HANG: NhomHang[] = ['Khí chuẩn', 'Dung dịch chuẩn', 'Vỏ bình', 'Thiết bị tái sử dụng', 'Phụ kiện'];
 
+/**
+ * Mã hàng CỐ ĐỊNH (sheet "DM. Mã hàng"): Nhóm × Loại khí / vật liệu × Thể tích, VD KC-NO-8L.
+ * Nồng độ (khách đặt khác nhau) và đơn giá không nằm ở mã — ghi theo từng LÔ nhập (DongPhieuKho).
+ */
 export interface LoaiHang {
   id: string;
   ten: string;
   nhom: NhomHang;
   dvt: string;
-  /** VD ['Thể tích', 'Áp suất']. */
+  /** Thuộc tính ghi khi nhập lô, VD ['Nồng độ']. */
   thuocTinh: string[];
   dangDung: boolean;
+  /** VD "NO", "SO2/NO/CO", "NHOM". */
+  loaiKhi?: string;
+  /** VD "8L", "500ml". */
+  theTich?: string;
+  /** Tên đang ghi trên hoá đơn / hợp đồng → mã này (tìm kiếm, gợi ý khi lập HĐ). */
+  bietDanh?: string[];
 }
 
 // ── Kế toán ─────────────────────────────────────────────────────────────
@@ -515,15 +525,28 @@ export interface HopDongMua {
 
 export type NguonGocPhieuKho = 'Tự động HĐ Mua' | 'Tự động HĐ Bán' | 'Nhập tay – điều chỉnh';
 
+/**
+ * Phiếu nhập: mỗi dòng = một LÔ (mã lô là khoá trừ kho), có đơn giá riêng.
+ * Phiếu xuất: mỗi dòng trừ đúng một lô → giá vốn = đơn giá của lô đó (đích danh, không bình quân).
+ */
 export interface DongPhieuKho {
+  /** Mã hàng (DM mã hàng). */
   loaiHang: string;
-  /** Giá trị thuộc tính biến thể đã chuẩn hoá, VD "40L · 150bar". */
+  /** Quy cách / nồng độ theo hoá đơn — nhập tự do (VD "NO 500ppm", "COD 50ppm"). Phiếu xuất: chép từ lô. */
   thuocTinh: string;
   soLuong: number;
+  /** Nhập: mã lô sinh ra (VD L259-05). Xuất: mã lô bị trừ. */
+  lo?: string;
+  /** Nhập: đơn giá chưa VAT của lô (VNĐ). */
+  donGia?: number;
+  /** Nhập: VAT % của hoá đơn. */
+  vat?: number;
   /** Phiếu nhập tự động: id dòng HĐ Mua. */
   dongHDMua?: string;
-  /** Phiếu xuất: giá gốc tính lúc lập (KHO-10). */
+  /** Phiếu xuất: đơn giá vốn = đơn giá của lô, chốt lúc lập (KHO-10). */
   donGiaGoc?: number;
+  /** Phiếu xuất: tên hàng ghi trên hợp đồng bán (nhập tay). */
+  tenTrenHD?: string;
 }
 
 export interface PhieuKho {
@@ -540,6 +563,25 @@ export interface PhieuKho {
   trangThai: 'Hiệu lực' | 'Đã huỷ';
   ghiChu?: string;
   dong: DongPhieuKho[];
+  /** Phiếu nhập: số hoá đơn NCC (VD "HĐ 259"). */
+  soHoaDon?: string;
+  /** Phiếu nhập: mã nhà cung cấp. */
+  ncc?: string;
+  /** Phiếu sinh từ đợt kiểm kê. */
+  kiemKeId?: string;
+}
+
+/** Một đợt kiểm kê thực tế tại kho — đối chiếu với tồn sổ theo mã hàng. */
+export interface KiemKe {
+  id: string;
+  soPhieu: string;
+  ngay: string;
+  kho: string;
+  nguoiThucHien: string;
+  ghiChu?: string;
+  dong: { loaiHang: string; soLuong: number; ghiChu?: string }[];
+  /** Phiếu nhập / xuất điều chỉnh đã sinh từ chênh lệch. */
+  phieuDieuChinh?: string[];
 }
 
 // ── Phú Tài ─────────────────────────────────────────────────────────────
@@ -665,6 +707,7 @@ export interface Db {
   hopDongBan: HopDongBan[];
   hopDongMua: HopDongMua[];
   phieuKho: PhieuKho[];
+  kiemKe: KiemKe[];
   hopDongPhuTai: HopDongPhuTai[];
   dongTienPT: DongTienPT[];
   /** Bộ đếm số chứng từ theo tiền tố + năm, VD { 'TC26': 12 } — không tái dùng số đã xoá. */

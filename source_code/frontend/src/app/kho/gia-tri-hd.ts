@@ -1,60 +1,65 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { donGiaGoc } from '../core/calc';
-import { HopDongBan } from '../core/models';
+import { HopDongBan, KHO_CHUYEN_THANG } from '../core/models';
 import { Store } from '../core/store';
 import { nhoLoc } from '../core/ui';
-import { money, sum } from '../core/util';
+import { money, sum, viDate } from '../core/util';
 import { csv, downloadFile, fileName } from '../shared/export';
 import { Facet, FilterBar, LOC_RONG, Loc, khopQ, khopSel } from '../shared/filter-bar';
 import { Pager, paginate } from '../shared/pager';
 import { Kpi } from '../shared/ui-kit';
 
 interface DongGT {
+  ngay: string;
+  soPhieu: string;
+  lo: string;
   loaiHang: string;
-  thuocTinh: string;
+  quyCach: string;
+  tenTrenHD: string;
   sl: number;
+  donGia: number;
   thanhTien: number;
   cach: string;
 }
 interface HdGT {
   hd: HopDongBan;
   soPhieu: number;
+  soLo: number;
   dong: DongGT[];
   sl: number;
   tong: number;
 }
 
-/** KHO-10: giá trị thực hiện gốc theo HĐ Bán (từ phiếu Xuất Hiệu lực). */
+/** KHO-10 (sheet "4. TheoHopDong"): giá vốn hàng xuất theo HĐ Bán — cộng từ các phiếu Xuất Hiệu lực, theo lô. */
 @Component({
   selector: 'app-kho-gia-tri',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FilterBar, Pager, Kpi, RouterLink],
   template: `
     <div class="note info">
-      <b>Cách tính Đơn giá gốc (D-19):</b> Đích danh theo HĐ Mua liên quan của HĐ Bán (đúng loại hàng, ưu tiên cùng thông số; ngoại tệ dùng tỷ giá lúc mua);
-      còn lại bình quân gia quyền theo Loại hàng + thuộc tính + Kho từ các phiếu nhập trước ngày xuất. Giá gốc được tính và lưu khi lập phiếu xuất;
-      tổng giá trị thực hiện gốc dùng làm Giá vốn ở HĐ Bán (HDB-11).
+      <b>Giá vốn đích danh theo lô:</b> mỗi dòng xuất trừ đúng một lô nhập, đơn giá vốn = đơn giá chưa VAT của lô đó (chốt lúc lập phiếu xuất).
+      Không dùng bình quân vì cùng mã hàng giá các lô chênh nhau nhiều lần. Kho "Chuyển thẳng" không theo lô — lấy đơn giá dòng HĐ Mua liên quan.
+      Tổng giá vốn dùng làm Giá vốn ở HĐ Bán (HDB-11).
     </div>
     <div class="kpis">
       <app-kpi label="Số HĐ đã xuất kho" [value]="money(rows().length)" />
-      <app-kpi label="Tổng giá trị thực hiện gốc" [value]="money(tongAll())" sub="VNĐ, theo bộ lọc" />
+      <app-kpi label="Tổng giá vốn hàng xuất" [value]="money(tongAll())" sub="VNĐ, theo bộ lọc" />
     </div>
     <div class="section-title">
       <span></span>
       <button type="button" class="btn sm quiet" (click)="xuatCsv()">Xuất CSV</button>
     </div>
-    <app-filter [(loc)]="loc" memo="kho-gia-tri" [time]="false" [facets]="facets()" placeholder="Tìm số HĐ, khách hàng, loại hàng…" />
+    <app-filter [(loc)]="loc" memo="kho-gia-tri" [time]="false" [facets]="facets()" placeholder="Tìm số HĐ, khách hàng, mã hàng, mã lô…" />
     <div class="tbl-wrap">
       <table class="tbl freeze">
-        <thead><tr><th>Số HĐ</th><th>Khách hàng</th><th class="num">Số phiếu xuất</th><th class="num">Số mặt hàng</th><th class="num">Tổng SL</th><th class="num">Tổng giá trị thực hiện gốc</th></tr></thead>
+        <thead><tr><th>Số HĐ</th><th>Khách hàng</th><th class="num">Số phiếu xuất</th><th class="num">Số lô đã dùng</th><th class="num">Tổng SL</th><th class="num">Giá vốn hàng xuất</th></tr></thead>
         <tbody>
           @for (r of pg.items(); track r.hd.id) {
             <tr class="click" (click)="lat(r.hd.id)" [attr.aria-expanded]="mo().has(r.hd.id)">
               <td>{{ mo().has(r.hd.id) ? '▾' : '▸' }} <a [routerLink]="['/hop-dong-ban', r.hd.id]" (click)="$event.stopPropagation()"><b>{{ r.hd.soHD || '(chưa có số)' }}</b></a></td>
               <td>{{ r.hd.tenKH }}</td>
               <td class="num">{{ r.soPhieu }}</td>
-              <td class="num">{{ r.dong.length }}</td>
+              <td class="num">{{ r.soLo }}</td>
               <td class="num">{{ money(r.sl) }}</td>
               <td class="num"><b>{{ money(r.tong) }}</b></td>
             </tr>
@@ -62,14 +67,18 @@ interface HdGT {
               <tr>
                 <td colspan="6" style="padding:0 0 10px 24px">
                   <table class="tbl compact">
-                    <thead><tr><th>Loại hàng</th><th>Thuộc tính</th><th class="num">SL</th><th class="num">Đơn giá gốc</th><th class="num">Thành tiền gốc</th><th>Cách tính</th></tr></thead>
+                    <thead><tr><th>Ngày</th><th>Phiếu</th><th>Mã lô</th><th>Mã hàng</th><th>Quy cách lô</th><th>Tên trên HĐ</th><th class="num">SL</th><th class="num">Đơn giá vốn</th><th class="num">Giá vốn</th><th>Cách tính</th></tr></thead>
                     <tbody>
                       @for (d of r.dong; track $index) {
                         <tr>
-                          <td>{{ store.loaiHangTen(d.loaiHang) }} <span class="sub">{{ d.loaiHang }}</span></td>
-                          <td>{{ d.thuocTinh || '—' }}</td>
+                          <td>{{ viDate(d.ngay) }}</td>
+                          <td>{{ d.soPhieu }}</td>
+                          <td><b>{{ d.lo || '—' }}</b></td>
+                          <td>{{ d.loaiHang }} <span class="sub">{{ store.loaiHangTen(d.loaiHang) }}</span></td>
+                          <td class="sub">{{ d.quyCach || '—' }}</td>
+                          <td>{{ d.tenTrenHD || '—' }}</td>
                           <td class="num">{{ money(d.sl) }}</td>
-                          <td class="num" title="Thành tiền gốc ÷ SL">{{ money(d.sl ? d.thanhTien / d.sl : 0) }}</td>
+                          <td class="num">{{ money(d.donGia) }}</td>
                           <td class="num">{{ money(d.thanhTien) }}</td>
                           <td class="muted">{{ d.cach }}</td>
                         </tr>
@@ -89,12 +98,13 @@ interface HdGT {
       </table>
     </div>
     <app-pager [pager]="pg" />
-    <p class="hint muted">Bấm dòng để xem các mặt hàng đã xuất. Không tính phiếu Đã huỷ. Cột "Cách tính" là phương pháp áp dụng theo dữ liệu hiện tại (tham khảo).</p>
+    <p class="hint muted">Bấm dòng để xem từng dòng xuất. Không tính phiếu Đã huỷ.</p>
   `,
 })
 export class GiaTriHdTab {
   protected readonly store = inject(Store);
   protected readonly money = money;
+  protected readonly viDate = viDate;
   protected readonly loc = signal<Loc>(nhoLoc('kho-gia-tri', LOC_RONG));
   protected readonly mo = signal<ReadonlySet<string>>(new Set());
 
@@ -102,23 +112,33 @@ export class GiaTriHdTab {
     const db = this.store.db();
     const out: HdGT[] = [];
     for (const hd of this.store.hdbVisible()) {
-      const ps = db.phieuKho.filter((p) => p.loai === 'Xuất' && p.hdId === hd.id && p.trangThai === 'Hiệu lực');
+      const ps = db.phieuKho
+        .filter((p) => p.loai === 'Xuất' && p.hdId === hd.id && p.trangThai === 'Hiệu lực')
+        .sort((a, b) => (a.ngay < b.ngay ? -1 : 1));
       if (!ps.length) continue;
-      const m = new Map<string, DongGT>();
+      const dong: DongGT[] = [];
       for (const p of ps)
-        for (const d of p.dong) {
-          const k = `${d.loaiHang}\u0001${d.thuocTinh}`;
-          let g = m.get(k);
-          if (!g) {
-            const c = donGiaGoc(db, { hdbId: hd.id, loaiHang: d.loaiHang, thuocTinh: d.thuocTinh, kho: p.kho, ngay: p.ngay }).cach;
-            g = { loaiHang: d.loaiHang, thuocTinh: d.thuocTinh, sl: 0, thanhTien: 0, cach: c === 'Bình quân' ? 'Bình quân gia quyền' : c };
-            m.set(k, g);
-          }
-          g.sl += d.soLuong;
-          g.thanhTien += (d.donGiaGoc ?? 0) * d.soLuong;
-        }
-      const dong = [...m.values()];
-      out.push({ hd, soPhieu: ps.length, dong, sl: sum(dong, (d) => d.sl), tong: sum(dong, (d) => d.thanhTien) });
+        for (const d of p.dong)
+          dong.push({
+            ngay: p.ngay,
+            soPhieu: p.soPhieu,
+            lo: d.lo ?? '',
+            loaiHang: d.loaiHang,
+            quyCach: d.thuocTinh,
+            tenTrenHD: d.tenTrenHD ?? '',
+            sl: d.soLuong,
+            donGia: d.donGiaGoc ?? 0,
+            thanhTien: (d.donGiaGoc ?? 0) * d.soLuong,
+            cach: p.kho === KHO_CHUYEN_THANG ? 'Chuyển thẳng — theo HĐ mua' : d.lo ? 'Đích danh theo lô' : 'Chưa gán lô',
+          });
+      out.push({
+        hd,
+        soPhieu: ps.length,
+        soLo: new Set(dong.filter((d) => d.lo).map((d) => d.lo)).size,
+        dong,
+        sl: sum(dong, (d) => d.sl),
+        tong: sum(dong, (d) => d.thanhTien),
+      });
     }
     return out.sort((a, b) => (b.hd.soHD || '').localeCompare(a.hd.soHD || ''));
   });
@@ -131,7 +151,7 @@ export class GiaTriHdTab {
     return this.all().filter(
       (r) =>
         khopSel(l, 'hd', r.hd.id) &&
-        khopQ(l, r.hd.soHD, r.hd.tenKH, ...r.dong.map((d) => `${d.loaiHang} ${this.store.loaiHangTen(d.loaiHang)} ${d.thuocTinh}`)),
+        khopQ(l, r.hd.soHD, r.hd.tenKH, ...r.dong.map((d) => `${d.lo} ${d.loaiHang} ${this.store.loaiHangTen(d.loaiHang)} ${d.tenTrenHD}`)),
     );
   });
   protected readonly pg = paginate(this.rows);
@@ -148,10 +168,10 @@ export class GiaTriHdTab {
   }
 
   protected xuatCsv(): void {
-    const rows: (string | number)[][] = [['Số HĐ', 'Khách hàng', 'Mã loại hàng', 'Loại hàng', 'Thuộc tính', 'SL', 'Đơn giá gốc', 'Thành tiền gốc', 'Cách tính']];
+    const rows: (string | number)[][] = [['Số HĐ', 'Khách hàng', 'Ngày xuất', 'Số phiếu', 'Mã lô', 'Mã hàng', 'Quy cách lô', 'Tên trên HĐ', 'SL', 'Đơn giá vốn', 'Giá vốn', 'Cách tính']];
     for (const r of this.rows())
       for (const d of r.dong)
-        rows.push([r.hd.soHD, r.hd.tenKH, d.loaiHang, this.store.loaiHangTen(d.loaiHang), d.thuocTinh, d.sl, Math.round(d.sl ? d.thanhTien / d.sl : 0), Math.round(d.thanhTien), d.cach]);
-    downloadFile(fileName('gia-tri-theo-hd', 'csv'), 'text/csv', csv(rows));
+        rows.push([r.hd.soHD, r.hd.tenKH, viDate(d.ngay), d.soPhieu, d.lo, d.loaiHang, d.quyCach, d.tenTrenHD, d.sl, d.donGia, Math.round(d.thanhTien), d.cach]);
+    downloadFile(fileName('gia-von-theo-hd', 'csv'), 'text/csv', csv(rows));
   }
 }

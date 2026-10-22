@@ -6,12 +6,14 @@ import {
   ChiPhiHD,
   Db,
   DongHangMua,
+  DongPhieuKho,
   DotTTBan,
   HO_SO_BAT_BUOC,
   HopDongBan,
   HopDongMua,
   HopDongPhuTai,
   KHO_CHUYEN_THANG,
+  KiemKe,
   LCP_HOA_HONG,
   LoaiHoSo,
   LoaiTien,
@@ -341,80 +343,212 @@ export const isHoaHong = (c: ChiPhiHD) => c.loaiChiPhi === LCP_HOA_HONG;
 
 // ── Kho ─────────────────────────────────────────────────────────────────
 
+/** Mã lô của dòng i trong phiếu nhập — dòng cũ chưa có mã lô dùng "<số phiếu>-<thứ tự dòng>". */
+export const maLo = (p: PhieuKho, i: number): string => p.dong[i]?.lo || `${p.soPhieu}-${String(i + 1).padStart(2, '0')}`;
+
+/** Một lô nhập (sheet "3. TonTheoLo"). */
+export interface DongLo {
+  lo: string;
+  loaiHang: string;
+  /** Quy cách / nồng độ theo hoá đơn. */
+  quyCach: string;
+  kho: string;
+  ngay: string;
+  phieuId: string;
+  soHoaDon?: string;
+  ncc?: string;
+  /** Đơn giá chưa VAT (VNĐ). */
+  donGia: number;
+  vat: number;
+  nhap: number;
+  xuat: number;
+  ton: number;
+  giaTriTon: number;
+}
+
+/** Đơn giá lô: ghi trên dòng nhập; dòng cũ chưa ghi thì lấy theo dòng HĐ Mua (VNĐ). */
+function donGiaNhap(d: DongPhieuKho, dongMua: Map<string, DongHangMua>): number {
+  if (d.donGia != null) return d.donGia;
+  const m = d.dongHDMua ? dongMua.get(d.dongHDMua) : undefined;
+  return m ? Math.round(donGiaVND(m)) : 0;
+}
+
+/**
+ * KHO-09 tồn theo LÔ: mỗi dòng phiếu nhập Hiệu lực là một lô; trừ các dòng xuất ghi đúng mã lô đó.
+ * Giá trị tồn = tồn × đơn giá của chính lô (không bình quân — cùng mã hàng giá các lô chênh nhau nhiều).
+ */
+export function tonTheoLo(db: Db, denNgay?: string): DongLo[] {
+  const dongMua = new Map<string, DongHangMua>();
+  for (const m of db.hopDongMua) for (const d of m.chiTiet) dongMua.set(d.id, d);
+  const hl = db.phieuKho.filter((p) => p.trangThai === 'Hiệu lực' && (!denNgay || p.ngay <= denNgay));
+  const map = new Map<string, DongLo>();
+  for (const p of hl) {
+    if (p.loai !== 'Nhập') continue;
+    p.dong.forEach((d, i) => {
+      const lo = maLo(p, i);
+      const g = map.get(lo);
+      if (g) g.nhap += d.soLuong;
+      else
+        map.set(lo, {
+          lo,
+          loaiHang: d.loaiHang,
+          quyCach: d.thuocTinh,
+          kho: p.kho,
+          ngay: p.ngay,
+          phieuId: p.id,
+          soHoaDon: p.soHoaDon,
+          ncc: p.ncc,
+          donGia: donGiaNhap(d, dongMua),
+          vat: d.vat ?? 0,
+          nhap: d.soLuong,
+          xuat: 0,
+          ton: 0,
+          giaTriTon: 0,
+        });
+    });
+  }
+  for (const p of hl) {
+    if (p.loai !== 'Xuất') continue;
+    for (const d of p.dong) {
+      const g = d.lo ? map.get(d.lo) : undefined;
+      if (g) g.xuat += d.soLuong;
+    }
+  }
+  for (const g of map.values()) {
+    g.ton = g.nhap - g.xuat;
+    g.giaTriTon = g.ton * g.donGia;
+  }
+  return [...map.values()].sort((a, b) => (a.ngay === b.ngay ? a.lo.localeCompare(b.lo) : a.ngay < b.ngay ? -1 : 1));
+}
+
+/** Tồn gộp theo mã hàng × kho (sheet "3b. TonTheoMaHang"). */
 export interface DongTon {
   loaiHang: string;
-  thuocTinh: string;
   kho: string;
   nhap: number;
   xuat: number;
   ton: number;
+  /** Σ giá trị tồn các lô. */
+  giaTri: number;
+  /** Số lô còn hàng. */
+  soLo: number;
 }
 
-const tonKey = (l: string, t: string, k: string) => `${l}\u0001${t}\u0001${k}`;
-
-/** KHO-09: tồn theo Loại hàng × thuộc tính × Vị trí kho. Bỏ phiếu Đã huỷ. */
+/** KHO-09: tồn theo Mã hàng × Vị trí kho. Bỏ phiếu Đã huỷ. */
 export function tonKho(db: Db, denNgay?: string): DongTon[] {
   const map = new Map<string, DongTon>();
+  const row = (loaiHang: string, kho: string) => {
+    const k = `${loaiHang}\u0001${kho}`;
+    let r = map.get(k);
+    if (!r) {
+      r = { loaiHang, kho, nhap: 0, xuat: 0, ton: 0, giaTri: 0, soLo: 0 };
+      map.set(k, r);
+    }
+    return r;
+  };
   for (const p of db.phieuKho) {
-    if (p.trangThai !== 'Hiệu lực') continue;
-    if (denNgay && p.ngay > denNgay) continue;
+    if (p.trangThai !== 'Hiệu lực' || (denNgay && p.ngay > denNgay)) continue;
     for (const d of p.dong) {
-      const k = tonKey(d.loaiHang, d.thuocTinh, p.kho);
-      let row = map.get(k);
-      if (!row) {
-        row = { loaiHang: d.loaiHang, thuocTinh: d.thuocTinh, kho: p.kho, nhap: 0, xuat: 0, ton: 0 };
-        map.set(k, row);
-      }
-      if (p.loai === 'Nhập') row.nhap += d.soLuong;
-      else row.xuat += d.soLuong;
-      row.ton = row.nhap - row.xuat;
+      const r = row(d.loaiHang, p.kho);
+      if (p.loai === 'Nhập') r.nhap += d.soLuong;
+      else r.xuat += d.soLuong;
     }
   }
+  for (const l of tonTheoLo(db, denNgay)) {
+    const r = row(l.loaiHang, l.kho);
+    r.giaTri += l.giaTriTon;
+    if (l.ton > 0) r.soLo++;
+  }
+  for (const r of map.values()) r.ton = r.nhap - r.xuat;
   return [...map.values()];
 }
 
-/** Tồn hiện tại của một biến thể tại một kho (Chuyển thẳng luôn 0 — KHO-07). */
-export function tonTai(db: Db, loaiHang: string, thuocTinh: string, kho: string): number {
+/** Tồn hiện tại của một mã hàng — một kho, hoặc mọi kho thường khi bỏ trống (Chuyển thẳng luôn 0 — KHO-07). */
+export function tonTai(db: Db, loaiHang: string, kho?: string): number {
   if (kho === KHO_CHUYEN_THANG) return 0;
-  return tonKho(db).find((r) => r.loaiHang === loaiHang && r.thuocTinh === thuocTinh && r.kho === kho)?.ton ?? 0;
+  return sum(
+    tonKho(db).filter((r) => r.loaiHang === loaiHang && (kho ? r.kho === kho : r.kho !== KHO_CHUYEN_THANG)),
+    (r) => r.ton,
+  );
+}
+
+/** Các lô còn hàng của một mã hàng (kho bỏ trống = mọi kho thường), lô nhập trước đứng trước. */
+export function loConHang(db: Db, loaiHang: string, kho?: string): DongLo[] {
+  return tonTheoLo(db).filter(
+    (l) => l.loaiHang === loaiHang && l.ton > 0 && (kho ? l.kho === kho : l.kho !== KHO_CHUYEN_THANG),
+  );
+}
+
+/** Tự chọn lô khi không chỉ định: trừ lô nhập trước (FIFO). `thieu` > 0 = không đủ tồn. */
+export function phanBoLo(
+  db: Db,
+  o: { loaiHang: string; kho: string; soLuong: number },
+): { dong: { lo: string; soLuong: number; donGia: number; quyCach: string }[]; thieu: number } {
+  let con = o.soLuong;
+  const dong: { lo: string; soLuong: number; donGia: number; quyCach: string }[] = [];
+  for (const l of loConHang(db, o.loaiHang, o.kho)) {
+    if (con <= 0) break;
+    const sl = Math.min(con, l.ton);
+    dong.push({ lo: l.lo, soLuong: sl, donGia: l.donGia, quyCach: l.quyCach });
+    con -= sl;
+  }
+  return { dong, thieu: Math.max(con, 0) };
 }
 
 /**
- * KHO-10: đơn giá gốc khi xuất cho HĐ Bán.
- *  1. Đích danh: HĐ Mua liên quan của HĐ Bán có cùng loại hàng (ưu tiên cùng thông số).
- *  2. Bình quân gia quyền theo loại hàng + thuộc tính + kho, từ các phiếu nhập trước ngày xuất.
+ * Kiểm tra kho cho một dòng hàng (dùng khi lập HĐ bán / báo giá): đủ → xuất kho; thiếu → cần đặt mua NCC.
+ * Tồn tính trên mọi kho thường.
  */
-export function donGiaGoc(
-  db: Db,
-  o: { hdbId?: string; loaiHang: string; thuocTinh: string; kho: string; ngay: string },
-): { donGia: number; cach: 'Đích danh' | 'Bình quân' | 'Chưa có' } {
-  if (o.hdbId) {
-    const dongs = db.hopDongMua
-      .filter((m) => m.hdbId === o.hdbId && m.trangThai !== 'Huỷ')
-      .flatMap((m) => m.chiTiet)
-      .filter((d) => d.loaiHang === o.loaiHang);
-    const dung = dongs.find((d) => d.thongSo.trim() === o.thuocTinh.trim()) ?? dongs[0];
-    if (dung) return { donGia: Math.round(donGiaVND(dung)), cach: 'Đích danh' };
+export function kiemTraKho(db: Db, loaiHang: string, soLuong: number): { ton: number; du: boolean; thieu: number } {
+  const ton = tonTai(db, loaiHang);
+  return { ton, du: ton >= soLuong, thieu: Math.max(soLuong - ton, 0) };
+}
+
+/**
+ * Chuyển thẳng (không qua lô, KHO-07): đơn giá gốc đích danh theo HĐ Mua liên quan của HĐ Bán, đúng mã hàng.
+ * Không có HĐ Mua liên quan → 0.
+ */
+export function donGiaChuyenThang(db: Db, hdbId: string | undefined, loaiHang: string): number {
+  if (!hdbId) return 0;
+  const d = db.hopDongMua
+    .filter((m) => m.hdbId === hdbId && m.trangThai !== 'Huỷ')
+    .flatMap((m) => m.chiTiet)
+    .find((x) => x.loaiHang === loaiHang);
+  return d ? Math.round(donGiaVND(d)) : 0;
+}
+
+export interface DongLechKK {
+  loaiHang: string;
+  soSach: number;
+  thucTe: number;
+  lech: number;
+  ghiChu?: string;
+}
+
+/**
+ * Đối chiếu kiểm kê (sheet "6. KiemKe" ↔ "3b"): tồn sổ tới ngày kiểm kê tại kho với số đếm thực tế, theo mã hàng.
+ * Mã có tồn sổ mà không đếm → thực tế 0. Không tính phiếu điều chỉnh sinh từ chính đợt này.
+ */
+export function lechKiemKe(db: Db, k: KiemKe): DongLechKK[] {
+  const goc = { ...db, phieuKho: db.phieuKho.filter((p) => p.kiemKeId !== k.id) };
+  const out = new Map<string, DongLechKK>();
+  for (const r of tonKho(goc, k.ngay))
+    if (r.kho === k.kho && r.ton !== 0) out.set(r.loaiHang, { loaiHang: r.loaiHang, soSach: r.ton, thucTe: 0, lech: 0 });
+  for (const d of k.dong) {
+    const r = out.get(d.loaiHang) ?? { loaiHang: d.loaiHang, soSach: 0, thucTe: 0, lech: 0 };
+    r.thucTe += d.soLuong;
+    r.ghiChu = d.ghiChu;
+    out.set(d.loaiHang, r);
   }
-  const dongMua = new Map<string, DongHangMua>();
-  for (const m of db.hopDongMua) for (const d of m.chiTiet) dongMua.set(d.id, d);
-  let sl = 0;
-  let gt = 0;
-  for (const p of db.phieuKho) {
-    if (p.loai !== 'Nhập' || p.trangThai !== 'Hiệu lực' || p.ngay > o.ngay) continue;
-    if (o.kho !== KHO_CHUYEN_THANG && p.kho !== o.kho) continue;
-    for (const d of p.dong) {
-      if (d.loaiHang !== o.loaiHang || d.thuocTinh !== o.thuocTinh || !d.dongHDMua) continue;
-      const dm = dongMua.get(d.dongHDMua);
-      if (!dm) continue;
-      sl += d.soLuong;
-      gt += d.soLuong * donGiaVND(dm);
-    }
-  }
-  return sl > 0 ? { donGia: Math.round(gt / sl), cach: 'Bình quân' } : { donGia: 0, cach: 'Chưa có' };
+  for (const r of out.values()) r.lech = r.thucTe - r.soSach;
+  return [...out.values()].sort((a, b) => a.loaiHang.localeCompare(b.loaiHang));
 }
 
 export const tongSL = (p: PhieuKho) => sum(p.dong, (d) => d.soLuong);
+
+/** Giá trị phiếu: nhập = Σ SL × đơn giá lô; xuất = Σ SL × đơn giá vốn. */
+export const giaTriPhieu = (p: PhieuKho) =>
+  sum(p.dong, (d) => d.soLuong * ((p.loai === 'Nhập' ? d.donGia : d.donGiaGoc) ?? 0));
 
 // ── Hồ sơ ───────────────────────────────────────────────────────────────
 
@@ -540,26 +674,22 @@ export function soDuQuyPT(db: Db, o: { hdptId?: string; denNgay?: string } = {})
 }
 
 /**
- * F-07: hàng theo các HĐ mua liên quan (không Huỷ) còn chưa giao cho HĐ bán — so khớp Loại hàng + Thông số
- * với các phiếu xuất Hiệu lực. Dùng để cảnh báo khi chuyển "Hoàn thành".
+ * F-07: hàng theo các HĐ mua liên quan (không Huỷ) còn chưa giao cho HĐ bán — so khớp theo Mã hàng
+ * với các phiếu xuất Hiệu lực (nồng độ ghi theo lô nên không so). Dùng để cảnh báo khi chuyển "Hoàn thành".
  */
-export function hdbConChuaGiao(h: HopDongBan, db: Db): { loaiHang: string; thuocTinh: string; con: number }[] {
+export function hdbConChuaGiao(h: HopDongBan, db: Db): { loaiHang: string; con: number }[] {
   const daGiao = new Map<string, number>();
   for (const p of db.phieuKho) {
     if (p.loai !== 'Xuất' || p.hdId !== h.id || p.trangThai !== 'Hiệu lực') continue;
-    for (const d of p.dong) {
-      const k = `${d.loaiHang}|${d.thuocTinh.trim()}`;
-      daGiao.set(k, (daGiao.get(k) ?? 0) + d.soLuong);
-    }
+    for (const d of p.dong) daGiao.set(d.loaiHang, (daGiao.get(d.loaiHang) ?? 0) + d.soLuong);
   }
-  const out: { loaiHang: string; thuocTinh: string; con: number }[] = [];
+  const out: { loaiHang: string; con: number }[] = [];
   for (const m of db.hopDongMua) {
     if (m.hdbId !== h.id || m.trangThai === 'Huỷ') continue;
     for (const d of m.chiTiet) {
-      const k = `${d.loaiHang}|${d.thongSo.trim()}`;
-      const tru = Math.min(daGiao.get(k) ?? 0, d.soLuong);
-      daGiao.set(k, (daGiao.get(k) ?? 0) - tru);
-      if (d.soLuong - tru > 0) out.push({ loaiHang: d.loaiHang, thuocTinh: d.thongSo.trim(), con: d.soLuong - tru });
+      const tru = Math.min(daGiao.get(d.loaiHang) ?? 0, d.soLuong);
+      daGiao.set(d.loaiHang, (daGiao.get(d.loaiHang) ?? 0) - tru);
+      if (d.soLuong - tru > 0) out.push({ loaiHang: d.loaiHang, con: d.soLuong - tru });
     }
   }
   return out;

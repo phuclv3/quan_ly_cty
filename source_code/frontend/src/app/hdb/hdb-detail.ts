@@ -337,7 +337,7 @@ export class HdbDetail {
     const warn =
       [
         k === 'Hoàn thành' && this.c().hoSoThieu.length ? `Thiếu hồ sơ: ${this.c().hoSoThieu.join(', ')}` : '',
-        chuaGiao.length ? `Còn hàng theo HĐ mua chưa giao: ${chuaGiao.map((x) => `${this.store.loaiHangTen(x.loaiHang)} ${x.thuocTinh} × ${x.con}`).join('; ')}` : '',
+        chuaGiao.length ? `Còn hàng theo HĐ mua chưa giao: ${chuaGiao.map((x) => `${x.loaiHang} × ${x.con}`).join('; ')}` : '',
         k === 'Hoàn thành' && s.trangThai === 'Hiệu lực' ? 'HĐ không có HĐ mua / phiếu xuất — xác nhận đây là HĐ không giao hàng (dịch vụ).' : '',
       ]
         .filter(Boolean)
