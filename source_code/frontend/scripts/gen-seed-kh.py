@@ -9,6 +9,7 @@ Quy tắc chuyển:
   - Cột "SĐT / Email / Zalo": tách các địa chỉ email sang trường email, phần còn lại giữ nguyên làm điện thoại.
   - Người liên hệ là nhãn rác ("Email", "ĐT") → bỏ trống.
   - "Hủy" → "Huỷ" (chính tả thống nhất trong app).
+  - Trạng thái data "Data thô" → "Chưa phân bổ".
   - Ghi chú chăm sóc: giữ nguyên văn; tách "Giá trị đã chào giá" / "Giá trị HĐ ký kết" thành giá trị cơ hội (VNĐ).
 """
 import json
@@ -59,6 +60,8 @@ def main(src: str) -> None:
             d['nguoiLienHe'] = ''
         d['tiepCan'] = huy(d['tiepCan'])
         d['coHoi'] = huy(d['coHoi'])
+        if d['trangThaiData'] == 'Data thô':
+            d['trangThaiData'] = 'Chưa phân bổ'
         m = GIA_TRI.search(d['ghiChuCS'])
         if m:
             d['giaTri'] = int(re.sub(r'[.,]', '', m.group(1)))

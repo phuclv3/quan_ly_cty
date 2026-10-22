@@ -38,7 +38,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "hinhThucHD": "Trực tiếp",
   "tiepCan": "Hợp đồng",
   "coHoi": "Ký hợp đồng",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Yêu cầu KT: - Bình NO2 1000ppm; - Bình hỗn hợp CO, SO2, NO ; - Bình O2 10% ; - Bình N2 ; - Đồng hồ điều áp\nGiá trị đã chào giá (chưa VAT): 128,500,000 đ",
   "dienThoai": "0971765397",
   "giaTri": 128500000
@@ -53,7 +53,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "hinhThucHD": "Trực tiếp",
   "tiepCan": "Đang liên hệ",
   "coHoi": "Đã báo giá",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Yêu cầu KT: - Bình HCHO: 1000 ppm; - Bình C3H6O 1000 ppm; - Bình C2H6O 1000 ppm\nGiá trị đã chào giá (chưa VAT): 99,000,000 đ",
   "dienThoai": "0904276983",
   "giaTri": 99000000
@@ -69,7 +69,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "hinhThucHD": "Trực tiếp",
   "tiepCan": "Đang liên hệ",
   "coHoi": "Đã báo giá",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Yêu cầu KT: - 01 bình NO2 - 103 ppm (loại bình 1.2L); - 01 bình NO - 400 ppm (loại bình 1.2L); - 01 bình SO2 - 511 ppm (loại bình 1.2L); - 01 bình CO - 503 ppm (loại bình 1.2L); - 01 bình hỗn hợp gồm NO - 400 ppm, SO2 - 511 ppm, CO - 503 ppm (loại bình 10L)\nGiá trị đã chào giá (chưa VAT): 42,500,000 đ",
   "dienThoai": "0905375994",
   "giaTri": 42500000
@@ -82,7 +82,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "hinhThucHD": "Trực tiếp",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "email": "hthtechnology.jsc@gmail.com",
   "dienThoai": "0986217572"
  },
@@ -96,7 +96,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "hinhThucHD": "Trực tiếp",
   "tiepCan": "Huỷ",
   "coHoi": "Huỷ",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Yêu cầu KT: NO 500ppm - Vỏ bình 10L nhôm, áp suất 144 bars ; O2 12.5% - Vỏ bình 10L nhôm, áp suất 144 bars ; SO2 200 ppm - Vỏ bình 10L nhôm, áp suất 144 bars\nGiá trị đã chào giá (chưa VAT): 246,500,000 đ",
   "email": "trannguyet.tnd@gmail.com",
   "dienThoai": "0982907986-Nguyệt",
@@ -113,7 +113,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "hinhThucHD": "Trực tiếp",
   "tiepCan": "Đang liên hệ",
   "coHoi": "Đã báo giá",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Yêu cầu KT: Bình HCL\nGiá trị đã chào giá (chưa VAT): 18,200,000 đ",
   "giaTri": 18200000
  },
@@ -128,7 +128,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "hinhThucHD": "Trực tiếp",
   "tiepCan": "Đang liên hệ",
   "coHoi": "Đã báo giá",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Yêu cầu KT: - CO/N2: Nồng độ trong khoảng 1.95%,đến 2.0%,  dung tích ≥ 10 lit, áp suất ≥ 100bar; - Bình O2, số lượng: 01; - O2/N2: Nồng độ trong khoảng 20% đến 25% , dung tích ≥ 10 lit, áp suất ≥ 144bar; - NO/N2: Nồng độ trong khoảng 1995ppm đến 2000 ppm, dung tích ≥ 10 lit, áp suất ≥ 144bar; - N2 99.9995%, dung tích ≥ 10 lit, áp suất ≥ 150bar\nGiá trị đã chào giá (chưa VAT): 55,000,000 đ",
   "giaTri": 55000000
  },
@@ -142,7 +142,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "hinhThucHD": "Trực tiếp",
   "tiepCan": "Đang liên hệ",
   "coHoi": "Đã báo giá",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Giá trị đã chào giá (chưa VAT): 439,856,000 đ",
   "dienThoai": "0909930882",
   "giaTri": 439856000
@@ -158,7 +158,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "hinhThucHD": "Trực tiếp",
   "tiepCan": "Đang liên hệ",
   "coHoi": "Đã báo giá",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Yêu cầu KT: - Bình khí SO2; - Bình khí CO; - Bình khí NO; - Bình khí O2\nGiá trị đã chào giá (chưa VAT): 328,500,000 đ",
   "dienThoai": "0933850907",
   "giaTri": 328500000
@@ -173,7 +173,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "hinhThucHD": "Trực tiếp",
   "tiepCan": "Đang liên hệ",
   "coHoi": "Đã báo giá",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "dienThoai": "0886884328"
  },
  {
@@ -184,7 +184,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "hinhThucHD": "Trực tiếp",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "dienThoai": "0961865065"
  },
  {
@@ -197,7 +197,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "hinhThucHD": "Trực tiếp",
   "tiepCan": "Đang liên hệ",
   "coHoi": "Đã báo giá",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Yêu cầu KT: Bình O2; Bình Hỗn hợp - Quy cách 50L\n- 31/07: Đã báo giá"
  },
  {
@@ -210,7 +210,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "hinhThucHD": "Trực tiếp",
   "tiepCan": "Hợp đồng",
   "coHoi": "Hoàn thành",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Mã HĐ: 231124/MECIE-4M | Giá trị HĐ ký kết: 20,000,000 đ | Ngày ký HĐ: 24/11/2023 | Sản phẩm: Bình khí SO2",
   "giaTri": 20000000
  },
@@ -224,7 +224,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "hinhThucHD": "Trực tiếp",
   "tiepCan": "Hợp đồng",
   "coHoi": "Hoàn thành",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Mã HĐ: 23-11-14-OXYMECIE-MTBN | Giá trị HĐ ký kết: 55,500,000 đ | Ngày ký HĐ: 15/11/2023 | Sản phẩm: Bình khí SO2, Bình khí CO, Bình khí NO, Bình khí NO2, Bình khí O2",
   "giaTri": 55500000
  },
@@ -238,7 +238,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "hinhThucHD": "Trực tiếp",
   "tiepCan": "Hợp đồng",
   "coHoi": "Hoàn thành",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Mã HĐ: 23-10-02-OXYMECIE-CNC | Giá trị HĐ ký kết: 38,300,000 đ | Ngày ký HĐ: 02/10/2023 | Sản phẩm: Bình khí hỗn hợp SO2/NO/CO, Bình khí O2, Bình khí N2, Van điện từ VT307",
   "giaTri": 38300000
  },
@@ -252,7 +252,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "hinhThucHD": "Trực tiếp",
   "tiepCan": "Hợp đồng",
   "coHoi": "Hoàn thành",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Mã HĐ: 47808 | Giá trị HĐ ký kết: 17,600,000 đ | Ngày ký HĐ: 14/08/2023 | Sản phẩm: Bình khí NO2, Bình khí O2",
   "giaTri": 17600000
  },
@@ -266,7 +266,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "hinhThucHD": "Trực tiếp",
   "tiepCan": "Hợp đồng",
   "coHoi": "Hoàn thành",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Mã HĐ: DEAHAN_03 | Giá trị HĐ ký kết: 17,500,000 đ | Ngày ký HĐ: 27/12/2023 | Sản phẩm: Bình khí O2, Bình khí hỗn hợp SO2/NO/CO",
   "giaTri": 17500000
  },
@@ -279,7 +279,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "hinhThucHD": "Trực tiếp",
   "tiepCan": "Hợp đồng",
   "coHoi": "Hoàn thành",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Mã HĐ: 23-07-25-MECIE-VNST | Giá trị HĐ ký kết: 27,000,000 đ | Ngày ký HĐ: 25/07/2023 | Sản phẩm: Bình hỗn hợp VOCs, Bình khí C2H4",
   "giaTri": 27000000
  },
@@ -294,7 +294,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "hinhThucHD": "Trực tiếp",
   "tiepCan": "Hợp đồng",
   "coHoi": "Hoàn thành",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Mã HĐ: 23-12-18-OXYMECIE | Giá trị HĐ ký kết: 30,000,000 đ | Ngày ký HĐ: 21/12/2023 | Sản phẩm: Bình khí hỗn hợp SO2/NO/CO, Bình khí O2",
   "dienThoai": "0384342242",
   "giaTri": 30000000
@@ -309,7 +309,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "hinhThucHD": "Trực tiếp",
   "tiepCan": "Hợp đồng",
   "coHoi": "Hoàn thành",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Mã HĐ: Báo giá ngày 22/12/2023 | Giá trị HĐ ký kết: 10,500,000 đ | Ngày ký HĐ: 22/12/2023 | Sản phẩm: Bình khí hỗn hợp SO2/NO/CO, Bình khí NO2",
   "giaTri": 10500000
  },
@@ -323,7 +323,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "hinhThucHD": "Trực tiếp",
   "tiepCan": "Hợp đồng",
   "coHoi": "Hoàn thành",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Mã HĐ: 200713/01/PPVN-MECIE | Giá trị HĐ ký kết: 67,000,000 đ | Ngày ký HĐ: 20/07/2023 | Sản phẩm: Bình khí hỗn hợp SO2/NO/CO, Bình khí O2, Bình khí N2",
   "giaTri": 67000000
  },
@@ -337,7 +337,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "hinhThucHD": "Trực tiếp",
   "tiepCan": "Hợp đồng",
   "coHoi": "Hoàn thành",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Mã HĐ: 200713/02/PPVN-MECIE | Giá trị HĐ ký kết: 40,000,000 đ | Ngày ký HĐ: 20/07/2023 | Sản phẩm: Bình khí HF",
   "giaTri": 40000000
  },
@@ -350,7 +350,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "hinhThucHD": "Trực tiếp",
   "tiepCan": "Hợp đồng",
   "coHoi": "Hoàn thành",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Mã HĐ: 23-07-20-MECIE-QTMT | Giá trị HĐ ký kết: 15,700,000 đ | Ngày ký HĐ: 20/07/2023 | Sản phẩm: Bình khí O2, Bình khí CO, Bình khí NO, Bình khí SO2, Bình khí NO2",
   "giaTri": 15700000
  },
@@ -363,7 +363,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "hinhThucHD": "Trực tiếp",
   "tiepCan": "Hợp đồng",
   "coHoi": "Hoàn thành",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Mã HĐ: 231109/MECIE-ETOHI | Giá trị HĐ ký kết: 20,200,000 đ | Ngày ký HĐ: 09/11/2023 | Sản phẩm: Bình khí NO, Bình khí SO2",
   "giaTri": 20200000
  },
@@ -378,7 +378,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "hinhThucHD": "Trực tiếp",
   "tiepCan": "Hợp đồng",
   "coHoi": "Hoàn thành",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Mã HĐ: 23-12-18-OXYMECIE | Giá trị HĐ ký kết: 19,000,000 đ | Ngày ký HĐ: 09/01/2024 | Sản phẩm: Bình khí O2, Bình khí N2",
   "dienThoai": "0911942568",
   "giaTri": 19000000
@@ -393,7 +393,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "hinhThucHD": "Trực tiếp",
   "tiepCan": "Hợp đồng",
   "coHoi": "Hoàn thành",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Mã HĐ: 240125/HĐKT/OXYMC-KDCN | Giá trị HĐ ký kết: 16,700,000 đ | Ngày ký HĐ: 25/01/2024 | Sản phẩm: Bình khí hỗn hợp SO2/NO/CO - 1L, Bình O2 - 1L, Bình NO2 - 1L",
   "dienThoai": "0886912688",
   "giaTri": 16700000
@@ -407,7 +407,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "hinhThucHD": "Trực tiếp",
   "tiepCan": "Hợp đồng",
   "coHoi": "Hoàn thành",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Mã HĐ: Báo giá ngày 30/01/2024 | Giá trị HĐ ký kết: 16,000,000 đ | Sản phẩm: Bình HF - 8L",
   "giaTri": 16000000
  },
@@ -418,7 +418,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "hinhThucHD": "Trực tiếp",
   "tiepCan": "Hợp đồng",
   "coHoi": "Ký hợp đồng",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "Công ty CP Xây dựng & KT Môi trường Hà Nội",
@@ -427,7 +427,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "hinhThucHD": "Trực tiếp",
   "tiepCan": "Hợp đồng",
   "coHoi": "Ký hợp đồng",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "Công ty TNHH Môi trường KH & KT Giang Sơn",
@@ -436,7 +436,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "hinhThucHD": "Trực tiếp",
   "tiepCan": "Hợp đồng",
   "coHoi": "Ký hợp đồng",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "Công ty TNHH Năng lượng Xanh IDEMITSU VN",
@@ -445,7 +445,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "hinhThucHD": "Trực tiếp",
   "tiepCan": "Hợp đồng",
   "coHoi": "Ký hợp đồng",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "TT Môi trường & Năng lượng",
@@ -455,7 +455,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "hinhThucHD": "Trực tiếp",
   "tiepCan": "Hợp đồng",
   "coHoi": "Ký hợp đồng",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "dienThoai": "0976455029"
  },
  {
@@ -465,7 +465,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "hinhThucHD": "Trực tiếp",
   "tiepCan": "Hợp đồng",
   "coHoi": "Ký hợp đồng",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "Công ty CP Công nghệ Môi trường An Sinh",
@@ -474,7 +474,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "hinhThucHD": "Trực tiếp",
   "tiepCan": "Hợp đồng",
   "coHoi": "Ký hợp đồng",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "Công ty CP Phốt pho Việt Nam",
@@ -483,7 +483,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "hinhThucHD": "Trực tiếp",
   "tiepCan": "Hợp đồng",
   "coHoi": "Ký hợp đồng",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "Công ty Cổ phần Đông Nam Á Lào Cai",
@@ -491,7 +491,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Chưa lắp\nThông số quan trắc: Lưu lượng, bụi tổng, nhiệt độ, áp suất, O2 dư, SO2, NOx, CO, HF\nLoại trạm: Khí thải\nTình trạng trạm: Chưa lắp\nThông số quan trắc: + Ống khói khu vực lò sấy: t0, áp suất, O2, SO2, CO, NOx."
  },
  {
@@ -500,7 +500,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp\nThông số quan trắc: Lưu lượng, bụi tổng, nhiệt độ, áp suất, O2 dư, SO2, NOx, CO, HF\nTrạm sửa chữa do sét đánh"
  },
  {
@@ -509,7 +509,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Chưa lắp\nThông số quan trắc: Lưu lượng, bụi tổng, nhiệt độ, áp suất, O2 dư, SO2, NOx, CO, HF"
  },
  {
@@ -519,7 +519,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Đơn vị lắp quan trắc: Mecie\nLoại trạm: Khí thải\nTình trạng trạm: Đã lắp",
   "dienThoai": "035 7956232"
  },
@@ -529,7 +529,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Chưa lắp\nThông số quan trắc: + Ống khói tại khu vực lò sấy khu A: t0, áp suất, O2, SO2, CO, NOx.; + Ống khói từ công đoạn sấy quặng Apatit khu C: t0, áp suất, O2. ; + Ống khói từ công đoạn phản ứng Apatit và H2SO4 khu C: t0, áp suất, SO2, CO, NOx.; + Ống khói từ công đoạn sấy DCP khu B: t0, áp suất, O2, NOx.; + Ống khói của xưởng MAP khu B: áp suất, O2, NOx.; + Ống khói xưởng axit H3PO4 khu C: t0, áp suất, SO2, CO, NOx. ; + Ống thải khí xưởng axit H2SO4 khu D: áp suất, CO, NOx.\nAnh Khanh gọi"
  },
  {
@@ -538,7 +538,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Chưa lắp\nThông số quan trắc: + Ống thải khí xưởng axit H2SO4: áp suất, CO, NOx."
  },
  {
@@ -547,7 +547,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Chưa lắp\nThông số quan trắc: + Khu vực sấy quặng Apatit: t0, áp suất, O2.\nLên báo giá mới, Anh Thái"
  },
  {
@@ -556,7 +556,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Chưa lắp\nThông số quan trắc: + Ống khói xưởng sản xuất SA: t0, áp suất.; + Ống khói xưởng sản xuất PA: bụi tổng, t0, áp suất.; + Ống khói xưởng sản xuất DAP: bụi tổng, t0, áp suất, NH3."
  },
  {
@@ -565,7 +565,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Chưa lắp\nThông số quan trắc: + Ống khói khu vực lò sấy: t0, áp suất, O2, SO2, CO, NOx.; + Ống khói khu vực đốt bùn nghèo: t0, áp suất, O2, SO2, NOx."
  },
  {
@@ -574,7 +574,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp\nThông số quan trắc: Bụi, lưu lượng, nhiệt độ, SO2, O2, NOx, CO, Áp suất"
  },
  {
@@ -583,7 +583,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp\nThông số quan trắc: Bụi, lưu lượng, nhiệt độ, SO2, O2, NOx, CO, Áp suất"
  },
  {
@@ -592,7 +592,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp\nThông số quan trắc: Bụi, lưu lượng, nhiệt độ, SO2, O2, NOx"
  },
  {
@@ -601,7 +601,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp\nThông số quan trắc: Bụi, lưu lượng, nhiệt độ, SO2, O2, NOx"
  },
  {
@@ -610,7 +610,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp\nThông số quan trắc: Bụi tổng, Lưu lượng, Nhiệt độ, Áp suất"
  },
  {
@@ -619,7 +619,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp\nThông số quan trắc: Bụi, lưu lượng, nhiệt độ, CO, SO2, O2, NOx"
  },
  {
@@ -628,7 +628,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp\nThông số quan trắc: Bụi, lưu lượng, nhiệt độ, SO2, O2, NOx, CO, Áp suất"
  },
  {
@@ -637,7 +637,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Đơn vị lắp quan trắc: Anh Long: 0912029068\nLoại trạm: Khí thải\nTình trạng trạm: Đã lắp\nThông số quan trắc: Bụi, lưu lượng, nhiệt độ, SO2, O2, NOx, CO, Áp suất"
  },
  {
@@ -646,7 +646,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp\nThông số quan trắc: Bụi, lưu lượng, nhiệt độ, SO2, O2, NOx, CO, Áp suất"
  },
  {
@@ -655,7 +655,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp\nThông số quan trắc: Bụi tổng, Lưu lượng, Nhiệt độ, Áp suất"
  },
  {
@@ -664,7 +664,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp\nThông số quan trắc: Bụi, lưu lượng, nhiệt độ, SO2, O2, NOx, CO, Áp suất"
  },
  {
@@ -673,7 +673,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp\nThông số quan trắc: Bụi, lưu lượng, nhiệt độ, SO2, O2, NOx, CO, Áp suất"
  },
  {
@@ -682,7 +682,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp\nThông số quan trắc: Bụi, lưu lượng, nhiệt độ, SO2, O2, NOx, CO, Áp suất"
  },
  {
@@ -691,7 +691,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp\nThông số quan trắc: Bụi, lưu lượng, nhiệt độ, SO2, O2, NOx, CO, Áp suất"
  },
  {
@@ -700,7 +700,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp\nThông số quan trắc: Lưu lượng, áp suất, nhiệt độ CL2; Lưu lượng, áp suất, nhiệt độ, HF, HCL; Lưu lượng, áp suất, nhiệt độ, NH3, SiH4"
  },
  {
@@ -709,7 +709,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Nước thải, Khí thải\nTình trạng trạm: Đã lắp"
  },
  {
@@ -718,7 +718,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Nước thải, Khí thải\nTình trạng trạm: Đã lắp"
  },
  {
@@ -727,7 +727,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp"
  },
  {
@@ -736,7 +736,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp"
  },
  {
@@ -745,7 +745,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Nước thải, Khí thải\nTình trạng trạm: Đã lắp"
  },
  {
@@ -754,7 +754,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp"
  },
  {
@@ -763,7 +763,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải"
  },
  {
@@ -772,7 +772,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Nước thải, Khí thải"
  },
  {
@@ -782,7 +782,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Chưa lắp\nĐã lắp rồi, chưa truyền dữ liệu về Sở TNMT",
   "dienThoai": "090 3403964"
  },
@@ -792,7 +792,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Nước thải, Khí thải\nTình trạng trạm: Đã lắp\nThông số quan trắc: Vị trí 1: TSS, COD, pH, Độ màu, Nhiệt độ, NH4+, TDS, lưu lượng đầu vào, lưu lượng đầu ra; Vị trí 2: TSS, COD, pH, Độ màu, Nhiệt độ, NH4+, TDS, lưu lượng đầu ra; Trạm khí: Nhiệt độ, Nox, O2, SO2, CO, Áp suất, Bụi, Lưu lượng"
  },
  {
@@ -801,7 +801,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp\nThông số quan trắc: Nhiệt độ, NOx, O2, SO2, CO, Áp suất, Bụi, Lưu lượng\nMECIE LẮP ĐẶT"
  },
  {
@@ -810,7 +810,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp\nThông số quan trắc: Nhiệt độ, NOx, O2, SO2, CO, Áp suất, Bụi, Lưu lượng"
  },
  {
@@ -819,7 +819,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Nước thải, Khí thải\nTình trạng trạm: Đã lắp\nThông số quan trắc: Nhiệt độ, NOx, O2, SO2, CO, Áp suất, Bụi, Lưu lượng; Nhiệt độ, Độ màu, COD, Amoni, TSS, Lưu lượng đầu vào, Lưu lượng đầu ra"
  },
  {
@@ -828,7 +828,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp\nTrạm đã lắp đặt, hiện dừng hẳn hoạt động do cơ sở không thuộc đối tượng phải QTTD theo quy định hiện hành"
  },
  {
@@ -837,7 +837,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp\nTrạm đã lắp đặt, hiện dừng hẳn hoạt động do cơ sở không thuộc đối tượng phải QTTD theo quy định hiện hành"
  },
  {
@@ -846,7 +846,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "Công ty CP Gỗ MDF VRG Dongwha",
@@ -854,7 +854,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "Chi nhánh Công ty CP xi măng Hà Tiên",
@@ -862,7 +862,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "Công ty CP môi trường Miền Đông",
@@ -870,7 +870,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Đơn vị lắp quan trắc: Anh Vượng: 0962514569"
  },
  {
@@ -879,7 +879,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Đơn vị lắp quan trắc: Anh Khải: 0395953099"
  },
  {
@@ -888,7 +888,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "Công ty CP giấy Minh Hưng",
@@ -897,7 +897,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Đơn vị lắp quan trắc: Mecie",
   "dienThoai": "0907781559"
  },
@@ -907,7 +907,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "Công ty TNHH Worldon Việt Nam",
@@ -916,7 +916,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Đơn vị lắp quan trắc: Mecie\nLoại trạm: Khí thải\nTình trạng trạm: Đã lắp\nThông số quan trắc: Nhiệt độ,Bụi,Lưu lượng,NOx,SO2,O2,CO, áp suất",
   "dienThoai": "0347434818"
  },
@@ -927,7 +927,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Đơn vị lắp quan trắc: Mecie",
   "dienThoai": "0332017155"
  },
@@ -937,7 +937,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp\nThông số quan trắc: Nhiệt độ,Bụi,Lưu lượng,NOx,SO2,O2,CO, áp suất"
  },
  {
@@ -946,7 +946,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp\nThông số quan trắc: Bụi, lưu lượng"
  },
  {
@@ -955,7 +955,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Thông số quan trắc: Lắp bổ sung\nLoại trạm: Khí thải\nTình trạng trạm: Đã lắp\nThông số quan trắc: Nhiệt độ,Bụi,Lưu lượng,áp suất"
  },
  {
@@ -964,7 +964,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp\nThông số quan trắc: Nhiệt độ,Bụi,Lưu lượng,NOx,SO2,O2"
  },
  {
@@ -973,7 +973,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp\nThông số quan trắc: Nhiệt độ,Bụi,Lưu lượng,NOx,SO2,O2,CO, áp suất"
  },
  {
@@ -982,7 +982,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp\nThông số quan trắc: Bụi, lưu lượng"
  },
  {
@@ -992,7 +992,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Thông số quan trắc: Lắp bổ sung\nLoại trạm: Khí thải\nTình trạng trạm: Đã lắp\nThông số quan trắc: Bụi, lưu lượng"
  },
  {
@@ -1001,7 +1001,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp\nThông số quan trắc: Nhiệt độ,Bụi,Lưu lượng,áp suất"
  },
  {
@@ -1010,7 +1010,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp\nThông số quan trắc: Nhiệt độ,Bụi,Lưu lượng,NOx,SO2,O2,CO"
  },
  {
@@ -1019,7 +1019,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp\nThông số quan trắc: Nhiệt độ,Bụi,Lưu lượng,NOx,SO2,O2,CO"
  },
  {
@@ -1028,7 +1028,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp\nThông số quan trắc: Nhiệt độ,Bụi,Lưu lượng,áp suất"
  },
  {
@@ -1037,7 +1037,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp\nThông số quan trắc: Nhiệt độ,Bụi,Lưu lượng"
  },
  {
@@ -1047,7 +1047,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Chưa lắp\nThông số quan trắc: Độ bụi, Lưu lượng",
   "dienThoai": "0913485145"
  },
@@ -1057,7 +1057,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp"
  },
  {
@@ -1066,7 +1066,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp\nThông số quan trắc: Nhiệt độ,Bụi,Lưu lượng,NOx,SO2,O2,CO, áp suất"
  },
  {
@@ -1075,7 +1075,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp\nThông số quan trắc: Nung Clinker C: Nhiệt độ,Bụi,Lưu lượng,NOx,SO2,O2,CO, áp suất; Nung Clinker D: Nhiệt độ,Bụi,Lưu lượng,NOx,SO2,O2,CO, áp suất; Các giai đoạn khác: Bụi tổng, lưu lượng ( 8 trạm)"
  },
  {
@@ -1084,7 +1084,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp\nThông số quan trắc: Ống khói lò nung + nghiền liệu :Nhiệt độ,Bụi,Lưu lượng,NOx,SO2,O2,CO, áp suất; Các ống khói khác : Nhiệt độ, lưu lượng, áp suất, bụi tổng (5 trạm)"
  },
  {
@@ -1093,7 +1093,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp\nThông số quan trắc: Nhiệt độ,Bụi,Lưu lượng,NOx,SO2,O2,CO, áp suất"
  },
  {
@@ -1102,7 +1102,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp"
  },
  {
@@ -1111,7 +1111,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp"
  },
  {
@@ -1120,7 +1120,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp"
  },
  {
@@ -1129,7 +1129,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp"
  },
  {
@@ -1138,7 +1138,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp"
  },
  {
@@ -1148,7 +1148,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Đơn vị lắp quan trắc: Mecie",
   "dienThoai": "0982659366"
  },
@@ -1158,7 +1158,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp\nThông số quan trắc: Xi măng Chinfon 11: Lưu lượng, nhiệt độ, bụi, SO2, CO, O2, Nox  Lưu lượng, nhiệt độ, bụi, áp suất, SO2, CO, O2, Nox"
  },
  {
@@ -1167,7 +1167,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp\nThông số quan trắc: 4 ống: Lưu lượng, Nhiệt độ, Bụi , SO2, Nox, O2"
  },
  {
@@ -1176,7 +1176,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp\nThông số quan trắc: Lưu lượng, nhiệt độ, áp suất, bụi, SO2, CO, O2, Nox"
  },
  {
@@ -1185,7 +1185,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp\nThông số quan trắc: Nhà máy sản xuất axit sunfuric: SO2, Nhiệt điện: So2, lưu lượng, bụi"
  },
  {
@@ -1194,7 +1194,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp\nThông số quan trắc: Lưu lượng, Nhiệt độ, Bụi, O2"
  },
  {
@@ -1203,7 +1203,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp\nThông số quan trắc: Lưu lượng, nhiệt độ, áp suất, bụi, SO2, CO, O2, Nox"
  },
  {
@@ -1212,7 +1212,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp\nThông số quan trắc: Lưu lượng đầu ra, lưu lượng đầu vào, Nhiệt độ, Ph, COD, TSS, Amoni"
  },
  {
@@ -1221,7 +1221,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp\nThông số quan trắc: Lưu lượng, nhiệt độ, áp suất, bụi, SO2, CO, O2, Nox"
  },
  {
@@ -1230,7 +1230,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp\nThông số quan trắc: Lưu lượng, nhiệt độ, áp suất, bụi, SO2, CO, O2, Nox, C6H6, C8H8"
  },
  {
@@ -1239,7 +1239,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp\nThông số quan trắc: Lưu lượng, nhiệt độ, áp suất, bụi, SO2, CO, O2, Nox"
  },
  {
@@ -1248,7 +1248,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp\nThông số quan trắc: Lưu lượng đầu ra, lưu lượng đầu vào 1 VÀ 2, Nhiệt độ, Ph, COD, TSS, Amoni"
  },
  {
@@ -1257,7 +1257,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp\nThông số quan trắc: Lưu lượng đầu ra, lưu lượng đầu vào, Nhiệt độ, Ph, COD, TSS, Amoni"
  },
  {
@@ -1266,7 +1266,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp\nThông số quan trắc: Lưu lượng, nhiệt độ, áp suất, bụi, SO2, CO, O2, Nox"
  },
  {
@@ -1275,7 +1275,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp\nThông số quan trắc: Lưu lượng, nhiệt độ, áp suất, bụi, SO2, CO, O2, Nox"
  },
  {
@@ -1284,7 +1284,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp\nThông số quan trắc: Lưu lượng, nhiệt độ, áp suất, bụi, SO2, CO, O2, Nox, C2H4O, C3H6O, C6H6, C6H14(CH3)2,"
  },
  {
@@ -1293,7 +1293,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp\nThông số quan trắc: Lưu lượng, nhiệt độ, áp suất, bụi, SO2, CO, O2, Nox"
  },
  {
@@ -1302,7 +1302,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp\nThông số quan trắc: Lưu lượng, nhiệt độ, áp suất, bụi, SO2, CO, O2, Nox"
  },
  {
@@ -1311,7 +1311,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp"
  },
  {
@@ -1320,7 +1320,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp"
  },
  {
@@ -1329,7 +1329,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp\nThông số quan trắc: Lưu lượng, nhiệt độ, áp suất, bụi, SO2, CO, O2, Nox"
  },
  {
@@ -1338,7 +1338,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp"
  },
  {
@@ -1347,7 +1347,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Nước thải, Khí thải\nTình trạng trạm: Đã lắp"
  },
  {
@@ -1356,7 +1356,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Nước thải, Khí thải\nTình trạng trạm: Đã lắp"
  },
  {
@@ -1365,7 +1365,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp"
  },
  {
@@ -1374,7 +1374,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Nước thải, Khí thải\nTình trạng trạm: Đã lắp"
  },
  {
@@ -1383,7 +1383,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp"
  },
  {
@@ -1392,7 +1392,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp"
  },
  {
@@ -1401,7 +1401,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp"
  },
  {
@@ -1410,7 +1410,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp"
  },
  {
@@ -1419,7 +1419,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Nước thải, Khí thải\nTình trạng trạm: Đã lắp"
  },
  {
@@ -1428,7 +1428,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp"
  },
  {
@@ -1437,7 +1437,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp"
  },
  {
@@ -1446,7 +1446,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp"
  },
  {
@@ -1455,7 +1455,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp"
  },
  {
@@ -1464,7 +1464,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp"
  },
  {
@@ -1473,7 +1473,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp"
  },
  {
@@ -1482,7 +1482,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp"
  },
  {
@@ -1491,7 +1491,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp"
  },
  {
@@ -1500,7 +1500,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp"
  },
  {
@@ -1509,7 +1509,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp"
  },
  {
@@ -1518,7 +1518,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp"
  },
  {
@@ -1527,7 +1527,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "Công ty CP giấy Minh Hưng - Bình Phước",
@@ -1535,7 +1535,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Đơn vị lắp quan trắc: Anh Bình: 0907781559"
  },
  {
@@ -1544,7 +1544,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "Công ty CP Giấy Việt Trì",
@@ -1552,7 +1552,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Đơn vị lắp quan trắc: Anh Hải: 0983859524"
  },
  {
@@ -1561,7 +1561,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Đơn vị lắp quan trắc: Chị Dung: 0973821847"
  },
  {
@@ -1570,7 +1570,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Đơn vị lắp quan trắc: Chị Hoàng: 0935352543"
  },
  {
@@ -1579,7 +1579,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Đơn vị lắp quan trắc: Kiên: 0963221449"
  },
  {
@@ -1588,7 +1588,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Đơn vị lắp quan trắc: Anh Cậy: 091 6321630"
  },
  {
@@ -1597,7 +1597,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Đơn vị lắp quan trắc: Anh Toàn 0343748830"
  },
  {
@@ -1606,7 +1606,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Đơn vị lắp quan trắc: Anh Nếp: 0967366979"
  },
  {
@@ -1615,7 +1615,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Đơn vị lắp quan trắc: Chị Hương: 0903151449"
  },
  {
@@ -1624,7 +1624,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Đơn vị lắp quan trắc: Anh Lân: 0379746567"
  },
  {
@@ -1633,7 +1633,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "Công ty TNHH thép Kyoei Việt Nam",
@@ -1641,7 +1641,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Đơn vị lắp quan trắc: Anh Bắc: 0982213488"
  },
  {
@@ -1650,7 +1650,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Đơn vị lắp quan trắc: Anh Lộc:"
  },
  {
@@ -1659,7 +1659,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Đơn vị lắp quan trắc: Anh Hà: 0901801168"
  },
  {
@@ -1668,7 +1668,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Đơn vị lắp quan trắc: Anh Chiến: 0939396878"
  },
  {
@@ -1677,7 +1677,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Đơn vị lắp quan trắc: Chị Tâm: 0974744186"
  },
  {
@@ -1686,7 +1686,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "Công ty TNHH PT TM SX Đại Thắng - Hải Phòng",
@@ -1694,7 +1694,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Đơn vị lắp quan trắc: Chị Am: 0375005725"
  },
  {
@@ -1703,7 +1703,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Đơn vị lắp quan trắc: Anh Hải: 0973657917"
  },
  {
@@ -1712,7 +1712,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Đơn vị lắp quan trắc: Anh Linh: 0912692737"
  },
  {
@@ -1721,7 +1721,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Đơn vị lắp quan trắc: Anh Thức: 0934943947"
  },
  {
@@ -1730,7 +1730,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Đơn vị lắp quan trắc: Anh Long: 0906277993"
  },
  {
@@ -1739,7 +1739,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Đơn vị lắp quan trắc: Chị Thanh: 0983911482"
  },
  {
@@ -1748,7 +1748,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Đơn vị lắp quan trắc: Chị Thắm: 0985670934"
  },
  {
@@ -1757,7 +1757,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Đơn vị lắp quan trắc: Anh Tuyển: 0979009426"
  },
  {
@@ -1766,7 +1766,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Đơn vị lắp quan trắc: Anh Điền: 0943799988"
  },
  {
@@ -1775,7 +1775,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "Công ty CP Giấy Koryo",
@@ -1783,7 +1783,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "Công ty TNHH Bedra Việt Nam",
@@ -1791,7 +1791,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "Công ty Kim Trường Phúc (lò hơi MIZA)",
@@ -1799,7 +1799,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "Công ty TNHH Tuấn Đạt - Bình Dương",
@@ -1807,7 +1807,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "Công ty giấy Lam Sơn - Thanh Hóa",
@@ -1815,7 +1815,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "Công ty Cổ phần Thép Gia Trung",
@@ -1823,7 +1823,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Đơn vị lắp quan trắc: Chị Trang: 0978266856"
  },
  {
@@ -1832,7 +1832,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Đơn vị lắp quan trắc: Anh Nguyên: 0978948422"
  },
  {
@@ -1841,7 +1841,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Đơn vị lắp quan trắc: Anh Nha: 0984149818"
  },
  {
@@ -1850,7 +1850,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Đơn vị lắp quan trắc: Anh Tám:"
  },
  {
@@ -1859,7 +1859,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Đơn vị lắp quan trắc: Anh Việt: 0916911983"
  },
  {
@@ -1868,7 +1868,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Đơn vị lắp quan trắc: Chị Hợi: 097 4071526"
  },
  {
@@ -1877,7 +1877,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "Công ty Dung Ngọc",
@@ -1885,7 +1885,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Đơn vị lắp quan trắc: Chị Thủy: 0765100258"
  },
  {
@@ -1894,7 +1894,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "Công ty MIAN LAN",
@@ -1902,7 +1902,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "Công ty Công nghệ cao Hòa Bình",
@@ -1910,7 +1910,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "Công ty Thép Đà Nẵng - Đà Nẵng",
@@ -1918,7 +1918,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "Công ty CP Môi trường và Xây dựng Quảng Nam",
@@ -1926,7 +1926,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "Công ty TNHH MTV Cao su Chu Pah",
@@ -1934,7 +1934,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Đơn vị lắp quan trắc: Anh Vinh: 0969087068"
  },
  {
@@ -1943,7 +1943,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "Công ty Cổ phần Nam Vang Hà Nam",
@@ -1951,7 +1951,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Đơn vị lắp quan trắc: Anh Ngọc: 0976941288"
  },
  {
@@ -1960,7 +1960,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Nước thải\nTình trạng trạm: Đã lắp"
  },
  {
@@ -1969,7 +1969,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Chưa lắp"
  },
  {
@@ -1979,7 +1979,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Chưa lắp\nĐã Lắp",
   "dienThoai": "09484212336"
  },
@@ -1989,7 +1989,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Chưa lắp\nĐã Lắp"
  },
  {
@@ -1999,7 +1999,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Chưa lắp",
   "dienThoai": "0342324845"
  },
@@ -2010,7 +2010,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Chưa lắp",
   "dienThoai": "0988101507"
  },
@@ -2020,7 +2020,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Chưa lắp"
  },
  {
@@ -2029,7 +2029,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Nước thải, Khí thải\nTình trạng trạm: Đã lắp"
  },
  {
@@ -2039,7 +2039,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Tình trạng trạm: Chưa lắp\nThông số quan trắc: Lưu lượng, pH, nhiệt độ,  Amoni, COD, TSS\nKhanh",
   "dienThoai": "0975235888"
  },
@@ -2049,7 +2049,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp\nTrạm đã lắp đặt năm 2019, hiện dừng hoạt động do cơ sở không thuộc đối tưởng phải QTTĐ theo quy định"
  },
  {
@@ -2058,7 +2058,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nThông số quan trắc: Lắp bổ sung"
  },
  {
@@ -2067,7 +2067,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nThông số quan trắc: Lắp bổ sung"
  },
  {
@@ -2076,7 +2076,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nThông số quan trắc: Lắp bổ sung"
  },
  {
@@ -2085,7 +2085,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Thông số quan trắc: Lắp bổ sung"
  },
  {
@@ -2094,7 +2094,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Thông số quan trắc: Lắp bổ sung"
  },
  {
@@ -2103,7 +2103,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Thông số quan trắc: Lắp bổ sung"
  },
  {
@@ -2112,7 +2112,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Thông số quan trắc: Lắp bổ sung"
  },
  {
@@ -2121,7 +2121,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Thông số quan trắc: Lắp mới"
  },
  {
@@ -2130,7 +2130,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Thông số quan trắc: Lắp mới"
  },
  {
@@ -2139,7 +2139,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Thông số quan trắc: Lắp mới"
  },
  {
@@ -2148,7 +2148,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Thông số quan trắc: Lắp mới"
  },
  {
@@ -2157,7 +2157,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Thông số quan trắc: Lắp mới"
  },
  {
@@ -2166,7 +2166,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Thông số quan trắc: Lắp mới"
  },
  {
@@ -2175,7 +2175,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Thông số quan trắc: Lắp mới"
  },
  {
@@ -2184,7 +2184,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Thông số quan trắc: Lắp mới"
  },
  {
@@ -2193,7 +2193,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp\nThông số quan trắc: Nhiệt độ,Bụi,Lưu lượng,NOx,SO2,O2,CO, áp suất"
  },
  {
@@ -2202,7 +2202,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Chưa lắp"
  },
  {
@@ -2211,7 +2211,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Nước thải, Khí thải\nTình trạng trạm: Đã lắp"
  },
  {
@@ -2220,7 +2220,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Nước thải, Khí thải\nTình trạng trạm: Đã lắp"
  },
  {
@@ -2229,7 +2229,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Nước thải, Khí thải\nTình trạng trạm: Chưa lắp\nThông số quan trắc: Đang đầu tư xây dựng nhà máy"
  },
  {
@@ -2238,7 +2238,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Chưa lắp"
  },
  {
@@ -2247,7 +2247,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp\nThông số quan trắc: Lưu lượng 1, lưu lượng 2, nhiệt độ, áp suất, bụi, SO2, CO, O2, Nox"
  },
  {
@@ -2256,7 +2256,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "ghiChuCS": "Loại trạm: Khí thải\nTình trạng trạm: Đã lắp\nThông số quan trắc: Lưu lượng, Ph, COD, TSS"
  },
  {
@@ -2266,7 +2266,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "email": "eucvina@gmail.com"
  },
  {
@@ -2275,7 +2275,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "dienThoai": "Mr. Bình 0886912688"
  },
  {
@@ -2284,7 +2284,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "email": "nguyenthaomtnl@gmail.com",
   "dienThoai": "Thanh Thảo  0976455029"
  },
@@ -2294,7 +2294,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "email": "thangduc743054@gmail.com",
   "dienThoai": "Quản lý kĩ thuật Huỳnh Đức Thắng 0909582245"
  },
@@ -2305,7 +2305,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "email": "vyttt@moitruongsaigon.com.vn",
   "dienThoai": "Quản lý PTN Trần Thị Tường Vy"
  },
@@ -2316,7 +2316,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "VIMCERTS 019 Trung tâm Kỹ thuật Tiêu chuẩn Đo lường Chất lượng",
@@ -2324,7 +2324,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "email": "phamtu10198@gmail.com; congttkt@gmail.com",
   "dienThoai": "Phó trưởng phòng TN Phạm Văn Tú 0982900981 | Phụ trách BP Quan Trắc 0972834126"
  },
@@ -2334,7 +2334,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "dienThoai": "Trưởng Phòng Lê Bá Quân 0989116612"
  },
  {
@@ -2343,7 +2343,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "email": "quantrac.tnmt@binhduong.gov.vn",
   "dienThoai": "097 9821141 Ms Tuyết"
  },
@@ -2353,7 +2353,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "dienThoai": "0984345349 Mr Bình"
  },
  {
@@ -2363,7 +2363,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "email": "moitruongphuongnam@gmail.com",
   "dienThoai": "0919797284  Mr Khải Tú"
  },
@@ -2374,7 +2374,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "VIMCERTS 117 Công ty CP dịch vụ tư vấn môi trường Hải Âu",
@@ -2382,7 +2382,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "dienThoai": "0372856979"
  },
  {
@@ -2391,7 +2391,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "dienThoai": "Ms Yến 0838242474"
  },
  {
@@ -2401,7 +2401,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "VIMCERTS 203 Công ty TNHH MTV Khoa học công nghệ Hoàn Vũ",
@@ -2410,7 +2410,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "VIMCERTS 223 Công ty TNHH Dịch vụ Kỹ thuật môi trường Thành Nam Á",
@@ -2418,7 +2418,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "email": "phamyen072014@gmail.com",
   "dienThoai": "Mr Vũ. 0762181250"
  },
@@ -2428,7 +2428,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "email": "nguyenthanhphong.bv@gmail.com; huuphuocbtc@gmail.com",
   "dienThoai": "Trưởng phòng thí nghiệm Nguyễn Thanh Phong 844227879 | Trưởng phòng quan trắc Lê Hữu Phước 0979778620"
  },
@@ -2439,7 +2439,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "email": "daiviet@dve.vn",
   "dienThoai": "Ms Dương 0916633438"
  },
@@ -2449,7 +2449,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "email": "Mainhan2507@gmail.com",
   "dienThoai": "Trưởng PTN Mai Thị Nhang 0978778110"
  },
@@ -2459,7 +2459,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "email": "nguyenvugreen@gmail.com",
   "dienThoai": "0987896554 Nguyễn Thanh Vũ"
  },
@@ -2470,7 +2470,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "email": "anhquoc1985@gmail.com",
   "dienThoai": "0983840448"
  },
@@ -2480,7 +2480,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "email": "dung.snre@gmail.com",
   "dienThoai": "\"Phó trưởng phòng  Thạc sĩ Kỹ thuật\" Nguyễn Ngọc Dung 0918246537"
  },
@@ -2490,7 +2490,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "email": "xuanhoa.sihymecc@gmail.com",
   "dienThoai": "Lê Xuân Hòa 0972067785"
  },
@@ -2500,7 +2500,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "email": "haiyenpham2010@gmail.com",
   "dienThoai": "Ms Yến 0902 695 765"
  },
@@ -2511,7 +2511,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "email": "ttlang@hcmunre.edu.vn"
  },
  {
@@ -2520,7 +2520,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "email": "moitruongkhaithinh@gmail.com",
   "dienThoai": "0962740584"
  },
@@ -2531,7 +2531,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "email": "tuananh62375@gmail.com"
  },
  {
@@ -2540,7 +2540,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "email": "tuvanceeco@gmail.com"
  },
  {
@@ -2549,7 +2549,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "email": "hienquatestkh1@gmail.com",
   "dienThoai": "Trưởng phòng Đinh Văn Hiện 0905314918"
  },
@@ -2559,7 +2559,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "email": "duonghaiau2000@gmail.com; hongdiem1101@gmail.com",
   "dienThoai": "Giám đốc Dương Hải Âu 0903302242 | Cán bộ QA/QC Nguyễn Thị Hồng Diễm 09893090848"
  },
@@ -2570,7 +2570,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "VIMCERTS 109 Trung tâm Quan trắc tài nguyên và môi trường Đồng Tháp",
@@ -2578,7 +2578,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "email": "Ltngiau.stnmt@dongthap.gov.vn; Ncbinh.stnmt@dongthap.gov.vn",
   "dienThoai": "Trưởng phòng Phân tích thử nghiệm  Lê Thị Ngọc Giàu 0379 810 939 | Trưởng phòng PQuan trắc kỹ thuật Nguyễn Chí Bình 0907 219 451"
  },
@@ -2588,7 +2588,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "email": "𝐞𝐭𝐦.𝐜𝐤𝐦𝐭@𝐠𝐦𝐚𝐢𝐥.𝐜𝐨𝐦"
  },
  {
@@ -2598,7 +2598,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "email": "dh.q5@quatest3.com.vn; dh.q2@quatest3.com.vn"
  },
  {
@@ -2608,7 +2608,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "VIMCERTS 158 Công ty TNHH MTV Khu công nghiệp Vĩnh Lộc",
@@ -2616,7 +2616,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "dienThoai": "0902997690 - Ms Lan Anh"
  },
  {
@@ -2625,7 +2625,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "email": "hvqui@gangiang.gov.vn",
   "dienThoai": "PGD 0918.464.339 Hồ Văn Quí"
  },
@@ -2636,7 +2636,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "email": "kietqtmtbrvt@gmail.com; nguyenhang_ttqt@yahoo.com",
   "dienThoai": "0903809553 | 0903884829 | ."
  },
@@ -2647,7 +2647,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "email": "congtymoitruongmiennam@gmail.com",
   "dienThoai": "0919405945"
  },
@@ -2657,7 +2657,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "VIMCERTS 157 Trung tâm Kỹ thuật Tiêu chuẩn Đo lường Chất lượng, Chi cục Tiêu chuẩn Đo lường Chất lượng tỉnh Bến Tre",
@@ -2665,7 +2665,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "Vimcerts 262 Trung tâm Quan trắc Tài nguyên và Môi trường Bến Tre",
@@ -2673,7 +2673,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "VIMCERTS 160 Công ty TNHH Liên Á Âu",
@@ -2681,7 +2681,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "VIMCERTS 221 Công ty TNHH Thương mại Dịch vụ môi trường VietStar",
@@ -2689,7 +2689,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "email": "phongduan1.vietstar@gmail.com"
  },
  {
@@ -2699,7 +2699,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "email": "moitruongantoanlaodongsaoviet@gmail.com"
  },
  {
@@ -2708,7 +2708,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "VIMCERTS 015 Trung tâm Phân tích và Kiểm nghiệm",
@@ -2717,7 +2717,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "email": "minhmt30@gmail.com; amqtesting@gmail.com"
  },
  {
@@ -2726,7 +2726,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "VIMCERTS 129 Trung tâm Kỹ thuật Tiêu chuẩn Đo lường Chất lượng, Chi cục Tiêu chuẩn Đo lường Chất lượng tỉnh Bình Thuận",
@@ -2734,7 +2734,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "VIMCERTS 145 Trung tâm Quan trắc môi trường - Sở Tài nguyên và Môi trường tỉnh Bình Thuận",
@@ -2742,7 +2742,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "VIMCERTS 188 Trung tâm Kỹ thuật - Công nghệ - Quan trắc tài nguyên và môi trường tỉnh Cà Mau",
@@ -2750,7 +2750,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "VIMCERTS 232 Trung tâm phân tích, kiểm nghiệm tỉnh Cà Mau",
@@ -2758,7 +2758,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "email": "ttptkncamau@gmail.com",
   "dienThoai": "(0290) 3580815"
  },
@@ -2768,7 +2768,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "VIMCERTS 156 Chi nhánh Cần Thơ - Trung tâm Dịch vụ phân tích thí nghiệm Thành phố Hồ Chí Minh",
@@ -2776,7 +2776,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "VIMCERTS 046 Trung tâm Quan trắc và Phân tích Môi trường tỉnh Đăk Lăk",
@@ -2784,7 +2784,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "VIMCERTS 142 Trung tâm Nghiên cứu và Quan trắc môi trường nông nghiệp miền Trung và Tây Nguyên",
@@ -2792,7 +2792,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "VIMCERTS 173 Trung tâm Phân tích và Đo đạc môi trường Phương Nam",
@@ -2800,7 +2800,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "VIMCERTS 118 Trung tâm Quan trắc tài nguyên và môi trường, Sở TN&MT tỉnh Đăk Nông",
@@ -2808,7 +2808,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "VIMCERTS 109 Trung tâm Quan trắc tài nguyên và môi trường Đồng Tháp",
@@ -2816,7 +2816,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "VIMCERTS 194 Trung tâm Kỹ thuật thí nghiệm và Ứng dụng khoa học công nghệ, Sở KHCN tỉnh Đồng Tháp",
@@ -2824,7 +2824,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "VIMCERTS 155 Trung tâm Quan trắc tài nguyên và môi trường tỉnh Hậu Giang",
@@ -2832,7 +2832,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "VIMCERTS 138 Viện Môi trường và Tài nguyên - Đại Học Quốc Gia TP.Hồ Chí Minh",
@@ -2840,7 +2840,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "VIMCERTS 001 Chi nhánh Viện dầu khí Việt Nam – Trung tâm Nghiên cứu và Phát triển An toàn và Môi trường Dầu khí",
@@ -2848,7 +2848,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "VIMCERTS 009 Viện Nhiệt đới Môi trường",
@@ -2856,7 +2856,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "email": "vittep@vnn.vn"
  },
  {
@@ -2865,7 +2865,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "VIMCERTS 026 Trung tâm Tư vấn CNMT & an toàn VSLĐ (COSHET)",
@@ -2873,7 +2873,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "VIMCERTS 044 Chi nhánh Công ty CP KHCN Phân tích Môi trường Biển Đức - Trung tâm Nghiên cứu Môi trường",
@@ -2881,7 +2881,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "VIMCERTS 053 Trung tâm Công nghệ và Quản lý môi trường và tài nguyên, Đại học Nông lâm Tp HCM",
@@ -2889,7 +2889,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "VIMCERTS 077 Trung tâm Công nghệ môi trường, Viện Môi trường và Tài nguyên",
@@ -2897,7 +2897,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "VIMCERTS 147 Trung tâm Dịch vụ phân tích thí nghiệm Thành phố Hồ Chí Minh, Sở Khoa học và Công nghệ Thành phố Hồ Chí Minh",
@@ -2905,7 +2905,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "VIMCERTS 182 Trung tâm Công nghệ môi trường, Hội Bảo vệ thiên nhiên và môi trường Việt Nam (ENTEC)",
@@ -2913,7 +2913,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "VIMCERTS 187 Trung tâm Nghiên cứu Công nghệ và Thiết bị Công nghiệp (Công ty CP KHCN Bách Khoa Tp HCM)",
@@ -2921,7 +2921,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "VIMCERTS 191 Công ty Cổ phần Dịch vụ công nghệ Sài Gòn",
@@ -2929,7 +2929,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "VIMCERTS 197 Công ty Cổ phần Kỹ thuật Tiêu chuẩn QCVN Việt Nam",
@@ -2937,7 +2937,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "dienThoai": "Nguyễn Thị Quỳnh Vân TP. Thí nghiệm 0974915304 | Giám đốc Lâm Đức Tráng '0961858589"
  },
  {
@@ -2946,7 +2946,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "VIMCERTS 207 Viện Nghiên cứu phát triển bền vững",
@@ -2954,7 +2954,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "VIMCERTS 220 Công ty TNHH Dịch vụ Kỹ thuật TĐT",
@@ -2962,7 +2962,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "VIMCERTS 243 Công ty SGS TNHH",
@@ -2970,7 +2970,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "VIMCERTS 252 Trung tâm Quan trắc môi trường miền Nam",
@@ -2978,7 +2978,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "VIMCERTS 259 Trung tâm nghiên cứu và Ứng dụng KHCN",
@@ -2986,7 +2986,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "dienThoai": "Ms Thúy 0911673785"
  },
  {
@@ -2995,7 +2995,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "Vimcerts 282 Trung tâm Kiểm soát bệnh tật (CDC) Tp. Hồ Chí Minh",
@@ -3003,7 +3003,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "Vimcerts 283 Trung tâm phân tích và phát triển khoa học công nghệ",
@@ -3011,7 +3011,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "VIMCERTS 107 Trung tâm Kỹ thuật tiêu chuẩn đo lường chất lượng",
@@ -3019,7 +3019,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "email": "hienquatestkh1@gmail.com",
   "dienThoai": "Trưởng Phòng thử nghiệm Hóa học và Vi sinh vật  Đinh Văn Hiện 0905314918"
  },
@@ -3029,7 +3029,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "VIMCERTS 035 Trung tâm Quan trắc tài nguyên và môi trường Khánh Hòa",
@@ -3037,7 +3037,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "email": "ttqt@khanhhoa.gov.vn"
  },
  {
@@ -3046,7 +3046,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "VIMCERTS 181 Trung tâm Quan trắc tài nguyên và môi trường Kiên Giang",
@@ -3054,7 +3054,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "VIMCERTS 103 Trung tâm Quan trắc và Phân tích môi trường",
@@ -3063,7 +3063,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "email": "lqtruong.stnmt@kontum.gov.vn; ldvuong.stnmt@kontum.gov.vn",
   "dienThoai": "0898379789 | PGD Lê Duy Vượng   0905138150"
  },
@@ -3073,7 +3073,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "VIMCERTS 204 Viện Nghiên cứu hạt nhân, Viện Năng lượng nguyên tử Việt Nam",
@@ -3081,7 +3081,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "VIMCERTS 130 Trung tâm Quan trắc tài nguyên và Môi trường",
@@ -3089,7 +3089,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "VIMCERTS 067 Trung tâm Quan trắc môi trường",
@@ -3097,7 +3097,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "VIMCERTS 144 Trung tâm Quan trắc môi trường",
@@ -3105,7 +3105,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "VIMCERTS 193 Trung tâm Kỹ thuật Tiêu chuẩn Đo lường Chất lượng tỉnh Phú Yên",
@@ -3113,7 +3113,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "VIMCERTS 051 Trung tâm Trắc địa và Quan trắc môi trường",
@@ -3121,7 +3121,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "VIMCERTS 246 Trung tâm QT&TNMT Bình Phước",
@@ -3129,7 +3129,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "VIMCERTS 029 Trung tâm Kỹ thuật Quan trắc môi trường",
@@ -3137,7 +3137,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "email": "anhtraemc@gmail.com; hominhtuan273@gmail.com",
   "dienThoai": "Phó giám đốc Lê Anh Trà 0982376672 | Trưởng Phòng Hồ Minh Tuấn 0914910797"
  },
@@ -3147,7 +3147,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "email": "hvvinhst@gmail.com",
   "dienThoai": "Huỳnh Vạn Vinh 0976071782"
  },
@@ -3158,7 +3158,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "email": "hanhvt@tayninh.gov.vn; dongpk@tayninh.gov.vn; xinhlv@tayninh.gov.vn",
   "dienThoai": "0945.677.879 | PGD Lâm Văn Xinh 0918902666"
  },
@@ -3168,7 +3168,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "VIMCERTS 165 Trung tâm Kỹ thuật tài nguyên và môi trường tỉnh Trà Vinh",
@@ -3176,7 +3176,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "VIMCERTS 110 Trung tâm Ứng dụng tiến bộ khoa học và công nghệ",
@@ -3184,7 +3184,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "Vimcerts 006 Công ty Cổ phần Kỹ thuật và Phân tích môi trường",
@@ -3193,7 +3193,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "Vimcerts 12 Trung tâm Phân tích và Môi trường Hà Nội",
@@ -3201,7 +3201,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "email": "ankhangdlm@gmail.com; cae.vpqn@gmail.com",
   "dienThoai": "Phó giám đốc Đặng Ngọc Long 0903446896 | Trưởng Văn Phòng ở Quảng Ninh Bùi Trọng Quí 0989899749"
  },
@@ -3211,7 +3211,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "Vimcerts 17 Trung tâm Quan trắc và Phân tích Môi trường",
@@ -3219,7 +3219,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "email": "nguyetdt82@gmail.com",
   "dienThoai": "Giám đốc Nguyễn Văn Tuyến 0914423950 | Phó Giám đốc Nguyễn Thị Lệ Thanh 0912768959 | Trưởng Phòng QT&PTMT 0982080628"
  },
@@ -3230,7 +3230,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "Vimcerts 23 Trung tâm Quan trắc tài nguyên và môi trường",
@@ -3238,7 +3238,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "Vimcerts 25 Trạm Quan trắc và Phân tích môi trường lao động, Viện nghiên cứu khoa học bảo hộ lao động",
@@ -3247,7 +3247,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "dienThoai": "(+8424) 22172473; 22172480 | hotline 0941042838"
  },
  {
@@ -3256,7 +3256,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "Vimcerts 33 Trung tâm Quan trắc tài nguyên và môi trường",
@@ -3265,7 +3265,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "Vimcerts 34 Trung tâm Môi trường và Khoáng sản - Chi nhánh Công ty Cổ phần đầu tư CM",
@@ -3274,7 +3274,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "email": "thuyhn041984.mtks@gmail.com; truongle.mtks@gmail.com",
   "dienThoai": "Nguyễn Hà Thủy 02253722716 | Lê Thế Trường"
  },
@@ -3285,7 +3285,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "Trung tâm Khoa học công nghệ và Bảo vệ môi trường Giao thông vận tải (Viện chuyên ngành môi trường - ĐH Giao thông vận tải)",
@@ -3293,7 +3293,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "email": "chiennv@yahoo.com; hanh.hl86@gmail.com",
   "dienThoai": "Giám đốc Nguyễn Văn Chiến 0912894747 | Phụ trách phòng thí nghiệm Lê Thị Hạnh 0981036986"
  },
@@ -3303,7 +3303,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "Vimcert 47 Trung tâm Quan trắc-Phân tích Môi trường biển",
@@ -3311,7 +3311,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "Vimcerts 50 Trung tâm Y tế dự phòng đổi tên Trung tâm Kiểm soát bệnh tật tỉnh Quảng Ninh",
@@ -3319,7 +3319,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "email": "tuphuong.ytdp@gmail.com; leytdpqn@gmail.com",
   "dienThoai": "Phó Giám đốc Từ Thị Anh Phương 0912658008 | TK. SKMT&YTTH Hoàng Thị Lê  0903263399"
  },
@@ -3329,7 +3329,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "email": "giang.tonthu@hust.edu.vn; nam.daoduy@hust.edu.vn",
   "dienThoai": "Giảng viên Thạc sĩ Tôn Thu Giang 0332543001 | Cán bộ Thạc sĩ Đào Duy Nam 0982875552"
  },
@@ -3339,7 +3339,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "Vimcerts 60 Trung tâm Kỹ thuật Đo lường Thử nghiệm",
@@ -3347,7 +3347,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "Vimcerts 69 Viện Khoa học Công nghệ mỏ VINACOMIN",
@@ -3355,7 +3355,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "Vimcerts 71 Phân Viện Bảo hộ lao động và Bảo vệ môi trường miền Trung",
@@ -3364,7 +3364,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "dienThoai": "0905858715 zalo"
  },
  {
@@ -3373,7 +3373,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "email": "dovanmanh@yahoo.com; thang236@gmail.com",
   "dienThoai": "Phó Viện Trưởng Phó Giáo sư Tiến sĩ Đỗ Văn Mạnh 0963151281 | Phó trường phòng, Tiến sĩ  Phan Quang Thăng 0912532513 | Phụ trách Phòng phân tích môi trường Vũ Văn Tú 0912589540"
  },
@@ -3383,7 +3383,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "Vimcerts 82 Trung tâm Phân tích và Chuyển giao công nghệ môi trường, Viện Môi trường nông nghiệp",
@@ -3392,7 +3392,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "dienThoai": "0439961661"
  },
  {
@@ -3402,7 +3402,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "Vimcerts 92 Trung tâm Quan trắc Tài nguyên và Môi trường - Sở Tài nguyên và Môi trường tỉnh Sơn La",
@@ -3411,7 +3411,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "Vimcerts 93 Trung tâm Kỹ thuật tiêu chuẩn Đo lường Chất lượng 1",
@@ -3419,7 +3419,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "email": "khoatmtsonla@gmail.com; hoa2008mtsla@gmail.com",
   "dienThoai": "Quyền Giám đốc Thạc sĩ Môi trường Nguyễn Ngọc Khoát 097926899 | Tổ trưởng QTPT Đoàn Thị Hòa 0986292640"
  },
@@ -3430,7 +3430,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "Vimcerts 97 Công ty Cổ phần Nước và Môi trường Trường Sơn",
@@ -3438,7 +3438,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "Vimcerts 99 Viện Khoa Học Môi Trường và Sức Khỏe Cộng Đồng",
@@ -3446,7 +3446,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "Vimcerts 105 Công ty Cổ phần Tài nguyên môi trường Đ&T",
@@ -3454,7 +3454,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "Vimcerts 111 Trung tâm Quan trắc môi trường, Sở TN&MT tỉnh Nam Định",
@@ -3462,7 +3462,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "Vimcerts 112 Viện Kỹ thuật và Công nghệ môi trường, Liên hiệp các hội KH&KT Việt Nam",
@@ -3470,7 +3470,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "Vimcerts 121 Công ty cổ phần Khoa học và Công nghệ Việt Nam",
@@ -3478,7 +3478,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "email": "vnst@vnst-jsc.vn",
   "dienThoai": "Giám đốc Bùi Ngọc Khoa  0968022247"
  },
@@ -3488,7 +3488,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "Vimcerts 163 Công ty CP Quan trắc và xử lý Môi trường Thái Dương",
@@ -3496,7 +3496,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "email": "Anhchuc566@gmail.com; Tuannguyen1393@gmail.com",
   "dienThoai": "Giám đốc Cứ nhân kinh tế Dương Văn Chức 0982563838 | Nhân viên, Thạc sĩ Môi trường Nguyên Trung Tuấn 0978334595"
  },
@@ -3506,7 +3506,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "Vimcerts 170 Trung tâm Dịch vụ Kỹ thuật Tiêu chuẩn Đo lường Chất lượng Thanh Hóa, Chi cục Tiêu chuẩn Đo lường Chất lượng Thanh Hóa",
@@ -3515,7 +3515,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "Vimcerts 185 Công ty Cổ phần Liên minh Môi trường và Xây dựng",
@@ -3524,7 +3524,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "email": "tanlmmt07@gmail.com; lienminhmoitruong@gmail.com; dotrungduc.lmmt@gmail.com",
   "dienThoai": "Thạc sĩ Chủ tịch HDQT Nguyễn Văn Tản 0981440000  – | Thạc sĩ Tổng Giám đốc Đỗ Trung Đức 0967383444"
  },
@@ -3535,7 +3535,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "Vimcerts 202 Viện Khoa học Môi trường, Tổng cục Môi trường",
@@ -3544,7 +3544,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "Vimcerts 225 Công ty TNHH một thành viên môi trường QC",
@@ -3552,7 +3552,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "email": "moitruongqc@gmail.com",
   "dienThoai": "Giám đốc Đoàn Quốc Hùng 0972281888"
  },
@@ -3562,7 +3562,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "Vimcerts 229 Trung tâm Nghiên cứu và Chuyển giao công nghệ thuộc Viện Hàn lâm Khoa học và Công nghệ Việt Nam",
@@ -3571,7 +3571,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "Vimcerts 235 Công ty Cổ phần kỹ thuật môi trường Việt Nam",
@@ -3580,7 +3580,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "Vimcerts 237 Công ty Cổ phần kỹ thuật môi trường Đại Việt",
@@ -3588,7 +3588,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "dienThoai": "Hảo 0988260070"
  },
  {
@@ -3598,7 +3598,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "dienThoai": "//www.facebook.com/p/C%C3%B4ng-ty-TNHH-Gi%E1%BA%A3i-Ph%C3%A1p-K%E1%BB%B9-thu%E1%BA%ADt-v%C3%A0-Truy%E1%BB%81n-Th%C3%B4ng-M%C3%B4i-tr%C6%B0%E1%BB%9Dng-100054245450726/?paipv=0&eav=AfZkd1G7HsG93p3Q0uKw-2hOae5nBu0Kz_GxA-QCgObyLK1udQ1d6np5DX_4Cg50Plw&_rdr"
  },
  {
@@ -3608,7 +3608,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô",
+  "trangThaiData": "Chưa phân bổ",
   "email": "hoapn89x@gmail.com; dotienduc.cr@gmail.com",
   "dienThoai": "Phó Giám đốc Thạc sĩ Phạm Ngọc Hóa 0904535589 | Nhân viên Kĩ sư 0336676064"
  },
@@ -3619,7 +3619,7 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  },
  {
   "ten": "Vimcerts 306 Viện Y học lao động và Công nghệ môi trường",
@@ -3628,6 +3628,6 @@ export const RAW_KH_CRM: RawKhCrm[] = [
   "nguon": "Tự tìm kiếm",
   "tiepCan": "Chưa liên hệ",
   "coHoi": "Chưa tiếp cận",
-  "trangThaiData": "Data thô"
+  "trangThaiData": "Chưa phân bổ"
  }
 ];

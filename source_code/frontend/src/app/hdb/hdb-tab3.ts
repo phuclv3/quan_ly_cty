@@ -34,7 +34,7 @@ interface ThuNhap {
         <h2>Sản phẩm & giá (chọn từ kho)</h2>
         <div class="btn-row">
           @if (thieuMua().length && saved() && edit()) {
-            <button type="button" class="btn sm danger" (click)="deNghi()"><app-icon name="truck" [size]="15" /> Gửi đề nghị cấp vật tư ({{ thieuMua().length }} mã thiếu)</button>
+            <button type="button" class="btn sm danger" (click)="deNghi()"><app-icon name="truck" [size]="15" /> Gửi đề nghị cấp vật tư ({{ thieuMua().length }} dòng thiếu)</button>
           }
           <button type="button" class="btn sm quiet" (click)="inToTrinh()"><app-icon name="print" [size]="15" /> Xuất tờ trình (PDF)</button>
           @if (edit()) { <button type="button" class="btn sm quiet" (click)="themSP()"><app-icon name="plus" [size]="15" /> Thêm sản phẩm</button> }
@@ -44,7 +44,7 @@ interface ThuNhap {
         <table class="tbl compact">
           <thead>
             <tr>
-              <th style="min-width:230px">Mã hàng</th><th style="min-width:200px">Tên hàng trên HĐ (nồng độ)</th><th class="num w-sm">SL</th>
+              <th style="min-width:280px">Mã hàng</th><th style="min-width:220px">Tên hàng trên HĐ (nồng độ)</th><th class="num w-sm">SL</th>
               <th class="num">Đơn giá HĐ trước VAT</th><th class="num">Thành tiền</th>
               <th class="num" title="Giá vốn dự kiến — dùng cho Bảng tính giá / Tờ trình">Đơn giá thực hiện</th><th class="num">Thành tiền TH</th>
               <th>Kho</th><th></th>
@@ -56,7 +56,7 @@ interface ThuNhap {
                 <td>
                   <app-pick [options]="maOpts()" [value]="k.d.loaiHang" [disabled]="!edit()" (valueChange)="chonMa(i, $event)" />
                 </td>
-                <td><input [value]="k.d.tenHang" [disabled]="!edit()" list="t3-ten-hd" placeholder="VD Bình khí chuẩn NO 500ppm" (input)="setSP(i, { tenHang: $any($event.target).value })" aria-label="Tên hàng trên HĐ" /></td>
+                <td><textarea class="keo-gian" rows="1" [value]="k.d.tenHang" [disabled]="!edit()" autocomplete="off" placeholder="Nhập tay, VD Bình khí chuẩn NO 500ppm" (keydown.enter)="$event.preventDefault()" (input)="setSP(i, { tenHang: $any($event.target).value })" aria-label="Tên hàng trên HĐ"></textarea></td>
                 <td><input class="num" type="number" min="0" [value]="k.d.soLuong" [disabled]="!edit()" (input)="setSP(i, { soLuong: +$any($event.target).value || 0 })" aria-label="Số lượng" /></td>
                 <td><app-money [value]="k.d.donGia" [disabled]="!edit()" (valueChange)="setSP(i, { donGia: $event })" /></td>
                 <td class="num">{{ money(k.d.soLuong * k.d.donGia) }}</td>
@@ -84,7 +84,6 @@ interface ThuNhap {
             </tfoot>
           }
         </table>
-        <datalist id="t3-ten-hd">@for (a of tenBan(); track a.id) { <option [value]="a.ten">{{ a.loaiHang }}</option> }</datalist>
       </div>
       @if (thieuMua().length) {
         <p class="note bad">Thiếu hàng trong kho: {{ thieuMuaText() }} — cần mua NCC.
@@ -302,24 +301,19 @@ export class HdbTab3 {
 
   // ── Sản phẩm (chọn từ kho) ──
   protected readonly maOpts = computed(() => maHangOpts(this.store.loaiHang().filter((l) => l.dangDung)));
-  protected readonly tenBan = computed(() => this.store.anhXaTen().filter((a) => a.loaiHang));
   protected readonly coSP = computed(() => !!this.f().dongHang?.length);
   protected readonly kho = computed(() => kiemTraDongBan(this.store.db(), this.f()));
   protected readonly tongSP = computed(() => tongDongBan(this.f().dongHang));
   protected readonly tongTH = computed(() => tongDongBanTH(this.f().dongHang));
-  /** Mã thiếu chưa đề nghị đủ (gộp theo mã). */
-  protected readonly thieuMua = computed(() => {
-    const m = new Map<string, { loaiHang: string; tenHang: string; soLuong: number }>();
-    for (const k of this.kho()) {
-      const can = k.thieu - k.daDeNghi;
-      if (!k.d.loaiHang || can <= 0) continue;
-      const g = m.get(k.d.loaiHang) ?? { loaiHang: k.d.loaiHang, tenHang: k.d.tenHang, soLuong: 0 };
-      g.soLuong += can;
-      m.set(k.d.loaiHang, g);
-    }
-    return [...m.values()];
-  });
-  protected readonly thieuMuaText = computed(() => this.thieuMua().map((x) => `${x.loaiHang} × ${x.soLuong}`).join('; '));
+  /** Dòng thiếu chưa đề nghị đủ — tách riêng từng dòng (không gộp theo mã) để mỗi dòng mua NCC riêng. */
+  protected readonly thieuMua = computed(() =>
+    this.kho()
+      .filter((k) => k.d.loaiHang && k.thieu - k.daDeNghi > 0)
+      .map((k) => ({ loaiHang: k.d.loaiHang, tenHang: k.d.tenHang, soLuong: k.thieu - k.daDeNghi, dongBanId: k.d.id })),
+  );
+  protected readonly thieuMuaText = computed(() =>
+    this.thieuMua().map((x) => `${x.loaiHang}${x.tenHang ? ' (' + x.tenHang + ')' : ''} × ${x.soLuong}`).join('; '),
+  );
   protected moTa(lh: string): string {
     return moTaMa(this.store.loaiHangById(lh));
   }
@@ -335,11 +329,11 @@ export class HdbTab3 {
   protected xoaSP(i: number): void {
     this.capNhatSP((ds) => ds.filter((_, j) => j !== i));
   }
-  /** Chọn mã: gợi ý tên theo ánh xạ / tên mã, đơn giá thực hiện theo lô nhập trước còn hàng (hoặc lô gần nhất). */
+  /** Chọn mã: tên trên HĐ nhập tay — chỉ gợi ý tên mã khi ô còn trống; đơn giá thực hiện theo lô nhập trước còn hàng (hoặc lô gần nhất). */
   protected chonMa(i: number, id: string): void {
     const d = this.f().dongHang![i];
     const lo = loConHang(this.store.db(), id)[0] ?? [...this.store.loKho()].reverse().find((l) => l.loaiHang === id);
-    const ten = d.tenHang.trim() && d.loaiHang === id ? d.tenHang : (this.store.loaiHangById(id)?.ten ?? '');
+    const ten = d.tenHang.trim() ? d.tenHang : (this.store.loaiHangById(id)?.ten ?? '');
     this.setSP(i, { loaiHang: id, tenHang: ten, donGiaTH: d.donGiaTH || lo?.donGia || 0 });
   }
   protected async deNghi(): Promise<void> {
@@ -348,15 +342,15 @@ export class HdbTab3 {
     if (!s || !ds.length) return;
     const ghiChu = await this.confirm.prompt({
       title: `Gửi đề nghị cấp vật tư cho HĐ ${s.soHD || '(báo giá)'}?`,
-      message: `Hàng thiếu trong kho: ${this.thieuMuaText()}. Đề nghị chuyển sang mua hàng — HĐ mua lấy dòng từ đề nghị này.`,
+      message: `Hàng thiếu trong kho: ${this.thieuMuaText()}. Mỗi dòng thành 1 đề nghị riêng (mua NCC riêng) — HĐ mua lấy dòng từ đề nghị.`,
       label: 'Ghi chú cho bộ phận mua (tuỳ chọn)',
       minLength: 0,
       ok: 'Gửi đề nghị',
     });
     if (ghiChu === null) return;
     const r = this.store.taoDeNghiVatTu(s.id, ds, ghiChu);
-    if (typeof r === 'string') return this.store.say(r);
-    this.store.say('Đã gửi đề nghị cấp vật tư — xem ở Kho › Đề nghị vật tư hoặc tạo HĐ mua từ đề nghị');
+    if (!r || typeof r === 'string') return this.store.say(r ?? 'Không gửi được đề nghị');
+    this.store.say(`Đã gửi ${r.ids.length} đề nghị cấp vật tư — xem ở Kho › Đề nghị vật tư hoặc tạo HĐ mua từ đề nghị`);
   }
 
   /** Tờ trình / Bảng tính giá (mẫu "Bảng tính giá"): mở trang in — chọn "Lưu dưới dạng PDF" để lưu. */

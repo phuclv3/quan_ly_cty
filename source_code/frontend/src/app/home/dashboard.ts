@@ -22,8 +22,7 @@ interface Viec {
   host: { class: 'page' },
   imports: [RouterLink, Kpi, Icon],
   styles: [
-    `.hello{display:flex;align-items:center;gap:14px}.hello img{width:auto;height:40px;max-width:none;object-fit:contain}
-    a.dcard{display:grid;gap:8px;align-content:start;text-decoration:none;color:inherit;border-top:3px solid var(--brand)}
+    `a.dcard{display:grid;gap:8px;align-content:start;text-decoration:none;color:inherit;border-top:3px solid var(--brand)}
     a.dcard:hover{border-color:var(--brand)}a.dcard h3{display:flex;gap:8px;align-items:center;font-size:18px;margin:0}
     a.dcard .big{font-size:28px;font-weight:700}.dl{display:grid;gap:4px;font-size:15.5px}.dl div{display:flex;justify-content:space-between;gap:8px}
     .todo{list-style:none;margin:0;padding:0;display:grid;gap:6px}.todo a{display:flex;gap:10px;align-items:center;text-decoration:none;color:inherit;padding:8px 10px;border-radius:8px;border:1px solid var(--line)}
@@ -31,13 +30,10 @@ interface Viec {
   ],
   template: `
     <div class="page-head">
-      <div class="hello">
-        <img src="brand/logo-oxymecie.png" alt="Logo Oxy Mecie" width="100" height="40" />
-        <div>
-          <div class="crumbs">Trang chủ</div>
-          <h1>Xin chào, {{ store.me()?.hoTen }}</h1>
-          <div class="sub">{{ vaiTro() }} · Số liệu lúc {{ moment(capNhat()) }}</div>
-        </div>
+      <div>
+        <div class="crumbs">Trang chủ</div>
+        <h1>Xin chào, {{ store.me()?.hoTen }}</h1>
+        <div class="sub">{{ vaiTro() }} · Số liệu lúc {{ moment(capNhat()) }}</div>
       </div>
       <div class="actions">
         <button type="button" class="btn quiet" (click)="lamMoi()"><app-icon name="refresh" [size]="16" /> Làm mới</button>

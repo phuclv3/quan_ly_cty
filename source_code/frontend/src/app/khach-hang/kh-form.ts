@@ -144,7 +144,7 @@ type F = Exclude<keyof KhachHang, 'id' | 'chamSoc'>;
           </div>
           <div class="field">
             <span class="lbl">Trạng thái data</span>
-            <div class="ro">{{ k.phuTrach ? 'Đã phân bổ' : 'Data thô' }}{{ k.ngayPhanBo ? ' · ' + viDate(k.ngayPhanBo) : '' }}</div>
+            <div class="ro">{{ k.phuTrach ? 'Đã phân bổ' : 'Chưa phân bổ' }}{{ k.ngayPhanBo ? ' · ' + viDate(k.ngayPhanBo) : '' }}</div>
           </div>
           <div class="field span-3">
             <label for="khf-gc">Ghi chú</label>

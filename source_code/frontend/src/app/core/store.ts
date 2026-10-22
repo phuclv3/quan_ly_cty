@@ -178,6 +178,12 @@ export class Store {
       if (d && d.version === 7) {
         d = structuredClone(d);
         nangCapV8(d);
+        d.version = 8;
+      }
+      // v8 → v9: trạng thái data KH "Data thô" đổi tên thành "Chưa phân bổ".
+      if (d && d.version === 8) {
+        d = structuredClone(d);
+        for (const k of d.khachHang) if ((k.trangThaiData as string) === 'Data thô') k.trangThaiData = 'Chưa phân bổ';
         d.version = DB_VERSION;
       }
       if (!d || d.version !== DB_VERSION) d = await buildSeed();
@@ -435,7 +441,7 @@ export class Store {
       k.phuTrach = cu ? cu.phuTrach : this.ownOnly('khachHang') ? (this.meId() ?? undefined) : k.phuTrach;
     }
     if ((k.phuTrach || undefined) !== (cu?.phuTrach || undefined)) k.ngayPhanBo = k.phuTrach ? todayIso() : undefined;
-    k.trangThaiData = k.phuTrach ? 'Đã phân bổ' : 'Data thô';
+    k.trangThaiData = k.phuTrach ? 'Đã phân bổ' : 'Chưa phân bổ';
     if (!cu) k.ngayTiepNhan ||= todayIso();
     k.tiepCan ??= 'Chưa liên hệ';
     k.coHoi ??= 'Chưa tiếp cận';
@@ -445,7 +451,7 @@ export class Store {
     return null;
   }
 
-  /** Giao nhiều KH cho một Sale (trống = trả về data thô). */
+  /** Giao nhiều KH cho một Sale (trống = trả về chưa phân bổ). */
   phanBoKH(ids: readonly string[], sale: string): Result {
     const e = this.require('phanBoKH');
     if (e) return e;
@@ -455,7 +461,7 @@ export class Store {
     this.patch('khachHang', (rows) =>
       rows.map((k) =>
         set.has(k.id) && (k.phuTrach || '') !== sale
-          ? { ...k, phuTrach: sale || undefined, ngayPhanBo: sale ? ngay : undefined, trangThaiData: sale ? 'Đã phân bổ' : 'Data thô' }
+          ? { ...k, phuTrach: sale || undefined, ngayPhanBo: sale ? ngay : undefined, trangThaiData: sale ? 'Đã phân bổ' : 'Chưa phân bổ' }
           : k,
       ),
     );
@@ -1136,8 +1142,11 @@ export class Store {
 
   // ── Đề nghị cấp vật tư ──
 
-  /** HĐ bán thiếu hàng trong kho → lập đề nghị cấp vật tư (đầu vào cho HĐ mua). */
-  taoDeNghiVatTu(hdbId: string, dong: { loaiHang: string; tenHang: string; soLuong: number; ghiChu?: string }[], ghiChu?: string): Result | { id: string } {
+  /**
+   * HĐ bán thiếu hàng trong kho → lập đề nghị cấp vật tư (đầu vào cho HĐ mua).
+   * Mỗi dòng sản phẩm thiếu = 1 đề nghị riêng: cùng mã, cùng nồng độ vẫn có thể mua của NCC khác nhau.
+   */
+  taoDeNghiVatTu(hdbId: string, dong: { loaiHang: string; tenHang: string; soLuong: number; ghiChu?: string; dongBanId?: string }[], ghiChu?: string): Result | { ids: string[] } {
     const h = this.hdbById(hdbId);
     if (!h) return 'Không tìm thấy HĐ bán';
     const e = this.require('hdb', 'edit', h.sale);
@@ -1146,17 +1155,21 @@ export class Store {
     const ds = dong.filter((d) => d.loaiHang && d.soLuong > 0);
     if (!ds.length) return 'Không có dòng nào cần đề nghị (SL > 0)';
     const ngay = todayIso();
-    const dn: DeNghiVatTu = {
-      id: uid('DN'),
-      soPhieu: this.nextSo('DN', ngay),
-      ngay,
-      hdbId,
-      nguoiDeNghi: this.meId()!,
-      ghiChu: ghiChu?.trim() || undefined,
-      dong: ds.map((d) => ({ id: uid('DND'), loaiHang: d.loaiHang, tenHang: d.tenHang.trim(), soLuong: d.soLuong, ghiChu: d.ghiChu?.trim() || undefined })),
-    };
-    this.upsert('deNghiVatTu', dn);
-    return { id: dn.id };
+    const ids: string[] = [];
+    for (const d of ds) {
+      const dn: DeNghiVatTu = {
+        id: uid('DN'),
+        soPhieu: this.nextSo('DN', ngay),
+        ngay,
+        hdbId,
+        nguoiDeNghi: this.meId()!,
+        ghiChu: ghiChu?.trim() || undefined,
+        dong: [{ id: uid('DND'), loaiHang: d.loaiHang, tenHang: d.tenHang.trim(), soLuong: d.soLuong, ghiChu: d.ghiChu?.trim() || undefined, dongBanId: d.dongBanId }],
+      };
+      this.upsert('deNghiVatTu', dn);
+      ids.push(dn.id);
+    }
+    return { ids };
   }
 
   huyDeNghiVatTu(id: string, lyDo: string): Result {

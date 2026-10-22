@@ -126,7 +126,7 @@ const TONE: Record<string, string> = {
   'Đang đàm phán': 'warn',
   'Ký hợp đồng': 'ok',
   'Đã giao hàng': 'ok',
-  'Data thô': 'mute',
+  'Chưa phân bổ': 'mute',
   'Đã phân bổ': 'info',
   'Đã rút': 'mute',
   'Hiệu lực ': 'ok',
@@ -247,7 +247,7 @@ export interface PickOption {
   imports: [Icon],
   host: { class: 'pick', '[attr.data-trong]': "value() ? null : ''", '(document:click)': 'outside($event)' },
   template: `
-    <button type="button" class="pick-btn" [id]="inputId()" [disabled]="disabled()" (click)="toggle()" [attr.aria-expanded]="open()">
+    <button type="button" class="pick-btn" [id]="inputId()" [disabled]="disabled()" (click)="toggle()" [attr.aria-expanded]="open()" [attr.title]="current() ? current()!.label + (current()!.hint ? ' · ' + current()!.hint : '') : null">
       <span class="pick-val" [class.muted]="!current()">{{ current()?.label || placeholder() }}</span>
       @if (current()?.hint) { <small class="muted">{{ current()?.hint }}</small> }
       <app-icon name="chevron" [size]="16" />

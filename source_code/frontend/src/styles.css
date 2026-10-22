@@ -432,6 +432,15 @@ a.kpi:hover, button.kpi:hover { border-color: var(--brand); }
 
 /* ── Bộ lọc ────────────────────────────────────────────────────────── */
 .filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+app-filter { display: block; }
+/*
+ * Khoảng cách dọc giữa các khối xếp chồng (ghi chú, bộ lọc, bảng, thẻ, KPI, lưới) trên mọi màn.
+ * Trong lưới / flex đã có gap → bỏ. :where giữ độ ưu tiên 0 để quy tắc riêng của từng chỗ vẫn thắng.
+ */
+:where(.note, .card, .tbl-wrap, app-filter, .kpis, .grid) + :where(.note, .card, .tbl-wrap, app-filter, .kpis, .grid) { margin-top: 14px; }
+/* Ghi chú đứng sau bất kỳ khối nào (VD thanh trạng thái HĐ → "Còn thiếu để chuyển…") không dính sát khối trên. */
+:where(* + .note) { margin-top: 12px; }
+:where(.grid, .stack, .kpis, .form-grid, .between, .row, .btn-row, .filters) > :where(.note, .card, .tbl-wrap, app-filter, .kpis, .grid) { margin-top: 0; }
 /* Bộ lọc: ô chọn đơn (.fsel) và chọn nhiều (app-multi) cùng một kiểu — mũi tên vẽ bằng CSS theo màu chủ đề;
    đang lọc thì viền + nền màu thương hiệu và có nút ✕ bỏ riêng bộ lọc đó. */
 .filters select, .filters .pick-btn { height: 40px; min-height: 40px; }
@@ -446,6 +455,8 @@ a.kpi:hover, button.kpi:hover { border-color: var(--brand); }
 .filters .pick-btn { padding-right: 12px; font-size: 15.5px; }
 .filters .multi.has .pick-btn { padding-right: 36px; }
 .filters .multi.has .pick-btn > app-icon { visibility: hidden; }
+/* Bộ lọc chọn nhiều: giá trị đang chọn tối đa 14 ký tự → nút không nở dài theo tên mục được chọn. */
+.filters .multi .pick-val > b { display: inline-block; max-width: 14ch; overflow: hidden; text-overflow: ellipsis; vertical-align: bottom; }
 .f-x {
   position: absolute; right: 7px; top: 50%; transform: translateY(-50%); z-index: 1;
   width: 24px; height: 24px; padding: 0; border: 0; border-radius: 50%; cursor: pointer;
@@ -513,8 +524,11 @@ app-money input { width: 100%; }
   padding: 6px 12px; border-radius: 8px; border: 1px solid var(--line-2); background: var(--surf); cursor: pointer; text-align: left;
 }
 .pick-btn:disabled { background: var(--surf-2); cursor: default; }
-.pick-btn .pick-val { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pick-btn small { white-space: nowrap; }
+/* Ô hẹp: tên / mã giữ đủ, gợi ý (small) co trước và cắt "…". */
+.pick-btn .pick-val { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pick-btn small { white-space: nowrap; flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.pick-btn > app-icon { margin-left: auto; }
+.pick-btn > app-icon { flex: none; }
 .multi .pick-btn.has { border-color: var(--brand); background: var(--brand-tint); }
 .pick-pop {
   position: absolute; z-index: 90; top: calc(100% + 4px); left: 0; min-width: 100%; width: max-content; max-width: min(460px, 92vw);
@@ -619,8 +633,11 @@ app-money input { width: 100%; }
 .tbl td > input[type='number'] { min-width: 90px; }
 .tbl td > input[type='date'] { min-width: 150px; }
 .tbl td > select { min-width: 100px; }
+/* Ô chữ kéo giãn được trong bảng (VD Tên hàng trên HĐ): 1 dòng, tự xuống dòng khi dài, kéo góc để giãn cả 2 chiều. */
+.tbl td > textarea.keo-gian { display: block; resize: both; height: 40px; min-height: 40px; padding: 7px 12px; line-height: 1.5; vertical-align: middle; }
 .tbl td > app-money { display: block; min-width: 120px; }
-.tbl td > .pick { min-width: 170px; }
+/* contain: độ rộng ô chọn không tính theo chữ đang chọn → cột không giãn mỗi lần chọn; chữ dài cắt "…" (xem đủ ở title). */
+.tbl td > .pick { min-width: 220px; contain: inline-size; }
 .tbl td > .ro { min-width: 80px; }
 .tbl th.w-sm { min-width: 100px; }
 .tbl th.w-md { min-width: 130px; }
@@ -630,7 +647,7 @@ app-money input { width: 100%; }
 /* Khối đặt ngay sau bảng (form thêm, ô số liệu) cách bảng một khoảng */
 .tbl-wrap + .kpis, .tbl-wrap + .form-grid, .tbl-wrap + .btn-row { margin-top: 12px; }
 /* Dòng có ô nhập: canh giữa theo chiều dọc để số / chữ thẳng hàng với ô */
-.tbl tbody tr:has(> td > input:not([type='checkbox']), > td > select, > td > app-money, > td > .pick) > td { vertical-align: middle; }
+.tbl tbody tr:has(> td > input:not([type='checkbox']), > td > select, > td > app-money, > td > .pick, > td > textarea) > td { vertical-align: middle; }
 .empty { padding: 28px 12px; text-align: center; color: var(--ink-3); }
 
 .bar { position: relative; height: 7px; border-radius: 4px; background: var(--surf-3); overflow: hidden; min-width: 70px; }

@@ -51,7 +51,7 @@ import { fold, nextCode, nowIso, todayIso, uid, yy } from './util';
  * v7: đề nghị cấp vật tư; HĐ bán có dòng hàng, cờ tạm ứng, phạt HĐ (nangCapV7).
  * v8: việc được giao (ToDoList) + quyền TD-01 cho các nhóm hệ thống (nangCapV8).
  */
-export const DB_VERSION = 8;
+export const DB_VERSION = 9;
 
 export const CAU_HINH_MAC_DINH: CauHinh = {
   TNDN_NGUONG: 0.2,
@@ -674,7 +674,8 @@ export function ghepDataKH(db: Db): void {
     }
     k.tiepCan ??= 'Chưa liên hệ';
     k.coHoi ??= 'Chưa tiếp cận';
-    k.trangThaiData = k.phuTrach ? 'Đã phân bổ' : (k.trangThaiData ?? 'Data thô');
+    // Dữ liệu cũ lưu 'Data thô' → đổi tên trạng thái thành 'Chưa phân bổ'.
+    k.trangThaiData = k.phuTrach ? 'Đã phân bổ' : 'Chưa phân bổ';
   }
 }
 

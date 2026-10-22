@@ -178,7 +178,7 @@ const TABS = [
                     <tr>
                       <td><b>{{ r.dn.soPhieu }}</b></td>
                       <td>{{ r.dn.ngay.split('-').reverse().join('/') }}</td>
-                      <td class="sub">@for (x of r.dn.dong; track x.id) { {{ x.loaiHang }} × {{ x.soLuong }}@if (r.t.daMua.get(x.id)) { (mua {{ r.t.daMua.get(x.id) }}) } ; }</td>
+                      <td class="sub">@for (x of r.dn.dong; track x.id) { {{ x.loaiHang }}@if (x.tenHang) { ({{ x.tenHang }}) } × {{ x.soLuong }}@if (r.t.daMua.get(x.id)) { (mua {{ r.t.daMua.get(x.id) }}) } ; }</td>
                       <td>@for (m of r.t.hdm; track m.id) { <a [routerLink]="['/hop-dong-mua', m.id]">{{ m.soHD }}</a> } @empty { — }</td>
                       <td><app-tt [v]="r.t.trangThai" /> @if (r.dn.lyDoHuy) { <span class="sub">{{ r.dn.lyDoHuy }}</span> }</td>
                       <td class="btn-row">

@@ -41,7 +41,7 @@ const TT_OPTS = ['Chờ mua', 'Đang mua một phần', 'Đã lên HĐ mua', 'Hu
               <td>{{ store.userName(r.dn.nguoiDeNghi) }}</td>
               <td class="sub">
                 @for (x of r.dn.dong; track x.id) {
-                  <div><b>{{ x.loaiHang }}</b> × {{ x.soLuong }}@if (r.t.daMua.get(x.id)) { · đã mua {{ r.t.daMua.get(x.id) }} } · tồn {{ ton(x.loaiHang) }}</div>
+                  <div><b>{{ x.loaiHang }}</b>@if (x.tenHang) { ({{ x.tenHang }}) } × {{ x.soLuong }}@if (r.t.daMua.get(x.id)) { · đã mua {{ r.t.daMua.get(x.id) }} } · tồn {{ ton(x.loaiHang) }}</div>
                 }
                 @if (r.dn.ghiChu) { <div class="muted">{{ r.dn.ghiChu }}</div> }
               </td>

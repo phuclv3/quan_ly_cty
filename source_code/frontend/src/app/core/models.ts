@@ -218,7 +218,7 @@ export const PHAN_LOAI_KH = ['End-user Tư nhân', 'End-user FDI', 'Thương m�
 export const NGUON_KH = ['Hotline', 'Đối tác', 'Khách cũ', 'Tự tìm kiếm'] as const;
 export const HINH_THUC_HD = ['Trực tiếp', 'Đấu thầu'] as const;
 export const LOAI_SP_KH = ['Khí chuẩn', 'Khí công nghiệp', 'Dung dịch chuẩn', 'Khác'] as const;
-export const TRANG_THAI_DATA = ['Data thô', 'Đã phân bổ'] as const;
+export const TRANG_THAI_DATA = ['Chưa phân bổ', 'Đã phân bổ'] as const;
 export type TrangThaiData = (typeof TRANG_THAI_DATA)[number];
 export const TINH_THANH = [
   'An Giang', 'Bà Rịa - Vũng Tàu', 'Bắc Giang', 'Bắc Kạn', 'Bạc Liêu', 'Bắc Ninh', 'Bến Tre', 'Bình Định', 'Bình Dương', 'Bình Phước',
@@ -262,7 +262,7 @@ export interface KhachHang {
   hinhThucHD?: string;
   tiepCan?: TiepCan;
   coHoi?: CoHoi;
-  /** Id tài khoản Sale phụ trách; trống = data thô chưa phân bổ. */
+  /** Id tài khoản Sale phụ trách; trống = KH chưa phân bổ. */
   phuTrach?: string;
   trangThaiData?: TrangThaiData;
   ngayTiepNhan?: string;
@@ -477,7 +477,8 @@ export interface DeNghiVatTu {
   hdbId: string;
   /** Id tài khoản. */
   nguoiDeNghi: string;
-  dong: { id: string; loaiHang: string; tenHang: string; soLuong: number; ghiChu?: string }[];
+  /** dongBanId: dòng sản phẩm HĐ bán sinh ra dòng đề nghị (dữ liệu cũ không có → tính gộp theo mã). */
+  dong: { id: string; loaiHang: string; tenHang: string; soLuong: number; ghiChu?: string; dongBanId?: string }[];
   ghiChu?: string;
   /** Huỷ đề nghị (không mua nữa). */
   lyDoHuy?: string;

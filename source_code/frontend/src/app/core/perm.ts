@@ -93,7 +93,7 @@ export const CHUC_NANG: ChucNang[] = [
   { ma: 'KT-14', perm: 'cpHDDuyet', module: 'Kế toán', ten: 'Duyệt chi phí thực hiện HĐ', moTa: 'Duyệt / từ chối chi phí thực hiện HĐ', mucDo: ['none', 'approve'] },
   { ma: 'KT-17', perm: 'congNo', module: 'Kế toán', ten: 'Công nợ phải thu / phải trả', moTa: 'Báo cáo công nợ 2 chiều', mucDo: ['none', 'ownView', 'view'] },
   // Kinh doanh
-  { ma: 'HDB-13', perm: 'khachHang', module: 'Kinh doanh', ten: 'Khách hàng & theo dõi kinh doanh', moTa: 'Sửa của mình: KH mình phụ trách và data thô chưa phân bổ', mucDo: ['none', 'view', 'own', 'edit'] },
+  { ma: 'HDB-13', perm: 'khachHang', module: 'Kinh doanh', ten: 'Khách hàng & theo dõi kinh doanh', moTa: 'Sửa của mình: KH mình phụ trách và KH chưa phân bổ', mucDo: ['none', 'view', 'own', 'edit'] },
   { ma: 'HDB-13-PB', perm: 'phanBoKH', module: 'Kinh doanh', ten: 'Phân bổ data khách hàng', moTa: 'Giao / đổi Sale phụ trách khách hàng', mucDo: ['none', 'edit'] },
   { ma: 'HDM-10', perm: 'ncc', module: 'Kinh doanh', ten: 'Danh mục nhà cung cấp', moTa: '', mucDo: ['none', 'view', 'edit'] },
   { ma: 'HDB-01', perm: 'hdb', module: 'Kinh doanh', ten: 'Hợp đồng bán — thông tin, hồ sơ', moTa: 'Của mình: chỉ HĐ mình là Sale phụ trách', mucDo: ['none', 'ownView', 'view', 'own', 'edit'] },

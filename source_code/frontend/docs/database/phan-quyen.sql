@@ -74,7 +74,7 @@ INSERT INTO ChucNang VALUES ('KT-07-TD', N'Kế toán', N'Tự duyệt chứng t
 INSERT INTO ChucNang VALUES ('KT-12', N'Kế toán', N'Chi phí thực hiện HĐ — lập', N'Sửa của mình: chỉ chi phí của HĐ mình phụ trách', 'view,own,edit');
 INSERT INTO ChucNang VALUES ('KT-14', N'Kế toán', N'Duyệt chi phí thực hiện HĐ', N'Duyệt / từ chối chi phí thực hiện HĐ', 'approve');
 INSERT INTO ChucNang VALUES ('KT-17', N'Kế toán', N'Công nợ phải thu / phải trả', N'Báo cáo công nợ 2 chiều', 'ownView,view');
-INSERT INTO ChucNang VALUES ('HDB-13', N'Kinh doanh', N'Khách hàng & theo dõi kinh doanh', N'Sửa của mình: KH mình phụ trách và data thô chưa phân bổ', 'view,own,edit');
+INSERT INTO ChucNang VALUES ('HDB-13', N'Kinh doanh', N'Khách hàng & theo dõi kinh doanh', N'Sửa của mình: KH mình phụ trách và KH chưa phân bổ', 'view,own,edit');
 INSERT INTO ChucNang VALUES ('HDB-13-PB', N'Kinh doanh', N'Phân bổ data khách hàng', N'Giao / đổi Sale phụ trách khách hàng', 'edit');
 INSERT INTO ChucNang VALUES ('HDM-10', N'Kinh doanh', N'Danh mục nhà cung cấp', N'', 'view,edit');
 INSERT INTO ChucNang VALUES ('HDB-01', N'Kinh doanh', N'Hợp đồng bán — thông tin, hồ sơ', N'Của mình: chỉ HĐ mình là Sale phụ trách', 'ownView,view,own,edit');

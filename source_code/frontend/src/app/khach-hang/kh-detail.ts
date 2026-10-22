@@ -30,7 +30,7 @@ import { KhForm } from './kh-form';
             @if (k.trangThai === 'Ngưng') { <app-tt v="Ngưng" /> }
             @if (choXoa()) { <app-tt v="Chờ xoá" /> }
           </h1>
-          <p class="sub">{{ k.id }} · Phụ trách: {{ k.phuTrach ? store.userName(k.phuTrach) : 'chưa phân bổ (data thô)' }}@if (k.ngayTiepNhan) { · Tiếp nhận {{ viDate(k.ngayTiepNhan) }} }</p>
+          <p class="sub">{{ k.id }} · Phụ trách: {{ k.phuTrach ? store.userName(k.phuTrach) : 'chưa phân bổ' }}@if (k.ngayTiepNhan) { · Tiếp nhận {{ viDate(k.ngayTiepNhan) }} }</p>
         </div>
         <div class="actions">
           @if (store.canEdit('hdb') && k.trangThai !== 'Ngưng') {
@@ -62,7 +62,7 @@ import { KhForm } from './kh-form';
           <div class="field"><span class="lbl">Giá trị cơ hội (chưa VAT)</span><div class="ro num">{{ k.giaTriCoHoi ? money(k.giaTriCoHoi) + ' đ' : '—' }}</div></div>
           <div class="field"><span class="lbl">Phân loại / Nguồn</span><div class="ro">{{ k.phanLoai || '—' }} · {{ k.nguon || '—' }}</div></div>
           <div class="field"><span class="lbl">Sản phẩm / Hình thức HĐ</span><div class="ro">{{ k.loaiSP || '—' }} · {{ k.hinhThucHD || '—' }}</div></div>
-          <div class="field"><span class="lbl">Trạng thái data</span><div class="ro">{{ k.phuTrach ? 'Đã phân bổ' : 'Data thô' }}{{ k.ngayPhanBo ? ' · ' + viDate(k.ngayPhanBo) : '' }}</div></div>
+          <div class="field"><span class="lbl">Trạng thái data</span><div class="ro">{{ k.phuTrach ? 'Đã phân bổ' : 'Chưa phân bổ' }}{{ k.ngayPhanBo ? ' · ' + viDate(k.ngayPhanBo) : '' }}</div></div>
           @if (k.ghiChu) { <div class="field span-3"><span class="lbl">Ghi chú</span><div class="ro">{{ k.ghiChu }}</div></div> }
         </div>
       </section>

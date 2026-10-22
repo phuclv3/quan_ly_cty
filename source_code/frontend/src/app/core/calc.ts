@@ -239,12 +239,19 @@ export function apDungTuDongHdb(h: HopDongBan): HopDongBan {
   return out;
 }
 
-/** SL đã đề nghị cấp vật tư (đề nghị chưa huỷ) theo mã hàng của một HĐ bán. */
-export function slDaDeNghi(db: Db, hdbId: string, loaiHang: string): number {
-  return sum(
-    db.deNghiVatTu.filter((d) => d.hdbId === hdbId && !d.lyDoHuy),
-    (d) => sum(d.dong.filter((x) => x.loaiHang === loaiHang), (x) => x.soLuong),
-  );
+/**
+ * SL đã đề nghị cấp vật tư (đề nghị chưa huỷ) của một HĐ bán: dòng có dongBanId tính riêng cho dòng sản phẩm đó;
+ * dòng cũ không có dongBanId tính gộp theo mã (key `ma:<loaiHang>`).
+ */
+export function slDaDeNghi(db: Db, hdbId: string): Map<string, number> {
+  const out = new Map<string, number>();
+  for (const dn of db.deNghiVatTu)
+    if (dn.hdbId === hdbId && !dn.lyDoHuy)
+      for (const x of dn.dong) {
+        const k = x.dongBanId ?? `ma:${x.loaiHang}`;
+        out.set(k, (out.get(k) ?? 0) + x.soLuong);
+      }
+  return out;
 }
 
 /** HĐ bán đang giữ hàng: đã Hiệu lực / Đang giao hàng và có dòng sản phẩm. */
@@ -299,7 +306,7 @@ export function kiemTraDongBan(
   for (const p of db.phieuKho)
     if (p.loai === 'Xuất' && p.hdId === h.id && h.id && p.trangThai === 'Hiệu lực')
       for (const x of p.dong) daGiao.set(x.loaiHang, (daGiao.get(x.loaiHang) ?? 0) + x.soLuong);
-  const deNghi = new Map<string, number>();
+  const deNghi = h.id ? slDaDeNghi(db, h.id) : new Map<string, number>();
   const conTon = new Map<string, number>();
   const tonMa = new Map<string, ReturnType<typeof tonDanhCho>>();
   return (h.dongHang ?? []).map((d) => {
@@ -317,9 +324,12 @@ export function kiemTraDongBan(
     const dung = Math.min(ton, con);
     if (d.loaiHang) conTon.set(d.loaiHang, ton - dung);
     const thieu = con - dung;
-    if (!deNghi.has(d.loaiHang)) deNghi.set(d.loaiHang, h.id ? slDaDeNghi(db, h.id, d.loaiHang) : 0);
-    const dn = Math.min(deNghi.get(d.loaiHang)!, thieu);
-    deNghi.set(d.loaiHang, deNghi.get(d.loaiHang)! - dn);
+    // Đề nghị riêng của dòng trước, rồi phần đề nghị cũ gộp theo mã (dùng chung cho các dòng cùng mã).
+    const rieng = Math.min(deNghi.get(d.id) ?? 0, thieu);
+    const kMa = `ma:${d.loaiHang}`;
+    const gop = Math.min(deNghi.get(kMa) ?? 0, thieu - rieng);
+    if (gop) deNghi.set(kMa, deNghi.get(kMa)! - gop);
+    const dn = rieng + gop;
     const trangThai: TrangThaiKhoDong = thieu <= 0 ? 'Đủ hàng' : dn >= thieu ? 'Đã đề nghị mua' : 'Cần mua';
     return { d, daGiao: g, con, ton, tonThuc: tm?.ton ?? 0, daGiuKhac: tm?.daGiuKhac ?? 0, thieu, daDeNghi: dn, trangThai };
   });

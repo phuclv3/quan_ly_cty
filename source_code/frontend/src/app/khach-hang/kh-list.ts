@@ -47,7 +47,7 @@ const opts = (xs: readonly string[]) => xs.map((x) => ({ value: x, label: x }));
 
     <div class="kpis">
       <app-kpi label="Khách hàng" [value]="'' + kpi().n" [sub]="kpi().coHD + ' khách đã có HĐ bán'" />
-      <app-kpi label="Data thô chưa phân bổ" [value]="'' + kpi().tho" sub="Chưa giao Sale phụ trách" [tone]="kpi().tho ? 'warn' : ''" />
+      <app-kpi label="KH chưa phân bổ" [value]="'' + kpi().tho" sub="Chưa giao Sale phụ trách" [tone]="kpi().tho ? 'warn' : ''" />
       <app-kpi label="Đang chăm sóc" [value]="'' + kpi().dangCS" sub="Tiếp cận: Đang liên hệ" />
       <app-kpi label="Cơ hội đang mở" [value]="short(kpi().giaTriMo)" [sub]="kpi().mo + ' khách Đã báo giá / Đang đàm phán'" tone="ok" />
     </div>
@@ -58,7 +58,7 @@ const opts = (xs: readonly string[]) => xs.map((x) => ({ value: x, label: x }));
       <div class="note info bulk">
         <b>Đã chọn {{ chon().size }} khách</b>
         <select aria-label="Giao cho Sale" [value]="giaoCho()" (change)="giaoCho.set($any($event.target).value)">
-          <option value="">— Trả về data thô —</option>
+          <option value="">— Trả về chưa phân bổ —</option>
           @for (o of store.saleOpts(); track o.value) { <option [value]="o.value" [selected]="o.value === giaoCho()">{{ o.label }} — {{ o.hint }}</option> }
         </select>
         <button type="button" class="btn sm" (click)="phanBoChon()">Phân bổ</button>
@@ -104,7 +104,7 @@ const opts = (xs: readonly string[]) => xs.map((x) => ({ value: x, label: x }));
               <td><app-tt [v]="r.k.tiepCan || 'Chưa liên hệ'" /></td>
               <td><app-tt [v]="r.k.coHoi || 'Chưa tiếp cận'" /></td>
               <td class="num">{{ r.k.giaTriCoHoi ? money(r.k.giaTriCoHoi) : '—' }}</td>
-              <td>@if (r.k.phuTrach) { {{ store.userName(r.k.phuTrach) }} } @else { <app-tt v="Data thô" /> }</td>
+              <td>@if (r.k.phuTrach) { {{ store.userName(r.k.phuTrach) }} } @else { <app-tt v="Chưa phân bổ" /> }</td>
               <td>{{ viDate(r.csCuoi) }}</td>
               <td class="num">{{ r.soHD }}</td>
               <td (click)="$event.stopPropagation()">
@@ -167,7 +167,7 @@ export class KhList {
         key: 'phuTrach',
         label: 'Phụ trách',
         options: [
-          { value: CHUA_PB, label: '— Chưa phân bổ (data thô) —' },
+          { value: CHUA_PB, label: '— Chưa phân bổ —' },
           ...phuTrach.map((id) => ({ value: id, label: this.store.userName(id) })),
         ],
       },
@@ -251,7 +251,7 @@ export class KhList {
     const ids = [...this.chon()];
     const err = this.store.phanBoKH(ids, this.giaoCho());
     if (err) return this.store.say(err);
-    this.store.say(`Đã phân bổ ${ids.length} khách cho ${this.giaoCho() ? this.store.userName(this.giaoCho()) : 'data thô'}`);
+    this.store.say(`Đã phân bổ ${ids.length} khách cho ${this.giaoCho() ? this.store.userName(this.giaoCho()) : 'chưa phân bổ'}`);
     this.chon.set(new Set());
   }
 
