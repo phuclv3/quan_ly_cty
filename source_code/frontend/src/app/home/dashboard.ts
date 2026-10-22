@@ -25,8 +25,16 @@ interface Viec {
     `a.dcard{display:grid;gap:8px;align-content:start;text-decoration:none;color:inherit;border-top:3px solid var(--brand)}
     a.dcard:hover{border-color:var(--brand)}a.dcard h3{display:flex;gap:8px;align-items:center;font-size:18px;margin:0}
     a.dcard .big{font-size:28px;font-weight:700}.dl{display:grid;gap:4px;font-size:15.5px}.dl div{display:flex;justify-content:space-between;gap:8px}
-    .todo{list-style:none;margin:0;padding:0;display:grid;gap:6px}.todo a{display:flex;gap:10px;align-items:center;text-decoration:none;color:inherit;padding:8px 10px;border-radius:8px;border:1px solid var(--line)}
-    .todo a:hover{background:var(--surf-2)}`,
+    .todo{list-style:none;margin:0;padding:0;display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(min(100%,420px),1fr))}
+    .todo a{display:flex;gap:12px;align-items:center;height:100%;box-sizing:border-box;text-decoration:none;color:inherit;padding:10px 12px;border-radius:8px;border:1px solid var(--line);border-left:4px solid var(--line);background:var(--surf)}
+    .todo a.bad{border-left-color:var(--bad-fg)}.todo a.warn{border-left-color:var(--warn-fg)}.todo a.info{border-left-color:var(--info-fg)}
+    .todo a:hover{background:var(--surf-2)}.todo .grow{min-width:0}.todo .grow b{display:block;line-height:1.35}
+    .todo .tag{flex:none;min-width:78px;text-align:center}
+    .vchips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+    .vchips button{display:inline-flex;gap:6px;align-items:center;height:34px;padding:0 12px;border-radius:999px;border:1px solid var(--line);background:var(--surf);color:var(--ink-2);font:inherit;font-size:14.5px;cursor:pointer}
+    .vchips button.on{border-color:var(--brand);color:var(--brand);font-weight:700}
+    .vchips .n{min-width:22px;padding:0 6px;border-radius:999px;background:var(--surf-3);font-size:13px;font-weight:700;text-align:center}
+    .vchips .n.bad{background:var(--bad-bg);color:var(--bad-fg)}.vchips .n.warn{background:var(--warn-bg);color:var(--warn-fg)}.vchips .n.info{background:var(--info-bg);color:var(--info-fg)}`,
   ],
   template: `
     <div class="page-head">
@@ -47,6 +55,36 @@ interface Viec {
       }
       @if (choDuyet(); as c) { <app-kpi [label]="c.cuaToi ? 'Phiếu của tôi đang chờ duyệt' : 'Đang chờ duyệt'" [value]="'' + (c.phieu + c.cp)" [tone]="c.phieu + c.cp ? 'warn' : ''" /> }
       <app-kpi label="Việc cần làm" [value]="'' + viec().length" [tone]="viec().length ? 'bad' : 'ok'" />
+    </div>
+
+    <div class="section-title"><h2>Việc cần làm</h2><span class="sub">{{ viec().length }} việc</span></div>
+    <div class="card">
+      @if (viec().length) {
+        <div class="vchips" role="group" aria-label="Lọc việc cần làm">
+          <button type="button" [class.on]="!locViec()" [attr.aria-pressed]="!locViec()" (click)="chonLoc('')">Tất cả <span class="n">{{ viec().length }}</span></button>
+          @for (t of TONES; track t.k) {
+            @if (demViec()[t.k]) {
+              <button type="button" [class.on]="locViec() === t.k" [attr.aria-pressed]="locViec() === t.k" (click)="chonLoc(t.k)">{{ t.ten }} <span class="n" [class]="'n ' + t.k">{{ demViec()[t.k] }}</span></button>
+            }
+          }
+        </div>
+      }
+      <ul class="todo">
+        @for (v of viecLoc().slice(0, soViec()); track $index) {
+          <li>
+            <a [routerLink]="v.link" [queryParams]="v.qp" [class]="v.tone">
+              <span class="tag" [class]="'tag ' + v.tone">{{ tenTone(v.tone) }}</span>
+              <span class="grow"><b>{{ v.text }}</b><span class="sub" style="display:block">{{ v.sub }}</span></span>
+              <app-icon name="chevron" [size]="16" />
+            </a>
+          </li>
+        } @empty {
+          <li class="empty">Không có việc tồn đọng.</li>
+        }
+      </ul>
+      @if (viecLoc().length > soViec()) {
+        <div class="btn-row" style="margin-top:8px"><button type="button" class="btn sm quiet" (click)="soViec.set(soViec() + 20)">Xem thêm ({{ viecLoc().length - soViec() }})</button></div>
+      }
     </div>
 
     <div class="grid c3">
@@ -130,26 +168,6 @@ interface Viec {
         </a>
       }
     </div>
-
-    <div class="section-title"><h2>Việc cần làm</h2><span class="sub">{{ viec().length }} việc</span></div>
-    <div class="card">
-      <ul class="todo">
-        @for (v of viec().slice(0, soViec()); track $index) {
-          <li>
-            <a [routerLink]="v.link" [queryParams]="v.qp">
-              <span class="tag" [class]="'tag ' + v.tone">{{ v.tone === 'bad' ? 'Quá hạn' : v.tone === 'warn' ? 'Cần xử lý' : 'Nhắc' }}</span>
-              <span class="grow"><b>{{ v.text }}</b><span class="sub" style="display:block">{{ v.sub }}</span></span>
-              <app-icon name="chevron" [size]="16" />
-            </a>
-          </li>
-        } @empty {
-          <li class="empty">Không có việc tồn đọng.</li>
-        }
-      </ul>
-      @if (viec().length > soViec()) {
-        <div class="btn-row" style="margin-top:8px"><button type="button" class="btn sm quiet" (click)="soViec.set(soViec() + 20)">Xem thêm</button></div>
-      }
-    </div>
   `,
 })
 export class Dashboard {
@@ -159,6 +177,28 @@ export class Dashboard {
   protected readonly moment = viMoment;
   protected readonly capNhat = signal(nowIso());
   protected readonly soViec = signal(12);
+  protected readonly TONES: { k: Viec['tone']; ten: string }[] = [
+    { k: 'bad', ten: 'Quá hạn' },
+    { k: 'warn', ten: 'Cần xử lý' },
+    { k: 'info', ten: 'Nhắc' },
+  ];
+  protected readonly locViec = signal<Viec['tone'] | ''>('');
+  protected readonly demViec = computed(() => {
+    const d: Record<Viec['tone'], number> = { bad: 0, warn: 0, info: 0 };
+    for (const v of this.viec()) d[v.tone]++;
+    return d;
+  });
+  protected readonly viecLoc = computed(() => {
+    const t = this.locViec();
+    return t ? this.viec().filter((v) => v.tone === t) : this.viec();
+  });
+  protected tenTone(t: Viec['tone']): string {
+    return this.TONES.find((x) => x.k === t)!.ten;
+  }
+  protected chonLoc(t: Viec['tone'] | ''): void {
+    this.locViec.set(t);
+    this.soViec.set(12);
+  }
 
   protected readonly vaiTro = computed(() => this.store.tenNhom(this.store.me()));
 
@@ -324,7 +364,9 @@ export class Dashboard {
         });
       }
     }
-    return out;
+    // Quá hạn → Cần xử lý → Nhắc; sort ổn định nên giữ thứ tự trong cùng nhóm.
+    const uuTien = { bad: 0, warn: 1, info: 2 };
+    return out.sort((a, b) => uuTien[a.tone] - uuTien[b.tone]);
   });
 
   protected lamMoi(): void {
