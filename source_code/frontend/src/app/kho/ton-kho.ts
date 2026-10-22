@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { DongLo, DongTon, tonKho, tonTheoLo } from '../core/calc';
-import { KHO_CHUYEN_THANG } from '../core/models';
+import { DongLo, DongTon, lechKiemKe, tonKho, tonTheoLo } from '../core/calc';
+import { KHO_CHUYEN_THANG, KiemKe } from '../core/models';
 import { Store } from '../core/store';
 import { nhoLoc } from '../core/ui';
 import { money, sum, viDate, vndShort } from '../core/util';
@@ -47,7 +47,12 @@ const tinhTrang = (ton: number) => (ton > 0 ? 'con' : ton < 0 ? 'am' : 'het');
         <button type="button" role="tab" [class.on]="che() === 'ma'" [attr.aria-selected]="che() === 'ma'" (click)="che.set('ma')">Theo mã hàng</button>
         <button type="button" role="tab" [class.on]="che() === 'lo'" [attr.aria-selected]="che() === 'lo'" (click)="che.set('lo')">Theo lô</button>
       </div>
-      <button type="button" class="btn sm quiet" (click)="xuatCsv()">Xuất CSV</button>
+      <div class="btn-row">
+        @if (che() === 'ma') {
+          <label class="check-row"><input type="checkbox" [checked]="duMa()" (change)="duMa.set($any($event.target).checked)" /> Hiện cả mã chưa phát sinh</label>
+        }
+        <button type="button" class="btn sm quiet" (click)="xuatCsv()">Xuất CSV</button>
+      </div>
     </div>
     <app-filter [(loc)]="loc" memo="kho-ton" [time]="false" [facets]="facets()" placeholder="Tìm mã hàng, tên, mã lô, nồng độ, số hoá đơn…" />
 
@@ -55,7 +60,7 @@ const tinhTrang = (ton: number) => (ton > 0 ? 'con' : ton < 0 ? 'am' : 'het');
       <div class="tbl-wrap">
         <table class="tbl freeze">
           <thead>
-            <tr><th>Mã hàng</th><th>Nhóm</th><th>Thể tích</th><th>ĐVT</th><th>Vị trí kho</th><th class="num">Tổng nhập</th><th class="num">Tổng xuất</th><th class="num">Tồn</th><th class="num">Số lô còn</th><th class="num">Giá trị tồn</th></tr>
+            <tr><th>Mã hàng</th><th>Nhóm</th><th>Thể tích</th><th>ĐVT</th><th>Vị trí kho</th><th class="num">Tổng nhập</th><th class="num">Tổng xuất</th><th class="num">Tồn</th><th class="num">Số lô còn</th><th class="num">Giá trị tồn</th><th class="num" title="Số đếm của đợt kiểm kê gần nhất tại kho">Kiểm kê{{ ngayKK() ? ' ' + ngayKK() : '' }}</th><th class="num" title="Thực tế − tồn sổ tại ngày kiểm kê">Lệch</th></tr>
           </thead>
           <tbody>
             @for (r of pgMa.items(); track r.loaiHang + r.kho) {
@@ -70,14 +75,20 @@ const tinhTrang = (ton: number) => (ton > 0 ? 'con' : ton < 0 ? 'am' : 'het');
                 <td class="num" [class.neg]="r.ton < 0"><b>{{ money(r.ton) }}</b></td>
                 <td class="num">{{ r.soLo }}</td>
                 <td class="num">{{ money(r.giaTri) }}</td>
+                @if (kk(r); as k) {
+                  <td class="num" [title]="'Kiểm kê ' + viDate(k.ngay)">{{ money(k.thucTe) }}</td>
+                  <td class="num" [class.neg]="k.lech < 0">@if (k.lech) { <b>{{ k.lech > 0 ? '+' : '' }}{{ money(k.lech) }}</b> } @else { 0 }</td>
+                } @else {
+                  <td class="num muted">—</td><td class="num muted">—</td>
+                }
               </tr>
             } @empty {
-              <tr><td colspan="10" class="empty">Không có mã hàng nào khớp bộ lọc</td></tr>
+              <tr><td colspan="12" class="empty">Không có mã hàng nào khớp bộ lọc</td></tr>
             }
           </tbody>
           @if (rowsMa().length) {
             <tfoot>
-              <tr><td colspan="5">Tổng ({{ rowsMa().length }} dòng)</td><td class="num">{{ money(tongMa().nhap) }}</td><td class="num">{{ money(tongMa().xuat) }}</td><td class="num" [class.neg]="tongMa().ton < 0">{{ money(tongMa().ton) }}</td><td></td><td class="num">{{ money(tongMa().giaTri) }}</td></tr>
+              <tr><td colspan="5">Tổng ({{ rowsMa().length }} dòng)</td><td class="num">{{ money(tongMa().nhap) }}</td><td class="num">{{ money(tongMa().xuat) }}</td><td class="num" [class.neg]="tongMa().ton < 0">{{ money(tongMa().ton) }}</td><td></td><td class="num">{{ money(tongMa().giaTri) }}</td><td colspan="2"></td></tr>
             </tfoot>
           }
         </table>
@@ -120,7 +131,8 @@ const tinhTrang = (ton: number) => (ton > 0 ? 'con' : ton < 0 ? 'am' : 'het');
     }
     <p class="hint muted">
       Mỗi dòng phiếu nhập là một LÔ có đơn giá riêng; xuất kho trừ đúng lô → giá vốn lấy đúng đơn giá lô (không bình quân).
-      Không tính phiếu Đã huỷ và kho Chuyển thẳng. Bấm dòng để xem thẻ kho.
+      Không tính phiếu Đã huỷ và kho Chuyển thẳng. Cột Kiểm kê / Lệch lấy đợt kiểm kê gần nhất của từng kho (Lệch = thực tế − tồn sổ tại ngày kiểm kê).
+      Bấm dòng để xem thẻ kho.
     </p>
 
     @if (ct().length) {
@@ -180,8 +192,51 @@ export class TonKhoTab {
   protected readonly che = signal<Che>('ma');
   protected readonly loc = signal<Loc>(nhoLoc('kho-ton', LOC_RONG));
   protected readonly chon = signal<Chon | null>(null);
+  protected readonly duMa = signal(false);
 
-  private readonly allMa = computed(() => tonKho(this.store.db()).filter((r) => r.kho !== KHO_CHUYEN_THANG));
+  /** Đợt kiểm kê gần nhất mỗi kho → số đếm / lệch theo mã (sheet "3b", cột "Kiểm kê 19/08", "Lệch"). */
+  private readonly kkKho = computed(() => {
+    const ganNhat = new Map<string, KiemKe>();
+    for (const k of this.store.kiemKe()) {
+      const c = ganNhat.get(k.kho);
+      if (!c || c.ngay < k.ngay) ganNhat.set(k.kho, k);
+    }
+    const out = new Map<string, { ngay: string; theoMa: Map<string, { thucTe: number; lech: number }> }>();
+    for (const [kho, k] of ganNhat)
+      out.set(kho, { ngay: k.ngay, theoMa: new Map(lechKiemKe(this.store.db(), k).map((r) => [r.loaiHang, { thucTe: r.thucTe, lech: r.lech }])) });
+    return out;
+  });
+  /** Ngày kiểm kê hiện ở tiêu đề cột khi mọi kho cùng một ngày. */
+  protected readonly ngayKK = computed(() => {
+    const ds = new Set([...this.kkKho().values()].map((x) => x.ngay));
+    return ds.size === 1 ? viDate([...ds][0]).slice(0, 5) : '';
+  });
+  protected kk(r: DongTon): { ngay: string; thucTe: number; lech: number } | null {
+    const k = this.kkKho().get(r.kho);
+    if (!k) return null;
+    const x = k.theoMa.get(r.loaiHang) ?? { thucTe: 0, lech: 0 };
+    return { ngay: k.ngay, ...x };
+  }
+  /** Thứ tự theo danh mục mã hàng (nhóm → loại khí → thể tích), như file kho. */
+  private readonly thuTu = computed(() => new Map(this.store.loaiHang().map((l, i) => [l.id, i])));
+
+  private readonly allMa = computed(() => {
+    const rows = tonKho(this.store.db()).filter((r) => r.kho !== KHO_CHUYEN_THANG);
+    const co = new Set(rows.map((r) => `${r.loaiHang}\u0001${r.kho}`));
+    const them = (loaiHang: string, kho: string) => {
+      if (co.has(`${loaiHang}\u0001${kho}`)) return;
+      co.add(`${loaiHang}\u0001${kho}`);
+      rows.push({ loaiHang, kho, nhap: 0, xuat: 0, ton: 0, giaTri: 0, soLo: 0 });
+    };
+    // Mã đếm được khi kiểm kê nhưng chưa có trên sổ → vẫn hiện để thấy lệch.
+    for (const [kho, k] of this.kkKho()) for (const ma of k.theoMa.keys()) them(ma, kho);
+    if (this.duMa()) {
+      const kho = this.store.khoDangDung().find((k) => k.id !== KHO_CHUYEN_THANG)?.id ?? '';
+      const daCo = new Set(rows.map((r) => r.loaiHang));
+      for (const l of this.store.loaiHang()) if (!daCo.has(l.id)) them(l.id, kho);
+    }
+    return rows;
+  });
   private readonly allLo = computed(() => tonTheoLo(this.store.db()).filter((l) => l.kho !== KHO_CHUYEN_THANG));
   protected readonly facets = computed<Facet[]>(() => [
     { key: 'kho', label: 'Kho', options: khoOpts(this.store.db(), false) },
@@ -201,7 +256,7 @@ export class TonKhoTab {
           khopSel(l, 'tt', tinhTrang(r.ton))
         );
       })
-      .sort((a, b) => a.loaiHang.localeCompare(b.loaiHang) || a.kho.localeCompare(b.kho));
+      .sort((a, b) => (this.thuTu().get(a.loaiHang) ?? 1e9) - (this.thuTu().get(b.loaiHang) ?? 1e9) || a.loaiHang.localeCompare(b.loaiHang) || a.kho.localeCompare(b.kho));
   });
   protected readonly pgMa = paginate(this.rowsMa);
   protected readonly tongMa = computed(() => ({
@@ -266,10 +321,11 @@ export class TonKhoTab {
 
   protected xuatCsv(): void {
     if (this.che() === 'ma') {
-      const rows: (string | number)[][] = [['Mã hàng', 'Tên', 'Nhóm', 'Thể tích', 'ĐVT', 'Vị trí kho', 'Tổng nhập', 'Tổng xuất', 'Tồn', 'Số lô còn', 'Giá trị tồn']];
+      const rows: (string | number)[][] = [['Mã hàng', 'Tên', 'Nhóm', 'Thể tích', 'ĐVT', 'Vị trí kho', 'Tổng nhập', 'Tổng xuất', 'Tồn', 'Số lô còn', 'Giá trị tồn', 'Ngày kiểm kê', 'Kiểm kê', 'Lệch']];
       for (const r of this.rowsMa()) {
         const lh = this.store.loaiHangById(r.loaiHang);
-        rows.push([r.loaiHang, lh?.ten ?? '', lh?.nhom ?? '', lh?.theTich ?? '', lh?.dvt ?? '', this.store.khoTen(r.kho), r.nhap, r.xuat, r.ton, r.soLo, Math.round(r.giaTri)]);
+        const k = this.kk(r);
+        rows.push([r.loaiHang, lh?.ten ?? '', lh?.nhom ?? '', lh?.theTich ?? '', lh?.dvt ?? '', this.store.khoTen(r.kho), r.nhap, r.xuat, r.ton, r.soLo, Math.round(r.giaTri), k ? viDate(k.ngay) : '', k?.thucTe ?? '', k?.lech ?? '']);
       }
       downloadFile(fileName('ton-kho-theo-ma', 'csv'), 'text/csv', csv(rows));
       return;

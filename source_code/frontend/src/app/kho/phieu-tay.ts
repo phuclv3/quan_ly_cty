@@ -13,6 +13,7 @@ interface DongNhap {
   soLuong: number;
   donGia: number;
   vat: number;
+  ghiChu: string;
 }
 
 /** Dòng xuất: mã hàng → lô (bỏ trống = tự trừ lô nhập trước), SL, tên ghi trên HĐ bán. */
@@ -21,6 +22,7 @@ interface DongXuatF {
   lo: string;
   soLuong: number;
   tenTrenHD: string;
+  ghiChu: string;
 }
 
 interface Form {
@@ -36,8 +38,8 @@ interface Form {
   xuat: DongXuatF[];
 }
 
-const nhapRong = (): DongNhap => ({ loaiHang: '', thuocTinh: '', soLuong: 0, donGia: 0, vat: 8 });
-const xuatRong = (): DongXuatF => ({ loaiHang: '', lo: '', soLuong: 0, tenTrenHD: '' });
+const nhapRong = (): DongNhap => ({ loaiHang: '', thuocTinh: '', soLuong: 0, donGia: 0, vat: 8, ghiChu: '' });
+const xuatRong = (): DongXuatF => ({ loaiHang: '', lo: '', soLuong: 0, tenTrenHD: '', ghiChu: '' });
 
 /** KHO-06: popup lập phiếu nhập (mỗi dòng = 1 lô có đơn giá) / phiếu xuất (trừ theo lô). */
 @Component({
@@ -87,7 +89,7 @@ const xuatRong = (): DongXuatF => ({ loaiHang: '', lo: '', soLuong: 0, tenTrenHD
         <h3 class="section-title">Lô nhập <button type="button" class="btn sm quiet" (click)="themNhap()">+ Thêm dòng</button></h3>
         <div class="tbl-wrap">
           <table class="tbl compact">
-            <thead><tr><th style="min-width:260px">Mã hàng <span class="req">*</span></th><th>Quy cách / nồng độ</th><th class="num">SL <span class="req">*</span></th><th class="num">Đơn giá chưa VAT <span class="req">*</span></th><th class="num">VAT %</th><th class="num">Thành tiền</th><th></th></tr></thead>
+            <thead><tr><th style="min-width:260px">Mã hàng <span class="req">*</span></th><th>Quy cách / nồng độ</th><th class="num">SL <span class="req">*</span></th><th class="num">Đơn giá chưa VAT <span class="req">*</span></th><th class="num">VAT %</th><th class="num">Thành tiền</th><th>Ghi chú</th><th></th></tr></thead>
             <tbody>
               @for (d of f().nhap; track $index; let i = $index) {
                 <tr>
@@ -103,11 +105,15 @@ const xuatRong = (): DongXuatF => ({ loaiHang: '', lo: '', soLuong: 0, tenTrenHD
                   <td class="num"><input type="number" min="0" step="1000" [value]="d.donGia || ''" (input)="setNhap(i, 'donGia', +$any($event.target).value)" aria-label="Đơn giá chưa VAT" /></td>
                   <td class="num"><input type="number" min="0" max="10" style="width:64px" [value]="d.vat" (input)="setNhap(i, 'vat', +$any($event.target).value)" aria-label="VAT %" /></td>
                   <td class="num">{{ money(d.soLuong * d.donGia) }}</td>
+                  <td><input [value]="d.ghiChu" (input)="setNhap(i, 'ghiChu', $any($event.target).value)" aria-label="Ghi chú dòng" /></td>
                   <td><button type="button" class="btn sm quiet danger" [disabled]="f().nhap.length === 1" (click)="xoaNhap(i)">Xoá</button></td>
                 </tr>
               }
             </tbody>
-            <tfoot><tr><td colspan="5">Tổng chưa VAT</td><td class="num">{{ money(tongNhap()) }}</td><td></td></tr></tfoot>
+            <tfoot>
+              <tr><td colspan="5">Tổng chưa VAT</td><td class="num">{{ money(tongNhap()) }}</td><td colspan="2"></td></tr>
+              <tr><td colspan="5">Tiền VAT · Tổng sau VAT</td><td class="num">{{ money(vatNhap()) }} · <b>{{ money(tongNhap() + vatNhap()) }}</b></td><td colspan="2"></td></tr>
+            </tfoot>
           </table>
         </div>
         <p class="hint muted">Mã hàng là danh mục cố định (nhóm · thể tích · ĐVT). Nồng độ khách đặt và đơn giá ghi theo từng lô — cùng mã nhập nhiều lần giá khác nhau là nhiều lô.</p>
@@ -115,7 +121,7 @@ const xuatRong = (): DongXuatF => ({ loaiHang: '', lo: '', soLuong: 0, tenTrenHD
         <h3 class="section-title">Dòng xuất <button type="button" class="btn sm quiet" (click)="themXuat()">+ Thêm dòng</button></h3>
         <div class="tbl-wrap">
           <table class="tbl compact">
-            <thead><tr><th style="min-width:240px">Mã hàng <span class="req">*</span></th><th style="min-width:220px">Lô</th><th class="num">SL <span class="req">*</span></th><th class="num">Giá vốn</th><th>Tên hàng trên HĐ</th><th></th></tr></thead>
+            <thead><tr><th style="min-width:240px">Mã hàng <span class="req">*</span></th><th style="min-width:220px">Lô</th><th class="num">SL <span class="req">*</span></th><th class="num">Giá vốn</th><th>Tên hàng trên HĐ</th><th>Ghi chú</th><th></th></tr></thead>
             <tbody>
               @for (d of f().xuat; track $index; let i = $index) {
                 <tr>
@@ -135,15 +141,20 @@ const xuatRong = (): DongXuatF => ({ loaiHang: '', lo: '', soLuong: 0, tenTrenHD
                   </td>
                   <td class="num"><input type="number" min="0" [value]="d.soLuong || ''" (input)="setXuat(i, { soLuong: +$any($event.target).value })" aria-label="Số lượng" /></td>
                   <td class="num">{{ money(giaVon(d)) }}</td>
-                  <td><input [value]="d.tenTrenHD" placeholder="VD Bình khí chuẩn NO2 200ppm" (input)="setXuat(i, { tenTrenHD: $any($event.target).value })" aria-label="Tên hàng trên HĐ" /></td>
+                  <td>
+                    <input [value]="d.tenTrenHD" placeholder="Gõ tên như trên HĐ" list="pt-ten-hd" (change)="chonTen(i, $any($event.target).value)" aria-label="Tên hàng trên HĐ" />
+                  </td>
+                  <td><input [value]="d.ghiChu" (input)="setXuat(i, { ghiChu: $any($event.target).value })" aria-label="Ghi chú dòng" /></td>
                   <td><button type="button" class="btn sm quiet danger" [disabled]="f().xuat.length === 1" (click)="xoaXuat(i)">Xoá</button></td>
                 </tr>
               }
             </tbody>
-            <tfoot><tr><td colspan="3">Tổng giá vốn</td><td class="num">{{ money(tongXuat()) }}</td><td colspan="2"></td></tr></tfoot>
+            <tfoot><tr><td colspan="3">Tổng giá vốn</td><td class="num">{{ money(tongXuat()) }}</td><td colspan="3"></td></tr></tfoot>
           </table>
+          <datalist id="pt-ten-hd">@for (a of tenDaGan(); track a.id) { <option [value]="a.ten">{{ a.loaiHang }}{{ a.nongDo ? ' · ' + a.nongDo : '' }}</option> }</datalist>
         </div>
-        <p class="hint muted">Giá vốn lấy đúng đơn giá của lô bị trừ. Không chọn lô thì hệ thống trừ lô nhập trước, có thể tách nhiều lô. Không cho xuất quá tồn.</p>
+        <p class="hint muted">Giá vốn lấy đúng đơn giá của lô bị trừ. Không chọn lô thì hệ thống trừ lô nhập trước, có thể tách nhiều lô. Không cho xuất quá tồn, không trừ lô nhập sau ngày xuất.
+          Gõ "Tên hàng trên HĐ" đã gán ở tab Ánh xạ tên bán → tự điền mã hàng + lô hay dùng.</p>
       }
 
       <div class="form-grid">
@@ -234,11 +245,14 @@ export class PhieuTayForm {
   protected readonly coChungTu = computed(() => (this.f().loai === 'Nhập' ? !!this.f().soHoaDon.trim() : !!this.f().hdId));
   protected readonly tongNhap = computed(() => sum(this.f().nhap, (d) => d.soLuong * d.donGia));
   protected readonly tongXuat = computed(() => sum(this.f().xuat, (d) => this.giaVon(d)));
+  protected readonly vatNhap = computed(() => sum(this.f().nhap, (d) => Math.round((d.soLuong * d.donGia * (d.vat || 0)) / 100)));
+  /** Tên hàng HĐ bán đã gán mã (sheet "5. AnhXaTenBan"). */
+  protected readonly tenDaGan = computed(() => this.store.anhXaTen().filter((a) => a.loaiHang));
   /** Lỗi xuất (quá tồn lô / thiếu tồn) hiện ngay khi nhập — lưu sẽ bị chặn. */
   protected readonly canhBao = computed(() => {
     const f = this.f();
     if (f.loai !== 'Xuất') return '';
-    return this.store.loiXuat(f.kho, f.hdId || undefined, f.xuat) ?? '';
+    return this.store.loiXuat(f.kho, f.hdId || undefined, f.xuat, f.ngay) ?? '';
   });
 
   protected moTa(lh: string): string {
@@ -248,7 +262,7 @@ export class PhieuTayForm {
     return tonTai(this.store.db(), lh, this.f().kho);
   }
   protected lots(lh: string): DongLo[] {
-    return lh ? loConHang(this.store.db(), lh, this.f().kho) : [];
+    return lh ? loConHang(this.store.db(), lh, this.f().kho).filter((l) => l.ngay <= this.f().ngay) : [];
   }
   protected giaVon(d: DongXuatF): number {
     if (!d.loaiHang || !(d.soLuong > 0) || this.f().kho === KHO_CHUYEN_THANG) return 0;
@@ -277,6 +291,14 @@ export class PhieuTayForm {
   protected setXuat(i: number, p: Partial<DongXuatF>): void {
     this.f.update((f) => ({ ...f, xuat: f.xuat.map((d, j) => (j === i ? { ...d, ...p } : d)) }));
   }
+  /** Chọn tên trên HĐ đã có ánh xạ → điền mã hàng (nếu dòng chưa chọn) và lô hay dùng (nếu lô còn hàng). */
+  protected chonTen(i: number, ten: string): void {
+    const a = this.tenDaGan().find((x) => x.ten === ten.trim());
+    const d = this.f().xuat[i];
+    if (!a?.loaiHang || (d.loaiHang && d.loaiHang !== a.loaiHang)) return this.setXuat(i, { tenTrenHD: ten });
+    const lo = a.lo && this.lots(a.loaiHang).some((l) => l.lo === a.lo) ? a.lo : '';
+    this.setXuat(i, { tenTrenHD: ten, loaiHang: a.loaiHang, lo });
+  }
   protected themXuat(): void {
     this.f.update((f) => ({ ...f, xuat: [...f.xuat, xuatRong()] }));
   }
@@ -290,7 +312,7 @@ export class PhieuTayForm {
     const r = this.store.savePhieuKhoTay(
       { ngay: f.ngay, loai: f.loai, hdId: f.hdId || undefined, kho: f.kho, lyDo: f.lyDo, ghiChu: f.ghiChu, soHoaDon: f.soHoaDon, ncc: f.ncc || undefined },
       f.nhap,
-      f.xuat.map((d) => ({ loaiHang: d.loaiHang, lo: d.lo || undefined, soLuong: d.soLuong, tenTrenHD: d.tenTrenHD })),
+      f.xuat.map((d) => ({ loaiHang: d.loaiHang, lo: d.lo || undefined, soLuong: d.soLuong, tenTrenHD: d.tenTrenHD, ghiChu: d.ghiChu })),
     );
     if (typeof r === 'string') return this.err.set(r);
     this.store.say(

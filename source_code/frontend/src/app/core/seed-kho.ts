@@ -1,5 +1,5 @@
 /**
- * Dữ liệu kho — trích từ tai_lieu/note_update/KhoOxyMecie_v3.xlsx (sheet "DM. Mã hàng", "1. NhapKho", "6. KiemKe").
+ * Dữ liệu kho — trích từ tai_lieu/note_update/KhoOxyMecie_v3.xlsx (sheet "DM. Mã hàng", "1. NhapKho", "5. AnhXaTenBan", "6. KiemKe").
  * Tệp sinh tự động bằng scripts/gen-seed-kho.py — không sửa tay.
  */
 export interface RawMaHang {
@@ -25,7 +25,18 @@ export interface RawLoNhap {
 
 export interface RawKiemKe {
   ngay: string;
-  dong: { ma: string; soLuong: number; ghiChu: string }[];
+  dong: { ma: string; soLuong: number; tenHang: string; xuatXu?: string; nongDo?: string }[];
+}
+
+export interface RawAnhXa {
+  ten: string;
+  theTich?: string;
+  nongDo?: string;
+  tongSL: number;
+  soLan: number;
+  ma?: string;
+  lo?: string;
+  ghiChu?: string;
 }
 
 export const RAW_MA_HANG: RawMaHang[] = [
@@ -1725,137 +1736,2098 @@ export const RAW_KIEM_KE: RawKiemKe = {
   {
    "ma": "KC-NO2-8L",
    "soLuong": 1,
-   "ghiChu": "NO2 · Air Liquide"
+   "tenHang": "NO2",
+   "xuatXu": "Air Liquide"
   },
   {
    "ma": "KC-N2-10L",
    "soLuong": 8,
-   "ghiChu": "N2 · Air Liquide"
+   "tenHang": "N2",
+   "xuatXu": "Air Liquide"
   },
   {
    "ma": "KC-O2-10L",
    "soLuong": 1,
-   "ghiChu": "O2 · Air Liquide"
+   "tenHang": "O2",
+   "xuatXu": "Air Liquide"
   },
   {
    "ma": "KC-O2-8L",
    "soLuong": 5,
-   "ghiChu": "O2 · Air Liquide"
+   "tenHang": "O2",
+   "xuatXu": "Air Liquide"
   },
   {
    "ma": "KC-SO2NOCO-8L",
    "soLuong": 3,
-   "ghiChu": "SO2/NO/CO · Air Liquide · 650/980/650"
+   "tenHang": "SO2/NO/CO",
+   "xuatXu": "Air Liquide",
+   "nongDo": "650/980/650"
   },
   {
    "ma": "KC-SO2NOCO-10L",
    "soLuong": 1,
-   "ghiChu": "SO2/NO/CO · Air Liquide · 28,9/306/506"
+   "tenHang": "SO2/NO/CO",
+   "xuatXu": "Air Liquide",
+   "nongDo": "28,9/306/506"
   },
   {
    "ma": "KC-HF-8L",
    "soLuong": 1,
-   "ghiChu": "HF · Air Liquide · 30 mg/nm3"
+   "tenHang": "HF",
+   "xuatXu": "Air Liquide",
+   "nongDo": "30 mg/nm3"
   },
   {
    "ma": "KC-NH3-8L",
    "soLuong": 1,
-   "ghiChu": "NH3 · Air Liquide · 50,8ppm"
+   "tenHang": "NH3",
+   "xuatXu": "Air Liquide",
+   "nongDo": "50,8ppm"
   },
   {
    "ma": "KC-HCL-10L",
    "soLuong": 1,
-   "ghiChu": "HCL · Air Liquide · 15,2ppm"
+   "tenHang": "HCL",
+   "xuatXu": "Air Liquide",
+   "nongDo": "15,2ppm"
   },
   {
    "ma": "KC-O2-8L",
    "soLuong": 1,
-   "ghiChu": "O2 · 0.02"
+   "tenHang": "O2",
+   "nongDo": "0.02"
   },
   {
    "ma": "KC-SO2-10L",
    "soLuong": 1,
-   "ghiChu": "SO2 · 49,6ppm"
+   "tenHang": "SO2",
+   "nongDo": "49,6ppm"
   },
   {
    "ma": "KC-CO2-8L",
    "soLuong": 1,
-   "ghiChu": "CO2 · 0.0999"
+   "tenHang": "CO2",
+   "nongDo": "0.0999"
   },
   {
    "ma": "KC-TO-10L",
    "soLuong": 2,
-   "ghiChu": "Toàn Tiếng TQ"
+   "tenHang": "Toàn Tiếng TQ"
   },
   {
    "ma": "KC-SO2NOCO-10L",
    "soLuong": 1,
-   "ghiChu": "SO2/NO/CO · 500/400/500"
+   "tenHang": "SO2/NO/CO",
+   "nongDo": "500/400/500"
   },
   {
    "ma": "VO-NHOM-10L",
    "soLuong": 1,
-   "ghiChu": "Nhôm"
+   "tenHang": "Nhôm"
   },
   {
    "ma": "VO-NHOM-8L",
    "soLuong": 1,
-   "ghiChu": "Nhôm"
+   "tenHang": "Nhôm"
   },
   {
    "ma": "VO-KHAC-10L",
    "soLuong": 3,
-   "ghiChu": "Vỏ màu hồng đã kiểm định"
+   "tenHang": "Vỏ màu hồng đã kiểm định"
   },
   {
    "ma": "VO-KHAC-30L",
    "soLuong": 1,
-   "ghiChu": "Vỏ"
+   "tenHang": "Vỏ"
   },
   {
    "ma": "VO-KHAC-20L",
    "soLuong": 1,
-   "ghiChu": "Vỏ"
+   "tenHang": "Vỏ"
   },
   {
    "ma": "VO-THEP-10L",
    "soLuong": 8,
-   "ghiChu": "Vỏ thép"
+   "tenHang": "Vỏ thép"
   },
   {
    "ma": "VO-NHOM-50L",
    "soLuong": 4,
-   "ghiChu": "Vỏ nhôm"
+   "tenHang": "Vỏ nhôm"
   },
   {
    "ma": "VO-NHOM-40L",
    "soLuong": 1,
-   "ghiChu": "Vỏ nhôm"
+   "tenHang": "Vỏ nhôm"
   },
   {
    "ma": "VO-THEP-40L",
    "soLuong": 5,
-   "ghiChu": "Vỏ thép"
+   "tenHang": "Vỏ thép"
   },
   {
    "ma": "VO-NHOM-10L",
    "soLuong": 1,
-   "ghiChu": "Vỏ nhôm · Xịn"
+   "tenHang": "Vỏ nhôm",
+   "xuatXu": "Xịn"
   },
   {
    "ma": "VO-NHOM-8L",
    "soLuong": 1,
-   "ghiChu": "Vỏ nhôm · Xịn"
+   "tenHang": "Vỏ nhôm",
+   "xuatXu": "Xịn"
   },
   {
    "ma": "VO-KHAC-1L",
    "soLuong": 34,
-   "ghiChu": "Vỏ"
+   "tenHang": "Vỏ"
   },
   {
    "ma": "VO-NHOM",
    "soLuong": 6,
-   "ghiChu": "Vỏ nhôm"
+   "tenHang": "Vỏ nhôm"
   }
  ]
 };
+
+export const RAW_ANH_XA: RawAnhXa[] = [
+ {
+  "ten": "Bình khí hỗn hợp NO, CO, SO2",
+  "tongSL": 22.0,
+  "soLan": 1,
+  "theTich": "47L",
+  "nongDo": "NO 500ppm CO 300 ppm SO2 300ppm"
+ },
+ {
+  "ten": "Bình khí chuẩn NO2",
+  "tongSL": 22.0,
+  "soLan": 1,
+  "nongDo": "200ppm"
+ },
+ {
+  "ten": "Đồng hồ điều áp",
+  "tongSL": 21.0,
+  "soLan": 6
+ },
+ {
+  "ten": "Bình khí hỗn hợp SO2/NO/CO",
+  "tongSL": 16.0,
+  "soLan": 8,
+  "theTich": "8L",
+  "nongDo": "CO 650mg/Nm3 ; SO2 650mg/Nm3 ; NO 980 mg/Nm3"
+ },
+ {
+  "ten": "Bình khí hỗn hợp NO, SO2, CO",
+  "tongSL": 16.0,
+  "soLan": 1,
+  "theTich": "10L",
+  "nongDo": "NO 600ppm CO 300 ppm SO2 600ppm"
+ },
+ {
+  "ten": "Bình khí O2",
+  "tongSL": 14.0,
+  "soLan": 12,
+  "theTich": "8L",
+  "nongDo": "0.1"
+ },
+ {
+  "ten": "Khí hỗn hợp SO2/NO/CO",
+  "tongSL": 12.0,
+  "soLan": 10,
+  "theTich": "8L",
+  "nongDo": "SO2 650mg/m3; ; NO 980mg/m3; ; CO 650mg/m3"
+ },
+ {
+  "ten": "Bình khí N2",
+  "tongSL": 12.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "0.9999"
+ },
+ {
+  "ten": "Bình khí hiệu chuẩn hỗn hợp SO2/NO/CO",
+  "tongSL": 12.0,
+  "soLan": 2,
+  "theTich": "8L",
+  "nongDo": "CO 1000 ppm ; SO2 500 ppm ; NO 1200 ppm"
+ },
+ {
+  "ten": "Bình khí N2",
+  "tongSL": 10.0,
+  "soLan": 8,
+  "theTich": "10L",
+  "nongDo": "99.99%"
+ },
+ {
+  "ten": "Khí chuẩn O2",
+  "tongSL": 9.0,
+  "soLan": 7,
+  "theTich": "8L",
+  "nongDo": "0.1"
+ },
+ {
+  "ten": "Bình khí hỗn hợp SO2/NO/CO",
+  "tongSL": 8.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "Nồng độ CO2: 8.02% ; Nồng độ O2: 17% ;"
+ },
+ {
+  "ten": "Bình khí chuẩn HCL",
+  "tongSL": 7.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "100mg/Nm3"
+ },
+ {
+  "ten": "Khí chuẩn N2",
+  "tongSL": 6.0,
+  "soLan": 5,
+  "theTich": "10L",
+  "nongDo": "99.99%"
+ },
+ {
+  "ten": "Đầu chuyển đổi",
+  "tongSL": 6.0,
+  "soLan": 1
+ },
+ {
+  "ten": "Bình khí chuẩn O2",
+  "tongSL": 6.0,
+  "soLan": 2,
+  "theTich": "10L",
+  "nongDo": "0.1"
+ },
+ {
+  "ten": "Bình khí hỗn hợp SO2/NO/CO",
+  "tongSL": 6.0,
+  "soLan": 2,
+  "theTich": "10L",
+  "nongDo": "NO: 1000 mg/Nm3 ; SO2: 1000 mg/Nm3 ; CO: 1000 mg/Nm3 ;"
+ },
+ {
+  "ten": "Bình khí hiệu chuẩn hỗn hợp NO/CO/SO2",
+  "tongSL": 6.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "NO: 469 mg/m3 ; SO2: 1043 mg/m3 ; CO: 368 mg/m3"
+ },
+ {
+  "ten": "Đồng hồ điều áp+Phụ kiện đi kèm",
+  "tongSL": 6.0,
+  "soLan": 1
+ },
+ {
+  "ten": "Bình Khí HCL",
+  "tongSL": 6.0,
+  "soLan": 2,
+  "theTich": "8L",
+  "nongDo": "100mg/Nm3"
+ },
+ {
+  "ten": "Khí chuẩn hỗn hợp SO2/NO/CO",
+  "tongSL": 6.0,
+  "soLan": 3,
+  "theTich": "8L",
+  "nongDo": "NO: 980 mg/Nm3 ; SO2: 650 mg/Nm3 ; CO: 650 mg/Nm3"
+ },
+ {
+  "ten": "Bình Khí Chuẩn O2",
+  "tongSL": 5.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "0.1"
+ },
+ {
+  "ten": "Bình khí N2",
+  "tongSL": 5.0,
+  "soLan": 5,
+  "theTich": "10L",
+  "nongDo": "0.9999"
+ },
+ {
+  "ten": "Khí chuẩn O2",
+  "tongSL": 5.0,
+  "soLan": 5,
+  "theTich": "8L",
+  "nongDo": "10%"
+ },
+ {
+  "ten": "Khí O2",
+  "tongSL": 5.0,
+  "soLan": 1,
+  "theTich": "40L",
+  "nongDo": "99.99%"
+ },
+ {
+  "ten": "Khí N2",
+  "tongSL": 5.0,
+  "soLan": 4,
+  "theTich": "10L",
+  "nongDo": "99.99%"
+ },
+ {
+  "ten": "Khí N2",
+  "tongSL": 5.0,
+  "soLan": 1,
+  "theTich": "10L",
+  "nongDo": "99.999%"
+ },
+ {
+  "ten": "Khí Oxy tinh khiết",
+  "tongSL": 5.0,
+  "soLan": 1,
+  "theTich": "40L",
+  "nongDo": "99.99%"
+ },
+ {
+  "ten": "Khí chuẩn HCL",
+  "tongSL": 4.0,
+  "soLan": 4,
+  "theTich": "8L",
+  "nongDo": "70mg/m3"
+ },
+ {
+  "ten": "Khí chuẩn O2",
+  "tongSL": 4.0,
+  "soLan": 2,
+  "theTich": "10L",
+  "nongDo": "0.1"
+ },
+ {
+  "ten": "Khí chuẩn NO2",
+  "tongSL": 4.0,
+  "soLan": 3,
+  "theTich": "1L",
+  "nongDo": "100ppm"
+ },
+ {
+  "ten": "Dung dịch chuẩn TSS",
+  "tongSL": 4.0,
+  "soLan": 1,
+  "theTich": "500ml",
+  "nongDo": "100ml/l",
+  "ghiChu": "Em gán sẵn theo nhóm dung dịch — anh sửa được",
+  "ma": "DD-TSS"
+ },
+ {
+  "ten": "Dung dịch chuẩn TSS",
+  "tongSL": 4.0,
+  "soLan": 1,
+  "theTich": "500ml",
+  "nongDo": "50ml/l",
+  "ghiChu": "Em gán sẵn theo nhóm dung dịch — anh sửa được",
+  "ma": "DD-TSS"
+ },
+ {
+  "ten": "Bình khí N2",
+  "tongSL": 4.0,
+  "soLan": 1,
+  "theTich": "10L",
+  "nongDo": "99 %"
+ },
+ {
+  "ten": "Bình khí HCL",
+  "tongSL": 4.0,
+  "soLan": 1,
+  "theTich": "10L",
+  "nongDo": "100 mg/3"
+ },
+ {
+  "ten": "Khí chuẩn SO2",
+  "tongSL": 3.0,
+  "soLan": 2,
+  "theTich": "8L",
+  "nongDo": "500ppm"
+ },
+ {
+  "ten": "Khí chuẩn NO2",
+  "tongSL": 3.0,
+  "soLan": 3,
+  "theTich": "8L",
+  "nongDo": "100ppm"
+ },
+ {
+  "ten": "Hỗn hợp khí chuẩn CH4/O2/CO/H2S",
+  "tongSL": 3.0,
+  "soLan": 1,
+  "theTich": "8AL",
+  "nongDo": "2.5% CH4 ; 12% O2 ; 150PPM CO ; 25 PPM H2S"
+ },
+ {
+  "ten": "Dung dịch chuẩn pH 4",
+  "tongSL": 3.0,
+  "soLan": 3,
+  "theTich": "500mL",
+  "nongDo": "pH 4",
+  "ghiChu": "Em gán sẵn theo nhóm dung dịch — anh sửa được",
+  "ma": "DD-PH"
+ },
+ {
+  "ten": "Van điều áp",
+  "tongSL": 3.0,
+  "soLan": 3
+ },
+ {
+  "ten": "Bình khí chuẩn HF",
+  "tongSL": 3.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "30 mg/Nm3"
+ },
+ {
+  "ten": "Khí chuẩn hỗn hợp SO2/NO/CO",
+  "tongSL": 3.0,
+  "soLan": 2,
+  "theTich": "1L",
+  "nongDo": "CO 500 ppm ; NO 400 ppm ; SO2 500 ppm"
+ },
+ {
+  "ten": "Khí chuẩn hỗn hợp SO2/NO/CO",
+  "tongSL": 3.0,
+  "soLan": 1,
+  "theTich": "10L",
+  "nongDo": "CO: 1000 ppm ; NO: 1200 ppm ; SO2: 400 ppm"
+ },
+ {
+  "ten": "Khí chuẩn hỗn hợp SO2/NO/CO",
+  "tongSL": 3.0,
+  "soLan": 1,
+  "theTich": "10L",
+  "nongDo": "CO: 90 ppm ; NO: 80 ppm ; SO2: 250 ppm"
+ },
+ {
+  "ten": "Bình khí hiệu chuẩn hỗn hợp SO2/NO/CO",
+  "tongSL": 3.0,
+  "soLan": 3,
+  "theTich": "8L",
+  "nongDo": "CO 650mg/m3 ; SO2 650mg/m3 ; NO 980mg/m3"
+ },
+ {
+  "ten": "Bình khí hiệu chuẩn hỗn hợp SO2/NO/CO",
+  "tongSL": 3.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "CO 6000 ppm ; SO2 500 ppm ; NO 1200 ppm"
+ },
+ {
+  "ten": "Bình Khí O2",
+  "tongSL": 3.0,
+  "soLan": 3,
+  "theTich": "8L",
+  "nongDo": "0.1"
+ },
+ {
+  "ten": "Bộ van điều áp kèm phụ kiện",
+  "tongSL": 3.0,
+  "soLan": 1
+ },
+ {
+  "ten": "Khí chuẩn SO2",
+  "tongSL": 2.0,
+  "soLan": 1,
+  "theTich": "1L",
+  "nongDo": "50ppm"
+ },
+ {
+  "ten": "Khí chuẩn NO2",
+  "tongSL": 2.0,
+  "soLan": 1,
+  "theTich": "1L",
+  "nongDo": "50ppm"
+ },
+ {
+  "ten": "Khí chuẩn CO",
+  "tongSL": 2.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "700ppm"
+ },
+ {
+  "ten": "Khí chuẩn NO2",
+  "tongSL": 2.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "700ppm"
+ },
+ {
+  "ten": "Khí chuẩn O2",
+  "tongSL": 2.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "15%"
+ },
+ {
+  "ten": "Khí chuẩn SO2",
+  "tongSL": 2.0,
+  "soLan": 2,
+  "theTich": "10L",
+  "nongDo": "45ppm"
+ },
+ {
+  "ten": "Khí hỗn hợp SO2/NO/CO",
+  "tongSL": 2.0,
+  "soLan": 2,
+  "theTich": "8L",
+  "nongDo": "SO2 500ppm; ; NO 400ppm; ; CO 500ppm"
+ },
+ {
+  "ten": "Khí chuẩn NO2",
+  "tongSL": 2.0,
+  "soLan": 1,
+  "theTich": "10L",
+  "nongDo": "50ppm"
+ },
+ {
+  "ten": "Khí chuẩn H2S",
+  "tongSL": 2.0,
+  "soLan": 1,
+  "theTich": "10L",
+  "nongDo": "100ppm"
+ },
+ {
+  "ten": "Khí chuẩn SO2",
+  "tongSL": 2.0,
+  "soLan": 1,
+  "theTich": "10L",
+  "nongDo": "500ppm"
+ },
+ {
+  "ten": "Mixed gas SO2/NO/CO",
+  "tongSL": 2.0,
+  "soLan": 2,
+  "theTich": "8L",
+  "nongDo": "SO2 650mg/m3; ; NO 980mg/m3; ; CO 650mg/m3"
+ },
+ {
+  "ten": "O2 calibration gas",
+  "tongSL": 2.0,
+  "soLan": 2,
+  "theTich": "8L",
+  "nongDo": "0.1"
+ },
+ {
+  "ten": "N2 calibration gas",
+  "tongSL": 2.0,
+  "soLan": 2,
+  "theTich": "10L",
+  "nongDo": "99.99%"
+ },
+ {
+  "ten": "Dung dịch chuẩn pH 7",
+  "tongSL": 2.0,
+  "soLan": 2,
+  "theTich": "500mL",
+  "nongDo": "pH 7",
+  "ghiChu": "Em gán sẵn theo nhóm dung dịch — anh sửa được",
+  "ma": "DD-PH"
+ },
+ {
+  "ten": "Dung dịch chuẩn COD 50ppm",
+  "tongSL": 2.0,
+  "soLan": 2,
+  "theTich": "500mL",
+  "nongDo": "COD 50ppm",
+  "ghiChu": "Em gán sẵn theo nhóm dung dịch — anh sửa được",
+  "ma": "DD-COD"
+ },
+ {
+  "ten": "Dung dịch chuẩn TSS 100ppm",
+  "tongSL": 2.0,
+  "soLan": 2,
+  "theTich": "500mL",
+  "nongDo": "TSS 100ppm",
+  "ghiChu": "Em gán sẵn theo nhóm dung dịch — anh sửa được",
+  "ma": "DD-TSS"
+ },
+ {
+  "ten": "Bình HCL",
+  "tongSL": 2.0,
+  "soLan": 1,
+  "theTich": "10L",
+  "nongDo": "139.0"
+ },
+ {
+  "ten": "Van",
+  "tongSL": 2.0,
+  "soLan": 1
+ },
+ {
+  "ten": "Bình khí N2",
+  "tongSL": 2.0,
+  "soLan": 1,
+  "nongDo": "99.99%"
+ },
+ {
+  "ten": "Bình khí chuẩn O2",
+  "tongSL": 2.0,
+  "soLan": 2,
+  "theTich": "8L",
+  "nongDo": "0.1"
+ },
+ {
+  "ten": "Bình khí chuẩn NO2",
+  "tongSL": 2.0,
+  "soLan": 2,
+  "theTich": "8L",
+  "nongDo": "100 ppm"
+ },
+ {
+  "ten": "Dung dịch chuẩn NH4-N 50ppm",
+  "tongSL": 2.0,
+  "soLan": 2,
+  "theTich": "500mL",
+  "nongDo": "NH4-N 50ppm",
+  "ghiChu": "Em gán sẵn theo nhóm dung dịch — anh sửa được",
+  "ma": "DD-AMONI"
+ },
+ {
+  "ten": "Khí hỗn hợp SO2/NO/CO",
+  "tongSL": 2.0,
+  "soLan": 1,
+  "theTich": "1L",
+  "nongDo": "CO 500ppm ; CO2 15% ; NO 750ppm"
+ },
+ {
+  "ten": "Khí NO2",
+  "tongSL": 2.0,
+  "soLan": 1,
+  "theTich": "1L",
+  "nongDo": "100ppm"
+ },
+ {
+  "ten": "Khí chuẩn N2",
+  "tongSL": 2.0,
+  "soLan": 1,
+  "theTich": "40L",
+  "nongDo": "99.95%"
+ },
+ {
+  "ten": "Khí chuẩn SO2",
+  "tongSL": 2.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "1400 mg/Nm3"
+ },
+ {
+  "ten": "Khí chuẩn NO",
+  "tongSL": 2.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "1400 mg/Nm3"
+ },
+ {
+  "ten": "Khí chuẩn HF",
+  "tongSL": 2.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "30-36 mg/Nm3"
+ },
+ {
+  "ten": "Khí chuẩn NH3",
+  "tongSL": 2.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "75 mg/Nm3"
+ },
+ {
+  "ten": "Khí chuẩn O2",
+  "tongSL": 2.0,
+  "soLan": 1,
+  "theTich": "1L",
+  "nongDo": "0.1"
+ },
+ {
+  "ten": "Khí chuẩn hỗn hợp SO2/NO/CO",
+  "tongSL": 2.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "CO 650mg/Nm3 ; SO2 650mg/Nm3 ; NO 980 mg/Nm3"
+ },
+ {
+  "ten": "Dung dịch chuẩn pH",
+  "tongSL": 2.0,
+  "soLan": 2,
+  "theTich": "500ml",
+  "ghiChu": "Em gán sẵn theo nhóm dung dịch — anh sửa được",
+  "ma": "DD-PH"
+ },
+ {
+  "ten": "Khí chuẩn hỗn hợp SO2/NO/CO",
+  "tongSL": 2.0,
+  "soLan": 2,
+  "nongDo": "CO 650mg/Nm3 ; SO2 650mg/Nm3 ; NO 980 mg/Nm3"
+ },
+ {
+  "ten": "Khí chuẩn HF",
+  "tongSL": 2.0,
+  "soLan": 1,
+  "theTich": "10L",
+  "nongDo": "30 ppm"
+ },
+ {
+  "ten": "Khí chuẩn HF",
+  "tongSL": 2.0,
+  "soLan": 1,
+  "theTich": "10L",
+  "nongDo": "10 ppm"
+ },
+ {
+  "ten": "Khí chuẩn NH3",
+  "tongSL": 2.0,
+  "soLan": 1,
+  "theTich": "10L",
+  "nongDo": "150 ppm"
+ },
+ {
+  "ten": "Khí chuẩn NH3",
+  "tongSL": 2.0,
+  "soLan": 1,
+  "theTich": "10L",
+  "nongDo": "15 ppm"
+ },
+ {
+  "ten": "Dung dịch chuẩn pH",
+  "tongSL": 2.0,
+  "soLan": 1,
+  "theTich": "500mL",
+  "nongDo": "4.0",
+  "ghiChu": "Em gán sẵn theo nhóm dung dịch — anh sửa được",
+  "ma": "DD-PH"
+ },
+ {
+  "ten": "Dung dịch chuẩn pH",
+  "tongSL": 2.0,
+  "soLan": 1,
+  "theTich": "500mL",
+  "nongDo": "7.0",
+  "ghiChu": "Em gán sẵn theo nhóm dung dịch — anh sửa được",
+  "ma": "DD-PH"
+ },
+ {
+  "ten": "Dung dịch chuẩn COD",
+  "tongSL": 2.0,
+  "soLan": 1,
+  "theTich": "500mL",
+  "nongDo": "100mg/L",
+  "ghiChu": "Em gán sẵn theo nhóm dung dịch — anh sửa được",
+  "ma": "DD-COD"
+ },
+ {
+  "ten": "Dung dịch chuẩn TSS",
+  "tongSL": 2.0,
+  "soLan": 1,
+  "theTich": "500mL",
+  "nongDo": "100mg/L",
+  "ghiChu": "Em gán sẵn theo nhóm dung dịch — anh sửa được",
+  "ma": "DD-TSS"
+ },
+ {
+  "ten": "Dung dịch chuẩn NH4",
+  "tongSL": 2.0,
+  "soLan": 1,
+  "theTich": "500mL",
+  "nongDo": "12mg/L",
+  "ghiChu": "Em gán sẵn theo nhóm dung dịch — anh sửa được",
+  "ma": "DD-AMONI"
+ },
+ {
+  "ten": "Bình khí hiệu chuẩn CO",
+  "tongSL": 2.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "1300 ppm/m3"
+ },
+ {
+  "ten": "Bình khí HCL",
+  "tongSL": 2.0,
+  "soLan": 1,
+  "theTich": "10L",
+  "nongDo": "100 ppm"
+ },
+ {
+  "ten": "Bình khí SO2",
+  "tongSL": 2.0,
+  "soLan": 1,
+  "theTich": "10L"
+ },
+ {
+  "ten": "Bình khí SO2",
+  "tongSL": 2.0,
+  "soLan": 1,
+  "theTich": "10L",
+  "nongDo": "1000 ppm"
+ },
+ {
+  "ten": "Bình khí HCL",
+  "tongSL": 2.0,
+  "soLan": 1,
+  "theTich": "10L",
+  "nongDo": "200 mg/3"
+ },
+ {
+  "ten": "Bình Khí HCL",
+  "tongSL": 2.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "100 mg/m3"
+ },
+ {
+  "ten": "Dung dịch chuẩn pH",
+  "tongSL": 2.0,
+  "soLan": 1,
+  "theTich": "500ml",
+  "nongDo": "4.0",
+  "ghiChu": "Em gán sẵn theo nhóm dung dịch — anh sửa được",
+  "ma": "DD-PH"
+ },
+ {
+  "ten": "Dung dịch chuẩn pH",
+  "tongSL": 2.0,
+  "soLan": 1,
+  "theTich": "500ml",
+  "nongDo": "10.0",
+  "ghiChu": "Em gán sẵn theo nhóm dung dịch — anh sửa được",
+  "ma": "DD-PH"
+ },
+ {
+  "ten": "Dung dịch chuẩn COD",
+  "tongSL": 2.0,
+  "soLan": 1,
+  "theTich": "500ml",
+  "nongDo": "50 mg/L",
+  "ghiChu": "Em gán sẵn theo nhóm dung dịch — anh sửa được",
+  "ma": "DD-COD"
+ },
+ {
+  "ten": "Dung dịch chuẩn TSS",
+  "tongSL": 2.0,
+  "soLan": 1,
+  "theTich": "500ml",
+  "nongDo": "50 mg/L",
+  "ghiChu": "Em gán sẵn theo nhóm dung dịch — anh sửa được",
+  "ma": "DD-TSS"
+ },
+ {
+  "ten": "Dung dịch chuẩn NH4",
+  "tongSL": 2.0,
+  "soLan": 1,
+  "theTich": "500ml",
+  "nongDo": "15 mg/L",
+  "ghiChu": "Em gán sẵn theo nhóm dung dịch — anh sửa được",
+  "ma": "DD-AMONI"
+ },
+ {
+  "ten": "Vỏ bình thép",
+  "tongSL": 2.0,
+  "soLan": 1,
+  "theTich": "40L"
+ },
+ {
+  "ten": "Bình khí SO2",
+  "tongSL": 2.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "1400 mg/Nm3"
+ },
+ {
+  "ten": "Bình Khí NO",
+  "tongSL": 2.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "1400 mg/Nm3"
+ },
+ {
+  "ten": "Bình Khi HF",
+  "tongSL": 2.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "30 mg/Nm3"
+ },
+ {
+  "ten": "Bình khi NH3",
+  "tongSL": 2.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "75 mg/Nm3"
+ },
+ {
+  "ten": "Khí chuẩn O2",
+  "tongSL": 2.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "0.06"
+ },
+ {
+  "ten": "Bình khí hỗn hợp SO2/NO/CO",
+  "tongSL": 2.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "980/650/650"
+ },
+ {
+  "ten": "Bình khí hỗn hợp SO2/NO/CO",
+  "tongSL": 2.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "1000/1500/1000"
+ },
+ {
+  "ten": "Khí chuẩn CO",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "10L",
+  "nongDo": "45ppm"
+ },
+ {
+  "ten": "Khí chuẩn NO",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "10L",
+  "nongDo": "90ppm"
+ },
+ {
+  "ten": "Khí hỗn hợp SO2/NO/CO",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "SO2 1500mg/m3; ; NO 1500mg/m3; ; CO 1500mg/m3"
+ },
+ {
+  "ten": "Khí chuẩn H2",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "10L",
+  "nongDo": "8%"
+ },
+ {
+  "ten": "SO2 calibration gas",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "40L",
+  "nongDo": "900mg/m3"
+ },
+ {
+  "ten": "NO calibration gas",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "40L",
+  "nongDo": "1200mg/m3"
+ },
+ {
+  "ten": "CO calibration gas",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "40L",
+  "nongDo": "600mg/m3"
+ },
+ {
+  "ten": "CO2 calibration gas",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "40L",
+  "nongDo": "12%"
+ },
+ {
+  "ten": "O2 calibration gas",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "40L",
+  "nongDo": "0.15"
+ },
+ {
+  "ten": "N2 calibration gas",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "10L",
+  "nongDo": "99.999%"
+ },
+ {
+  "ten": "HCL calibration gas",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "70mg/m3"
+ },
+ {
+  "ten": "NO calibration gas",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "980mg/m3"
+ },
+ {
+  "ten": "CO calibration gas",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "650mg/m3"
+ },
+ {
+  "ten": "Bình khí hiệu chuẩn CO",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "20L",
+  "nongDo": "25ppm"
+ },
+ {
+  "ten": "Bình khí hiệu chuẩn NO",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "20L",
+  "nongDo": "100ppm"
+ },
+ {
+  "ten": "Bình khí hiệu chuẩn SO2",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "20L",
+  "nongDo": "100ppm"
+ },
+ {
+  "ten": "Bình khí hiệu chuẩn O2",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "0.1"
+ },
+ {
+  "ten": "Bình khí hiệu chuẩn NO2",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "610ppm"
+ },
+ {
+  "ten": "Bình khí hiệu chuẩn CO",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "5000ppm"
+ },
+ {
+  "ten": "Bình khí hiệu chuẩn NO",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "1000ppm"
+ },
+ {
+  "ten": "Bình khí hiệu chuẩn SO2",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "300ppm"
+ },
+ {
+  "ten": "Dung dịch chuẩn COD 300ppm",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "500mL",
+  "nongDo": "COD 300ppm",
+  "ghiChu": "Em gán sẵn theo nhóm dung dịch — anh sửa được",
+  "ma": "DD-COD"
+ },
+ {
+  "ten": "Dung dịch chuẩn NH4-N 10ppm",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "500mL",
+  "nongDo": "NH4-N 10ppm",
+  "ghiChu": "Em gán sẵn theo nhóm dung dịch — anh sửa được",
+  "ma": "DD-AMONI"
+ },
+ {
+  "ten": "Dung dịch chuẩn NH4-N 100ppm",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "500mL",
+  "nongDo": "NH4-N 100ppm",
+  "ghiChu": "Em gán sẵn theo nhóm dung dịch — anh sửa được",
+  "ma": "DD-AMONI"
+ },
+ {
+  "ten": "Bình khí chuẩn HCL",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "70 mg/Nm3"
+ },
+ {
+  "ten": "Bình Khí Chuẩn SO2",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "10L",
+  "nongDo": "2400mg/m3"
+ },
+ {
+  "ten": "Bình Khí Chuẩn SO2",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "10L",
+  "nongDo": "240mg/m3"
+ },
+ {
+  "ten": "Bình Khí Chuẩn O2",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "10L",
+  "nongDo": "0.21"
+ },
+ {
+  "ten": "Bình Khí Chuẩn O2",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "10L",
+  "nongDo": "0.01"
+ },
+ {
+  "ten": "Bình khí hiệu chuẩn HCL",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "100mg/Nm3"
+ },
+ {
+  "ten": "Bình khí hỗn hợp SO2/NO/CO",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "CO 500 ppm ; NO 400 ppm ; SO2 500 ppm"
+ },
+ {
+  "ten": "Bình khí hỗn hợp SO2/NO/CO",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "10L",
+  "nongDo": "CO 500 ppm ; NO 300 ppm ; SO2 30ppm"
+ },
+ {
+  "ten": "Bình khí chuẩn hỗn hợp HCl",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "10L",
+  "nongDo": "15 ppm"
+ },
+ {
+  "ten": "Bình khí chuẩn O2",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "10L",
+  "nongDo": "10%V hoặc 10% mol/mol"
+ },
+ {
+  "ten": "Đồng Hồ Điều Áp",
+  "tongSL": 1.0,
+  "soLan": 1
+ },
+ {
+  "ten": "Bình khí chuẩn hỗn hợp NH3",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "500 mg/Nm3"
+ },
+ {
+  "ten": "Bình khí chuẩn hỗn hợp NH3",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "10L",
+  "nongDo": "100 mg/Nm3"
+ },
+ {
+  "ten": "Bình khí hỗn hợp SO2/NO/CO",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "47L",
+  "nongDo": "NO: 800 mg/Nm3 ; SO2: 800 mg/Nm3"
+ },
+ {
+  "ten": "Bình khí hỗn hợp SO2/NO/CO",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "47L",
+  "nongDo": "NO: 1400 mg/Nm3 ; SO2: 1400 mg/Nm3"
+ },
+ {
+  "ten": "Bình khí hỗn hợp SO2/NO/CO",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "NO: 1000 mg/Nm3 ; SO2: 1000 mg/Nm3 ; CO: 1000 mg/Nm3"
+ },
+ {
+  "ten": "Bình khí hỗn hợp SO2/NO/CO",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "40L",
+  "nongDo": "NO: 400ppm ; SO2: 500ppm ; CO: 500ppm"
+ },
+ {
+  "ten": "Bình khí chuẩn NO2",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "40L",
+  "nongDo": "400ppm"
+ },
+ {
+  "ten": "Bình khí O2",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "0.07"
+ },
+ {
+  "ten": "Bình khí hỗn hợp SO2/NO/CO",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "NO: 400ppm ; SO2: 500ppm ; CO: 500ppm"
+ },
+ {
+  "ten": "Bình khí chuẩn NO2",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "100ppm"
+ },
+ {
+  "ten": "Bình khí chuẩn CO2",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "0.2"
+ },
+ {
+  "ten": "Khí chuẩn Benzen",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "5ppm"
+ },
+ {
+  "ten": "Khí chuẩn Toluene",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "20ppm"
+ },
+ {
+  "ten": "Bình khí chuẩn HF",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "30mg/Nm3"
+ },
+ {
+  "ten": "Bình khí chuẩn HF",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L"
+ },
+ {
+  "ten": "Bình khí Hỗn Hợp CO/SO2/NO",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "CO 650mg/Nm3 ; SO2 650mg/Nm3 ; NO 980 mg/Nm3"
+ },
+ {
+  "ten": "Dung dịch chuẩn pH 10",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "500mL",
+  "nongDo": "pH 10",
+  "ghiChu": "Em gán sẵn theo nhóm dung dịch — anh sửa được",
+  "ma": "DD-PH"
+ },
+ {
+  "ten": "Dung dịch chuẩn COD 10ppm",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "500mL",
+  "nongDo": "COD 10ppm",
+  "ghiChu": "Em gán sẵn theo nhóm dung dịch — anh sửa được",
+  "ma": "DD-COD"
+ },
+ {
+  "ten": "Dung dịch chuẩn COD 100ppm",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "500mL",
+  "nongDo": "COD 100ppm",
+  "ghiChu": "Em gán sẵn theo nhóm dung dịch — anh sửa được",
+  "ma": "DD-COD"
+ },
+ {
+  "ten": "Dung dịch chuẩn TSS 10ppm",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "500mL",
+  "nongDo": "TSS 10ppm",
+  "ghiChu": "Em gán sẵn theo nhóm dung dịch — anh sửa được",
+  "ma": "DD-TSS"
+ },
+ {
+  "ten": "Dung dịch chuẩn NH4-N 5ppm",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "500mL",
+  "nongDo": "NH4-N 5ppm",
+  "ghiChu": "Em gán sẵn theo nhóm dung dịch — anh sửa được",
+  "ma": "DD-AMONI"
+ },
+ {
+  "ten": "Khí chuẩn HF",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "30mg/m3"
+ },
+ {
+  "ten": "Đồng hồ điều áp + Đầu chuyển",
+  "tongSL": 1.0,
+  "soLan": 1
+ },
+ {
+  "ten": "Dung dịch chuẩn TSS 50ppm",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "500mL",
+  "nongDo": "TSS 50ppm",
+  "ghiChu": "Em gán sẵn theo nhóm dung dịch — anh sửa được",
+  "ma": "DD-TSS"
+ },
+ {
+  "ten": "Khí chuẩn O2",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "12.5%"
+ },
+ {
+  "ten": "Khí chuẩn HF",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "38.3mg/m3"
+ },
+ {
+  "ten": "Bình khí hiệu chuẩn NO",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "50L",
+  "nongDo": "400 ppm"
+ },
+ {
+  "ten": "Bình khí hiệu chuẩn CO",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "50L",
+  "nongDo": "400 ppm"
+ },
+ {
+  "ten": "Bình khí hiệu chuẩn hỗn hợp  CO/NO/SO2",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "50L",
+  "nongDo": "CO: 800 ppm ; NO: 800 ppm ; SO2: 200 ppm ;"
+ },
+ {
+  "ten": "Bình khí hiệu chuẩn hỗn hợp  CO/NO/SO2",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "50L",
+  "nongDo": "NO: 2000 ppm ; CO: 1300 ppm ; SO2: 400 ppm ;"
+ },
+ {
+  "ten": "Bình khí hiệu chuẩn NH3",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "10L",
+  "nongDo": "100 ppm"
+ },
+ {
+  "ten": "Bình khí hiệu chuẩn O2",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "10L",
+  "nongDo": "0.1"
+ },
+ {
+  "ten": "Bình khí hiệu chuẩn hỗn hợp  CO/NO/SO2",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "10L",
+  "nongDo": "CO: 650ppm ; NO: 1000ppm ; SO2: 980ppm"
+ },
+ {
+  "ten": "Khí O2",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "0.15"
+ },
+ {
+  "ten": "Khí CO",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "260mg/m3"
+ },
+ {
+  "ten": "Khí SO2",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "300mg/m3"
+ },
+ {
+  "ten": "Khí NO",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "230mg/m3"
+ },
+ {
+  "ten": "Khí HCL",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "70mg/m3"
+ },
+ {
+  "ten": "Khí NH3",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "40mg/m3"
+ },
+ {
+  "ten": "Khí N2",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "10L"
+ },
+ {
+  "ten": "Khí chuẩn HF",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "30L",
+  "nongDo": "30mg/Nm3"
+ },
+ {
+  "ten": "Khí chuẩn NH3",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "30L",
+  "nongDo": "80mg/Nm3"
+ },
+ {
+  "ten": "Khí chuẩn NH3",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "30L",
+  "nongDo": "30mg/Nm3"
+ },
+ {
+  "ten": "Bình khí chuẩn O2",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "10 %"
+ },
+ {
+  "ten": "Bình khí chuẩn hỗn hợp SO2/NO/CO",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "CO: 500 mg/m3 ; NO: 500 mg/m3 ; SO2: 100 mg/m3 ;"
+ },
+ {
+  "ten": "Khí SF6",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "10L",
+  "nongDo": "99.99%"
+ },
+ {
+  "ten": "Khí hiệu chuẩn đa chỉ tiêu",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "Nitrogen 2000 mol/mol ; Ethane 50 mol/mol ; Ethylene 50 mol/mol ; Acetylene 60 mol/mol ; Oxygen 2000 mol/mol ; Hydrogen 800 mol/mol ; Methane 90 mol/mol ; Carbon Monoxide 600 mol/mol ; Carbon Dioxide 1100 mol/mol ;"
+ },
+ {
+  "ten": "Khí chuẩn O2",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "40L",
+  "nongDo": "0.25"
+ },
+ {
+  "ten": "Dung dịch chuẩn COD",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "500ml",
+  "nongDo": "100ml/l",
+  "ghiChu": "Em gán sẵn theo nhóm dung dịch — anh sửa được",
+  "ma": "DD-COD"
+ },
+ {
+  "ten": "Dung dịch chuẩn COD",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "500ml",
+  "nongDo": "50ml/l",
+  "ghiChu": "Em gán sẵn theo nhóm dung dịch — anh sửa được",
+  "ma": "DD-COD"
+ },
+ {
+  "ten": "Dung dịch chuẩn NH4-N",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "500ml",
+  "nongDo": "10ml/l",
+  "ghiChu": "Em gán sẵn theo nhóm dung dịch — anh sửa được",
+  "ma": "DD-AMONI"
+ },
+ {
+  "ten": "Dung dịch chuẩn NH4-N",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "500ml",
+  "nongDo": "5ml/l",
+  "ghiChu": "Em gán sẵn theo nhóm dung dịch — anh sửa được",
+  "ma": "DD-AMONI"
+ },
+ {
+  "ten": "Khí chuẩn CO",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "1L",
+  "nongDo": "500ppm"
+ },
+ {
+  "ten": "Khí chuẩn NO",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "1L",
+  "nongDo": "400ppm"
+ },
+ {
+  "ten": "Khí chuẩn SO2",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "1L",
+  "nongDo": "500ppm"
+ },
+ {
+  "ten": "Khí chuẩn CO",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "500ppm"
+ },
+ {
+  "ten": "Khí chuẩn NO",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "400ppm"
+ },
+ {
+  "ten": "Khí chuẩn hỗn hợp SO2/NO/CO",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "CO 500ppm ; SO2 400ppm ; NO 500ppm"
+ },
+ {
+  "ten": "Khí chuẩn O2",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "nongDo": "0.1"
+ },
+ {
+  "ten": "Khí chuẩn HF",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "30mg/Nm3"
+ },
+ {
+  "ten": "Dung dịch chuẩn pH",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "500ML",
+  "ghiChu": "Em gán sẵn theo nhóm dung dịch — anh sửa được",
+  "ma": "DD-PH"
+ },
+ {
+  "ten": "Dung dịch chuẩn COD",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "500ML",
+  "ghiChu": "Em gán sẵn theo nhóm dung dịch — anh sửa được",
+  "ma": "DD-COD"
+ },
+ {
+  "ten": "Dung dịch chuẩn TSS",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "500ML",
+  "ghiChu": "Em gán sẵn theo nhóm dung dịch — anh sửa được",
+  "ma": "DD-TSS"
+ },
+ {
+  "ten": "Dung dịch chuẩn NH4-N",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "500ML",
+  "ghiChu": "Em gán sẵn theo nhóm dung dịch — anh sửa được",
+  "ma": "DD-AMONI"
+ },
+ {
+  "ten": "Bình khí Oxy",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "0.01"
+ },
+ {
+  "ten": "Bình khí hỗn hợp SO2/NO/CO",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "CO 650mg/m3 ; SO2 650mg/m3 ; NO 980mg/m3"
+ },
+ {
+  "ten": "Bình khí chuẩn",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "10L",
+  "nongDo": "0.9999"
+ },
+ {
+  "ten": "Dung dịch chuẩn NO3",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "500mL",
+  "nongDo": "100mg/L",
+  "ghiChu": "Em gán sẵn theo nhóm dung dịch — anh sửa được",
+  "ma": "DD-KHAC"
+ },
+ {
+  "ten": "Bình khí hiệu chuẩn HCL",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L/100bar",
+  "nongDo": "100mg/Nm3"
+ },
+ {
+  "ten": "Van điều áp Typhoon",
+  "tongSL": 1.0,
+  "soLan": 1
+ },
+ {
+  "ten": "Bình Khí chuẩn O2",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8.0",
+  "nongDo": "0.12"
+ },
+ {
+  "ten": "Bình Khí chuẩn O2",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "4L",
+  "nongDo": "0.05"
+ },
+ {
+  "ten": "Bình khí SO2",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "1130 mg/m3"
+ },
+ {
+  "ten": "Bình khí NO",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "1200 mg/m3"
+ },
+ {
+  "ten": "Bình khí CO",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "10L",
+  "nongDo": "1800ppm"
+ },
+ {
+  "ten": "Bình khí O2",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "0.08"
+ },
+ {
+  "ten": "Bình Khí SO2",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "600 mg/m3"
+ },
+ {
+  "ten": "Bình khí CO",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "1000mg/m3"
+ },
+ {
+  "ten": "Bình Khí NO",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "1000mg/m3"
+ },
+ {
+  "ten": "Bình khí CO2",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "10L"
+ },
+ {
+  "ten": "Bình khí O2",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "0.15"
+ },
+ {
+  "ten": "Bình Khí NO",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "700ppm"
+ },
+ {
+  "ten": "Bình Khí NO2",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "700ppm"
+ },
+ {
+  "ten": "Bình Khí SO2",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "500ppm"
+ },
+ {
+  "ten": "Bình khí CO",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "700ppm"
+ },
+ {
+  "ten": "Bình Khí SO2",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "1000mg/Nm3"
+ },
+ {
+  "ten": "Dung dịch chuẩn PH7",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "1000mg/Nm4",
+  "ghiChu": "Em gán sẵn theo nhóm dung dịch — anh sửa được",
+  "ma": "DD-PH"
+ },
+ {
+  "ten": "Bình Khí NO",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "1000mg/Nm5"
+ },
+ {
+  "ten": "Bình khí HCL",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "100mg/Nm3"
+ },
+ {
+  "ten": "Dung dịch chuẩn PH7",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "500ml",
+  "ghiChu": "Em gán sẵn theo nhóm dung dịch — anh sửa được",
+  "ma": "DD-PH"
+ },
+ {
+  "ten": "Dung dich chuẩn Amoni",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "500ml",
+  "nongDo": "20mgL",
+  "ghiChu": "Em gán sẵn theo nhóm dung dịch — anh sửa được",
+  "ma": "DD-AMONI"
+ },
+ {
+  "ten": "Dung dịch chuẩn TSS",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "500ml",
+  "nongDo": "200mgL",
+  "ghiChu": "Em gán sẵn theo nhóm dung dịch — anh sửa được",
+  "ma": "DD-TSS"
+ },
+ {
+  "ten": "Dung dịch chuẩn COD",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "500ml",
+  "nongDo": "100mgL",
+  "ghiChu": "Em gán sẵn theo nhóm dung dịch — anh sửa được",
+  "ma": "DD-COD"
+ },
+ {
+  "ten": "Bình khí SO2",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "1000mg/Nm3"
+ },
+ {
+  "ten": "Bình khí NO",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "1000mg/Nm3"
+ },
+ {
+  "ten": "Bình khí CO",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "1000mg/Nm3"
+ },
+ {
+  "ten": "Bình khí HF",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "30 mg/Nm3"
+ },
+ {
+  "ten": "Bình Khí HCL",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "100.0"
+ },
+ {
+  "ten": "Bình Khí CO",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "710 ppm"
+ },
+ {
+  "ten": "Bình khí HCl",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "40L",
+  "nongDo": "100 mg/Nm3"
+ },
+ {
+  "ten": "Bình Khí N2",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "10L",
+  "nongDo": "99.99%"
+ },
+ {
+  "ten": "Bình khí CH4",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "50% LEL"
+ },
+ {
+  "ten": "Bình O2",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "0.1"
+ },
+ {
+  "ten": "Bình khí 6D 99.99% N2",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "103L"
+ },
+ {
+  "ten": "Bình khí chuẩn SO2/NO/CO",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "SO2 : 1200ppm, CO 1200ppm, NO 800 ppm"
+ },
+ {
+  "ten": "Khí chuẩn SO2",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "10L",
+  "nongDo": "170ppm"
+ },
+ {
+  "ten": "Khí chuẩn HCL",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "100 mg/Nm3"
+ },
+ {
+  "ten": "Hỗn hợp khí chuẩn CH4/N2",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "6D",
+  "nongDo": "0.05"
+ },
+ {
+  "ten": "Bình khí hỗn hợp SO2/NO/CO",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "NO: 3000 ppm ; SO2: 3000 ppm ; CO: 1200 ppm"
+ },
+ {
+  "ten": "Bình khí chuẩn O2",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "0.21"
+ },
+ {
+  "ten": "Bình khí chuẩn SO2",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "1350 mg/m3"
+ },
+ {
+  "ten": "Bình khí chuẩn NO",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "1470 mg/m3"
+ },
+ {
+  "ten": "Bình khí chuẩn CO",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "2700 mg/m3"
+ },
+ {
+  "ten": "Bình khí chuẩn N2",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "99,99%"
+ },
+ {
+  "ten": "Bình khí N2",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "10L",
+  "nongDo": "99,99%"
+ },
+ {
+  "ten": "Khí chuẩn CO",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "1,2L",
+  "nongDo": "509 ppm"
+ },
+ {
+  "ten": "Khí chuẩn O2",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "1,2L",
+  "nongDo": "0.07"
+ },
+ {
+  "ten": "Khí chuẩn NO2",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "1,2L",
+  "nongDo": "98 ppm"
+ },
+ {
+  "ten": "Khí chuẩn NO",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "1,2L",
+  "nongDo": "402 ppm"
+ },
+ {
+  "ten": "Khí chuẩn NO",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "1,2L",
+  "nongDo": "517 ppm"
+ },
+ {
+  "ten": "Khí chuẩn NO2",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "450 ppm"
+ },
+ {
+  "ten": "Bình HF",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "30 mg/Nm3"
+ },
+ {
+  "ten": "Bình khí hỗn hợp SO2/NO/CO",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "8L",
+  "nongDo": "650/980/650"
+ },
+ {
+  "ten": "Bình khí chuẫn hỗn hợp CO/O2",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "10L",
+  "nongDo": "CO: 4% NO: 20%"
+ },
+ {
+  "ten": "Bình khí chuẫn hỗn hợp NO/SO2",
+  "tongSL": 1.0,
+  "soLan": 1,
+  "theTich": "10L",
+  "nongDo": "NO2: 32000ppm , SO2: 8000ppm"
+ },
+ {
+  "ten": "Khí chuẩn N2",
+  "tongSL": 0.0,
+  "soLan": 1,
+  "theTich": "6D",
+  "nongDo": "99.999%"
+ }
+];

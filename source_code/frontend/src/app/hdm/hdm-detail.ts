@@ -3,7 +3,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { map } from 'rxjs';
 import { Store } from '../core/store';
-import { dotMuaDaTra, dotQuaHan, hdmCalc, hoSoThieu, slDaNhap, thanhTienVND, tongSL } from '../core/calc';
+import { donGiaVND, dotMuaDaTra, dotQuaHan, hdmCalc, hoSoThieu, slDaNhap, thanhTienVND, tongSL } from '../core/calc';
 import { DongHangMua, DotTTMua, HopDongMua, LOAI_TIEN, LoaiTien, TrangThaiHDM, LOAI_HO_SO } from '../core/models';
 import { fold, money, num, pct, todayIso, uid, viDate, vnd } from '../core/util';
 import { Kpi, Modal, MoneyInput, Pick, PickOption, TrangThai, PickGo } from '../shared/ui-kit';
@@ -27,6 +27,8 @@ interface NhapForm {
   ngay: string;
   kho: string;
   ghiChu: string;
+  soHoaDon: string;
+  vat: number;
   sl: Record<string, number>;
   dongIds: string[];
 }
@@ -533,6 +535,15 @@ interface TraForm {
               <label for="nkKho">Vị trí kho <span class="req">*</span></label>
               <app-pick inputId="nkKho" [options]="khoOpts()" [value]="n.kho" (valueChange)="nhap.set({ ...n, kho: $event })" />
             </div>
+            <div class="field">
+              <label for="nkHD">Số hoá đơn NCC</label>
+              <input id="nkHD" placeholder="VD HĐ 259" [value]="n.soHoaDon" (input)="nhap.set({ ...n, soHoaDon: $any($event.target).value })" />
+              <span class="hint">Mã lô sinh theo số hoá đơn: L259-01…</span>
+            </div>
+            <div class="field">
+              <label for="nkVAT">VAT % hoá đơn</label>
+              <input id="nkVAT" type="number" min="0" max="10" [value]="n.vat" (input)="nhap.set({ ...n, vat: +$any($event.target).value || 0 })" />
+            </div>
             <div class="field wide">
               <label for="nkGC">Ghi chú</label>
               <input id="nkGC" [value]="n.ghiChu" (input)="nhap.set({ ...n, ghiChu: $any($event.target).value })" />
@@ -540,14 +551,14 @@ interface TraForm {
           </div>
           <div class="tbl-wrap" style="margin-top: 12px">
             <table class="tbl compact">
-              <thead><tr><th>Tên hàng</th><th>Thông số</th><th class="num">SL</th><th class="num">Đã nhập</th><th class="num">Còn lại</th><th class="w-md num">SL thực nhập</th></tr></thead>
+              <thead><tr><th>Mã hàng</th><th>Tên hàng</th><th>Quy cách / nồng độ</th><th class="num">Đơn giá lô</th><th class="num">SL</th><th class="num">Đã nhập</th><th class="num">Còn lại</th><th class="w-md num">SL thực nhập</th></tr></thead>
               <tbody>
                 @for (id of n.dongIds; track id) {
                   @let d = dongById(id);
                   @if (d) {
                     @let con = d.soLuong - daNhap(d.id);
                     <tr>
-                      <td>{{ d.tenHang }}</td><td>{{ d.thongSo }}</td><td class="num">{{ num(d.soLuong) }}</td><td class="num">{{ num(daNhap(d.id)) }}</td><td class="num">{{ num(con) }}</td>
+                      <td><b>{{ d.loaiHang }}</b></td><td>{{ d.tenHang }}</td><td class="sub">{{ d.thongSo }}</td><td class="num">{{ num(donGiaLo(d)) }}</td><td class="num">{{ num(d.soLuong) }}</td><td class="num">{{ num(daNhap(d.id)) }}</td><td class="num">{{ num(con) }}</td>
                       <td>
                         <input type="number" min="0" [max]="con" class="num" [value]="n.sl[id]" (input)="setSL(id, +$any($event.target).value || 0)" aria-label="SL thực nhập" />
                         @if (n.sl[id] > con) { <span class="err">≤ {{ num(con) }}</span> }
@@ -1043,7 +1054,12 @@ export class HdmDetail {
       return;
     }
     const kho = this.store.khoDangDung();
-    this.nhap.set({ ngay: todayIso(), kho: (kho.find((k) => k.loai === 'Kho thường') ?? kho[0])?.id ?? '', ghiChu: '', sl, dongIds });
+    this.nhap.set({ ngay: todayIso(), kho: (kho.find((k) => k.loai === 'Kho thường') ?? kho[0])?.id ?? '', ghiChu: '', soHoaDon: '', vat: 8, sl, dongIds });
+  }
+
+  /** Đơn giá lô khi nhập = đơn giá dòng HĐ mua quy VNĐ. */
+  protected donGiaLo(d: DongHangMua): number {
+    return Math.round(donGiaVND(d));
   }
 
   protected setSL(id: string, v: number): void {
@@ -1063,6 +1079,8 @@ export class HdmDetail {
       ngay: n.ngay,
       kho: n.kho,
       ghiChu: n.ghiChu.trim() || undefined,
+      soHoaDon: n.soHoaDon.trim() || undefined,
+      vat: n.vat,
       dong: n.dongIds.map((dongId) => ({ dongId, soLuong: n.sl[dongId] ?? 0 })),
     });
     if (err) {

@@ -83,6 +83,7 @@ function goiYTen(l: LoaiHang): string {
                   @if (!choXoa(l)) {
                     <div class="btn-row" style="justify-content:flex-start">
                       <button type="button" class="btn sm quiet" (click)="sua(l)">Sửa</button>
+                      <button type="button" class="btn sm quiet" (click)="doiMa(l)">Đổi mã</button>
                       <button type="button" class="btn sm quiet" (click)="batTat(l)">{{ l.dangDung ? 'Ngưng' : 'Dùng lại' }}</button>
                       @if (!daDung().has(l.id) && store.level('duyetXoa') !== 'none') {
                         <button type="button" class="btn sm quiet danger" (click)="xoa(l)">Xoá</button>
@@ -99,7 +100,7 @@ function goiYTen(l: LoaiHang): string {
       </table>
     </div>
     <app-pager [pager]="pg" />
-    <p class="hint muted">Tên tham chiếu = các tên đang ghi trên hoá đơn / hợp đồng ứng với mã này (VD "Bình khí chuẩn NO", "NO calibration gas") — dùng để tìm mã khi lập phiếu, HĐ. Mã đã dùng không xoá được — chỉ Ngưng.</p>
+    <p class="hint muted">Tên tham chiếu = các tên đang ghi trên hoá đơn / hợp đồng ứng với mã này (VD "Bình khí chuẩn NO", "NO calibration gas") — dùng để tìm mã khi lập phiếu, HĐ. Mã đã dùng không xoá được — chỉ Ngưng. Cần sửa mã (cột "ANH SỬA" của file) thì bấm "Đổi mã".</p>
 
     <app-modal #mLh [open]="!!f()" [title]="f()?.isNew ? 'Thêm mã hàng' : 'Sửa mã hàng ' + (f()?.l?.id ?? '')" [dirty]="dirty()" (closed)="f.set(null)">
       @if (f(); as x) {
@@ -244,6 +245,20 @@ export class DmLoaiHangTab {
   protected batTat(l: LoaiHang): void {
     const e = this.store.saveLoaiHang({ ...l, dangDung: !l.dangDung }, false);
     this.store.say(e ?? (l.dangDung ? `Đã ngưng ${l.id}` : `Đã dùng lại ${l.id}`));
+  }
+  /** Cột "ANH SỬA" của file: đổi mã, mọi phiếu / HĐ mua / kiểm kê / ánh xạ đang dùng mã cũ đổi theo. */
+  protected async doiMa(l: LoaiHang): Promise<void> {
+    const moi = await this.confirm.prompt({
+      title: `Đổi mã hàng ${l.id}`,
+      message: 'Mọi phiếu kho, dòng HĐ mua, kiểm kê và ánh xạ tên bán đang dùng mã cũ sẽ đổi sang mã mới.',
+      label: 'Mã mới',
+      placeholder: 'VD KC-NO-8L',
+      minLength: 2,
+      ok: 'Đổi mã',
+    });
+    if (!moi) return;
+    const e = this.store.doiMaHang(l.id, moi);
+    this.store.say(e ?? `Đã đổi ${l.id} → ${moi.trim().toUpperCase()}`);
   }
   protected async xoa(l: LoaiHang): Promise<void> {
     await guiXoa(this.confirm, this.store, 'DM_LoaiHang', l.id, `Mã hàng ${l.id} – ${l.ten}`);

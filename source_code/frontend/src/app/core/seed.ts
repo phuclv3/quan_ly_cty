@@ -37,7 +37,7 @@ import {
 } from './models';
 import { RAW } from './seed-data';
 import { RAW_KH_CRM } from './seed-kh';
-import { RAW_KIEM_KE, RAW_LO_NHAP, RAW_MA_HANG, RawMaHang } from './seed-kho';
+import { RAW_ANH_XA, RAW_KIEM_KE, RAW_LO_NHAP, RAW_MA_HANG, RawMaHang } from './seed-kho';
 import { hashPassword, randomHex } from './crypto';
 import { nhomMacDinh } from './perm';
 import { fold, nextCode, nowIso, todayIso, uid, yy } from './util';
@@ -47,8 +47,9 @@ import { fold, nextCode, nowIso, todayIso, uid, yy } from './util';
  * v3: khách hàng có trường theo dõi kinh doanh + data KH từ file Excel Kinh doanh (ghepDataKH).
  * v4: tài khoản Sale theo danh mục "Người phụ trách" của file theo dõi KH (themTaiKhoanSale).
  * v5: kho theo LÔ — danh mục mã hàng cố định + lô nhập có đơn giá (KhoOxyMecie_v3, nangCapKhoV5).
+ * v6: bảng ánh xạ tên hàng HĐ bán → mã hàng / lô (sheet "5. AnhXaTenBan", nangCapKhoV6).
  */
-export const DB_VERSION = 5;
+export const DB_VERSION = 6;
 
 export const CAU_HINH_MAC_DINH: CauHinh = {
   TNDN_NGUONG: 0.2,
@@ -132,6 +133,7 @@ export async function buildSeed(): Promise<Db> {
     hopDongMua: [],
     phieuKho: [],
     kiemKe: [],
+    anhXaTen: [],
     hopDongPhuTai: [],
     dongTienPT: [],
     boDem: {},
@@ -485,9 +487,10 @@ export async function buildSeed(): Promise<Db> {
       kho: 'KHO-OM',
       nguoiThucHien: KHO,
       ghiChu: 'Import KhoOxyMecie_v3 — mã hàng gán tự động theo tên + thể tích, cần Kho kiểm tra lại.',
-      dong: gopKiemKe(RAW_KIEM_KE.dong),
+      dong: RAW_KIEM_KE.dong.map((r) => ({ loaiHang: r.ma, soLuong: r.soLuong, tenHang: r.tenHang, xuatXu: r.xuatXu, nongDo: r.nongDo })),
     });
   }
+  nangCapKhoV6(db);
 
   // ── Phú Tài ──
   for (const r of RAW.phuTai) {
@@ -703,17 +706,21 @@ function maHangTuRaw(r: RawMaHang): LoaiHang {
   };
 }
 
-/** Kiểm kê đếm theo tên + xuất xứ → nhiều dòng cùng mã: gộp SL, nối ghi chú. */
-function gopKiemKe(rows: { ma: string; soLuong: number; ghiChu: string }[]): { loaiHang: string; soLuong: number; ghiChu?: string }[] {
-  const m = new Map<string, { loaiHang: string; soLuong: number; ghiChu?: string }>();
-  for (const r of rows) {
-    const g = m.get(r.ma);
-    if (g) {
-      g.soLuong += r.soLuong;
-      g.ghiChu = [g.ghiChu, `${r.ghiChu} × ${r.soLuong}`].filter(Boolean).join('; ');
-    } else m.set(r.ma, { loaiHang: r.ma, soLuong: r.soLuong, ghiChu: `${r.ghiChu} × ${r.soLuong}` });
-  }
-  return [...m.values()];
+/** v5 → v6: thêm bảng ánh xạ tên hàng HĐ bán (sheet "5. AnhXaTenBan") nếu máy chưa có. */
+export function nangCapKhoV6(d: Db): void {
+  if (d.anhXaTen?.length) return;
+  const co = new Set(d.loaiHang.map((l) => l.id));
+  d.anhXaTen = RAW_ANH_XA.map((r, i) => ({
+    id: `AX${String(i + 1).padStart(4, '0')}`,
+    ten: r.ten,
+    theTich: r.theTich,
+    nongDo: r.nongDo,
+    tongSL: r.tongSL,
+    soLan: r.soLan,
+    loaiHang: r.ma && co.has(r.ma) ? r.ma : undefined,
+    lo: r.lo,
+    ghiChu: r.ghiChu,
+  }));
 }
 
 /**

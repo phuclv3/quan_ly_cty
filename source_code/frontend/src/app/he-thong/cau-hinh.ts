@@ -45,6 +45,7 @@ const BANG: { k: TableKey; nhan: string }[] = [
   { k: 'hopDongMua', nhan: 'Hợp đồng mua' },
   { k: 'phieuKho', nhan: 'Phiếu kho' },
   { k: 'kiemKe', nhan: 'Kiểm kê kho' },
+  { k: 'anhXaTen', nhan: 'Ánh xạ tên hàng bán' },
   { k: 'hopDongPhuTai', nhan: 'HĐ Phú Tài' },
   { k: 'dongTienPT', nhan: 'Dòng tiền Phú Tài' },
   { k: 'hoSo', nhan: 'Hồ sơ (tệp đính kèm)' },

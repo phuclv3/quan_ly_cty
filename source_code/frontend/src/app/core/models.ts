@@ -547,6 +547,8 @@ export interface DongPhieuKho {
   donGiaGoc?: number;
   /** Phiếu xuất: tên hàng ghi trên hợp đồng bán (nhập tay). */
   tenTrenHD?: string;
+  /** Ghi chú của dòng (cột "Ghi chú" sheet NhapKho / XuatKho). */
+  ghiChu?: string;
 }
 
 export interface PhieuKho {
@@ -579,9 +581,37 @@ export interface KiemKe {
   kho: string;
   nguoiThucHien: string;
   ghiChu?: string;
-  dong: { loaiHang: string; soLuong: number; ghiChu?: string }[];
+  /** Một dòng đếm — cùng mã có thể nhiều dòng (khác xuất xứ / nồng độ). */
+  dong: DongKiemKe[];
   /** Phiếu nhập / xuất điều chỉnh đã sinh từ chênh lệch. */
   phieuDieuChinh?: string[];
+}
+
+export interface DongKiemKe {
+  loaiHang: string;
+  soLuong: number;
+  /** Tên hàng như ghi trên bình / nhãn khi đếm. */
+  tenHang?: string;
+  xuatXu?: string;
+  nongDo?: string;
+  ghiChu?: string;
+}
+
+/**
+ * Ánh xạ tên hàng ghi trong HĐ bán → mã hàng / lô hay dùng (sheet "5. AnhXaTenBan").
+ * Nồng độ ghi tự do nên máy không tự khớp — người biết hàng gán một lần, lần sau xuất kho chọn theo tên là ra mã + lô.
+ */
+export interface AnhXaTen {
+  id: string;
+  ten: string;
+  theTich?: string;
+  nongDo?: string;
+  /** Tổng SL đã bán / số lần xuất hiện trong các HĐ bán (số liệu khi lập bảng). */
+  tongSL: number;
+  soLan: number;
+  loaiHang?: string;
+  lo?: string;
+  ghiChu?: string;
 }
 
 // ── Phú Tài ─────────────────────────────────────────────────────────────
@@ -708,6 +738,7 @@ export interface Db {
   hopDongMua: HopDongMua[];
   phieuKho: PhieuKho[];
   kiemKe: KiemKe[];
+  anhXaTen: AnhXaTen[];
   hopDongPhuTai: HopDongPhuTai[];
   dongTienPT: DongTienPT[];
   /** Bộ đếm số chứng từ theo tiền tố + năm, VD { 'TC26': 12 } — không tái dùng số đã xoá. */

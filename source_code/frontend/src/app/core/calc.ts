@@ -537,7 +537,8 @@ export function lechKiemKe(db: Db, k: KiemKe): DongLechKK[] {
   for (const d of k.dong) {
     const r = out.get(d.loaiHang) ?? { loaiHang: d.loaiHang, soSach: 0, thucTe: 0, lech: 0 };
     r.thucTe += d.soLuong;
-    r.ghiChu = d.ghiChu;
+    const mo = [d.tenHang, d.xuatXu, d.nongDo, d.ghiChu].filter(Boolean).join(' · ');
+    r.ghiChu = [r.ghiChu, mo && `${mo} × ${d.soLuong}`].filter(Boolean).join('; ');
     out.set(d.loaiHang, r);
   }
   for (const r of out.values()) r.lech = r.thucTe - r.soSach;

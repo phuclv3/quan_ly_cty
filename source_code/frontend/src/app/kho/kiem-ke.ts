@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal, viewChild } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { lechKiemKe, tonKho } from '../core/calc';
-import { KHO_CHUYEN_THANG, KiemKe } from '../core/models';
+import { DongKiemKe, KHO_CHUYEN_THANG, KiemKe } from '../core/models';
 import { Store } from '../core/store';
 import { money, sum, todayIso, viDate } from '../core/util';
 import { Confirm } from '../shared/confirm';
@@ -14,8 +14,13 @@ interface Form {
   ngay: string;
   kho: string;
   ghiChu: string;
-  dong: { loaiHang: string; soLuong: number; ghiChu: string }[];
+  dong: DongForm[];
 }
+
+/** Dòng đếm trên form — mọi cột dạng chuỗi để bind input. */
+type DongForm = { [K in keyof Required<DongKiemKe>]: Required<DongKiemKe>[K] };
+
+const dongRong = (loaiHang = ''): DongForm => ({ loaiHang, soLuong: 0, tenHang: '', xuatXu: '', nongDo: '', ghiChu: '' });
 
 /** Kiểm kê tại kho (sheet "6. KiemKe"): đếm thực tế theo mã hàng → đối chiếu tồn sổ → sinh phiếu điều chỉnh. */
 @Component({
@@ -29,7 +34,7 @@ interface Form {
     </div>
     <div class="tbl-wrap">
       <table class="tbl freeze">
-        <thead><tr><th>Số phiếu</th><th>Ngày</th><th>Kho</th><th class="num">Số mã đếm</th><th class="num">Tổng SL thực tế</th><th class="num">Mã lệch</th><th>Điều chỉnh</th><th>Người thực hiện</th></tr></thead>
+        <thead><tr><th>Số phiếu</th><th>Ngày kiểm kê</th><th>Kho</th><th class="num">Số mã đếm</th><th class="num">Tổng SL thực tế</th><th class="num">Mã lệch</th><th>Điều chỉnh</th><th>Người thực hiện</th></tr></thead>
         <tbody>
           @for (k of ds(); track k.id) {
             <tr class="click" (click)="xem.set(k.id)">
@@ -54,9 +59,36 @@ interface Form {
     <app-modal [open]="!!chon()" [title]="'Kiểm kê ' + (chon()?.soPhieu ?? '')" [sub]="chon() ? viDate(chon()!.ngay) + ' · ' + store.khoTen(chon()!.kho) : ''" size="lg" (closed)="xem.set(null)">
       @if (chon(); as k) {
         @if (k.ghiChu) { <p class="note info">{{ k.ghiChu }}</p> }
+        <div class="form-grid">
+          <div class="field"><span class="lbl">Ngày kiểm kê</span><div class="ro">{{ viDate(k.ngay) }}</div></div>
+          <div class="field"><span class="lbl">Kho</span><div class="ro">{{ store.khoTen(k.kho) }}</div></div>
+          <div class="field"><span class="lbl">Người thực hiện</span><div class="ro">{{ store.userName(k.nguoiThucHien) }}</div></div>
+        </div>
+        <h3 class="section-title">Dòng đếm thực tế</h3>
         <div class="tbl-wrap">
           <table class="tbl compact">
-            <thead><tr><th>Mã hàng</th><th>Tên</th><th class="num">Tồn sổ</th><th class="num">Thực tế</th><th class="num">Lệch</th><th>Ghi chú đếm</th></tr></thead>
+            <thead><tr><th>Nhóm</th><th>Tên hàng</th><th>Xuất xứ</th><th>Thể tích</th><th>Nồng độ</th><th class="num">Số lượng</th><th>Mã hàng</th><th>Ghi chú</th></tr></thead>
+            <tbody>
+              @for (d of k.dong; track $index) {
+                <tr>
+                  <td>{{ store.loaiHangById(d.loaiHang)?.nhom ?? '—' }}</td>
+                  <td>{{ d.tenHang || '—' }}</td>
+                  <td>{{ d.xuatXu || '—' }}</td>
+                  <td>{{ store.loaiHangById(d.loaiHang)?.theTich || '—' }}</td>
+                  <td>{{ d.nongDo || '—' }}</td>
+                  <td class="num">{{ money(d.soLuong) }}</td>
+                  <td><b>{{ d.loaiHang }}</b></td>
+                  <td class="sub">{{ d.ghiChu || '' }}</td>
+                </tr>
+              }
+            </tbody>
+            <tfoot><tr><td colspan="5">Cộng</td><td class="num">{{ money(tongDem(k)) }}</td><td colspan="2"></td></tr></tfoot>
+          </table>
+        </div>
+        <h3 class="section-title">Đối chiếu tồn sổ theo mã hàng</h3>
+        <div class="tbl-wrap">
+          <table class="tbl compact">
+            <thead><tr><th>Mã hàng</th><th>Tên</th><th class="num">Tồn sổ ngày {{ viDate(k.ngay) }}</th><th class="num">Thực tế</th><th class="num">Lệch</th><th>Chi tiết đếm</th></tr></thead>
             <tbody>
               @for (r of lech(); track r.loaiHang) {
                 <tr>
@@ -110,7 +142,7 @@ interface Form {
         </h3>
         <div class="tbl-wrap">
           <table class="tbl compact">
-            <thead><tr><th style="min-width:260px">Mã hàng</th><th class="num">Tồn sổ</th><th class="num">Thực tế</th><th>Ghi chú (xuất xứ, nồng độ…)</th><th></th></tr></thead>
+            <thead><tr><th style="min-width:240px">Mã hàng <span class="req">*</span></th><th>Tên hàng (như trên bình)</th><th>Xuất xứ</th><th>Nồng độ</th><th class="num">Tồn sổ</th><th class="num">Thực tế <span class="req">*</span></th><th>Ghi chú</th><th></th></tr></thead>
             <tbody>
               @for (d of x.dong; track $index; let i = $index) {
                 <tr>
@@ -118,17 +150,21 @@ interface Form {
                     <app-pick [options]="maOpts()" [value]="d.loaiHang" (valueChange)="setDong(i, { loaiHang: $event })" />
                     @if (d.loaiHang) { <span class="hint">{{ moTa(d.loaiHang) }}</span> }
                   </td>
+                  <td><input [value]="d.tenHang" placeholder="VD SO2/NO/CO" (input)="setDong(i, { tenHang: $any($event.target).value })" aria-label="Tên hàng" /></td>
+                  <td><input [value]="d.xuatXu" placeholder="VD Air Liquide" style="width:120px" (input)="setDong(i, { xuatXu: $any($event.target).value })" aria-label="Xuất xứ" /></td>
+                  <td><input [value]="d.nongDo" placeholder="VD 650/980/650" style="width:120px" (input)="setDong(i, { nongDo: $any($event.target).value })" aria-label="Nồng độ" /></td>
                   <td class="num muted">{{ d.loaiHang ? money(tonSo().get(d.loaiHang) ?? 0) : '' }}</td>
-                  <td class="num"><input type="number" min="0" [value]="d.soLuong" (input)="setDong(i, { soLuong: +$any($event.target).value || 0 })" aria-label="Số lượng thực tế" /></td>
+                  <td class="num"><input type="number" min="0" style="width:80px" [value]="d.soLuong" (input)="setDong(i, { soLuong: +$any($event.target).value || 0 })" aria-label="Số lượng thực tế" /></td>
                   <td><input [value]="d.ghiChu" (input)="setDong(i, { ghiChu: $any($event.target).value })" aria-label="Ghi chú" /></td>
                   <td><button type="button" class="btn sm quiet danger" (click)="xoaDong(i)">Xoá</button></td>
                 </tr>
               } @empty {
-                <tr><td colspan="5" class="empty">Chưa có dòng — bấm "Lấy các mã đang tồn sổ" hoặc "+ Thêm dòng"</td></tr>
+                <tr><td colspan="8" class="empty">Chưa có dòng — bấm "Lấy các mã đang tồn sổ" hoặc "+ Thêm dòng"</td></tr>
               }
             </tbody>
           </table>
         </div>
+        <p class="hint muted">Cùng một mã có thể nhiều dòng (khác xuất xứ / nồng độ) — khi đối chiếu tự cộng theo mã.</p>
         @if (err()) { <div class="note bad">{{ err() }}</div> }
       }
       <div foot class="btn-row">
@@ -199,7 +235,13 @@ export class KiemKeTab {
   protected sua(k: KiemKe): void {
     this.err.set('');
     this.xem.set(null);
-    this.f.set({ id: k.id, ngay: k.ngay, kho: k.kho, ghiChu: k.ghiChu ?? '', dong: k.dong.map((d) => ({ loaiHang: d.loaiHang, soLuong: d.soLuong, ghiChu: d.ghiChu ?? '' })) });
+    this.f.set({
+      id: k.id,
+      ngay: k.ngay,
+      kho: k.kho,
+      ghiChu: k.ghiChu ?? '',
+      dong: k.dong.map((d) => ({ ...dongRong(d.loaiHang), soLuong: d.soLuong, tenHang: d.tenHang ?? '', xuatXu: d.xuatXu ?? '', nongDo: d.nongDo ?? '', ghiChu: d.ghiChu ?? '' })),
+    });
   }
   protected set(p: Partial<Form>): void {
     this.f.update((x) => (x ? { ...x, ...p } : x));
@@ -208,7 +250,7 @@ export class KiemKeTab {
     this.f.update((x) => (x ? { ...x, dong: x.dong.map((d, j) => (j === i ? { ...d, ...p } : d)) } : x));
   }
   protected themDong(): void {
-    this.f.update((x) => (x ? { ...x, dong: [...x.dong, { loaiHang: '', soLuong: 0, ghiChu: '' }] } : x));
+    this.f.update((x) => (x ? { ...x, dong: [...x.dong, dongRong()] } : x));
   }
   protected xoaDong(i: number): void {
     this.f.update((x) => (x ? { ...x, dong: x.dong.filter((_, j) => j !== i) } : x));
@@ -219,7 +261,7 @@ export class KiemKeTab {
     const them = [...this.tonSo().entries()]
       .filter(([lh, sl]) => sl > 0 && !co.has(lh))
       .sort((a, b) => a[0].localeCompare(b[0]))
-      .map(([lh]) => ({ loaiHang: lh, soLuong: 0, ghiChu: '' }));
+      .map(([lh]) => dongRong(lh));
     if (!them.length) return this.store.say('Không còn mã tồn sổ nào chưa có trong danh sách');
     this.f.update((x) => (x ? { ...x, dong: [...x.dong.filter((d) => d.loaiHang), ...them] } : x));
   }

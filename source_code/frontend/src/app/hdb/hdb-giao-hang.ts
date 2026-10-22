@@ -155,7 +155,7 @@ export class HdbGiaoHang {
   protected readonly lhOpts = computed<PickOption[]>(() => maHangOpts(this.store.loaiHang().filter((l) => l.dangDung)));
   /** Xuất quá tồn lô / thiếu tồn → báo ngay, xác nhận sẽ bị chặn. */
   protected readonly loi = computed(() =>
-    this.open() ? (this.store.loiXuat(this.kho(), this.h().id, this.dong().map((d) => ({ ...d, lo: d.lo || undefined }))) ?? '') : '',
+    this.open() ? (this.store.loiXuat(this.kho(), this.h().id, this.dong().map((d) => ({ ...d, lo: d.lo || undefined })), this.ngay()) ?? '') : '',
   );
 
   protected readonly link = linkPhieuKho;
@@ -168,7 +168,7 @@ export class HdbGiaoHang {
     return tonTai(this.store.db(), lh, this.kho());
   }
   protected lots(lh: string): DongLo[] {
-    return lh ? loConHang(this.store.db(), lh, this.kho()) : [];
+    return lh ? loConHang(this.store.db(), lh, this.kho()).filter((l) => l.ngay <= this.ngay()) : [];
   }
   protected doiKho(v: string): void {
     this.kho.set(v);

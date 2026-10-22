@@ -42,11 +42,11 @@ interface HdGT {
       Tổng giá vốn dùng làm Giá vốn ở HĐ Bán (HDB-11).
     </div>
     <div class="kpis">
-      <app-kpi label="Số HĐ đã xuất kho" [value]="money(rows().length)" />
+      <app-kpi label="Số HĐ đã xuất kho" [value]="money(soHdXuat())" />
       <app-kpi label="Tổng giá vốn hàng xuất" [value]="money(tongAll())" sub="VNĐ, theo bộ lọc" />
     </div>
     <div class="section-title">
-      <span></span>
+      <label class="check-row"><input type="checkbox" [checked]="caHd()" (change)="caHd.set($any($event.target).checked)" /> Hiện cả HĐ chưa xuất kho</label>
       <button type="button" class="btn sm quiet" (click)="xuatCsv()">Xuất CSV</button>
     </div>
     <app-filter [(loc)]="loc" memo="kho-gia-tri" [time]="false" [facets]="facets()" placeholder="Tìm số HĐ, khách hàng, mã hàng, mã lô…" />
@@ -55,8 +55,8 @@ interface HdGT {
         <thead><tr><th>Số HĐ</th><th>Khách hàng</th><th class="num">Số phiếu xuất</th><th class="num">Số lô đã dùng</th><th class="num">Tổng SL</th><th class="num">Giá vốn hàng xuất</th></tr></thead>
         <tbody>
           @for (r of pg.items(); track r.hd.id) {
-            <tr class="click" (click)="lat(r.hd.id)" [attr.aria-expanded]="mo().has(r.hd.id)">
-              <td>{{ mo().has(r.hd.id) ? '▾' : '▸' }} <a [routerLink]="['/hop-dong-ban', r.hd.id]" (click)="$event.stopPropagation()"><b>{{ r.hd.soHD || '(chưa có số)' }}</b></a></td>
+            <tr class="click" (click)="r.dong.length && lat(r.hd.id)" [attr.aria-expanded]="mo().has(r.hd.id)">
+              <td>{{ !r.dong.length ? '·' : mo().has(r.hd.id) ? '▾' : '▸' }} <a [routerLink]="['/hop-dong-ban', r.hd.id]" (click)="$event.stopPropagation()"><b>{{ r.hd.soHD || '(chưa có số)' }}</b></a></td>
               <td>{{ r.hd.tenKH }}</td>
               <td class="num">{{ r.soPhieu }}</td>
               <td class="num">{{ r.soLo }}</td>
@@ -107,6 +107,8 @@ export class GiaTriHdTab {
   protected readonly viDate = viDate;
   protected readonly loc = signal<Loc>(nhoLoc('kho-gia-tri', LOC_RONG));
   protected readonly mo = signal<ReadonlySet<string>>(new Set());
+  /** Như sheet "4. TheoHopDong": liệt kê mọi HĐ bán, HĐ chưa xuất ghi 0. */
+  protected readonly caHd = signal(false);
 
   private readonly all = computed<HdGT[]>(() => {
     const db = this.store.db();
@@ -115,7 +117,7 @@ export class GiaTriHdTab {
       const ps = db.phieuKho
         .filter((p) => p.loai === 'Xuất' && p.hdId === hd.id && p.trangThai === 'Hiệu lực')
         .sort((a, b) => (a.ngay < b.ngay ? -1 : 1));
-      if (!ps.length) continue;
+      if (!ps.length && !this.caHd()) continue;
       const dong: DongGT[] = [];
       for (const p of ps)
         for (const d of p.dong)
@@ -157,6 +159,7 @@ export class GiaTriHdTab {
   protected readonly pg = paginate(this.rows);
   protected readonly tongAll = computed(() => sum(this.rows(), (r) => r.tong));
   protected readonly slAll = computed(() => sum(this.rows(), (r) => r.sl));
+  protected readonly soHdXuat = computed(() => this.rows().filter((r) => r.soPhieu > 0).length);
 
   protected lat(id: string): void {
     this.mo.update((s) => {

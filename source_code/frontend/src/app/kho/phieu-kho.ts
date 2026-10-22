@@ -16,6 +16,14 @@ import { Modal, TrangThai } from '../shared/ui-kit';
 import { NGUON_GOC_OPTS, hdCuaPhieu, khoOpts } from './kho-util';
 import { PhieuTayForm } from './phieu-tay';
 
+interface SuaLo {
+  i: number;
+  thuocTinh: string;
+  donGia: number;
+  vat?: number;
+  ghiChu: string;
+}
+
 const quyenSua = (p: PhieuKho): Perm =>
   p.nguonGoc === 'Tự động HĐ Mua' ? 'hdmNhapKho' : p.nguonGoc === 'Tự động HĐ Bán' ? 'hdbGiaoHang' : 'khoPhieuTay';
 
@@ -116,6 +124,22 @@ const quyenSua = (p: PhieuKho): Perm =>
           </div>
           <h3 class="section-title">Dòng hàng</h3>
           <ng-container [ngTemplateOutlet]="bang" />
+          @if (suaLo(); as s) {
+            <div class="card" style="margin-top:10px">
+              <h3 class="section-title">Sửa lô {{ lo(p, s.i) }} · {{ p.dong[s.i].loaiHang }} (SL {{ p.dong[s.i].soLuong }} — không sửa)</h3>
+              <div class="form-grid">
+                <div class="field wide"><label for="sl-qc">Quy cách / nồng độ</label><input id="sl-qc" [value]="s.thuocTinh" (input)="setSuaLo({ thuocTinh: $any($event.target).value })" /></div>
+                <div class="field"><label for="sl-dg">Đơn giá chưa VAT <span class="req">*</span></label><input id="sl-dg" type="number" min="0" [value]="s.donGia" (input)="setSuaLo({ donGia: +$any($event.target).value })" /></div>
+                <div class="field"><label for="sl-vat">VAT %</label><input id="sl-vat" type="number" min="0" max="10" [value]="s.vat ?? ''" (input)="setSuaLo({ vat: $any($event.target).value === '' ? undefined : +$any($event.target).value })" /></div>
+                <div class="field wide"><label for="sl-gc">Ghi chú</label><input id="sl-gc" [value]="s.ghiChu" (input)="setSuaLo({ ghiChu: $any($event.target).value })" /></div>
+              </div>
+              @if (soDongXuatLo(p, s.i); as n) { <p class="note warn">Lô này đã xuất ở {{ n }} dòng phiếu xuất — đổi đơn giá thì giá vốn các dòng đó tính lại theo giá mới.</p> }
+              <div class="btn-row">
+                <button type="button" class="btn quiet" (click)="suaLo.set(null)">Thôi</button>
+                <button type="button" class="btn" (click)="luuLo(p)">Lưu lô</button>
+              </div>
+            </div>
+          }
         </div>
 
         <div class="print-only">
@@ -135,7 +159,7 @@ const quyenSua = (p: PhieuKho): Perm =>
           <div class="tbl-wrap">
             <table class="tbl compact">
               @if (loai() === 'Nhập') {
-                <thead><tr><th>#</th><th>Mã lô</th><th>Mã hàng</th><th>Quy cách / nồng độ</th><th class="num">SL</th><th class="num">Đơn giá</th><th class="num">VAT %</th><th class="num">Thành tiền</th></tr></thead>
+                <thead><tr><th title="Dòng hoá đơn">Dòng HĐ</th><th>Mã lô</th><th>Mã hàng</th><th>Quy cách / nồng độ</th><th class="num">SL</th><th class="num">Đơn giá</th><th class="num">VAT %</th><th class="num">Thành tiền</th><th>Ghi chú</th>@if (suaDuoc(p)) { <th class="no-print"></th> }</tr></thead>
                 <tbody>
                   @for (d of p.dong; track $index) {
                     <tr>
@@ -147,12 +171,17 @@ const quyenSua = (p: PhieuKho): Perm =>
                       <td class="num">{{ money(d.donGia ?? 0) }}</td>
                       <td class="num">{{ d.vat ?? '' }}</td>
                       <td class="num">{{ money((d.donGia ?? 0) * d.soLuong) }}</td>
+                      <td class="sub">{{ d.ghiChu || '' }}</td>
+                      @if (suaDuoc(p)) { <td class="no-print"><button type="button" class="btn sm quiet" (click)="moSuaLo(p, $index)">Sửa lô</button></td> }
                     </tr>
                   }
                 </tbody>
-                <tfoot><tr><td colspan="4">Tổng</td><td class="num">{{ money(tongSL(p)) }}</td><td colspan="2"></td><td class="num">{{ money(giaTriPhieu(p)) }}</td></tr></tfoot>
+                <tfoot>
+                  <tr><td colspan="4">Tổng chưa VAT</td><td class="num">{{ money(tongSL(p)) }}</td><td colspan="2"></td><td class="num">{{ money(giaTriPhieu(p)) }}</td><td colspan="2"></td></tr>
+                  <tr><td colspan="7">Tiền VAT · Tổng sau VAT</td><td class="num">{{ money(vatPhieu(p)) }} · <b>{{ money(giaTriPhieu(p) + vatPhieu(p)) }}</b></td><td colspan="2"></td></tr>
+                </tfoot>
               } @else {
-                <thead><tr><th>#</th><th>Mã lô</th><th>Mã hàng</th><th>Quy cách lô</th><th>Tên trên HĐ</th><th class="num">SL</th><th class="num">Đơn giá vốn</th><th class="num">Giá vốn</th></tr></thead>
+                <thead><tr><th>#</th><th>Mã lô</th><th>Mã hàng</th><th>Quy cách lô</th><th>Tên trên HĐ</th><th class="num">SL</th><th class="num">Đơn giá vốn</th><th class="num">Giá vốn</th><th>Ghi chú</th></tr></thead>
                 <tbody>
                   @for (d of p.dong; track $index) {
                     <tr>
@@ -164,10 +193,11 @@ const quyenSua = (p: PhieuKho): Perm =>
                       <td class="num">{{ money(d.soLuong) }}</td>
                       <td class="num">{{ money(d.donGiaGoc ?? 0) }}</td>
                       <td class="num">{{ money((d.donGiaGoc ?? 0) * d.soLuong) }}</td>
+                      <td class="sub">{{ d.ghiChu || '' }}</td>
                     </tr>
                   }
                 </tbody>
-                <tfoot><tr><td colspan="5">Tổng</td><td class="num">{{ money(tongSL(p)) }}</td><td></td><td class="num">{{ money(giaTriPhieu(p)) }}</td></tr></tfoot>
+                <tfoot><tr><td colspan="5">Tổng</td><td class="num">{{ money(tongSL(p)) }}</td><td></td><td class="num">{{ money(giaTriPhieu(p)) }}</td><td></td></tr></tfoot>
               }
             </table>
           </div>
@@ -196,6 +226,7 @@ export class PhieuKhoTab {
   protected readonly tongSL = tongSL;
   protected readonly giaTriPhieu = giaTriPhieu;
   protected readonly lo = maLo;
+  protected readonly suaLo = signal<SuaLo | null>(null);
   protected readonly ctId = KHO_CHUYEN_THANG;
 
   protected readonly memo = computed(() => `kho-phieu-${this.loai() === 'Nhập' ? 'nhap' : 'xuat'}`);
@@ -279,7 +310,34 @@ export class PhieuKhoTab {
   protected huyDuoc(p: PhieuKho): boolean {
     return p.trangThai === 'Hiệu lực' && !this.choXoa(p) && this.store.level('duyetXoa') !== 'none' && this.store.canEdit(quyenSua(p));
   }
+  protected vatPhieu(p: PhieuKho): number {
+    return sum(p.dong, (d) => Math.round(((d.donGia ?? 0) * d.soLuong * (d.vat ?? 0)) / 100));
+  }
+  protected soDongXuatLo(p: PhieuKho, i: number): number {
+    const lo = maLo(p, i);
+    return sum(
+      this.store.phieuKho().filter((q) => q.loai === 'Xuất' && q.trangThai === 'Hiệu lực'),
+      (q) => q.dong.filter((d) => d.lo === lo).length,
+    );
+  }
+  protected moSuaLo(p: PhieuKho, i: number): void {
+    const d = p.dong[i];
+    this.suaLo.set({ i, thuocTinh: d.thuocTinh, donGia: d.donGia ?? 0, vat: d.vat, ghiChu: d.ghiChu ?? '' });
+  }
+  protected setSuaLo(x: Partial<SuaLo>): void {
+    this.suaLo.update((s) => (s ? { ...s, ...x } : s));
+  }
+  protected luuLo(p: PhieuKho): void {
+    const s = this.suaLo();
+    if (!s) return;
+    const r = this.store.suaLo(p.id, s.i, s);
+    if (typeof r === 'string') return this.store.say(r);
+    this.store.say(r.capNhat ? `Đã lưu lô — cập nhật giá vốn ${r.capNhat} dòng xuất` : 'Đã lưu lô');
+    this.suaLo.set(null);
+  }
+
   protected mo(p: PhieuKho): void {
+    this.suaLo.set(null);
     this.selId.set(p.id);
     this.ngay.set(p.ngay);
     this.ghiChu.set(p.ghiChu ?? '');
@@ -301,7 +359,7 @@ export class PhieuKhoTab {
   }
 
   protected xuatCsv(): void {
-    const rows: (string | number)[][] = [['Số phiếu', 'Ngày', 'Nguồn gốc', 'Số HĐ liên quan', 'Số hoá đơn', 'Vị trí kho', 'Mã lô', 'Mã hàng', 'Quy cách', 'Tên trên HĐ', 'SL', 'Đơn giá', 'Thành tiền', 'Người thực hiện', 'Trạng thái']];
+    const rows: (string | number)[][] = [['Số phiếu', 'Ngày', 'Nguồn gốc', 'Số HĐ liên quan', 'Số hoá đơn', 'NCC', 'Vị trí kho', 'Dòng', 'Mã lô', 'Mã hàng', 'Quy cách', 'Tên trên HĐ', 'SL', 'Đơn giá', 'Thành tiền', 'VAT %', 'Ghi chú dòng', 'Người thực hiện', 'Trạng thái']];
     for (const p of this.rows())
       p.dong.forEach((d, i) => {
         const gia = (p.loai === 'Nhập' ? d.donGia : d.donGiaGoc) ?? 0;
@@ -311,7 +369,9 @@ export class PhieuKhoTab {
           p.nguonGoc,
           this.hd(p)?.so ?? '',
           p.soHoaDon ?? '',
+          this.store.nccById(p.ncc)?.ten ?? '',
           this.store.khoTen(p.kho),
+          i + 1,
           p.loai === 'Nhập' ? maLo(p, i) : (d.lo ?? ''),
           d.loaiHang,
           d.thuocTinh,
@@ -319,6 +379,8 @@ export class PhieuKhoTab {
           d.soLuong,
           gia,
           gia * d.soLuong,
+          d.vat ?? '',
+          d.ghiChu ?? '',
           this.store.userName(p.nguoiThucHien),
           p.trangThai,
         ]);
