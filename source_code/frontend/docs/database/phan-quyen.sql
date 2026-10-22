@@ -65,7 +65,6 @@ CREATE TABLE PhienDangNhap (
 -- ── Danh mục chức năng ──
 INSERT INTO ChucNang VALUES ('NT-03', N'Hệ thống', N'Tài khoản, nhóm quyền & phân quyền', N'Tạo tài khoản, nhóm quyền, gán quyền và gán tài khoản vào nhóm', 'view,edit');
 INSERT INTO ChucNang VALUES ('NT-14', N'Hệ thống', N'Tham số cấu hình', N'Bậc thuế TNDN, tỷ lệ Phú Tài, tiền tố số phiếu, số đợt tối đa', 'view,edit');
-INSERT INTO ChucNang VALUES ('NT-13', N'Hệ thống', N'Import dữ liệu', N'Chạy thử / chạy thật import từ CSV, Excel cũ', 'edit');
 INSERT INTO ChucNang VALUES ('NT-11', N'Hệ thống', N'Duyệt xoá', N'Gửi yêu cầu xoá; Duyệt = duyệt mọi loại đối tượng', 'request,approve');
 INSERT INTO ChucNang VALUES ('NT-11-KT', N'Hệ thống', N'Duyệt xoá chứng từ kế toán', N'Chỉ duyệt xoá phiếu thu chi, chi phí HĐ, nguồn tiền, loại chi phí', 'approve');
 INSERT INTO ChucNang VALUES ('KT-01', N'Kế toán', N'Nguồn tiền & loại chi phí', N'Danh mục nguồn tiền, số dư; danh mục loại chi phí', 'view,edit');
@@ -92,6 +91,7 @@ INSERT INTO ChucNang VALUES ('KHO-06', N'Kho', N'Phiếu nhập / xuất điều
 INSERT INTO ChucNang VALUES ('KHO-09', N'Kho', N'Tồn kho & giá trị theo HĐ', N'', 'view');
 INSERT INTO ChucNang VALUES ('PT-01', N'Phú Tài', N'HĐ Phú Tài & quỹ ảo', N'', 'view,edit');
 INSERT INTO ChucNang VALUES ('PT-06', N'Phú Tài', N'Sửa tỷ lệ chia lợi nhuận', N'Tỷ lệ thuế / Phú Tài giữ theo từng HĐ', 'edit');
+INSERT INTO ChucNang VALUES ('TD-01', N'Việc được giao', N'Giao việc / Đặt lịch', N'Sửa của mình: chỉ việc mình giao hoặc được giao; Sửa: thấy mọi việc', 'own,edit');
 INSERT INTO ChucNang VALUES ('BC-01', N'Báo cáo', N'Báo cáo doanh thu, lợi nhuận, thanh toán', N'Theo nghiep_vu/06_BaoCao', 'ownView,view');
 
 -- ── Nhóm quyền mặc định (sheet "Ma trận quyền", D-25 — chờ xác nhận Q-06) ──
@@ -119,6 +119,7 @@ INSERT INTO NhomQuyen_ChucNang VALUES ('NQ-KT', 'KHO-09', 'view');
 INSERT INTO NhomQuyen_ChucNang VALUES ('NQ-KT', 'PT-01', 'edit');
 INSERT INTO NhomQuyen_ChucNang VALUES ('NQ-KT', 'PT-06', 'edit');
 INSERT INTO NhomQuyen_ChucNang VALUES ('NQ-KT', 'BC-01', 'view');
+INSERT INTO NhomQuyen_ChucNang VALUES ('NQ-KT', 'TD-01', 'edit');
 INSERT INTO NhomQuyen (MaNhom, MaHienThi, TenNhom, MoTa, ToanQuyen, TrangThai, HeThong, TaoLuc) VALUES ('NQ-SALE', 'SALE', N'Sale', N'Chỉ HĐ bán mình phụ trách; danh mục khách hàng', 0, N'Hoạt động', 1, '2026-01-01T00:00:00');
 INSERT INTO NhomQuyen_ChucNang VALUES ('NQ-SALE', 'NT-11', 'request');
 INSERT INTO NhomQuyen_ChucNang VALUES ('NQ-SALE', 'KT-04', 'draft');
@@ -133,6 +134,7 @@ INSERT INTO NhomQuyen_ChucNang VALUES ('NQ-SALE', 'HDM-08', 'ownView');
 INSERT INTO NhomQuyen_ChucNang VALUES ('NQ-SALE', 'KHO-01', 'view');
 INSERT INTO NhomQuyen_ChucNang VALUES ('NQ-SALE', 'KHO-09', 'view');
 INSERT INTO NhomQuyen_ChucNang VALUES ('NQ-SALE', 'BC-01', 'ownView');
+INSERT INTO NhomQuyen_ChucNang VALUES ('NQ-SALE', 'TD-01', 'own');
 INSERT INTO NhomQuyen (MaNhom, MaHienThi, TenNhom, MoTa, ToanQuyen, TrangThai, HeThong, TaoLuc) VALUES ('NQ-ADMIN', 'ADMIN_KD', N'Admin kinh doanh', N'HĐ bán / mua, hồ sơ, giao nhận', 0, N'Hoạt động', 1, '2026-01-01T00:00:00');
 INSERT INTO NhomQuyen_ChucNang VALUES ('NQ-ADMIN', 'NT-11', 'request');
 INSERT INTO NhomQuyen_ChucNang VALUES ('NQ-ADMIN', 'KT-04', 'draft');
@@ -151,6 +153,7 @@ INSERT INTO NhomQuyen_ChucNang VALUES ('NQ-ADMIN', 'KHO-01', 'view');
 INSERT INTO NhomQuyen_ChucNang VALUES ('NQ-ADMIN', 'KHO-09', 'view');
 INSERT INTO NhomQuyen_ChucNang VALUES ('NQ-ADMIN', 'PT-01', 'view');
 INSERT INTO NhomQuyen_ChucNang VALUES ('NQ-ADMIN', 'BC-01', 'view');
+INSERT INTO NhomQuyen_ChucNang VALUES ('NQ-ADMIN', 'TD-01', 'edit');
 INSERT INTO NhomQuyen (MaNhom, MaHienThi, TenNhom, MoTa, ToanQuyen, TrangThai, HeThong, TaoLuc) VALUES ('NQ-KHO', 'KHO', N'Kho', N'Tồn kho, nhập / xuất, phiếu điều chỉnh', 0, N'Hoạt động', 1, '2026-01-01T00:00:00');
 INSERT INTO NhomQuyen_ChucNang VALUES ('NQ-KHO', 'NT-11', 'request');
 INSERT INTO NhomQuyen_ChucNang VALUES ('NQ-KHO', 'HDM-10', 'view');
@@ -162,6 +165,7 @@ INSERT INTO NhomQuyen_ChucNang VALUES ('NQ-KHO', 'HDM-06', 'edit');
 INSERT INTO NhomQuyen_ChucNang VALUES ('NQ-KHO', 'KHO-01', 'edit');
 INSERT INTO NhomQuyen_ChucNang VALUES ('NQ-KHO', 'KHO-06', 'edit');
 INSERT INTO NhomQuyen_ChucNang VALUES ('NQ-KHO', 'KHO-09', 'view');
+INSERT INTO NhomQuyen_ChucNang VALUES ('NQ-KHO', 'TD-01', 'edit');
 INSERT INTO NhomQuyen (MaNhom, MaHienThi, TenNhom, MoTa, ToanQuyen, TrangThai, HeThong, TaoLuc) VALUES ('NQ-XEM', 'CHI_XEM', N'Chỉ xem', N'Xem mọi số liệu, không có nút hành động', 0, N'Hoạt động', 1, '2026-01-01T00:00:00');
 INSERT INTO NhomQuyen_ChucNang VALUES ('NQ-XEM', 'KT-01', 'view');
 INSERT INTO NhomQuyen_ChucNang VALUES ('NQ-XEM', 'KT-04', 'view');
@@ -178,3 +182,4 @@ INSERT INTO NhomQuyen_ChucNang VALUES ('NQ-XEM', 'KHO-06', 'view');
 INSERT INTO NhomQuyen_ChucNang VALUES ('NQ-XEM', 'KHO-09', 'view');
 INSERT INTO NhomQuyen_ChucNang VALUES ('NQ-XEM', 'PT-01', 'view');
 INSERT INTO NhomQuyen_ChucNang VALUES ('NQ-XEM', 'BC-01', 'view');
+INSERT INTO NhomQuyen_ChucNang VALUES ('NQ-XEM', 'TD-01', 'own');
