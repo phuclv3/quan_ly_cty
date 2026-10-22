@@ -27,6 +27,8 @@ import {
   KHO_CHUYEN_THANG,
   KhachHang,
   ChamSocKH,
+  DeNghiVatTu,
+  ViecGiao,
   CoHoi,
   TiepCan,
   AnhXaTen,
@@ -51,8 +53,10 @@ import {
   CHECKLIST_HDM,
 } from './models';
 import { CHUC_NANG, KE_TOAN_DUYET_XOA, Level, Perm, atLeast, levelOf } from './perm';
-import { CAU_HINH_MAC_DINH, DB_VERSION, buildSeed, ghepDataKH, nangCapKhoV5, nangCapKhoV6, themTaiKhoanSale } from './seed';
+import { CAU_HINH_MAC_DINH, DB_VERSION, buildSeed, ghepDataKH, nangCapKhoV5, nangCapKhoV6, nangCapV7, nangCapV8, themTaiKhoanSale } from './seed';
 import {
+  apDungTuDongHdb,
+  hdmChoHdb,
   donGiaChuyenThang,
   donGiaVND,
   hdbCalc,
@@ -73,6 +77,13 @@ import { deleteBlob, luuTep } from './files';
 import { fold, money, nowIso, todayIso, uid, vnd, yy } from './util';
 
 const KEY = 'app-oxy:db';
+
+/** MST Việt Nam: 10 số, hoặc 10 số + "-" + 3 số (chi nhánh). Trống → bắt buộc nhập. */
+export function kiemMST(mst: string | undefined): string | null {
+  const s = (mst ?? '').trim();
+  if (!s) return 'Mã số thuế là bắt buộc';
+  return /^\d{10}(-\d{3})?$/.test(s) ? null : 'MST không hợp lệ — 10 số hoặc 10 số-3 số (VD 0101248141 / 0101248141-001)';
+}
 type Result = string | null;
 
 /** Một dòng xuất kho do người dùng nhập: chỉ định lô, hoặc bỏ trống để tự trừ lô nhập trước (FIFO). */
@@ -155,6 +166,18 @@ export class Store {
       if (d && d.version === 5) {
         d = structuredClone(d);
         nangCapKhoV6(d);
+        d.version = 6;
+      }
+      // v6 → v7: đề nghị cấp vật tư, dòng hàng / tạm ứng / phạt của HĐ bán.
+      if (d && d.version === 6) {
+        d = structuredClone(d);
+        nangCapV7(d);
+        d.version = 7;
+      }
+      // v7 → v8: việc được giao + quyền TD-01.
+      if (d && d.version === 7) {
+        d = structuredClone(d);
+        nangCapV8(d);
         d.version = DB_VERSION;
       }
       if (!d || d.version !== DB_VERSION) d = await buildSeed();
@@ -212,6 +235,18 @@ export class Store {
   readonly phieuKho = computed(() => this.db().phieuKho);
   readonly kiemKe = computed(() => this.db().kiemKe);
   readonly anhXaTen = computed(() => this.db().anhXaTen);
+  readonly deNghiVatTu = computed(() => this.db().deNghiVatTu);
+  /** Việc được giao: "Sửa của mình" chỉ thấy việc mình giao hoặc được giao. */
+  readonly viecVisible = computed(() => {
+    const me = this.meId();
+    const all = this.db().viecGiao ?? [];
+    return this.ownOnly('viec') ? all.filter((v) => v.nguoiTao === me || v.nguoiNhan.includes(me ?? '')) : all;
+  });
+  /** Việc chưa xong giao cho tôi (hoặc việc của tôi) — số trên menu. */
+  readonly viecCuaToi = computed(() => {
+    const me = this.meId() ?? '';
+    return (this.db().viecGiao ?? []).filter((v) => !v.xongLuc && (v.nguoiNhan.includes(me) || (!v.nguoiNhan.length && v.nguoiTao === me))).length;
+  });
   /** Tồn theo lô (mọi kho) — dùng chung cho các màn kho. */
   readonly loKho = computed(() => tonTheoLo(this.db()));
   readonly hopDongPhuTai = computed(() => this.db().hopDongPhuTai);
@@ -303,7 +338,7 @@ export class Store {
     const all = this.db().hopDongMua;
     if (!this.ownOnly('hdm')) return all;
     const mine = new Set(this.hdbVisible().map((h) => h.id));
-    return all.filter((m) => m.hdbId && mine.has(m.hdbId));
+    return all.filter((m) => [...mine].some((id) => hdmChoHdb(m, id)));
   });
 
   readonly nguonDangDung = computed(() => this.db().nguonTien.filter((n) => n.trangThai === 'Đang dùng'));
@@ -392,6 +427,8 @@ export class Store {
     const e = this.require('khachHang', 'edit', cu?.phuTrach || undefined);
     if (e) return e;
     if (!k.ten.trim()) return 'Chưa nhập tên khách hàng';
+    const loiMst = kiemMST(k.mst);
+    if (loiMst) return loiMst;
     const phanBo = this.canEdit('phanBoKH');
     if (!phanBo) {
       // Không có quyền phân bổ: giữ nguyên Sale phụ trách; KH mới do mình tạo thì mình phụ trách (nếu là Sale).
@@ -797,6 +834,8 @@ export class Store {
       thucTeTruocVAT: 0,
       thamSoThue: { nguong: c.TNDN_NGUONG, muc1: c.TNDN_MUC1, muc2: c.TNDN_MUC2 },
       dotTT: [],
+      dongHang: [],
+      coTamUng: false,
       taoLuc: nowIso(),
     };
   }
@@ -807,6 +846,9 @@ export class Store {
 
   /** Lưu HĐ (Tab 1 + Tab 3). Trả id khi thành công qua out.id. */
   saveHdb(h: HopDongBan): Result {
+    const id0 = h.id;
+    const goc = h;
+    h = apDungTuDongHdb(h);
     const cu = h.id ? this.hdbById(h.id) : undefined;
     const e = this.require('hdb', 'edit', cu?.sale ?? h.sale);
     if (e) return e;
@@ -816,10 +858,15 @@ export class Store {
     if (!h.soHD.trim() && !baoGia) return 'Số HĐ bán là bắt buộc';
     if (h.soHD.trim() && this.db().hopDongBan.some((x) => x.id !== h.id && fold(x.soHD) === fold(h.soHD))) return `Số HĐ ${h.soHD} đã tồn tại`;
     if (!h.maKH) return 'Chưa chọn Khách hàng';
+    if (h.mst?.trim()) {
+      const loiMst = kiemMST(h.mst);
+      if (loiMst) return loiMst;
+    }
+    if ((h.phatHD ?? 0) < 0) return 'Tiền phạt HĐ không âm';
     if (cu && !baoGia && (cu.soHD !== h.soHD || cu.maKH !== h.maKH)) return 'Từ "Hiệu lực" không đổi Số HĐ / Khách hàng';
     if (cu && this.hdbCoPhieuThu(cu) && (cu.truocVAT !== h.truocVAT || cu.vat !== h.vat))
       return 'HĐ đã có phiếu Thu — không đổi Giá trị trước VAT / VAT (xoá phiếu Thu trước nếu cần sửa)';
-    if (h.ngayKy && h.ngayHieuLuc && h.ngayHieuLuc < h.ngayKy) return 'Ngày hiệu lực phải ≥ Ngày ký';
+    if (h.ngayKy && h.ngayHieuLuc && h.ngayHieuLuc < h.ngayKy) return 'Ngày hiệu lực (ngày thu tạm ứng) phải ≥ Ngày ký';
     if (h.dotTT.length > this.cauHinh().SO_DOT_TOI_DA) return `Tối đa ${this.cauHinh().SO_DOT_TOI_DA} đợt thanh toán`;
     if (cu && cu.trangThai !== 'Báo giá' && h.trangThai === cu.trangThai) {
       const thieu = hdbThieuDeChuyen(h, 'Hiệu lực', this.db());
@@ -837,7 +884,11 @@ export class Store {
     }
     const out: HopDongBan = { ...h, id: h.id || uid('HDB') };
     this.upsert('hopDongBan', out);
-    if (!h.id) h.id = out.id;
+    if (!id0) goc.id = out.id;
+    // KH chưa có MST / địa chỉ mà HĐ đã nhập → ghi ngược về danh mục khách hàng (không phải quay lại sửa KH).
+    const k = this.khById(h.maKH);
+    if (k && ((!k.mst?.trim() && h.mst?.trim()) || (!k.diaChi?.trim() && h.diaChi?.trim())))
+      this.upsert('khachHang', { ...k, mst: k.mst?.trim() || h.mst.trim(), diaChi: k.diaChi?.trim() || h.diaChi.trim() });
     return null;
   }
 
@@ -989,7 +1040,8 @@ export class Store {
     const h = this.hdbById(hdbId);
     if (!h) return 'Không tìm thấy HĐ';
     if (this.hdbKhoa(h)) return 'HĐ đã khoá';
-    if (h.trangThai === 'Báo giá') return 'HĐ đang ở Báo giá — chỉ ghi thực thu từ Hiệu lực trở đi';
+    // HĐ có tạm ứng: đợt 1 (tạm ứng) thu ngay ở Báo giá — ngày thu đợt 1 chính là Ngày hiệu lực.
+    if (h.trangThai === 'Báo giá' && !(h.coTamUng && dot === 1)) return 'HĐ đang ở Báo giá — chỉ ghi thực thu từ Hiệu lực trở đi (trừ đợt tạm ứng)';
     const d = h.dotTT.find((x) => x.dot === dot);
     if (!d) return 'Không có đợt này';
     if (!o.ngayThu || !(o.soTienThu > 0) || !o.nguonTienNhan) return 'Cần Ngày thực thu, Số tiền > 0 và Nguồn tiền nhận';
@@ -1017,10 +1069,105 @@ export class Store {
     }
     phieuThuId = p.id;
     this.upsert('phieuThuChi', p);
-    this.upsert('hopDongBan', {
-      ...h,
-      dotTT: h.dotTT.map((x) => (x.dot === dot ? { ...x, ...o, phieuThuId } : x)),
-    });
+    this.upsert(
+      'hopDongBan',
+      apDungTuDongHdb({
+        ...h,
+        dotTT: h.dotTT.map((x) => (x.dot === dot ? { ...x, ...o, phieuThuId } : x)),
+      }),
+    );
+    return null;
+  }
+
+  // ── Việc được giao (ToDoList) ──
+
+  giaoViec(o: { noiDung: string; nguoiNhan: string[]; hdbId?: string; han?: string; gio?: string }): Result {
+    const e = this.require('viec', 'own');
+    if (e) return e;
+    const noiDung = o.noiDung.trim();
+    if (!noiDung) return 'Nhập nội dung việc';
+    const me = this.meId()!;
+    const v: ViecGiao = {
+      id: uid('VG'),
+      noiDung,
+      nguoiTao: me,
+      taoLuc: nowIso(),
+      nguoiNhan: [...new Set(o.nguoiNhan.filter((x) => x && x !== me))],
+      hdbId: o.hdbId || undefined,
+      han: o.han || todayIso(),
+      gio: o.gio || undefined,
+      uuTien: this.coToanQuyen(),
+      phanHoi: [],
+    };
+    this.upsert('viecGiao', v);
+    return null;
+  }
+
+  /** Người liên quan (giao / nhận) hoặc người thấy mọi việc mới được phản hồi / đổi trạng thái. */
+  lienQuanViec(v: ViecGiao): boolean {
+    const me = this.meId() ?? '';
+    return v.nguoiTao === me || v.nguoiNhan.includes(me) || this.canEdit('viec');
+  }
+
+  phanHoiViec(id: string, noiDung: string): Result {
+    const v = this.db().viecGiao.find((x) => x.id === id);
+    if (!v) return 'Không tìm thấy việc';
+    if (!this.lienQuanViec(v)) return 'Bạn không liên quan việc này';
+    if (!noiDung.trim()) return 'Nhập nội dung phản hồi';
+    this.upsert('viecGiao', { ...v, phanHoi: [...v.phanHoi, { nguoi: this.meId()!, luc: nowIso(), noiDung: noiDung.trim() }] });
+    return null;
+  }
+
+  xongViec(id: string, xong: boolean): Result {
+    const v = this.db().viecGiao.find((x) => x.id === id);
+    if (!v) return 'Không tìm thấy việc';
+    if (!this.lienQuanViec(v)) return 'Bạn không liên quan việc này';
+    const me = this.meId()!;
+    const dong = { nguoi: me, luc: nowIso(), noiDung: xong ? 'Đã hoàn thành' : 'Mở lại việc', heThong: true };
+    this.upsert('viecGiao', { ...v, xongLuc: xong ? nowIso() : undefined, nguoiXong: xong ? me : undefined, phanHoi: [...v.phanHoi, dong] });
+    return null;
+  }
+
+  /** Tài khoản thuộc nhóm toàn quyền (Giám đốc) — việc giao được đánh dấu ưu tiên. */
+  private coToanQuyen(): boolean {
+    const t = this.me();
+    return !!t && this.db().nhomQuyen.some((g) => g.toanQuyen && g.trangThai === 'Hoạt động' && t.nhom.includes(g.id));
+  }
+
+  // ── Đề nghị cấp vật tư ──
+
+  /** HĐ bán thiếu hàng trong kho → lập đề nghị cấp vật tư (đầu vào cho HĐ mua). */
+  taoDeNghiVatTu(hdbId: string, dong: { loaiHang: string; tenHang: string; soLuong: number; ghiChu?: string }[], ghiChu?: string): Result | { id: string } {
+    const h = this.hdbById(hdbId);
+    if (!h) return 'Không tìm thấy HĐ bán';
+    const e = this.require('hdb', 'edit', h.sale);
+    if (e) return e;
+    if (this.hdbKhoa(h)) return 'HĐ đã khoá';
+    const ds = dong.filter((d) => d.loaiHang && d.soLuong > 0);
+    if (!ds.length) return 'Không có dòng nào cần đề nghị (SL > 0)';
+    const ngay = todayIso();
+    const dn: DeNghiVatTu = {
+      id: uid('DN'),
+      soPhieu: this.nextSo('DN', ngay),
+      ngay,
+      hdbId,
+      nguoiDeNghi: this.meId()!,
+      ghiChu: ghiChu?.trim() || undefined,
+      dong: ds.map((d) => ({ id: uid('DND'), loaiHang: d.loaiHang, tenHang: d.tenHang.trim(), soLuong: d.soLuong, ghiChu: d.ghiChu?.trim() || undefined })),
+    };
+    this.upsert('deNghiVatTu', dn);
+    return { id: dn.id };
+  }
+
+  huyDeNghiVatTu(id: string, lyDo: string): Result {
+    const dn = this.db().deNghiVatTu.find((x) => x.id === id);
+    if (!dn) return 'Không tìm thấy đề nghị';
+    const e = this.require('hdb', 'edit', this.hdbById(dn.hdbId)?.sale);
+    if (e) return e;
+    if (!lyDo.trim()) return 'Cần lý do huỷ';
+    if (this.db().hopDongMua.some((m) => m.trangThai !== 'Huỷ' && m.chiTiet.some((d) => d.dnvtId === id)))
+      return 'Đề nghị đã lên HĐ mua — bỏ dòng ở HĐ mua trước khi huỷ';
+    this.upsert('deNghiVatTu', { ...dn, lyDoHuy: lyDo.trim() });
     return null;
   }
 
@@ -1910,7 +2057,8 @@ export class Store {
         if (d.phieuThuChi.some((p) => p.phatSinh?.loai === 'HDB-DotTT' && p.phatSinh.hdId === id && p.trangThai !== 'Từ chối'))
           return 'HĐ đã có phiếu thu từ đợt thanh toán — xoá phiếu thu trước';
         if (d.chiPhiHD.some((c) => c.hdbId === id)) return 'HĐ đã có chi phí thực hiện — xoá chi phí trước';
-        if (d.hopDongMua.some((m) => m.hdbId === id)) return 'Có HĐ mua đang trỏ tới HĐ này — bỏ liên kết trước';
+        if (d.hopDongMua.some((m) => hdmChoHdb(m, id))) return 'Có HĐ mua đang trỏ tới HĐ này — bỏ liên kết trước';
+        if (d.deNghiVatTu.some((x) => x.hdbId === id && !x.lyDoHuy)) return 'HĐ có đề nghị cấp vật tư — huỷ đề nghị trước';
         return null;
       case 'HopDongMua':
         if (coKho(id)) return 'HĐ đã có phiếu nhập — huỷ phiếu nhập trước';

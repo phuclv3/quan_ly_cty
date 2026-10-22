@@ -420,12 +420,67 @@ export interface DotTTBan {
   tyLe?: number;
   soTien: number;
   han?: string;
+  /** Hạn = Ngày hiệu lực + N ngày (5/10/20/30…) — chọn thay cho gõ ngày tay; han tự tính. */
+  hanNgay?: number;
   ngayThu?: string;
   soTienThu?: number;
   nguonTienNhan?: string;
   ghiChu?: string;
   /** Phiếu Thu sinh kèm khi Kế toán ghi nhận thực thu. */
   phieuThuId?: string;
+}
+
+/**
+ * Một dòng hàng của HĐ bán / báo giá: chọn mã hàng từ danh mục kho, đơn giá HĐ và đơn giá thực hiện
+ * (giá vốn dự kiến — dùng cho Bảng tính giá / Tờ trình). Nồng độ khách đặt ghi ở Tên hàng.
+ */
+export interface DongHangBan {
+  id: string;
+  loaiHang: string;
+  tenHang: string;
+  soLuong: number;
+  /** Đơn giá HĐ trước VAT. */
+  donGia: number;
+  /** Đơn giá thực hiện trước VAT (giá vốn dự kiến). */
+  donGiaTH: number;
+  ghiChu?: string;
+}
+
+/**
+ * Việc được giao / lịch hẹn (nghiep_vu 09 — ToDoList): giao cho 1 hoặc nhiều người (trống = việc của mình),
+ * gắn HĐ bán tuỳ chọn, có hạn, trao đổi dạng hội thoại, đánh dấu xong / mở lại.
+ */
+export interface ViecGiao {
+  id: string;
+  noiDung: string;
+  /** Id tài khoản người giao. */
+  nguoiTao: string;
+  taoLuc: string;
+  /** Id tài khoản người nhận — rỗng = việc của chính người tạo. */
+  nguoiNhan: string[];
+  hdbId?: string;
+  /** Hạn 'YYYY-MM-DD' và giờ 'HH:mm' (tuỳ chọn). */
+  han?: string;
+  gio?: string;
+  /** Giám đốc giao → ưu tiên. */
+  uuTien?: boolean;
+  xongLuc?: string;
+  nguoiXong?: string;
+  phanHoi: { nguoi: string; luc: string; noiDung: string; heThong?: boolean }[];
+}
+
+/** Phiếu đề nghị cấp vật tư: HĐ bán thiếu hàng trong kho → đề nghị mua; HĐ mua lấy dòng từ đề nghị. */
+export interface DeNghiVatTu {
+  id: string;
+  soPhieu: string;
+  ngay: string;
+  hdbId: string;
+  /** Id tài khoản. */
+  nguoiDeNghi: string;
+  dong: { id: string; loaiHang: string; tenHang: string; soLuong: number; ghiChu?: string }[];
+  ghiChu?: string;
+  /** Huỷ đề nghị (không mua nữa). */
+  lyDoHuy?: string;
 }
 
 export interface HopDongBan {
@@ -446,6 +501,13 @@ export interface HopDongBan {
   thucTeTruocVAT: number;
   thamSoThue: ThamSoThue;
   dotTT: DotTTBan[];
+  /** Dòng hàng chọn từ kho — có dòng thì Giá trị trước VAT / GTHĐ thực tế tự cộng từ dòng. */
+  dongHang?: DongHangBan[];
+  /** Có tạm ứng: Ngày hiệu lực = ngày thực thu đợt 1; không: = Ngày ký (tự điền, không nhập tay). */
+  coTamUng?: boolean;
+  /** Phạt HĐ khi quyết toán (VNĐ, giảm số phải thu): Giá trị quyết toán = Sau VAT − Phạt. */
+  phatHD?: number;
+  lyDoPhat?: string;
   ghiChuHoSoThieu?: string;
   taoLuc: string;
   import?: boolean;
@@ -475,6 +537,11 @@ export interface DongHangMua {
   loaiTien: LoaiTien;
   tyGia: number;
   ghiChu?: string;
+  /** Dòng lấy từ đề nghị cấp vật tư — 1 HĐ mua có thể gom đề nghị của nhiều HĐ bán. */
+  dnvtId?: string;
+  dnvtDong?: string;
+  /** HĐ bán mà dòng này mua cho (khi HĐ mua phục vụ nhiều HĐ bán). */
+  hdbId?: string;
 }
 
 export interface DotTTMua {
@@ -739,6 +806,8 @@ export interface Db {
   phieuKho: PhieuKho[];
   kiemKe: KiemKe[];
   anhXaTen: AnhXaTen[];
+  deNghiVatTu: DeNghiVatTu[];
+  viecGiao: ViecGiao[];
   hopDongPhuTai: HopDongPhuTai[];
   dongTienPT: DongTienPT[];
   /** Bộ đếm số chứng từ theo tiền tố + năm, VD { 'TC26': 12 } — không tái dùng số đã xoá. */

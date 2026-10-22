@@ -13,6 +13,7 @@ export const routes: Routes = [
     // Mọi màn con: rời màn khi còn thay đổi chưa lưu thì hỏi (NT-05).
     children: ([
       { path: '', title: T('Trang chủ'), loadComponent: () => import('./home/dashboard').then((m) => m.Dashboard) },
+      { path: 'viec', title: T('Việc được giao'), canActivate: [permGuard('viec')], loadComponent: () => import('./viec/viec').then((m) => m.ViecPage) },
       {
         path: 'khach-hang',
         title: T('Khách hàng'),

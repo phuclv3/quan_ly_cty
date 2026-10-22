@@ -98,6 +98,9 @@ const TONE: Record<string, string> = {
   'Đang nhận hàng': 'warn',
   'Đang thực hiện': 'warn',
   'Chờ duyệt': 'warn',
+  'Chờ mua': 'bad',
+  'Đang mua một phần': 'warn',
+  'Đã lên HĐ mua': 'ok',
   'Chờ xoá': 'bad',
   'Hoàn thành': 'ok',
   'Đã nhận đủ': 'ok',
@@ -234,6 +237,8 @@ export interface PickOption {
   value: string;
   label: string;
   hint?: string;
+  /** Chữ thêm để tìm (không hiển thị), VD tên tham chiếu của mã hàng. */
+  tim?: string;
 }
 
 @Component({
@@ -283,7 +288,7 @@ export class Pick {
   protected readonly filtered = computed(() => {
     const words = fold(this.query()).split(/\s+/).filter(Boolean);
     const out = this.options().filter((o) => {
-      const hay = fold(`${o.label} ${o.hint ?? ''} ${o.value}`);
+      const hay = fold(`${o.label} ${o.hint ?? ''} ${o.value} ${o.tim ?? ''}`);
       return words.every((w) => hay.includes(w));
     });
     return out.slice(0, 80);
@@ -380,7 +385,7 @@ export class PickGo {
     const dau = gon(q);
     const khop = this.options()
       .map((o) => {
-        const all = `${o.label} ${o.hint ?? ''} ${o.value}`;
+        const all = `${o.label} ${o.hint ?? ''} ${o.value} ${o.tim ?? ''}`;
         const hay = fold(all);
         const hayGon = gon(all);
         if (!words.every((w) => hay.includes(w) || hayGon.includes(gon(w)))) return null;

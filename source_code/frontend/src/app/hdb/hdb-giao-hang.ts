@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal, viewChild } from '@angular/core';
 import { Store } from '../core/store';
 import { HopDongBan, KHO_CHUYEN_THANG, PhieuKho } from '../core/models';
-import { DongLo, loConHang, tonTai, tongSL } from '../core/calc';
+import { DongLo, dongMuaChoHdb, hdmChoHdb, loConHang, tonTai, tongSL } from '../core/calc';
 import { num, todayIso, viDate } from '../core/util';
 import { Confirm } from '../shared/confirm';
 import { guiXoa } from '../shared/ho-so';
@@ -28,7 +28,7 @@ const dongRong = (): DongNhap => ({ loaiHang: '', lo: '', soLuong: 0, tenTrenHD:
   template: `
     <section class="card">
       <div class="section-title">
-        <h2>Giao hàng</h2>
+        <h2>Giao hàng <small class="sub">Có hàng trong kho → phiếu xuất kho → giao (ngày giao = ngày phiếu)</small></h2>
         @if (coTheGiao()) {
           <button type="button" class="btn sm" (click)="mo()"><app-icon name="truck" [size]="16" /> Ghi nhận giao hàng</button>
         }
@@ -82,7 +82,11 @@ const dongRong = (): DongNhap => ({ loaiHang: '', lo: '', soLuong: 0, tenTrenHD:
           <input id="gh-gc" [value]="ghiChu()" (input)="ghiChu.set($any($event.target).value)" />
         </div>
       </div>
-      @if (goiY()) { <p class="note info">Đã gợi ý sẵn các dòng từ HĐ Mua liên quan (trừ phần đã giao). Sửa / xoá dòng nếu cần.</p> }
+      @if (goiY()) { <p class="note info">Đã gợi ý sẵn các dòng {{ h().dongHang?.length ? 'sản phẩm của HĐ' : 'từ HĐ Mua liên quan' }} (trừ phần đã giao) — chỉ những dòng kho còn hàng. Sửa / xoá dòng nếu cần.</p> }
+      @if (chuaCoHang().length) {
+        <p class="note warn">Chưa có trong kho: {{ chuaCoHang().join('; ') }} → cần đề nghị cấp vật tư → mua hàng → nhập kho rồi mới giao (Tab 3 / Tab 5).</p>
+      }
+      <div class="tbl-wrap">
       <table class="tbl compact">
         <thead><tr><th style="width:34%">Mã hàng</th><th>Lô</th><th class="num w-sm">Số lượng</th><th>Tên hàng trên HĐ</th><th style="width:40px"></th></tr></thead>
         <tbody>
@@ -109,6 +113,7 @@ const dongRong = (): DongNhap => ({ loaiHang: '', lo: '', soLuong: 0, tenTrenHD:
           }
         </tbody>
       </table>
+      </div>
       <button type="button" class="btn sm quiet" (click)="themDong()"><app-icon name="plus" [size]="16" /> Thêm dòng</button>
       @if (loi()) {
         <p class="note bad">{{ loi() }}</p>
@@ -139,6 +144,7 @@ export class HdbGiaoHang {
   protected readonly ghiChu = signal('');
   protected readonly dong = signal<DongNhap[]>([]);
   protected readonly goiY = signal(false);
+  protected readonly chuaCoHang = signal<string[]>([]);
   private readonly goc = signal('');
   private readonly anh = computed(() => JSON.stringify([this.ngay(), this.kho(), this.ghiChu(), this.dong()]));
   protected readonly dirty = computed(() => this.open() && this.anh() !== this.goc());
@@ -170,36 +176,63 @@ export class HdbGiaoHang {
   protected lots(lh: string): DongLo[] {
     return lh ? loConHang(this.store.db(), lh, this.kho()).filter((l) => l.ngay <= this.ngay()) : [];
   }
-  protected doiKho(v: string): void {
-    this.kho.set(v);
-    this.dong.update((arr) => arr.map((d) => ({ ...d, lo: '' })));
-  }
 
-  protected mo(): void {
+  /** SL còn phải giao theo mã: dòng sản phẩm của HĐ bán; chưa có thì theo HĐ mua liên quan như trước. */
+  private conPhaiGiao(): { loaiHang: string; con: number; tenHang: string }[] {
     const id = this.h().id;
     const daGiao = new Map<string, number>();
     for (const p of this.phieus()) {
       if (p.trangThai !== 'Hiệu lực') continue;
       for (const d of p.dong) daGiao.set(d.loaiHang, (daGiao.get(d.loaiHang) ?? 0) + d.soLuong);
     }
-    const goiY: DongNhap[] = [];
-    for (const m of this.store.hopDongMua()) {
-      if (m.hdbId !== id || m.trangThai === 'Huỷ') continue;
-      for (const d of m.chiTiet) {
-        const tru = Math.min(daGiao.get(d.loaiHang) ?? 0, d.soLuong);
-        daGiao.set(d.loaiHang, (daGiao.get(d.loaiHang) ?? 0) - tru);
-        const con = d.soLuong - tru;
-        if (con > 0) goiY.push({ ...dongRong(), loaiHang: d.loaiHang, soLuong: con, tenTrenHD: d.tenHang });
-      }
+    const can = this.h().dongHang?.length
+      ? this.h().dongHang!
+      : this.store.hopDongMua().filter((m) => m.trangThai !== 'Huỷ' && hdmChoHdb(m, id)).flatMap((m) => dongMuaChoHdb(m, id));
+    const out: { loaiHang: string; con: number; tenHang: string }[] = [];
+    for (const d of can) {
+      if (!d.loaiHang) continue;
+      const tru = Math.min(daGiao.get(d.loaiHang) ?? 0, d.soLuong);
+      daGiao.set(d.loaiHang, (daGiao.get(d.loaiHang) ?? 0) - tru);
+      if (d.soLuong - tru > 0) out.push({ loaiHang: d.loaiHang, con: d.soLuong - tru, tenHang: d.tenHang });
     }
+    return out;
+  }
+
+  /** Gợi ý dòng giao theo tồn của kho đang chọn: có hàng → dòng xuất; thiếu → báo cần đề nghị cấp vật tư. */
+  private lapGoiY(): void {
+    const kho = this.kho();
+    const db = this.store.db();
+    const goiY: DongNhap[] = [];
+    const thieu: string[] = [];
+    for (const r of this.conPhaiGiao()) {
+      const ton = kho === KHO_CHUYEN_THANG ? r.con : tonTai(db, r.loaiHang, kho);
+      if (ton > 0) goiY.push({ ...dongRong(), loaiHang: r.loaiHang, soLuong: Math.min(r.con, ton), tenTrenHD: r.tenHang });
+      if (r.con > ton) thieu.push(`${r.loaiHang} × ${r.con - Math.max(ton, 0)}`);
+    }
+    this.chuaCoHang.set(thieu);
     this.goiY.set(goiY.length > 0);
     this.dong.set(goiY.length ? goiY : [dongRong()]);
+  }
+
+  protected mo(): void {
+    // Mặc định kho có nhiều hàng cần giao nhất (không lấy kho đầu danh sách — hàng có thể nằm ở kho khác).
+    const can = this.conPhaiGiao();
+    const db = this.store.db();
+    const khos = this.store.khoDangDung().filter((k) => k.id !== KHO_CHUYEN_THANG);
+    const diem = (kho: string) => can.reduce((s, r) => s + Math.min(r.con, Math.max(tonTai(db, r.loaiHang, kho), 0)), 0);
+    const tot = [...khos].sort((a, b) => diem(b.id) - diem(a.id))[0] ?? this.store.khoDangDung()[0];
+    this.kho.set(tot?.id ?? '');
+    this.lapGoiY();
     this.ngay.set(todayIso());
-    this.kho.set((this.store.khoDangDung().find((k) => k.id !== KHO_CHUYEN_THANG) ?? this.store.khoDangDung()[0])?.id ?? '');
     this.ghiChu.set('');
     this.goc.set(this.anh());
     this.open.set(true);
   }
+  protected doiKho(v: string): void {
+    this.kho.set(v);
+    this.lapGoiY();
+  }
+
 
   protected setDong(i: number, p: Partial<DongNhap>): void {
     this.dong.update((arr) => arr.map((d, j) => (j === i ? { ...d, ...p } : d)));

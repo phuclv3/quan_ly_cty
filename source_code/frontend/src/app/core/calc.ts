@@ -5,6 +5,8 @@
 import {
   ChiPhiHD,
   Db,
+  DeNghiVatTu,
+  DongHangBan,
   DongHangMua,
   DongPhieuKho,
   DotTTBan,
@@ -88,6 +90,9 @@ export interface HdbCalc {
   daThu: number;
   /** Đã ghi nhận, phiếu Thu đang chờ duyệt — chưa tính vào Đã thu. */
   daThuCho: number;
+  /** Phạt HĐ khi quyết toán và Giá trị quyết toán = Sau VAT − Phạt (công nợ tính theo giá trị quyết toán). */
+  phat: number;
+  giaTriQT: number;
   conPhaiThu: number;
   pctThu: number;
   /** Tổng hoa hồng (tiền trả khách) mọi trạng thái trừ Từ chối, và phần đã duyệt. */
@@ -127,10 +132,11 @@ export function hdbCalc(h: HopDongBan, db: Db): HdbCalc {
     cps.filter((c) => c.trangThai === 'Chờ duyệt'),
     (c) => c.soTien,
   );
+  const phat = Math.max(h.phatHD ?? 0, 0);
   const xk = db.phieuKho.filter((p) => p.loai === 'Xuất' && p.hdId === h.id && p.trangThai === 'Hiệu lực');
   const giaVonXK = sum(xk, (p) => sum(p.dong, (d) => (d.donGiaGoc ?? 0) * d.soLuong));
-  const hdms = db.hopDongMua.filter((m) => m.hdbId === h.id && m.trangThai !== 'Huỷ');
-  const giaVonHDM = sum(hdms, (m) => hdmTong(m));
+  const hdms = db.hopDongMua.filter((m) => m.trangThai !== 'Huỷ' && hdmChoHdb(m, h.id));
+  const giaVonHDM = sum(hdms, (m) => (m.hdbId === h.id ? hdmTong(m) : sum(dongMuaChoHdb(m, h.id), thanhTienVND)));
   const giaVon = giaVonXK > 0 ? giaVonXK : giaVonHDM;
   const giaVonNguon = giaVonXK > 0 ? 'Xuất kho' : giaVonHDM > 0 ? 'HĐ Mua liên quan' : 'Chưa có';
   const lnGop = h.truocVAT - giaVon - cpDuyet;
@@ -145,8 +151,10 @@ export function hdbCalc(h: HopDongBan, db: Db): HdbCalc {
     thue,
     daThu,
     daThuCho,
-    conPhaiThu: sau - daThu,
-    pctThu: sau > 0 ? daThu / sau : 0,
+    phat,
+    giaTriQT: sau - phat,
+    conPhaiThu: sau - phat - daThu,
+    pctThu: sau - phat > 0 ? daThu / (sau - phat) : 0,
     tienTraKhach: sum(hh, (c) => c.soTien),
     tienTraKhachDuyet: sum(
       hh.filter((c) => c.trangThai === 'Đã duyệt'),
@@ -186,12 +194,165 @@ export function hdbBuocLoiNhuan(h: HopDongBan, c: HdbCalc): Buoc[] {
   ];
 }
 
+/** HĐ mua có phục vụ HĐ bán này không: gắn cả HĐ (hdbId), hoặc có dòng mua cho HĐ bán này (gom từ đề nghị). */
+export const hdmChoHdb = (m: HopDongMua, hdbId: string) => m.hdbId === hdbId || m.chiTiet.some((d) => d.hdbId === hdbId);
+
+/** Các dòng HĐ mua dành cho HĐ bán: HĐ gắn cả HĐ thì mọi dòng (trừ dòng ghi rõ HĐ bán khác). */
+export const dongMuaChoHdb = (m: HopDongMua, hdbId: string) =>
+  m.chiTiet.filter((d) => d.hdbId === hdbId || (m.hdbId === hdbId && !d.hdbId));
+
+/** 'YYYY-MM-DD' + n ngày. */
+export function congNgay(iso: string, n: number): string {
+  const d = new Date(`${iso}T00:00:00`);
+  d.setDate(d.getDate() + n);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+/** Ngày hiệu lực tự điền: có tạm ứng → ngày thực thu đợt 1; không → Ngày ký. */
+export function ngayHieuLucTuDong(h: Pick<HopDongBan, 'coTamUng' | 'ngayKy' | 'dotTT'>): string | undefined {
+  return h.coTamUng ? h.dotTT.find((d) => d.dot === 1)?.ngayThu : h.ngayKy;
+}
+
+export const tongDongBan = (ds: DongHangBan[] | undefined) => sum(ds ?? [], (d) => Math.round(d.soLuong * d.donGia));
+export const tongDongBanTH = (ds: DongHangBan[] | undefined) => sum(ds ?? [], (d) => Math.round(d.soLuong * d.donGiaTH));
+
+/**
+ * Các trường HĐ bán tự tính (không nhập tay):
+ *  - Có dòng hàng → Giá trị trước VAT = Σ SL × Đơn giá; GTHĐ thực tế = Σ SL × Đơn giá thực hiện; đợt theo % tính lại tiền.
+ *  - Ngày hiệu lực theo tạm ứng / ngày ký.
+ *  - Hạn TT các đợt chọn "N ngày" = Ngày hiệu lực + N (chưa có ngày hiệu lực thì để trống).
+ */
+export function apDungTuDongHdb(h: HopDongBan): HopDongBan {
+  const out: HopDongBan = { ...h };
+  if (h.dongHang?.length) {
+    out.truocVAT = tongDongBan(h.dongHang);
+    out.thucTeTruocVAT = tongDongBanTH(h.dongHang);
+  }
+  out.ngayHieuLuc = ngayHieuLucTuDong(out);
+  const sau = sauVAT(out.truocVAT, out.vat);
+  out.dotTT = out.dotTT.map((d) => {
+    const x = { ...d };
+    if (out.truocVAT !== h.truocVAT && x.tyLe !== undefined) x.soTien = Math.round((x.tyLe / 100) * sau);
+    if (x.hanNgay != null) x.han = out.ngayHieuLuc ? congNgay(out.ngayHieuLuc, x.hanNgay) : undefined;
+    return x;
+  });
+  return out;
+}
+
+/** SL đã đề nghị cấp vật tư (đề nghị chưa huỷ) theo mã hàng của một HĐ bán. */
+export function slDaDeNghi(db: Db, hdbId: string, loaiHang: string): number {
+  return sum(
+    db.deNghiVatTu.filter((d) => d.hdbId === hdbId && !d.lyDoHuy),
+    (d) => sum(d.dong.filter((x) => x.loaiHang === loaiHang), (x) => x.soLuong),
+  );
+}
+
+/** HĐ bán đang giữ hàng: đã Hiệu lực / Đang giao hàng và có dòng sản phẩm. */
+const giuHang = (h: HopDongBan) => (h.trangThai === 'Hiệu lực' || h.trangThai === 'Đang giao hàng') && !!h.dongHang?.length;
+
+/** SL còn phải giao theo mã của một HĐ bán = Σ dòng sản phẩm − đã xuất kho cho HĐ. */
+function conPhaiGiaoTheoMa(db: Db, h: HopDongBan): Map<string, number> {
+  const out = new Map<string, number>();
+  for (const d of h.dongHang ?? []) if (d.loaiHang) out.set(d.loaiHang, (out.get(d.loaiHang) ?? 0) + d.soLuong);
+  if (h.id)
+    for (const p of db.phieuKho)
+      if (p.loai === 'Xuất' && p.hdId === h.id && p.trangThai === 'Hiệu lực')
+        for (const x of p.dong) if (out.has(x.loaiHang)) out.set(x.loaiHang, Math.max(out.get(x.loaiHang)! - x.soLuong, 0));
+  return out;
+}
+
+/**
+ * Giữ hàng theo HĐ: tồn (mọi kho thường) chia lần lượt cho các HĐ bán đang giữ hàng, HĐ hiệu lực trước được giữ trước
+ * (theo Ngày hiệu lực, rồi thời điểm tạo). Trả phần tồn dành cho HĐ h và phần các HĐ khác đã giữ.
+ * HĐ còn Báo giá không giữ — chỉ thấy phần tồn chưa HĐ nào giữ.
+ */
+export function tonDanhCho(db: Db, h: HopDongBan, loaiHang: string): { ton: number; khaDung: number; daGiuKhac: number } {
+  const ton = Math.max(tonTai(db, loaiHang), 0);
+  const ds = db.hopDongBan
+    .filter((x) => x.id !== h.id && giuHang(x) && x.dongHang!.some((d) => d.loaiHang === loaiHang))
+    .concat(giuHang(h) ? [h] : [])
+    .sort((a, b) => ((a.ngayHieuLuc ?? a.taoLuc) < (b.ngayHieuLuc ?? b.taoLuc) ? -1 : (a.ngayHieuLuc ?? a.taoLuc) > (b.ngayHieuLuc ?? b.taoLuc) ? 1 : a.taoLuc < b.taoLuc ? -1 : 1));
+  let con = ton;
+  let daGiuKhac = 0;
+  for (const x of ds) {
+    const can = conPhaiGiaoTheoMa(db, x).get(loaiHang) ?? 0;
+    const giu = Math.min(can, con);
+    if (x === h) return { ton, khaDung: con, daGiuKhac };
+    daGiuKhac += giu;
+    con -= giu;
+  }
+  return { ton, khaDung: con, daGiuKhac };
+}
+
+export type TrangThaiKhoDong = 'Đủ hàng' | 'Đã đề nghị mua' | 'Cần mua';
+
+/**
+ * Check kho cho từng dòng hàng HĐ bán / báo giá: còn phải giao = SL − đã xuất cho HĐ;
+ * so với tồn dành cho HĐ (đã trừ phần HĐ khác giữ — tonDanhCho): đủ → xanh "Đủ hàng";
+ * thiếu → đỏ "Cần mua" (hoặc "Đã đề nghị mua" khi đề nghị đã phủ phần thiếu).
+ */
+export function kiemTraDongBan(
+  db: Db,
+  h: HopDongBan,
+): { d: DongHangBan; daGiao: number; con: number; ton: number; tonThuc: number; daGiuKhac: number; thieu: number; daDeNghi: number; trangThai: TrangThaiKhoDong }[] {
+  const daGiao = new Map<string, number>();
+  for (const p of db.phieuKho)
+    if (p.loai === 'Xuất' && p.hdId === h.id && h.id && p.trangThai === 'Hiệu lực')
+      for (const x of p.dong) daGiao.set(x.loaiHang, (daGiao.get(x.loaiHang) ?? 0) + x.soLuong);
+  const deNghi = new Map<string, number>();
+  const conTon = new Map<string, number>();
+  const tonMa = new Map<string, ReturnType<typeof tonDanhCho>>();
+  return (h.dongHang ?? []).map((d) => {
+    const g = Math.min(daGiao.get(d.loaiHang) ?? 0, d.soLuong);
+    daGiao.set(d.loaiHang, (daGiao.get(d.loaiHang) ?? 0) - g);
+    const con = d.soLuong - g;
+    if (d.loaiHang && !tonMa.has(d.loaiHang)) {
+      const x = tonDanhCho(db, h, d.loaiHang);
+      tonMa.set(d.loaiHang, x);
+      conTon.set(d.loaiHang, x.khaDung);
+    }
+    const tm = tonMa.get(d.loaiHang);
+    // Nhiều dòng cùng mã dùng chung phần tồn dành cho HĐ.
+    const ton = d.loaiHang ? conTon.get(d.loaiHang)! : 0;
+    const dung = Math.min(ton, con);
+    if (d.loaiHang) conTon.set(d.loaiHang, ton - dung);
+    const thieu = con - dung;
+    if (!deNghi.has(d.loaiHang)) deNghi.set(d.loaiHang, h.id ? slDaDeNghi(db, h.id, d.loaiHang) : 0);
+    const dn = Math.min(deNghi.get(d.loaiHang)!, thieu);
+    deNghi.set(d.loaiHang, deNghi.get(d.loaiHang)! - dn);
+    const trangThai: TrangThaiKhoDong = thieu <= 0 ? 'Đủ hàng' : dn >= thieu ? 'Đã đề nghị mua' : 'Cần mua';
+    return { d, daGiao: g, con, ton, tonThuc: tm?.ton ?? 0, daGiuKhac: tm?.daGiuKhac ?? 0, thieu, daDeNghi: dn, trangThai };
+  });
+}
+
+/** Tình trạng đề nghị cấp vật tư: SL đã lên HĐ mua (không Huỷ) theo từng dòng đề nghị. */
+export function dnvtTinhTrang(db: Db, dn: DeNghiVatTu): { trangThai: 'Huỷ' | 'Chờ mua' | 'Đang mua một phần' | 'Đã lên HĐ mua'; daMua: Map<string, number>; hdm: HopDongMua[] } {
+  const daMua = new Map<string, number>();
+  const hdm: HopDongMua[] = [];
+  for (const m of db.hopDongMua) {
+    if (m.trangThai === 'Huỷ') continue;
+    let co = false;
+    for (const d of m.chiTiet)
+      if (d.dnvtId === dn.id && d.dnvtDong) {
+        daMua.set(d.dnvtDong, (daMua.get(d.dnvtDong) ?? 0) + d.soLuong);
+        co = true;
+      }
+    if (co) hdm.push(m);
+  }
+  if (dn.lyDoHuy) return { trangThai: 'Huỷ', daMua, hdm };
+  const du = dn.dong.every((x) => (daMua.get(x.id) ?? 0) >= x.soLuong);
+  const mot = dn.dong.some((x) => (daMua.get(x.id) ?? 0) > 0);
+  return { trangThai: du ? 'Đã lên HĐ mua' : mot ? 'Đang mua một phần' : 'Chờ mua', daMua, hdm };
+}
+
+
 /** Điều kiện chuyển trạng thái HĐ Bán (HDB-03). Trả danh sách điều kiện còn thiếu. */
 export function hdbThieuDeChuyen(h: HopDongBan, toi: HopDongBan['trangThai'], db: Db): string[] {
   const c = hdbCalc(h, db);
   const out: string[] = [];
   if (toi === 'Hiệu lực') {
     if (!h.soHD.trim()) out.push('Chưa có Số HĐ');
+    if (!h.mst?.trim()) out.push('Chưa có MST khách hàng');
     if (!h.ngayKy) out.push('Chưa có Ngày ký');
     if (h.truocVAT <= 0) out.push('Chưa có Giá trị HĐ');
   }
@@ -511,8 +672,8 @@ export function kiemTraKho(db: Db, loaiHang: string, soLuong: number): { ton: nu
 export function donGiaChuyenThang(db: Db, hdbId: string | undefined, loaiHang: string): number {
   if (!hdbId) return 0;
   const d = db.hopDongMua
-    .filter((m) => m.hdbId === hdbId && m.trangThai !== 'Huỷ')
-    .flatMap((m) => m.chiTiet)
+    .filter((m) => m.trangThai !== 'Huỷ' && hdmChoHdb(m, hdbId))
+    .flatMap((m) => dongMuaChoHdb(m, hdbId))
     .find((x) => x.loaiHang === loaiHang);
   return d ? Math.round(donGiaVND(d)) : 0;
 }
@@ -684,14 +845,15 @@ export function hdbConChuaGiao(h: HopDongBan, db: Db): { loaiHang: string; con: 
     if (p.loai !== 'Xuất' || p.hdId !== h.id || p.trangThai !== 'Hiệu lực') continue;
     for (const d of p.dong) daGiao.set(d.loaiHang, (daGiao.get(d.loaiHang) ?? 0) + d.soLuong);
   }
+  // Có dòng hàng trên HĐ bán → so theo dòng hàng; chưa có thì so theo các HĐ mua liên quan như trước.
+  const can = h.dongHang?.length
+    ? h.dongHang.map((d) => ({ loaiHang: d.loaiHang, soLuong: d.soLuong }))
+    : db.hopDongMua.filter((m) => m.trangThai !== 'Huỷ' && hdmChoHdb(m, h.id)).flatMap((m) => dongMuaChoHdb(m, h.id));
   const out: { loaiHang: string; con: number }[] = [];
-  for (const m of db.hopDongMua) {
-    if (m.hdbId !== h.id || m.trangThai === 'Huỷ') continue;
-    for (const d of m.chiTiet) {
-      const tru = Math.min(daGiao.get(d.loaiHang) ?? 0, d.soLuong);
-      daGiao.set(d.loaiHang, (daGiao.get(d.loaiHang) ?? 0) - tru);
-      if (d.soLuong - tru > 0) out.push({ loaiHang: d.loaiHang, con: d.soLuong - tru });
-    }
+  for (const d of can) {
+    const tru = Math.min(daGiao.get(d.loaiHang) ?? 0, d.soLuong);
+    daGiao.set(d.loaiHang, (daGiao.get(d.loaiHang) ?? 0) - tru);
+    if (d.soLuong - tru > 0) out.push({ loaiHang: d.loaiHang, con: d.soLuong - tru });
   }
   return out;
 }
@@ -699,7 +861,8 @@ export function hdbConChuaGiao(h: HopDongBan, db: Db): { loaiHang: string; con: 
 /** F-07: HĐ bán không giao hàng (dịch vụ) — không có HĐ mua liên quan và chưa có phiếu xuất: được chuyển thẳng Hiệu lực → Hoàn thành. */
 export function hdbKhongGiaoHang(h: HopDongBan, db: Db): boolean {
   return (
-    !db.hopDongMua.some((m) => m.hdbId === h.id && m.trangThai !== 'Huỷ') &&
+    !h.dongHang?.length &&
+    !db.hopDongMua.some((m) => m.trangThai !== 'Huỷ' && hdmChoHdb(m, h.id)) &&
     !db.phieuKho.some((p) => p.loai === 'Xuất' && p.hdId === h.id && p.trangThai === 'Hiệu lực')
   );
 }

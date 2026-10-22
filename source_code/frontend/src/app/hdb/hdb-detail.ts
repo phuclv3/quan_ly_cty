@@ -4,7 +4,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { map } from 'rxjs';
 import { Store } from '../core/store';
 import { HopDongBan, TRANG_THAI_HDB, TrangThaiHDB } from '../core/models';
-import { hdbCalc, hdbConChuaGiao, hdbThieuDeChuyen, hdmCalc } from '../core/calc';
+import { dnvtTinhTrang, hdbCalc, hdbConChuaGiao, hdbThieuDeChuyen, hdmCalc, hdmChoHdb } from '../core/calc';
 import { money, pct } from '../core/util';
 import { Confirm } from '../shared/confirm';
 import { HoSoPanel, guiXoa } from '../shared/ho-so';
@@ -26,7 +26,7 @@ const TABS = [
   { k: '2', t: 'Lưu trữ hồ sơ' },
   { k: '3', t: 'Giá trị & Thanh toán' },
   { k: '4', t: 'Chi phí thực hiện' },
-  { k: '5', t: 'HĐ mua liên quan' },
+  { k: '5', t: 'HĐ mua & đề nghị vật tư' },
 ];
 
 /** HDB-02…HDB-12 — Chi tiết Hợp đồng bán, 5 tab. */
@@ -120,7 +120,34 @@ const TABS = [
         @case ('1') {
           <app-hdb-tab1 [(draft)]="f" [edit]="edit1()" [khoaDinhDanh]="!!saved() && saved()!.trangThai !== 'Báo giá'" />
           <app-file-hd chu="HDB" [chuId]="saved()?.id ?? ''" [edit]="edit1()" [info]="infoFile()" [(pending)]="fileCho" />
-          @if (saved(); as s) { <app-hdb-giao-hang [h]="s" [khoa]="khoa()" /> }
+          @if (saved(); as s) {
+            <app-hdb-giao-hang [h]="s" [khoa]="khoa()" />
+            @if (store.canView('viec')) {
+              <section class="card">
+                <div class="section-title">
+                  <h2>Đặt lịch / Giao việc cho HĐ này</h2>
+                  @if (!khoa()) { <a class="btn sm quiet" routerLink="/viec" [queryParams]="{ moi: s.id }"><app-icon name="plus" [size]="15" /> Giao việc</a> }
+                </div>
+                <div class="tbl-wrap">
+                  <table class="tbl compact">
+                    <thead><tr><th>Hạn</th><th>Việc</th><th>Người nhận</th><th>Trạng thái</th></tr></thead>
+                    <tbody>
+                      @for (v of viecHD(); track v.id) {
+                        <tr>
+                          <td>{{ v.han ? v.han.split('-').reverse().join('/') : '—' }} {{ v.gio ?? '' }}</td>
+                          <td><a routerLink="/viec" [queryParams]="{ id: v.id }">{{ v.noiDung }}</a></td>
+                          <td>{{ v.nguoiNhan.length ? v.nguoiNhan.map(ten).join(', ') : ten(v.nguoiTao) }}</td>
+                          <td>@if (v.xongLuc) { <span class="tag ok">✓ Xong</span> } @else { <span class="tag warn">Đang làm</span> }</td>
+                        </tr>
+                      } @empty {
+                        <tr><td colspan="4" class="muted">Chưa có việc nào gắn HĐ này</td></tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+            }
+          }
           @else { <p class="sub">Lưu HĐ để ghi nhận giao hàng, hồ sơ và chi phí.</p> }
         }
         @case ('2') {
@@ -140,10 +167,38 @@ const TABS = [
           @if (saved()) {
           <section class="card">
             <div class="section-title">
+              <h2>Đề nghị cấp vật tư</h2>
+              <span class="sub">Hàng thiếu trong kho → đề nghị → HĐ mua. Gửi đề nghị ở Tab 3 (bảng Sản phẩm).</span>
+            </div>
+            <div class="tbl-wrap">
+              <table class="tbl compact">
+                <thead><tr><th>Số đề nghị</th><th>Ngày</th><th>Hàng đề nghị</th><th>HĐ mua</th><th>Trạng thái</th><th></th></tr></thead>
+                <tbody>
+                  @for (r of dnvts(); track r.dn.id) {
+                    <tr>
+                      <td><b>{{ r.dn.soPhieu }}</b></td>
+                      <td>{{ r.dn.ngay.split('-').reverse().join('/') }}</td>
+                      <td class="sub">@for (x of r.dn.dong; track x.id) { {{ x.loaiHang }} × {{ x.soLuong }}@if (r.t.daMua.get(x.id)) { (mua {{ r.t.daMua.get(x.id) }}) } ; }</td>
+                      <td>@for (m of r.t.hdm; track m.id) { <a [routerLink]="['/hop-dong-mua', m.id]">{{ m.soHD }}</a> } @empty { — }</td>
+                      <td><app-tt [v]="r.t.trangThai" /> @if (r.dn.lyDoHuy) { <span class="sub">{{ r.dn.lyDoHuy }}</span> }</td>
+                      <td class="btn-row">
+                        @if (r.t.trangThai === 'Chờ mua' || r.t.trangThai === 'Đang mua một phần') {
+                          @if (store.canEdit('hdm')) { <a class="btn sm" routerLink="/hop-dong-mua/moi" [queryParams]="{ dnvt: r.dn.id }"><app-icon name="plus" [size]="14" /> Tạo HĐ mua</a> }
+                          @if (r.t.trangThai === 'Chờ mua' && store.canEdit('hdb', saved()!.sale) && !khoa()) { <button type="button" class="btn sm quiet" (click)="huyDN(r.dn.id, r.dn.soPhieu)">Huỷ</button> }
+                        }
+                      </td>
+                    </tr>
+                  } @empty {
+                    <tr><td colspan="6" class="muted">Chưa có đề nghị cấp vật tư. Khi Tab 3 báo "Cần mua" (đỏ), bấm "Gửi đề nghị cấp vật tư".</td></tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </section>
+          <section class="card">
+            <div class="section-title">
               <h2>HĐ mua liên quan</h2>
-              @if (saved() && store.canEdit('hdm') && !khoa()) {
-                <a class="btn sm" routerLink="/hop-dong-mua/moi" [queryParams]="{ hdb: saved()!.id }"><app-icon name="plus" [size]="16" /> Tạo HĐ mua cho HĐ này</a>
-              }
+              <span class="sub">HĐ mua tạo từ đề nghị cấp vật tư (1 HĐ mua có thể gom đề nghị của nhiều HĐ bán)</span>
             </div>
             <div class="tbl-wrap">
               <table class="tbl compact">
@@ -161,7 +216,7 @@ const TABS = [
                       <td><app-tt [v]="r.m.trangThai" /></td>
                     </tr>
                   } @empty {
-                    <tr><td colspan="6" class="muted">Chưa có HĐ mua nào gắn với HĐ này. Tạo HĐ mua bằng nút phía trên, hoặc chọn HĐ bán này ở Tab 1 của HĐ mua.</td></tr>
+                    <tr><td colspan="6" class="muted">Chưa có HĐ mua nào cho HĐ này. Tạo HĐ mua từ đề nghị cấp vật tư ở bảng trên.</td></tr>
                   }
                 </tbody>
               </table>
@@ -262,8 +317,30 @@ export class HdbDetail {
   protected readonly hdms = computed(() => {
     const id = this.saved()?.id;
     const db = this.store.db();
-    return id ? this.store.hopDongMua().filter((m) => m.hdbId === id).map((m) => ({ m, c: hdmCalc(m, db) })) : [];
+    return id ? this.store.hopDongMua().filter((m) => hdmChoHdb(m, id)).map((m) => ({ m, c: hdmCalc(m, db) })) : [];
   });
+  protected readonly viecHD = computed(() => {
+    const id = this.saved()?.id;
+    return id ? this.store.viecVisible().filter((v) => v.hdbId === id).sort((a, b) => Number(!!a.xongLuc) - Number(!!b.xongLuc) || (a.han ?? '').localeCompare(b.han ?? '')) : [];
+  });
+  protected readonly ten = (id: string) => this.store.userName(id);
+  protected readonly dnvts = computed(() => {
+    const id = this.saved()?.id;
+    const db = this.store.db();
+    return id
+      ? this.store
+          .deNghiVatTu()
+          .filter((d) => d.hdbId === id)
+          .sort((a, b) => (a.soPhieu < b.soPhieu ? 1 : -1))
+          .map((dn) => ({ dn, t: dnvtTinhTrang(db, dn) }))
+      : [];
+  });
+  protected async huyDN(id: string, so: string): Promise<void> {
+    const ly = await this.confirm.prompt({ title: `Huỷ đề nghị ${so}?`, label: 'Lý do huỷ', minLength: 3, ok: 'Huỷ đề nghị' });
+    if (ly === null) return;
+    const e = this.store.huyDeNghiVatTu(id, ly);
+    this.store.say(e ?? `Đã huỷ đề nghị ${so}`);
+  }
 
   protected idx(t: TrangThaiHDB): number {
     return TRANG_THAI_HDB.indexOf(t);

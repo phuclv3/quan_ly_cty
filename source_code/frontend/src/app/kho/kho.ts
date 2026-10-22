@@ -10,13 +10,15 @@ import { DmKhoTab } from './dm-kho';
 import { DmLoaiHangTab } from './dm-loai-hang';
 import { KiemKeTab } from './kiem-ke';
 import { AnhXaTab } from './anh-xa';
+import { DeNghiTab } from './de-nghi';
 
-type Tab = 'ton' | 'nhap' | 'xuat' | 'gia-tri' | 'kiem-ke' | 'anh-xa' | 'dm-kho' | 'loai-hang';
+type Tab = 'ton' | 'nhap' | 'xuat' | 'de-nghi' | 'gia-tri' | 'kiem-ke' | 'anh-xa' | 'dm-kho' | 'loai-hang';
 
 const TABS: { k: Tab; t: string }[] = [
   { k: 'ton', t: 'Tồn kho' },
   { k: 'nhap', t: 'Phiếu nhập' },
   { k: 'xuat', t: 'Phiếu xuất' },
+  { k: 'de-nghi', t: 'Đề nghị vật tư' },
   { k: 'gia-tri', t: 'Giá vốn theo HĐ' },
   { k: 'kiem-ke', t: 'Kiểm kê' },
   { k: 'anh-xa', t: 'Ánh xạ tên bán' },
@@ -29,7 +31,7 @@ const TABS: { k: Tab; t: string }[] = [
   selector: 'app-kho',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'page' },
-  imports: [RouterLink, TonKhoTab, PhieuKhoTab, GiaTriHdTab, KiemKeTab, AnhXaTab, DmKhoTab, DmLoaiHangTab],
+  imports: [RouterLink, TonKhoTab, PhieuKhoTab, GiaTriHdTab, KiemKeTab, AnhXaTab, DeNghiTab, DmKhoTab, DmLoaiHangTab],
   template: `
     <div class="page-head">
       <div><div class="crumbs"><a routerLink="/">Trang chủ</a> › Kho › {{ tabTen() }}</div><h1>Kho</h1></div>
@@ -43,6 +45,7 @@ const TABS: { k: Tab; t: string }[] = [
       @case ('ton') { <app-kho-ton /> }
       @case ('nhap') { <app-kho-phieu loai="Nhập" /> }
       @case ('xuat') { <app-kho-phieu loai="Xuất" /> }
+      @case ('de-nghi') { <app-kho-de-nghi /> }
       @case ('gia-tri') { <app-kho-gia-tri /> }
       @case ('kiem-ke') { <app-kho-kiem-ke /> }
       @case ('anh-xa') { <app-kho-anh-xa /> }

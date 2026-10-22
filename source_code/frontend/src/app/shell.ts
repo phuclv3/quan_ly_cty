@@ -106,6 +106,7 @@ export class Shell {
   protected readonly items = computed<NavItem[]>(() => {
     const all: NavItem[] = [
       { path: '/', label: 'Trang chủ', icon: 'home', perms: null, exact: true, group: '' },
+      { path: '/viec', label: 'Việc được giao', short: 'Việc', icon: 'list', perms: ['viec'], count: this.store.viecCuaToi(), group: '' },
       { path: '/khach-hang', label: 'Khách hàng', short: 'Khách', icon: 'contact', perms: ['khachHang'], group: 'Kinh doanh' },
       { path: '/hop-dong-ban', label: 'Hợp đồng bán', short: 'HĐ bán', icon: 'sell', perms: ['hdb'], group: 'Kinh doanh' },
       { path: '/hop-dong-mua', label: 'Hợp đồng mua', short: 'HĐ mua', icon: 'buy', perms: ['hdm'], group: 'Kinh doanh' },

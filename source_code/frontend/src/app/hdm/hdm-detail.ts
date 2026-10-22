@@ -3,7 +3,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { map } from 'rxjs';
 import { Store } from '../core/store';
-import { donGiaVND, dotMuaDaTra, dotQuaHan, hdmCalc, hoSoThieu, slDaNhap, thanhTienVND, tongSL } from '../core/calc';
+import { dnvtTinhTrang, donGiaVND, dotMuaDaTra, dotQuaHan, hdmCalc, hoSoThieu, slDaNhap, thanhTienVND, tongSL } from '../core/calc';
 import { DongHangMua, DotTTMua, HopDongMua, LOAI_TIEN, LoaiTien, TrangThaiHDM, LOAI_HO_SO } from '../core/models';
 import { fold, money, num, pct, todayIso, uid, viDate, vnd } from '../core/util';
 import { Kpi, Modal, MoneyInput, Pick, PickOption, TrangThai, PickGo } from '../shared/ui-kit';
@@ -16,7 +16,7 @@ import { docBang, taoXlsx } from '../shared/excel';
 import { taiBlob } from '../core/files';
 import { ThemDoiTac } from '../shared/them-doi-tac';
 import { Unsaved, canhBaoChuaLuu } from '../shared/unsaved';
-import { linkPhieuKho } from '../kho/kho-util';
+import { linkPhieuKho, maHangOpts } from '../kho/kho-util';
 import { Buoc, BuocBar, HoSoCho, HoSoChoPanel, demHoSoCho, taiHoSoCho } from '../shared/wizard';
 import { KiemTra } from '../shared/kiem-tra';
 
@@ -254,6 +254,7 @@ interface TraForm {
                 <button type="button" class="btn" (click)="moNhap(chon())"><app-icon name="box" [size]="16" /> Nhập kho {{ chon().length }} dòng chọn</button>
               }
               @if (edit()) {
+                <button type="button" class="btn" (click)="moDN()"><app-icon name="truck" [size]="16" /> Lấy từ đề nghị cấp vật tư @if (dnCho().length) { ({{ dnCho().length }}) }</button>
                 <button type="button" class="btn quiet" (click)="danOpen.set(true)"><app-icon name="import" [size]="16" /> Nhập từ Excel</button>
                 <button type="button" class="btn quiet" (click)="themDong()"><app-icon name="plus" [size]="16" /> Thêm dòng</button>
               }
@@ -267,7 +268,7 @@ interface TraForm {
               <thead>
                 <tr>
                   @if (nhapDuoc()) { <th></th> }
-                  <th class="w-lg">Loại hàng</th><th class="w-lg">Tên hàng</th><th class="w-md">Thông số</th><th class="w-sm num">SL</th><th class="w-sm">ĐVT</th>
+                  <th class="w-lg">Mã hàng</th><th class="w-lg">Tên hàng</th><th class="w-md">Thông số</th><th class="w-sm num">SL</th><th class="w-sm">ĐVT</th>
                   <th class="w-md num">Đơn giá</th><th class="w-sm">Loại tiền</th><th class="w-md num">Tỷ giá</th><th class="num">Thành tiền VNĐ</th>
                   @if (!m.thuocPhuTai) { <th class="num">SL đã nhập</th> }
                   <th class="w-md">Ghi chú</th><th></th>
@@ -282,7 +283,10 @@ interface TraForm {
                       <td>@if (luuRoi(d.id) && con > 0) { <input type="checkbox" [attr.aria-label]="'Chọn ' + d.tenHang" [checked]="chon().includes(d.id)" (change)="flipChon(d.id)" /> }</td>
                     }
                     <td><app-pick [options]="lhOpts()" [value]="d.loaiHang" [disabled]="!edit() || da > 0" (valueChange)="chonLoai(i, $event)" /></td>
-                    <td><input [value]="d.tenHang" [disabled]="!edit()" (input)="setDong(i, { tenHang: $any($event.target).value })" aria-label="Tên hàng" /></td>
+                    <td>
+                      <input [value]="d.tenHang" [disabled]="!edit()" (input)="setDong(i, { tenHang: $any($event.target).value })" aria-label="Tên hàng" />
+                      @if (d.dnvtId) { <span class="hint">Đề nghị {{ soDN(d.dnvtId) }}@if (d.hdbId) { · HĐ bán {{ store.hdbById(d.hdbId)?.soHD || '(báo giá)' }} }</span> }
+                    </td>
                     <td><input [value]="d.thongSo" [disabled]="!edit() || da > 0" [placeholder]="thuocTinh(d.loaiHang)" (input)="setDong(i, { thongSo: $any($event.target).value })" aria-label="Thông số" /></td>
                     <td>
                       <input type="number" [min]="da" class="num" [value]="d.soLuong" [disabled]="!edit()" (input)="setDong(i, { soLuong: +$any($event.target).value || 0 })" aria-label="Số lượng" />
@@ -484,6 +488,34 @@ interface TraForm {
           </section>
         }
       }
+
+      <app-modal [open]="dnOpen()" title="Lấy hàng từ đề nghị cấp vật tư" sub="Chọn các dòng còn phải mua — có thể gom đề nghị của nhiều HĐ bán vào một HĐ mua" size="lg" (closed)="dnOpen.set(false)">
+        <div class="tbl-wrap">
+          <table class="tbl compact">
+            <thead><tr><th></th><th>Đề nghị</th><th>HĐ bán</th><th>Mã hàng</th><th>Tên hàng</th><th class="num">Đề nghị</th><th class="num">Đã lên HĐ mua</th><th class="num">Còn phải mua</th></tr></thead>
+            <tbody>
+              @for (r of dnCho(); track r.key) {
+                <tr>
+                  <td><input type="checkbox" [checked]="dnChon().includes(r.key)" (change)="latDN(r.key)" [attr.aria-label]="'Chọn ' + r.loaiHang" /></td>
+                  <td>{{ r.soPhieu }}</td>
+                  <td>{{ r.soHDB }}</td>
+                  <td><b>{{ r.loaiHang }}</b></td>
+                  <td>{{ r.tenHang }}</td>
+                  <td class="num">{{ r.soLuong }}</td>
+                  <td class="num">{{ r.daMua }}</td>
+                  <td class="num"><b>{{ r.con }}</b></td>
+                </tr>
+              } @empty {
+                <tr><td colspan="8" class="muted">Không còn đề nghị cấp vật tư nào chờ mua. Đề nghị lập ở HĐ bán (Tab 3 — dòng "Cần mua").</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <div foot class="btn-row">
+          <button type="button" class="btn quiet" (click)="dnOpen.set(false)">Huỷ</button>
+          <button type="button" class="btn" [disabled]="!dnChon().length" (click)="themTuDN()">Thêm {{ dnChon().length }} dòng</button>
+        </div>
+      </app-modal>
 
       <app-modal [open]="danOpen()" title="Nhập dòng hàng từ Excel" sub="Tải file lên hoặc dán trực tiếp" [dirty]="!!danText().trim()" (closed)="danOpen.set(false)">
         <p class="sub">Thứ tự cột: <b>{{ cotDong.join(' · ') }}</b>. Loại hàng tự đoán theo tên — kiểm tra lại sau khi thêm. Dòng tiêu đề / thiếu tên / SL không phải số sẽ bỏ qua.</p>
@@ -702,10 +734,7 @@ export class HdmDetail {
   );
   protected readonly hdbOpts = computed<PickOption[]>(() => this.store.hopDongBan().map((h) => ({ value: h.id, label: h.soHD, hint: h.tenKH })));
   protected readonly lhOpts = computed<PickOption[]>(() =>
-    this.store
-      .loaiHang()
-      .filter((l) => l.dangDung || this.f().chiTiet.some((d) => d.loaiHang === l.id))
-      .map((l) => ({ value: l.id, label: l.ten, hint: `${l.nhom} · ${l.dvt}` })),
+    maHangOpts(this.store.loaiHang().filter((l) => l.dangDung || this.f().chiTiet.some((d) => d.loaiHang === l.id))),
   );
   protected readonly khoOpts = computed<PickOption[]>(() => this.store.khoDangDung().map((k) => ({ value: k.id, label: k.ten, hint: k.loai })));
   protected readonly nguonOpts = computed<PickOption[]>(() => this.store.nguonDangDung().map((n) => ({ value: n.id, label: n.ten, hint: n.loai })));
@@ -725,6 +754,54 @@ export class HdmDetail {
   );
 
   protected readonly danOpen = signal(false);
+  // ── Đề nghị cấp vật tư → dòng HĐ mua ──
+  protected readonly dnOpen = signal(false);
+  protected readonly dnChon = signal<string[]>([]);
+  /** Dòng đề nghị còn phải mua (trừ SL đã lên các HĐ mua khác và dòng đang có trên HĐ này). */
+  protected readonly dnCho = computed(() => {
+    const db = this.store.db();
+    const dangCo = new Map<string, number>();
+    const luu = this.saved();
+    for (const d of this.f().chiTiet) if (d.dnvtDong) dangCo.set(d.dnvtDong, (dangCo.get(d.dnvtDong) ?? 0) + d.soLuong);
+    const out: { key: string; dnId: string; soPhieu: string; hdbId: string; soHDB: string; dongId: string; loaiHang: string; tenHang: string; soLuong: number; daMua: number; con: number }[] = [];
+    for (const dn of this.store.deNghiVatTu()) {
+      if (dn.lyDoHuy) continue;
+      const tt = dnvtTinhTrang(db, dn);
+      for (const x of dn.dong) {
+        // SL đã mua ở HĐ khác = tổng đã mua − phần đã lưu trên chính HĐ này; cộng phần đang có trên bản nháp.
+        const daLuuDay = luu ? luu.chiTiet.filter((d) => d.dnvtDong === x.id).reduce((s, d) => s + d.soLuong, 0) : 0;
+        const daMua = (tt.daMua.get(x.id) ?? 0) - daLuuDay + (dangCo.get(x.id) ?? 0);
+        const con = x.soLuong - daMua;
+        if (con <= 0) continue;
+        out.push({ key: `${dn.id}|${x.id}`, dnId: dn.id, soPhieu: dn.soPhieu, hdbId: dn.hdbId, soHDB: this.store.hdbById(dn.hdbId)?.soHD || '(báo giá)', dongId: x.id, loaiHang: x.loaiHang, tenHang: x.tenHang, soLuong: x.soLuong, daMua, con });
+      }
+    }
+    return out;
+  });
+  protected soDN(id: string): string {
+    return this.store.deNghiVatTu().find((x) => x.id === id)?.soPhieu ?? id;
+  }
+  protected moDN(): void {
+    this.dnChon.set([]);
+    this.dnOpen.set(true);
+  }
+  protected latDN(k: string): void {
+    this.dnChon.update((a) => (a.includes(k) ? a.filter((x) => x !== k) : [...a, k]));
+  }
+  protected themTuDN(keys = this.dnChon()): void {
+    const rows = this.dnCho().filter((r) => keys.includes(r.key));
+    if (!rows.length) return;
+    const lots = this.store.loKho();
+    const dong: DongHangMua[] = rows.map((r) => {
+      const l = this.store.loaiHangById(r.loaiHang);
+      const gia = [...lots].reverse().find((x) => x.loaiHang === r.loaiHang)?.donGia ?? 0;
+      return { id: uid('DM'), loaiHang: r.loaiHang, tenHang: r.tenHang || l?.ten || r.loaiHang, thongSo: '', soLuong: r.con, dvt: l?.dvt ?? '', donGia: gia, loaiTien: 'VNĐ', tyGia: 1, dnvtId: r.dnId, dnvtDong: r.dongId, hdbId: r.hdbId };
+    });
+    const hdbs = new Set(rows.map((r) => r.hdbId));
+    this.f.update((m) => ({ ...m, chiTiet: [...m.chiTiet, ...dong], hdbId: m.hdbId || (hdbs.size === 1 ? [...hdbs][0] : undefined) }));
+    this.dnOpen.set(false);
+    this.store.say(`Đã thêm ${dong.length} dòng từ đề nghị — nhập đơn giá NCC (đang gợi ý theo lô nhập gần nhất)`);
+  }
   protected readonly danText = signal('');
   protected readonly nhap = signal<NhapForm | null>(null);
   protected readonly tra = signal<TraForm | null>(null);
@@ -733,6 +810,22 @@ export class HdmDetail {
     const m = this.store.newHdm();
     const hdb = this.route.snapshot.queryParamMap.get('hdb');
     if (hdb && this.store.hdbById(hdb)) m.hdbId = hdb;
+    // Tạo từ đề nghị cấp vật tư (?dnvt=<id>): lấy sẵn các dòng còn phải mua của đề nghị đó.
+    const dnvt = this.route.snapshot.queryParamMap.get('dnvt');
+    const dn = dnvt ? this.store.deNghiVatTu().find((x) => x.id === dnvt && !x.lyDoHuy) : undefined;
+    if (dn) {
+      const tt = dnvtTinhTrang(this.store.db(), dn);
+      const lots = this.store.loKho();
+      m.hdbId = dn.hdbId;
+      m.chiTiet = dn.dong
+        .map((x) => ({ x, con: x.soLuong - (tt.daMua.get(x.id) ?? 0) }))
+        .filter((r) => r.con > 0)
+        .map(({ x, con }) => {
+          const l = this.store.loaiHangById(x.loaiHang);
+          const gia = [...lots].reverse().find((y) => y.loaiHang === x.loaiHang)?.donGia ?? 0;
+          return { id: uid('DM'), loaiHang: x.loaiHang, tenHang: x.tenHang || l?.ten || x.loaiHang, thongSo: '', soLuong: con, dvt: l?.dvt ?? '', donGia: gia, loaiTien: 'VNĐ' as LoaiTien, tyGia: 1, dnvtId: dn.id, dnvtDong: x.id, hdbId: dn.hdbId };
+        });
+    }
     // Tạo từ HĐ Phú Tài (?pt=<id>): bật sẵn cờ "Thuộc Phú Tài".
     if (this.ptVe()) m.thuocPhuTai = true;
     return m;

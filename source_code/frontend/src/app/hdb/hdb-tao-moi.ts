@@ -116,7 +116,7 @@ export class HdbTaoMoi {
     if (!this.kt.hopLe()) return;
     if (this.hienTai().k === 'tt') {
       const h = this.draft();
-      if (h.ngayKy && h.ngayHieuLuc && h.ngayHieuLuc < h.ngayKy) return this.store.say('Ngày hiệu lực phải ≥ Ngày ký');
+      if (!h.mst?.trim()) return this.store.say('Chưa có MST khách hàng — nhập MST (bấm "Tra MST" để điền địa chỉ)');
     }
     this.den(this.buoc() + 1);
   }

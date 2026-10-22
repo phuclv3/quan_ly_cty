@@ -4,6 +4,7 @@ import { Store } from '../core/store';
 import { CO_HOI, HINH_THUC_HD, KhachHang, LOAI_SP_KH, NGUON_KH, PHAN_LOAI_KH, TIEP_CAN, TINH_THANH } from '../core/models';
 import { viDate } from '../core/util';
 import { Modal, MoneyInput, PickGo, PickOption } from '../shared/ui-kit';
+import { KetQuaMST, TraMst } from '../shared/tra-mst';
 
 const BLANK: KhachHang = { id: '', ten: '', mst: '', diaChi: '', nguoiLienHe: '', dienThoai: '', email: '', ghiChu: '' };
 type F = Exclude<keyof KhachHang, 'id' | 'chamSoc'>;
@@ -15,7 +16,7 @@ type F = Exclude<keyof KhachHang, 'id' | 'chamSoc'>;
 @Component({
   selector: 'app-kh-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, Modal, PickGo, MoneyInput],
+  imports: [RouterLink, Modal, PickGo, MoneyInput, TraMst],
   styles: `
     h3.nhom { margin: 4px 0 10px; font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--brand); }
     h3.nhom:not(:first-of-type) { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
@@ -43,8 +44,9 @@ type F = Exclude<keyof KhachHang, 'id' | 'chamSoc'>;
             <input id="khf-ten" [value]="k.ten" (input)="set('ten', $any($event.target).value)" />
           </div>
           <div class="field">
-            <label for="khf-mst">Mã số thuế</label>
-            <input id="khf-mst" class="mono" [value]="k.mst" (input)="set('mst', $any($event.target).value)" />
+            <label for="khf-mst">Mã số thuế <span class="req">*</span></label>
+            <input id="khf-mst" class="mono" required placeholder="10 số, VD 0101248141" [value]="k.mst" (input)="set('mst', $any($event.target).value.trim())" />
+            <app-tra-mst [mst]="k.mst" (ketQua)="dienMST($event)" />
           </div>
           <div class="field span-2">
             <label for="khf-dc">Địa chỉ</label>
@@ -190,6 +192,13 @@ export class KhForm {
 
   protected set<K extends F>(k: K, v: KhachHang[K]): void {
     this.f.update((d) => ({ ...d, [k]: v }));
+    this.trung.set(null);
+    this.err.set('');
+  }
+
+  /** Tra MST xong: điền Tên, Địa chỉ theo Cục Thuế (ghi đè — đúng tên pháp lý trên hoá đơn). */
+  protected dienMST(r: KetQuaMST): void {
+    this.f.update((d) => ({ ...d, mst: r.mst, ten: r.ten, diaChi: r.diaChi || d.diaChi }));
     this.trung.set(null);
     this.err.set('');
   }

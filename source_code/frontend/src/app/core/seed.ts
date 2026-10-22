@@ -48,8 +48,10 @@ import { fold, nextCode, nowIso, todayIso, uid, yy } from './util';
  * v4: tài khoản Sale theo danh mục "Người phụ trách" của file theo dõi KH (themTaiKhoanSale).
  * v5: kho theo LÔ — danh mục mã hàng cố định + lô nhập có đơn giá (KhoOxyMecie_v3, nangCapKhoV5).
  * v6: bảng ánh xạ tên hàng HĐ bán → mã hàng / lô (sheet "5. AnhXaTenBan", nangCapKhoV6).
+ * v7: đề nghị cấp vật tư; HĐ bán có dòng hàng, cờ tạm ứng, phạt HĐ (nangCapV7).
+ * v8: việc được giao (ToDoList) + quyền TD-01 cho các nhóm hệ thống (nangCapV8).
  */
-export const DB_VERSION = 6;
+export const DB_VERSION = 8;
 
 export const CAU_HINH_MAC_DINH: CauHinh = {
   TNDN_NGUONG: 0.2,
@@ -134,6 +136,8 @@ export async function buildSeed(): Promise<Db> {
     phieuKho: [],
     kiemKe: [],
     anhXaTen: [],
+    deNghiVatTu: [],
+    viecGiao: [],
     hopDongPhuTai: [],
     dongTienPT: [],
     boDem: {},
@@ -491,6 +495,8 @@ export async function buildSeed(): Promise<Db> {
     });
   }
   nangCapKhoV6(db);
+  nangCapV7(db);
+  nangCapV8(db);
 
   // ── Phú Tài ──
   for (const r of RAW.phuTai) {
@@ -704,6 +710,26 @@ function maHangTuRaw(r: RawMaHang): LoaiHang {
     theTich: r.theTich,
     bietDanh: r.bietDanh,
   };
+}
+
+/** v7 → v8: bảng việc được giao; nhóm hệ thống chưa có quyền TD-01 thì lấy mức mặc định. */
+export function nangCapV8(d: Db): void {
+  d.viecGiao ??= [];
+  const mau = new Map(nhomMacDinh(nowIso()).map((g) => [g.id, g.quyen['TD-01']]));
+  d.nhomQuyen = d.nhomQuyen.map((g) => (g.quyen['TD-01'] || !mau.get(g.id) ? g : { ...g, quyen: { ...g.quyen, 'TD-01': mau.get(g.id)! } }));
+}
+
+/**
+ * v6 → v7: thêm bảng đề nghị cấp vật tư. HĐ bán cũ: đoán cờ "Có tạm ứng" = ngày hiệu lực trùng ngày thực thu đợt 1
+ * và khác ngày ký (Ngày hiệu lực từ nay tự điền theo cờ này).
+ */
+export function nangCapV7(d: Db): void {
+  d.deNghiVatTu ??= [];
+  for (const h of d.hopDongBan) {
+    if (h.coTamUng !== undefined) continue;
+    const t1 = h.dotTT.find((x) => x.dot === 1)?.ngayThu;
+    h.coTamUng = !!t1 && t1 === h.ngayHieuLuc && h.ngayHieuLuc !== h.ngayKy;
+  }
 }
 
 /** v5 → v6: thêm bảng ánh xạ tên hàng HĐ bán (sheet "5. AnhXaTenBan") nếu máy chưa có. */

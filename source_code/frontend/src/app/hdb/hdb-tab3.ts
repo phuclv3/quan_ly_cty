@@ -1,9 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, model, signal, viewChild } from '@angular/core';
 import { Store } from '../core/store';
-import { DotTTBan, HopDongBan, LCP_HOA_HONG } from '../core/models';
-import { Buoc, dotBanDaThu, dotQuaHan, hdbCalc } from '../core/calc';
-import { money, pct, sum, todayIso, viDate } from '../core/util';
-import { BuocTable, Kpi, MoneyInput, TrangThai } from '../shared/ui-kit';
+import { DongHangBan, DotTTBan, HopDongBan, LCP_HOA_HONG } from '../core/models';
+import { Buoc, apDungTuDongHdb, congNgay, dotBanDaThu, dotQuaHan, hdbCalc, kiemTraDongBan, loConHang, tongDongBan, tongDongBanTH } from '../core/calc';
+import { money, moneyInWords, pct, sum, todayIso, uid, viDate } from '../core/util';
+import { BuocTable, Kpi, MoneyInput, Pick, TrangThai } from '../shared/ui-kit';
+import { maHangOpts, moTaMa } from '../kho/kho-util';
 import { Icon } from '../shared/icon';
 import { Confirm } from '../shared/confirm';
 import { guiXoa } from '../shared/ho-so';
@@ -20,13 +21,80 @@ interface ThuNhap {
 @Component({
   selector: 'app-hdb-tab3',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MoneyInput, BuocTable, Kpi, TrangThai, Icon, RouterLink, KiemTra],
+  imports: [MoneyInput, BuocTable, Kpi, TrangThai, Icon, RouterLink, KiemTra, Pick],
   template: `
     <div class="kpis">
       <app-kpi label="Giá trị sau VAT" [value]="money(c().sauVAT)" />
       <app-kpi label="Đã thu (phiếu đã duyệt)" [value]="money(c().daThu)" [sub]="pct(c().pctThu) + (c().daThuCho ? ' · chờ duyệt ' + money(c().daThuCho) : '')" tone="ok" />
-      <app-kpi label="Công nợ phải thu" [value]="money(c().conPhaiThu)" sub="Sau VAT − Σ thực thu đã duyệt" [tone]="c().quaHan ? 'bad' : c().conPhaiThu > 0 ? 'warn' : 'ok'" />
+      <app-kpi label="Công nợ phải thu" [value]="money(c().conPhaiThu)" [sub]="c().phat ? 'Giá trị quyết toán − Σ thực thu đã duyệt' : 'Sau VAT − Σ thực thu đã duyệt'" [tone]="c().quaHan ? 'bad' : c().conPhaiThu > 0 ? 'warn' : 'ok'" />
     </div>
+
+    <section class="card">
+      <div class="section-title">
+        <h2>Sản phẩm & giá (chọn từ kho)</h2>
+        <div class="btn-row">
+          @if (thieuMua().length && saved() && edit()) {
+            <button type="button" class="btn sm danger" (click)="deNghi()"><app-icon name="truck" [size]="15" /> Gửi đề nghị cấp vật tư ({{ thieuMua().length }} mã thiếu)</button>
+          }
+          <button type="button" class="btn sm quiet" (click)="inToTrinh()"><app-icon name="print" [size]="15" /> Xuất tờ trình (PDF)</button>
+          @if (edit()) { <button type="button" class="btn sm quiet" (click)="themSP()"><app-icon name="plus" [size]="15" /> Thêm sản phẩm</button> }
+        </div>
+      </div>
+      <div class="tbl-wrap">
+        <table class="tbl compact">
+          <thead>
+            <tr>
+              <th style="min-width:230px">Mã hàng</th><th style="min-width:200px">Tên hàng trên HĐ (nồng độ)</th><th class="num w-sm">SL</th>
+              <th class="num">Đơn giá HĐ trước VAT</th><th class="num">Thành tiền</th>
+              <th class="num" title="Giá vốn dự kiến — dùng cho Bảng tính giá / Tờ trình">Đơn giá thực hiện</th><th class="num">Thành tiền TH</th>
+              <th>Kho</th><th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (k of kho(); track k.d.id; let i = $index) {
+              <tr>
+                <td>
+                  <app-pick [options]="maOpts()" [value]="k.d.loaiHang" [disabled]="!edit()" (valueChange)="chonMa(i, $event)" />
+                </td>
+                <td><input [value]="k.d.tenHang" [disabled]="!edit()" list="t3-ten-hd" placeholder="VD Bình khí chuẩn NO 500ppm" (input)="setSP(i, { tenHang: $any($event.target).value })" aria-label="Tên hàng trên HĐ" /></td>
+                <td><input class="num" type="number" min="0" [value]="k.d.soLuong" [disabled]="!edit()" (input)="setSP(i, { soLuong: +$any($event.target).value || 0 })" aria-label="Số lượng" /></td>
+                <td><app-money [value]="k.d.donGia" [disabled]="!edit()" (valueChange)="setSP(i, { donGia: $event })" /></td>
+                <td class="num">{{ money(k.d.soLuong * k.d.donGia) }}</td>
+                <td><app-money [value]="k.d.donGiaTH" [disabled]="!edit()" (valueChange)="setSP(i, { donGiaTH: $event })" /></td>
+                <td class="num">{{ money(k.d.soLuong * k.d.donGiaTH) }}</td>
+                <td>
+                  @if (!k.d.loaiHang) { <span class="muted">—</span> }
+                  @else if (k.trangThai === 'Đủ hàng') { <span class="tag ok" [title]="'Tồn kho ' + k.tonThuc + ', dành cho HĐ này ' + k.ton">✓ Có trong kho ({{ k.ton }})</span> }
+                  @else if (k.trangThai === 'Đã đề nghị mua') { <span class="tag warn">Đã đề nghị mua {{ k.daDeNghi }}</span> }
+                  @else { <span class="tag bad" [title]="'Tồn ' + k.ton + ', cần ' + k.con">✗ Cần mua {{ k.thieu - k.daDeNghi }}</span> }
+                  @if (k.daGiuKhac) { <span class="sub" title="HĐ hiệu lực trước được giữ hàng trước">HĐ khác giữ {{ k.daGiuKhac }}/{{ k.tonThuc }}</span> }
+                  @if (k.daGiao) { <span class="sub">Đã giao {{ k.daGiao }}</span> }
+                </td>
+                <td>@if (edit() && !k.daGiao) { <button type="button" class="icon-btn sm" aria-label="Xoá dòng" (click)="xoaSP(i)"><app-icon name="trash" [size]="16" /></button> }</td>
+              </tr>
+            } @empty {
+              <tr><td colspan="9" class="muted">Chưa có sản phẩm — bấm "Thêm sản phẩm" để chọn mã hàng từ kho (VD KC-NO-8L), nhập đơn giá và số lượng. Có dòng thì Giá trị HĐ tự cộng.</td></tr>
+            }
+          </tbody>
+          @if (f().dongHang?.length) {
+            <tfoot>
+              <tr><th colspan="4">Thành tiền trước thuế</th><td class="num"><b>{{ money(tongSP()) }}</b></td><td></td><td class="num">{{ money(tongTH()) }}</td><td colspan="2"></td></tr>
+              <tr><th colspan="4">Thuế VAT {{ f().vat }}%</th><td class="num">{{ money(c().sauVAT - tongSP()) }}</td><td colspan="4"></td></tr>
+              <tr><th colspan="4">Giá sau thuế</th><td class="num"><b>{{ money(c().sauVAT) }}</b></td><td colspan="4"></td></tr>
+            </tfoot>
+          }
+        </table>
+        <datalist id="t3-ten-hd">@for (a of tenBan(); track a.id) { <option [value]="a.ten">{{ a.loaiHang }}</option> }</datalist>
+      </div>
+      @if (thieuMua().length) {
+        <p class="note bad">Thiếu hàng trong kho: {{ thieuMuaText() }} — cần mua NCC.
+          @if (!saved()) { Lưu HĐ rồi bấm "Gửi đề nghị cấp vật tư". } @else if (!edit()) { Người phụ trách HĐ gửi đề nghị cấp vật tư. }
+        </p>
+      } @else if (f().dongHang?.length) {
+        <p class="note ok">Mọi sản phẩm đã có trong kho hoặc đã đề nghị mua.</p>
+      }
+      <p class="sub">Đơn giá thực hiện tự gợi ý theo đơn giá lô nhập trước còn hàng (sửa được). Giữ hàng: HĐ từ Hiệu lực được giữ phần còn phải giao, HĐ hiệu lực trước giữ trước; Báo giá chỉ thấy phần tồn chưa HĐ nào giữ.</p>
+    </section>
 
     <div class="grid c2">
       <section class="card">
@@ -34,8 +102,8 @@ interface ThuNhap {
         <div class="form-grid">
           <div class="field">
             <label for="t3-truoc">Tổng GTHĐ trước VAT</label>
-            <app-money inputId="t3-truoc" [value]="f().truocVAT" [disabled]="!edit() || khoaGiaTri()" (valueChange)="set('truocVAT', $event)" />
-            @if (khoaGiaTri()) { <span class="hint">Khoá vì HĐ đã có phiếu Thu.</span> }
+            <app-money inputId="t3-truoc" [value]="f().truocVAT" [disabled]="!edit() || khoaGiaTri() || coSP()" (valueChange)="set('truocVAT', $event)" />
+            @if (khoaGiaTri()) { <span class="hint">Khoá vì HĐ đã có phiếu Thu.</span> } @else if (coSP()) { <span class="hint">= Σ thành tiền sản phẩm</span> }
           </div>
           <div class="field">
             <label for="t3-vat">VAT</label>
@@ -49,7 +117,8 @@ interface ThuNhap {
           </div>
           <div class="field">
             <label for="t3-tt">GTHĐ thực tế trước VAT</label>
-            <app-money inputId="t3-tt" [value]="f().thucTeTruocVAT" [disabled]="!edit()" (valueChange)="set('thucTeTruocVAT', $event)" />
+            <app-money inputId="t3-tt" [value]="f().thucTeTruocVAT" [disabled]="!edit() || coSP()" (valueChange)="set('thucTeTruocVAT', $event)" />
+            @if (coSP()) { <span class="hint">= Σ thành tiền thực hiện</span> }
           </div>
           <div class="field">
             <span class="lbl">Chênh lệch</span>
@@ -59,7 +128,22 @@ interface ThuNhap {
             <span class="lbl">Tỷ lệ chênh lệch</span>
             <div class="ro num" title="Tỷ lệ = Chênh lệch ÷ GTHĐ thực tế trước VAT">{{ pct(c().tyLeCL) }}</div>
           </div>
+          <div class="field">
+            <label for="t3-phat">Phạt HĐ khi quyết toán</label>
+            <app-money inputId="t3-phat" [value]="f().phatHD ?? 0" [disabled]="!edit()" (valueChange)="set('phatHD', $event || undefined)" />
+          </div>
+          <div class="field">
+            <span class="lbl">Giá trị quyết toán</span>
+            <div class="ro num" title="Giá trị quyết toán = Sau VAT − Phạt HĐ">{{ money(c().giaTriQT) }}</div>
+          </div>
+          @if (f().phatHD) {
+            <div class="field full">
+              <label for="t3-lyphat">Lý do phạt</label>
+              <input id="t3-lyphat" [value]="f().lyDoPhat ?? ''" [disabled]="!edit()" placeholder="VD giao chậm 10 ngày — phạt 2%" (input)="set('lyDoPhat', $any($event.target).value || undefined)" />
+            </div>
+          }
         </div>
+        @if (f().phatHD) { <p class="sub">HĐ ký 100% giá trị nhưng quyết toán phát sinh phạt → công nợ phải thu tính theo Giá trị quyết toán.</p> }
       </section>
 
       <section class="card">
@@ -133,7 +217,17 @@ interface ThuNhap {
                 <td><b>{{ d.dot }}</b> @if (quaHan(d)) { <app-tt v="Quá hạn" /> }</td>
                 <td><input class="num" type="number" min="0" max="100" step="0.1" [value]="d.tyLe ?? ''" [disabled]="!edit()" (input)="setTyLe(i, $any($event.target).value)" /></td>
                 <td><app-money [value]="d.soTien" [disabled]="!edit()" (valueChange)="setSoTien(i, $event)" /></td>
-                <td><input type="date" [value]="d.han ?? ''" [disabled]="!edit()" (input)="setDot(i, { han: $any($event.target).value || undefined })" /></td>
+                <td>
+                  <select [disabled]="!edit()" (change)="setHan(i, $any($event.target).value)" aria-label="Hạn thanh toán">
+                    @for (n of hanOpts; track n) { <option [value]="n" [selected]="d.hanNgay === n">{{ n }} ngày từ ngày hiệu lực</option> }
+                    <option value="" [selected]="d.hanNgay == null">Chọn ngày cụ thể…</option>
+                  </select>
+                  @if (d.hanNgay != null) {
+                    <span class="hint">{{ f().ngayHieuLuc ? '→ ' + viDate(hanTinh(d)) : 'Tính khi có ngày hiệu lực' }}</span>
+                  } @else {
+                    <input type="date" [value]="d.han ?? ''" [disabled]="!edit()" (input)="setDot(i, { han: $any($event.target).value || undefined })" aria-label="Hạn TT" />
+                  }
+                </td>
                 <td><input [value]="d.ghiChu ?? ''" [disabled]="!edit()" (input)="setDot(i, { ghiChu: $any($event.target).value })" /></td>
                 @if (thuSua(d)) {
                   <td><input type="date" [value]="thu(d).ngayThu" (input)="setThu(d.dot, { ngayThu: $any($event.target).value })" /></td>
@@ -179,8 +273,12 @@ interface ThuNhap {
         <p class="sub">Lưu HĐ trước khi ghi thực thu cho đợt mới / đợt vừa sửa.</p>
       }
       @if (store.canEdit('hdbThucThu') && saved()?.trangThai === 'Báo giá') {
-        <p class="sub">HĐ ở Báo giá — chỉ ghi thực thu từ Hiệu lực trở đi.</p>
+        <p class="sub">
+          @if (saved()!.coTamUng) { HĐ có tạm ứng: ghi thực thu đợt 1 ngay ở Báo giá — ngày thu đợt 1 thành Ngày hiệu lực. }
+          @else { HĐ ở Báo giá — chỉ ghi thực thu từ Hiệu lực trở đi. Có tạm ứng thì tích "HĐ có tạm ứng" ở Tab 1. }
+        </p>
       }
+      @if (!store.canEdit('hdbThucThu')) { <p class="sub">Ngày / số tiền thực thu do Kế toán (hoặc Giám đốc) ghi nhận.</p> }
       <p class="sub">Ghi thực thu sinh 1 phiếu Thu "Chờ duyệt" ở Sổ quỹ. Đợt chỉ tính "Đã thu" (công nợ, tất toán) và số dư nguồn tiền chỉ tăng khi phiếu được duyệt.</p>
     </section>
   `,
@@ -200,6 +298,111 @@ export class HdbTab3 {
   protected readonly vats = [0, 8, 10] as const;
 
   protected readonly c = computed(() => hdbCalc(this.f(), this.store.db()));
+  protected readonly hanOpts = [5, 10, 15, 20, 30, 45, 60];
+
+  // ── Sản phẩm (chọn từ kho) ──
+  protected readonly maOpts = computed(() => maHangOpts(this.store.loaiHang().filter((l) => l.dangDung)));
+  protected readonly tenBan = computed(() => this.store.anhXaTen().filter((a) => a.loaiHang));
+  protected readonly coSP = computed(() => !!this.f().dongHang?.length);
+  protected readonly kho = computed(() => kiemTraDongBan(this.store.db(), this.f()));
+  protected readonly tongSP = computed(() => tongDongBan(this.f().dongHang));
+  protected readonly tongTH = computed(() => tongDongBanTH(this.f().dongHang));
+  /** Mã thiếu chưa đề nghị đủ (gộp theo mã). */
+  protected readonly thieuMua = computed(() => {
+    const m = new Map<string, { loaiHang: string; tenHang: string; soLuong: number }>();
+    for (const k of this.kho()) {
+      const can = k.thieu - k.daDeNghi;
+      if (!k.d.loaiHang || can <= 0) continue;
+      const g = m.get(k.d.loaiHang) ?? { loaiHang: k.d.loaiHang, tenHang: k.d.tenHang, soLuong: 0 };
+      g.soLuong += can;
+      m.set(k.d.loaiHang, g);
+    }
+    return [...m.values()];
+  });
+  protected readonly thieuMuaText = computed(() => this.thieuMua().map((x) => `${x.loaiHang} × ${x.soLuong}`).join('; '));
+  protected moTa(lh: string): string {
+    return moTaMa(this.store.loaiHangById(lh));
+  }
+  private capNhatSP(fn: (ds: DongHangBan[]) => DongHangBan[]): void {
+    this.f.update((h) => apDungTuDongHdb({ ...h, dongHang: fn(h.dongHang ?? []) }));
+  }
+  protected themSP(): void {
+    this.capNhatSP((ds) => [...ds, { id: uid('DB'), loaiHang: '', tenHang: '', soLuong: 1, donGia: 0, donGiaTH: 0 }]);
+  }
+  protected setSP(i: number, p: Partial<DongHangBan>): void {
+    this.capNhatSP((ds) => ds.map((d, j) => (j === i ? { ...d, ...p } : d)));
+  }
+  protected xoaSP(i: number): void {
+    this.capNhatSP((ds) => ds.filter((_, j) => j !== i));
+  }
+  /** Chọn mã: gợi ý tên theo ánh xạ / tên mã, đơn giá thực hiện theo lô nhập trước còn hàng (hoặc lô gần nhất). */
+  protected chonMa(i: number, id: string): void {
+    const d = this.f().dongHang![i];
+    const lo = loConHang(this.store.db(), id)[0] ?? [...this.store.loKho()].reverse().find((l) => l.loaiHang === id);
+    const ten = d.tenHang.trim() && d.loaiHang === id ? d.tenHang : (this.store.loaiHangById(id)?.ten ?? '');
+    this.setSP(i, { loaiHang: id, tenHang: ten, donGiaTH: d.donGiaTH || lo?.donGia || 0 });
+  }
+  protected async deNghi(): Promise<void> {
+    const s = this.saved();
+    const ds = this.thieuMua();
+    if (!s || !ds.length) return;
+    const ghiChu = await this.confirm.prompt({
+      title: `Gửi đề nghị cấp vật tư cho HĐ ${s.soHD || '(báo giá)'}?`,
+      message: `Hàng thiếu trong kho: ${this.thieuMuaText()}. Đề nghị chuyển sang mua hàng — HĐ mua lấy dòng từ đề nghị này.`,
+      label: 'Ghi chú cho bộ phận mua (tuỳ chọn)',
+      minLength: 0,
+      ok: 'Gửi đề nghị',
+    });
+    if (ghiChu === null) return;
+    const r = this.store.taoDeNghiVatTu(s.id, ds, ghiChu);
+    if (typeof r === 'string') return this.store.say(r);
+    this.store.say('Đã gửi đề nghị cấp vật tư — xem ở Kho › Đề nghị vật tư hoặc tạo HĐ mua từ đề nghị');
+  }
+
+  /** Tờ trình / Bảng tính giá (mẫu "Bảng tính giá"): mở trang in — chọn "Lưu dưới dạng PDF" để lưu. */
+  protected inToTrinh(): void {
+    const h = this.f();
+    const c = this.c();
+    const t = c.thue;
+    const ds = h.dongHang?.length
+      ? h.dongHang
+      : [{ id: '', loaiHang: '', tenHang: 'Giá trị hợp đồng', soLuong: 1, donGia: h.truocVAT, donGiaTH: h.thucTeTruocVAT }];
+    const m = (n: number) => money(n);
+    const esc = (s: string) => s.replace(/[&<>"]/g, (x) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[x]!);
+    const dong = ds
+      .map((d) => `<tr><td>${esc(d.tenHang || d.loaiHang)}${d.loaiHang ? ` <small>(${esc(d.loaiHang)})</small>` : ''}</td><td class="n">${d.soLuong}</td><td class="n">${m(d.donGiaTH)}</td><td class="n">${m(d.soLuong * d.donGiaTH)}</td><td class="n">${m(d.donGia)}</td><td class="n">${m(d.soLuong * d.donGia)}</td></tr>`)
+      .join('');
+    const ts = h.thamSoThue;
+    const html = `<!doctype html><html lang="vi"><head><meta charset="utf-8"><title>Tờ trình ${esc(h.soHD || 'báo giá')}</title>
+<style>body{font:14px/1.5 "Times New Roman",serif;margin:24px;color:#000}h1{text-align:center;font-size:18px;margin:0 0 4px}p.c{text-align:center;margin:0 0 14px}
+table{border-collapse:collapse;width:100%}td,th{border:1px solid #000;padding:4px 6px}th{background:#eee}.n{text-align:right;white-space:nowrap}
+.tong td{font-weight:bold}.kq{width:auto;margin-top:12px}.kq td:first-child{background:#eef3e6}.ht td{background:#cfe8f0;font-weight:bold}
+.ky{display:grid;grid-template-columns:repeat(3,1fr);text-align:center;margin-top:36px}.ky span{display:block;margin-top:70px;font-style:italic}
+@media print{button{display:none}}</style></head><body>
+<button onclick="print()">In / Lưu PDF</button>
+<h1>TỜ TRÌNH — BẢNG TÍNH GIÁ</h1>
+<p class="c">Khách hàng: <b>${esc(h.tenKH)}</b>${h.mst ? ' · MST ' + esc(h.mst) : ''}<br>HĐ số: <b>${esc(h.soHD || '(báo giá)')}</b> · Ngày ký: ${viDate(h.ngayKy)} · Ngày lập: ${viDate(todayIso())}</p>
+<table><thead><tr><th>Hàng hoá</th><th>Số lượng</th><th>Đơn giá thực hiện</th><th>Thành tiền thực hiện</th><th>Đơn giá hợp đồng</th><th>Thành tiền hợp đồng</th></tr></thead>
+<tbody>${dong}<tr class="tong"><td>Thành tiền</td><td></td><td></td><td class="n">${m(h.thucTeTruocVAT)}</td><td></td><td class="n">${m(h.truocVAT)}</td></tr></tbody></table>
+<table class="kq"><tbody>
+<tr><td>Chênh lệch</td><td class="n">${m(c.chenhLech)}</td></tr>
+<tr><td><b>Tỉ lệ chênh lệch</b></td><td class="n"><b>${pct(c.tyLeCL)}</b></td></tr>
+<tr><td>Tổng phí quản lý</td><td class="n">${m(t.thue)}</td></tr>
+<tr><td>Phí QL (≤ ${pct(ts.nguong)}) — ${pct(ts.muc1)}</td><td class="n">${m(t.thue1)}</td></tr>
+<tr><td>Phí QL (&gt; ${pct(ts.nguong)}) — ${pct(ts.muc2)}</td><td class="n">${m(t.thue2)}</td></tr>
+<tr class="ht"><td>Hoàn trả</td><td class="n">${m(c.chenhLech - t.thue)}</td></tr>
+</tbody></table>
+<p>Hoàn trả bằng chữ: <i>${esc(moneyInWords(Math.max(c.chenhLech - t.thue, 0)))}</i></p>
+<p>Giá trị HĐ sau VAT ${h.vat}%: <b>${m(c.sauVAT)}</b>${c.phat ? ` · Phạt HĐ ${m(c.phat)} · Giá trị quyết toán <b>${m(c.giaTriQT)}</b>` : ''}</p>
+<div class="ky"><div><b>Người lập</b><span>(Ký, ghi rõ họ tên)</span></div><div><b>Kế toán</b><span>(Ký, ghi rõ họ tên)</span></div><div><b>Giám đốc</b><span>(Ký, ghi rõ họ tên)</span></div></div>
+</body></html>`;
+    const w = window.open('', '_blank');
+    if (!w) return this.store.say('Trình duyệt chặn cửa sổ mới — cho phép popup để xuất tờ trình');
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+    setTimeout(() => w.print(), 300);
+  }
   /** F-08: đã có phiếu Thu (chưa bị từ chối) → khoá Giá trị trước VAT / VAT. */
   protected readonly khoaGiaTri = computed(() => !!this.saved() && this.store.hdbCoPhieuThu(this.saved()!));
   protected readonly max = computed(() => this.store.cauHinh().SO_DOT_TOI_DA);
@@ -216,7 +419,8 @@ export class HdbTab3 {
       { nhan: `Thuế phần ≤ mốc`, congThuc: `Phần ≤ mốc × ${pct(ts.muc1)}`, giaTri: t.thue1 },
       { nhan: 'Phần vượt mốc', congThuc: 'MAX(CL − Mốc, 0)', giaTri: t.phan2 },
       { nhan: 'Thuế phần vượt', congThuc: `Phần vượt × ${pct(ts.muc2)}`, giaTri: t.thue2 },
-      { nhan: 'Thuế TNDN', congThuc: 'Tổng hai phần', giaTri: t.thue, chinh: true },
+      { nhan: 'Thuế TNDN (Tổng phí quản lý)', congThuc: 'Tổng hai phần', giaTri: t.thue, chinh: true },
+      { nhan: 'Hoàn trả', congThuc: 'CL − Thuế TNDN (theo tờ trình)', giaTri: Math.max(this.c().chenhLech - t.thue, 0) },
     ];
   });
 
@@ -270,6 +474,15 @@ export class HdbTab3 {
     const v = Number(raw);
     this.set('vat', v === 0 || v === 8 || v === 10 ? v : 8);
   }
+  /** Hạn TT = Ngày hiệu lực + N ngày; chọn "ngày cụ thể" thì nhập tay như cũ. */
+  protected setHan(i: number, raw: string): void {
+    const n = raw === '' ? undefined : Number(raw);
+    this.f.update((h) => apDungTuDongHdb({ ...h, dotTT: h.dotTT.map((d, j) => (j === i ? { ...d, hanNgay: n, han: n == null ? d.han : undefined } : d)) }));
+  }
+  protected hanTinh(d: DotTTBan): string | undefined {
+    const hl = this.f().ngayHieuLuc;
+    return d.hanNgay != null && hl ? congNgay(hl, d.hanNgay) : d.han;
+  }
   protected setDot(i: number, p: Partial<DotTTBan>): void {
     this.f.update((h) => ({ ...h, dotTT: h.dotTT.map((d, j) => (j === i ? { ...d, ...p } : d)) }));
   }
@@ -289,10 +502,10 @@ export class HdbTab3 {
     this.f.update((h) => {
       const con = Math.max(0, this.c().sauVAT - sum(h.dotTT, (d) => d.soTien));
       const sau = this.c().sauVAT;
-      return {
+      return apDungTuDongHdb({
         ...h,
-        dotTT: [...h.dotTT, { dot: h.dotTT.length + 1, soTien: con, tyLe: sau > 0 ? Math.round((con / sau) * 1000) / 10 : undefined }],
-      };
+        dotTT: [...h.dotTT, { dot: h.dotTT.length + 1, soTien: con, tyLe: sau > 0 ? Math.round((con / sau) * 1000) / 10 : undefined, hanNgay: 30 }],
+      });
     });
   }
   protected xoaDot(i: number): void {
@@ -312,7 +525,8 @@ export class HdbTab3 {
   protected readonly xemPhieu = computed(() => this.store.canView('soQuy') && this.store.level('soQuy') !== 'draft');
   protected thuSua(d: DotTTBan): boolean {
     if (this.khoa() || !this.store.canEdit('hdbThucThu')) return false;
-    if (!this.saved() || this.saved()!.trangThai === 'Báo giá') return false;
+    const s = this.saved();
+    if (!s || (s.trangThai === 'Báo giá' && !(s.coTamUng && d.dot === 1))) return false;
     const luu = this.dotLuu(d.dot);
     if (!luu) return false;
     const p = this.store.phieuById(luu.phieuThuId);

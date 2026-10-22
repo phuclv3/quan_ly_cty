@@ -62,9 +62,9 @@ export const nhomOpts = (): PickOption[] => NHOM_HANG.map((n) => ({ value: n, la
 /** Phần cố định của mã hàng để hiện cạnh mã: "Khí chuẩn · 8L · Bình". */
 export const moTaMa = (l?: LoaiHang): string => (l ? [l.nhom, l.theTich, l.dvt].filter(Boolean).join(' · ') : '');
 
-/** Lựa chọn mã hàng: nhãn = mã, gợi ý = tên + phần cố định; tìm được cả theo tên tham chiếu. */
+/** Lựa chọn mã hàng: nhãn = mã — tên, gợi ý = phần cố định; tìm được cả theo tên tham chiếu (không hiện cho gọn). */
 export const maHangOpts = (ds: LoaiHang[]): PickOption[] =>
-  ds.map((l) => ({ value: l.id, label: `${l.id} — ${l.ten}`, hint: [moTaMa(l), ...(l.bietDanh ?? []).slice(0, 3)].join(' · ') }));
+  ds.map((l) => ({ value: l.id, label: `${l.id} — ${l.ten}`, hint: moTaMa(l), tim: (l.bietDanh ?? []).join(' ') }));
 
 export const NGUON_GOC_OPTS: PickOption[] = [
   { value: 'Tự động HĐ Mua', label: 'Tự động HĐ Mua' },

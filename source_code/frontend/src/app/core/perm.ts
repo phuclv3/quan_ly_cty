@@ -63,7 +63,8 @@ export type Perm =
   | 'khoTon'
   | 'phuTai'
   | 'phuTaiTyLe'
-  | 'baoCao';
+  | 'baoCao'
+  | 'viec';
 
 export interface ChucNang {
   /** Mã chức năng — khoá chính bảng ChucNang, lưu trong NhomQuyen_ChucNang. */
@@ -112,6 +113,7 @@ export const CHUC_NANG: ChucNang[] = [
   { ma: 'PT-01', perm: 'phuTai', module: 'Phú Tài', ten: 'HĐ Phú Tài & quỹ ảo', moTa: '', mucDo: ['none', 'view', 'edit'] },
   { ma: 'PT-06', perm: 'phuTaiTyLe', module: 'Phú Tài', ten: 'Sửa tỷ lệ chia lợi nhuận', moTa: 'Tỷ lệ thuế / Phú Tài giữ theo từng HĐ', mucDo: ['none', 'edit'] },
   // Báo cáo
+  { ma: 'TD-01', perm: 'viec', module: 'Việc được giao', ten: 'Giao việc / Đặt lịch', moTa: 'Sửa của mình: chỉ việc mình giao hoặc được giao; Sửa: thấy mọi việc', mucDo: ['none', 'own', 'edit'] },
   { ma: 'BC-01', perm: 'baoCao', module: 'Báo cáo', ten: 'Báo cáo doanh thu, lợi nhuận, thanh toán', moTa: 'Theo nghiep_vu/06_BaoCao', mucDo: ['none', 'ownView', 'view'] },
 ];
 
@@ -150,23 +152,23 @@ const MAU: { id: string; ma: string; ten: string; moTa: string; toanQuyen?: bool
   { id: 'NQ-GD', ma: 'GIAM_DOC', ten: 'Giám đốc', moTa: 'Toàn quyền mọi chức năng', toanQuyen: true, q: {} },
   {
     id: 'NQ-KT', ma: 'KE_TOAN', ten: 'Kế toán', moTa: 'Sổ quỹ, duyệt phiếu, công nợ, Phú Tài',
-    q: { cauHinh: 'view', duyetXoa: 'request', duyetXoaKT: 'approve', nguonTien: 'edit', soQuy: 'edit', soQuyDuyet: 'approve', cpHD: 'edit', cpHDDuyet: 'approve', congNo: 'view', khachHang: 'view', ncc: 'view', hdb: 'view', hdbTab3: 'view', hdbThucThu: 'edit', hdm: 'view', hdmTab4: 'edit', khoDanhMuc: 'view', khoPhieuTay: 'view', khoTon: 'view', phuTai: 'edit', phuTaiTyLe: 'edit', baoCao: 'view' },
+    q: { cauHinh: 'view', duyetXoa: 'request', duyetXoaKT: 'approve', nguonTien: 'edit', soQuy: 'edit', soQuyDuyet: 'approve', cpHD: 'edit', cpHDDuyet: 'approve', congNo: 'view', khachHang: 'view', ncc: 'view', hdb: 'view', hdbTab3: 'view', hdbThucThu: 'edit', hdm: 'view', hdmTab4: 'edit', khoDanhMuc: 'view', khoPhieuTay: 'view', khoTon: 'view', phuTai: 'edit', phuTaiTyLe: 'edit', baoCao: 'view', viec: 'edit' },
   },
   {
     id: 'NQ-SALE', ma: 'SALE', ten: 'Sale', moTa: 'Chỉ HĐ bán mình phụ trách; danh mục khách hàng',
-    q: { duyetXoa: 'request', soQuy: 'draft', cpHD: 'own', congNo: 'ownView', khachHang: 'own', hdb: 'own', hdbTab3: 'own', hdbGiaoHang: 'own', hdm: 'ownView', hdmTab4: 'ownView', khoDanhMuc: 'view', khoTon: 'view', baoCao: 'ownView' },
+    q: { duyetXoa: 'request', soQuy: 'draft', cpHD: 'own', congNo: 'ownView', khachHang: 'own', hdb: 'own', hdbTab3: 'own', hdbGiaoHang: 'own', hdm: 'ownView', hdmTab4: 'ownView', khoDanhMuc: 'view', khoTon: 'view', baoCao: 'ownView', viec: 'own' },
   },
   {
     id: 'NQ-ADMIN', ma: 'ADMIN_KD', ten: 'Admin kinh doanh', moTa: 'HĐ bán / mua, hồ sơ, giao nhận',
-    q: { duyetXoa: 'request', soQuy: 'draft', cpHD: 'edit', congNo: 'view', khachHang: 'edit', phanBoKH: 'edit', ncc: 'edit', hdb: 'edit', hdbTab3: 'edit', hdbGiaoHang: 'edit', hdm: 'edit', hdmTab4: 'edit', hdmNhapKho: 'edit', khoDanhMuc: 'view', khoTon: 'view', phuTai: 'view', baoCao: 'view' },
+    q: { duyetXoa: 'request', soQuy: 'draft', cpHD: 'edit', congNo: 'view', khachHang: 'edit', phanBoKH: 'edit', ncc: 'edit', hdb: 'edit', hdbTab3: 'edit', hdbGiaoHang: 'edit', hdm: 'edit', hdmTab4: 'edit', hdmNhapKho: 'edit', khoDanhMuc: 'view', khoTon: 'view', phuTai: 'view', baoCao: 'view', viec: 'edit' },
   },
   {
     id: 'NQ-KHO', ma: 'KHO', ten: 'Kho', moTa: 'Tồn kho, nhập / xuất, phiếu điều chỉnh',
-    q: { duyetXoa: 'request', ncc: 'view', hdb: 'view', hdbGiaoHang: 'edit', hdm: 'view', hdmTab4: 'view', hdmNhapKho: 'edit', khoDanhMuc: 'edit', khoPhieuTay: 'edit', khoTon: 'view' },
+    q: { duyetXoa: 'request', ncc: 'view', hdb: 'view', hdbGiaoHang: 'edit', hdm: 'view', hdmTab4: 'view', hdmNhapKho: 'edit', khoDanhMuc: 'edit', khoPhieuTay: 'edit', khoTon: 'view', viec: 'edit' },
   },
   {
     id: 'NQ-XEM', ma: 'CHI_XEM', ten: 'Chỉ xem', moTa: 'Xem mọi số liệu, không có nút hành động',
-    q: { nguonTien: 'view', soQuy: 'view', cpHD: 'view', congNo: 'view', khachHang: 'view', ncc: 'view', hdb: 'view', hdbTab3: 'view', hdm: 'view', hdmTab4: 'view', khoDanhMuc: 'view', khoPhieuTay: 'view', khoTon: 'view', phuTai: 'view', baoCao: 'view' },
+    q: { nguonTien: 'view', soQuy: 'view', cpHD: 'view', congNo: 'view', khachHang: 'view', ncc: 'view', hdb: 'view', hdbTab3: 'view', hdm: 'view', hdmTab4: 'view', khoDanhMuc: 'view', khoPhieuTay: 'view', khoTon: 'view', phuTai: 'view', baoCao: 'view', viec: 'own' },
   },
 ];
 

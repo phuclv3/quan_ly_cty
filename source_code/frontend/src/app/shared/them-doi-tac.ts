@@ -3,6 +3,7 @@ import { Store } from '../core/store';
 import { KhachHang, NhaCungCap } from '../core/models';
 import { Modal } from './ui-kit';
 import { Icon } from './icon';
+import { KetQuaMST, TraMst } from './tra-mst';
 
 interface Nhap {
   ten: string;
@@ -22,7 +23,7 @@ const RONG: Nhap = { ten: '', mst: '', diaChi: '', quocGia: '', nguoiLienHe: '',
 @Component({
   selector: 'app-them-doi-tac',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Modal, Icon],
+  imports: [Modal, Icon, TraMst],
   template: `
     @if (coQuyen()) {
       <button type="button" class="linkish hint" (click)="mo()"><app-icon name="plus" [size]="14" /> Thêm {{ nhan() }} mới</button>
@@ -36,8 +37,12 @@ const RONG: Nhap = { ten: '', mst: '', diaChi: '', quocGia: '', nguoiLienHe: '',
         </div>
       }
       <div class="form-grid">
+        <div class="field">
+          <label for="tdt-mst">MST @if (loai() === 'kh') { <span class="req">*</span> }</label>
+          <input id="tdt-mst" class="mono" placeholder="10 số" [required]="loai() === 'kh'" [value]="f().mst" (input)="set('mst', $any($event.target).value.trim())" />
+          <app-tra-mst [mst]="f().mst" (ketQua)="dienMST($event)" />
+        </div>
         <div class="field wide"><label for="tdt-ten">Tên <span class="req">*</span></label><input id="tdt-ten" [value]="f().ten" (input)="set('ten', $any($event.target).value)" /></div>
-        <div class="field"><label for="tdt-mst">MST</label><input id="tdt-mst" [value]="f().mst" (input)="set('mst', $any($event.target).value)" /></div>
         @if (loai() === 'ncc') {
           <div class="field"><label for="tdt-qg">Quốc gia</label><input id="tdt-qg" [value]="f().quocGia" (input)="set('quocGia', $any($event.target).value)" /></div>
         }
@@ -78,6 +83,9 @@ export class ThemDoiTac {
   }
   protected set(k: keyof Nhap, v: string): void {
     this.f.update((x) => ({ ...x, [k]: v }));
+  }
+  protected dienMST(r: KetQuaMST): void {
+    this.f.update((x) => ({ ...x, mst: r.mst, ten: r.ten, diaChi: r.diaChi || x.diaChi }));
   }
   protected chonCo(id: string): void {
     this.open.set(false);
