@@ -11,6 +11,7 @@ import { Pager, paginate } from '../shared/pager';
 import { SortTh, Sorter } from '../shared/sort';
 import { csv, downloadFile, fileName } from '../shared/export';
 import { Icon } from '../shared/icon';
+import { ImportHd } from '../shared/import-hd';
 
 interface Row {
   h: HopDongBan;
@@ -23,7 +24,7 @@ interface Row {
   selector: 'app-hdb-list',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'page' },
-  imports: [RouterLink, FilterBar, Kpi, TrangThai, Pager, Icon, SortTh],
+  imports: [RouterLink, FilterBar, Kpi, TrangThai, Pager, Icon, SortTh, ImportHd],
   template: `
     <div class="page-head">
       <div>
@@ -34,6 +35,7 @@ interface Row {
       <div class="actions">
         <button type="button" class="btn quiet" (click)="xuat()"><app-icon name="download" [size]="16" /> Xuất CSV</button>
         @if (store.canEdit('hdb')) {
+          <app-import-hd loai="ban" />
           <a class="btn" routerLink="/hop-dong-ban/moi"><app-icon name="plus" [size]="16" /> Tạo HĐ bán</a>
         }
       </div>

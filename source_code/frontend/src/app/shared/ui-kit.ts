@@ -456,8 +456,9 @@ export class PickGo {
   imports: [Icon],
   host: { class: 'pick multi', '[class.has]': 'value().length > 0', '[attr.data-trong]': "value().length ? null : ''", '(document:click)': 'outside($event)' },
   template: `
-    <button type="button" class="pick-btn" (click)="bat()" [attr.aria-expanded]="open()" [class.has]="value().length > 0">
-      <span class="pick-val">{{ label() }}@if (value().length) {: <b>{{ value().length === 1 ? nameOf(value()[0]) : value().length + ' mục' }}</b>}</span>
+    <!-- Chọn xong nút giữ nguyên độ rộng: chỉ hiện số mục ở ô đếm luôn chiếm chỗ; tên các mục xem ở title. -->
+    <button type="button" class="pick-btn" (click)="bat()" [attr.aria-expanded]="open()" [class.has]="value().length > 0" [attr.title]="value().length ? label() + ': ' + tenChon() : null">
+      <span class="pick-val">{{ label() }}</span><span class="dem" [class.on]="value().length > 0" aria-hidden="true">{{ value().length || '' }}</span>
       <app-icon name="chevron" [size]="16" />
     </button>
     @if (value().length) {
@@ -496,6 +497,9 @@ export class Multi {
   }
   protected nameOf(v: string): string {
     return this.options().find((o) => o.value === v)?.label ?? v;
+  }
+  protected tenChon(): string {
+    return this.value().map((v) => this.nameOf(v)).join(', ');
   }
   protected flip(v: string): void {
     this.value.update((arr) => (arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]));

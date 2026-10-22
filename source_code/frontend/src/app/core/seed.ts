@@ -30,6 +30,8 @@ import {
   PhieuThuChi,
   TaiKhoan,
   CHECKLIST_HDM,
+  TRANG_THAI_HDB,
+  TRANG_THAI_HDM,
   CO_HOI,
   CoHoi,
   TIEP_CAN,
@@ -51,7 +53,7 @@ import { fold, nextCode, nowIso, todayIso, uid, yy } from './util';
  * v7: đề nghị cấp vật tư; HĐ bán có dòng hàng, cờ tạm ứng, phạt HĐ (nangCapV7).
  * v8: việc được giao (ToDoList) + quyền TD-01 cho các nhóm hệ thống (nangCapV8).
  */
-export const DB_VERSION = 9;
+export const DB_VERSION = 10;
 
 export const CAU_HINH_MAC_DINH: CauHinh = {
   TNDN_NGUONG: 0.2,
@@ -619,7 +621,73 @@ export async function buildSeed(): Promise<Db> {
   });
   void KT;
   ghepDataKH(db);
+  themHdDemo(db);
   return db;
+}
+
+/**
+ * Giả lập mỗi trạng thái HĐ bán / HĐ mua 1 bản ghi (Số HĐ "DEMO-…", ghi chú "[Demo]") để xem đủ trạng thái
+ * trên danh sách — gồm cả HĐ mua Huỷ. Chỉ dựng trạng thái, không sinh phiếu thu / chi / kho kèm theo.
+ * Gọi lại không nhân bản (bỏ qua Số HĐ đã có).
+ */
+export function themHdDemo(db: Db): void {
+  const k = db.khachHang.find((x) => /^\d{10}(-\d{3})?$/.test(x.mst ?? '')) ?? db.khachHang[0];
+  const n = db.ncc[0];
+  const sale = db.taiKhoan.find((x) => x.email === 'sale@oxymecie.vn')?.id ?? db.taiKhoan[0]?.id ?? '';
+  const lh = db.loaiHang.find((x) => x.dangDung) ?? db.loaiHang[0];
+  const ngay = todayIso();
+  const ts = { nguong: db.cauHinh.TNDN_NGUONG, muc1: db.cauHinh.TNDN_MUC1, muc2: db.cauHinh.TNDN_MUC2 };
+  const co = (so: string, ds: { soHD: string }[]) => ds.some((x) => x.soHD === so);
+  if (k)
+    TRANG_THAI_HDB.forEach((tt, i) => {
+      const soHD = `DEMO-HDB-${i + 1}`;
+      if (co(soHD, db.hopDongBan)) return;
+      const baoGia = tt === 'Báo giá';
+      db.hopDongBan.push({
+        id: uid('HDB'),
+        soHD,
+        maKH: k.id,
+        tenKH: k.ten,
+        mst: k.mst,
+        diaChi: k.diaChi,
+        ngayKy: baoGia ? undefined : ngay,
+        ngayHieuLuc: baoGia ? undefined : ngay,
+        trangThai: tt,
+        sale,
+        ghiChu: `[Demo] HĐ bán trạng thái "${tt}"`,
+        truocVAT: 10_000_000 * (i + 1),
+        vat: 8,
+        thucTeTruocVAT: 8_000_000 * (i + 1),
+        thamSoThue: ts,
+        dotTT: [],
+        dongHang: [],
+        coTamUng: false,
+        taoLuc: nowIso(),
+      });
+    });
+  if (n)
+    TRANG_THAI_HDM.forEach((tt, i) => {
+      const soHD = `DEMO-HDM-${i + 1}`;
+      if (co(soHD, db.hopDongMua)) return;
+      db.hopDongMua.push({
+        id: uid('HDM'),
+        soHD,
+        maNCC: n.id,
+        tenNCC: n.ten,
+        diaChi: n.diaChi,
+        mst: n.mst,
+        ngayKy: tt === 'Nháp' ? undefined : ngay,
+        thuocPhuTai: false,
+        trangThai: tt,
+        ghiChu: `[Demo] HĐ mua trạng thái "${tt}"`,
+        chiTiet: lh ? [{ id: uid('DM'), loaiHang: lh.id, tenHang: lh.ten, thongSo: '', soLuong: i + 1, dvt: lh.dvt, donGia: 5_000_000, loaiTien: 'VNĐ', tyGia: 1 }] : [],
+        nhapTay: false,
+        dotTT: [],
+        xuatHoaDon: 'Chưa',
+        checklist: CHECKLIST_HDM.map((ten) => ({ ten, xong: false })),
+        taoLuc: nowIso(),
+      });
+    });
 }
 
 // ── Hàm phụ ─────────────────────────────────────────────────────────────

@@ -53,7 +53,7 @@ import {
   CHECKLIST_HDM,
 } from './models';
 import { CHUC_NANG, KE_TOAN_DUYET_XOA, Level, Perm, atLeast, levelOf } from './perm';
-import { CAU_HINH_MAC_DINH, DB_VERSION, buildSeed, ghepDataKH, nangCapKhoV5, nangCapKhoV6, nangCapV7, nangCapV8, themTaiKhoanSale } from './seed';
+import { CAU_HINH_MAC_DINH, DB_VERSION, buildSeed, ghepDataKH, nangCapKhoV5, nangCapKhoV6, nangCapV7, nangCapV8, themHdDemo, themTaiKhoanSale } from './seed';
 import {
   apDungTuDongHdb,
   hdmChoHdb,
@@ -184,6 +184,12 @@ export class Store {
       if (d && d.version === 8) {
         d = structuredClone(d);
         for (const k of d.khachHang) if ((k.trangThaiData as string) === 'Data thô') k.trangThaiData = 'Chưa phân bổ';
+        d.version = 9;
+      }
+      // v9 → v10: giả lập mỗi trạng thái HĐ bán / HĐ mua 1 bản ghi (gồm HĐ mua Huỷ).
+      if (d && d.version === 9) {
+        d = structuredClone(d);
+        themHdDemo(d);
         d.version = DB_VERSION;
       }
       if (!d || d.version !== DB_VERSION) d = await buildSeed();

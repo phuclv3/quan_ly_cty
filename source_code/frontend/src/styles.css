@@ -133,7 +133,8 @@ h1, h2, h3, h4 { margin: 0; line-height: 1.2; font-weight: 700; }
 h1 { font-size: 28px; }
 h2 { font-size: 20px; }
 h3 { font-size: 17.5px; }
-p { margin: 0; }
+/* :where → độ ưu tiên 0: khoảng cách khối (.note…) bên dưới không bị reset này đè. */
+:where(p) { margin: 0; }
 button, input, select, textarea { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 .ico { flex: 0 0 auto; display: block; }
@@ -323,7 +324,6 @@ app-icon { display: inline-flex; align-items: center; justify-content: center; f
   .main { padding-bottom: calc(var(--tab-h) + var(--safe-b) + 24px) !important; }
   .side { bottom: calc(var(--tab-h) + var(--safe-b)) !important; height: auto !important; top: 0; }
   .scrim { bottom: calc(var(--tab-h) + var(--safe-b)) !important; }
-  .toast { bottom: calc(var(--tab-h) + var(--safe-b) + 12px) !important; }
 }
 
 @media (max-width: 900px) {
@@ -440,7 +440,8 @@ app-filter { display: block; }
 :where(.note, .card, .tbl-wrap, app-filter, .kpis, .grid) + :where(.note, .card, .tbl-wrap, app-filter, .kpis, .grid) { margin-top: 14px; }
 /* Ghi chú đứng sau bất kỳ khối nào (VD thanh trạng thái HĐ → "Còn thiếu để chuyển…") không dính sát khối trên. */
 :where(* + .note) { margin-top: 12px; }
-:where(.grid, .stack, .kpis, .form-grid, .between, .row, .btn-row, .filters) > :where(.note, .card, .tbl-wrap, app-filter, .kpis, .grid) { margin-top: 0; }
+:where(.note:not(:last-child)) { margin-bottom: 12px; }
+:where(.grid, .stack, .kpis, .form-grid, .between, .row, .btn-row, .filters) > :where(.note, .card, .tbl-wrap, app-filter, .kpis, .grid) { margin-top: 0; margin-bottom: 0; }
 /* Bộ lọc: ô chọn đơn (.fsel) và chọn nhiều (app-multi) cùng một kiểu — mũi tên vẽ bằng CSS theo màu chủ đề;
    đang lọc thì viền + nền màu thương hiệu và có nút ✕ bỏ riêng bộ lọc đó. */
 .filters select, .filters .pick-btn { height: 40px; min-height: 40px; }
@@ -450,13 +451,15 @@ app-filter { display: block; }
   content: ''; position: absolute; right: 14px; top: 50%; width: 7px; height: 7px; pointer-events: none;
   border-right: 1.75px solid var(--ink-3); border-bottom: 1.75px solid var(--ink-3); transform: translateY(-70%) rotate(45deg);
 }
-.fsel.has > select { border-color: var(--brand); background: var(--brand-tint); font-weight: 600; }
+/* Không đổi font-weight khi đang lọc — chữ đậm làm ô chọn nở rộng. */
+.fsel.has > select { border-color: var(--brand); background: var(--brand-tint); }
 .fsel.has::after { display: none; }
 .filters .pick-btn { padding-right: 12px; font-size: 15.5px; }
 .filters .multi.has .pick-btn { padding-right: 36px; }
 .filters .multi.has .pick-btn > app-icon { visibility: hidden; }
-/* Bộ lọc chọn nhiều: giá trị đang chọn tối đa 14 ký tự → nút không nở dài theo tên mục được chọn. */
-.filters .multi .pick-val > b { display: inline-block; max-width: 14ch; overflow: hidden; text-overflow: ellipsis; vertical-align: bottom; }
+/* Ô chọn nhiều: ô đếm luôn chiếm 20px (trống khi chưa chọn) → chọn / bỏ chọn không đổi độ rộng nút. */
+.multi .pick-btn .dem { flex: none; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; font-size: 12.5px; font-weight: 700; line-height: 20px; text-align: center; font-variant-numeric: tabular-nums; visibility: hidden; }
+.multi .pick-btn .dem.on { visibility: visible; background: var(--brand); color: #fff; }
 .f-x {
   position: absolute; right: 7px; top: 50%; transform: translateY(-50%); z-index: 1;
   width: 24px; height: 24px; padding: 0; border: 0; border-radius: 50%; cursor: pointer;
@@ -671,7 +674,8 @@ app-money input { width: 100%; }
 .flow .sep { color: var(--ink-3); }
 
 /* ── Popup ─────────────────────────────────────────────────────────── */
-.modal-back { position: fixed; inset: 0; z-index: 100; background: rgba(8, 16, 30, 0.45); display: grid; place-items: start center; padding: 5vh 12px; overflow-y: auto; }
+/* Popup giữa màn hình; popup cao hơn màn hình thì bám mép trên (safe) và cuộn. */
+.modal-back { position: fixed; inset: 0; z-index: 100; background: rgba(8, 16, 30, 0.45); display: grid; align-items: safe center; justify-items: center; padding: 5vh 12px; overflow-y: auto; }
 .modal { background: var(--surf); border-radius: 12px; box-shadow: var(--shadow); width: 100%; max-width: 720px; display: flex; flex-direction: column; border: 1px solid var(--line); }
 .modal.sm { max-width: 440px; }
 .modal.lg { max-width: 1100px; }
@@ -717,7 +721,8 @@ app-money input { width: 100%; }
 }
 
 .toast {
-  position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); z-index: 130;
+  /* Giữa màn hình, trên mọi popup / hộp xác nhận — thông báo lỗi (VD "Chỉ huỷ khi…") không bị lấp. */
+  position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 160; text-align: center;
   background: var(--ink); color: var(--surf); padding: 10px 16px; border-radius: 10px; box-shadow: var(--shadow);
   max-width: min(560px, calc(100vw - 32px)); font-size: 15px;
   border-left: 5px solid var(--brand);
@@ -868,7 +873,7 @@ tr.hilite > td { background: var(--warn-bg) !important; }
   .bars { gap: 3px; height: 150px; }
   .bars .col b { display: none; }
   .pager { justify-content: center; }
-  .toast { bottom: 14px; width: calc(100vw - 24px); }
+  .toast { width: calc(100vw - 24px); }
 
   /* Bảng → thẻ: mỗi dòng một thẻ; ô dữ liệu xếp lưới 2 cột, nhãn cột nhỏ in hoa nằm TRÊN giá trị.
      Ô đầu làm tiêu đề thẻ; ô tên (cột 2), ô có nút / ô nhập lớn chiếm trọn chiều ngang. */
