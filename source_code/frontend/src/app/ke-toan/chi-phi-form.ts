@@ -122,7 +122,7 @@ export class ChiPhiForm {
   protected readonly hdOpts = computed<PickOption[]>(() => {
     const list = this.store
       .hdbVisible()
-      .filter((h) => h.trangThai !== 'Báo giá')
+      .filter((h) => h.trangThai !== 'Báo giá' && h.trangThai !== 'Huỷ')
       .map((h) => ({ value: h.id, label: h.soHD, hint: h.tenKH }));
     const cur = this.hd();
     if (cur && !list.some((o) => o.value === cur.id)) list.push({ value: cur.id, label: cur.soHD, hint: cur.trangThai });

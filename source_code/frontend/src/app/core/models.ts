@@ -400,13 +400,14 @@ export interface ChiPhiHD {
 
 // ── Kinh doanh ──────────────────────────────────────────────────────────
 
-export type TrangThaiHDB = 'Báo giá' | 'Hiệu lực' | 'Đang giao hàng' | 'Hoàn thành' | 'Đã tất toán';
+export type TrangThaiHDB = 'Báo giá' | 'Hiệu lực' | 'Đang giao hàng' | 'Hoàn thành' | 'Đã tất toán' | 'Huỷ';
 export const TRANG_THAI_HDB: TrangThaiHDB[] = [
   'Báo giá',
   'Hiệu lực',
   'Đang giao hàng',
   'Hoàn thành',
   'Đã tất toán',
+  'Huỷ',
 ];
 
 export interface ThamSoThue {
@@ -509,6 +510,8 @@ export interface HopDongBan {
   /** Phạt HĐ khi quyết toán (VNĐ, giảm số phải thu): Giá trị quyết toán = Sau VAT − Phạt. */
   phatHD?: number;
   lyDoPhat?: string;
+  /** Lý do huỷ HĐ (trạng thái Huỷ). */
+  lyDoHuy?: string;
   ghiChuHoSoThieu?: string;
   taoLuc: string;
   import?: boolean;

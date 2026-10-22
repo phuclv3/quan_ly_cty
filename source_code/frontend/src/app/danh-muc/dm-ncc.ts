@@ -22,7 +22,7 @@ type F = Exclude<keyof NhaCungCap, 'id'>;
   imports: [RouterLink, Modal, TrangThai, FilterBar, Pager],
   template: `
     <div class="between">
-      <app-filter [(loc)]="loc" memo="dm-ncc" [time]="false" placeholder="Tìm mã, tên, MST, quốc gia, người liên hệ…" />
+      <app-filter style="flex:1 1 auto;min-width:0" [(loc)]="loc" memo="dm-ncc" [time]="false" placeholder="Tìm mã, tên, MST, quốc gia, người liên hệ…" />
       <div class="btn-row" style="margin-bottom:12px">
         <button type="button" class="btn quiet" (click)="xuat()">Xuất CSV</button>
         @if (store.canEdit('ncc')) { <button type="button" class="btn" (click)="mo(null)">+ Thêm nhà cung cấp</button> }
@@ -36,7 +36,7 @@ type F = Exclude<keyof NhaCungCap, 'id'>;
         <tbody>
           @for (n of pg.items(); track n.id) {
             <tr class="click" [class.sel]="mo1() === n.id" (click)="mo1.set(mo1() === n.id ? null : n.id)">
-              <td class="mono">{{ n.id }}</td>
+              <td class="mono"><button type="button" class="linkish" [attr.aria-expanded]="mo1() === n.id">{{ n.id }}</button></td>
               <td><b>{{ n.ten }}</b>@if (n.trangThai === 'Ngưng') { <app-tt v="Ngưng" /> }@if (store.dangChoXoa('DM_NCC', n.id)) { <app-tt v="Chờ xoá" /> }</td>
               <td class="mono">{{ n.mst || '—' }}</td>
               <td>{{ n.diaChi }}</td>

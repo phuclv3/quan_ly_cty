@@ -71,7 +71,7 @@ interface Row {
             <tr class="click" [class.overdue]="r.c.quaHan > 0" (click)="mo(r.h.id)">
               <td>
                 <a [routerLink]="['/hop-dong-ban', r.h.id]" (click)="$event.stopPropagation()"><b>{{ r.h.soHD || '(chưa có số)' }}</b></a>
-                @if (r.h.import) { <app-tt v="Import" /> }
+                @if (r.h.import) { <span class="tag mute" title="HĐ thật — chuyển từ file Excel cũ">Import</span> } @else if (r.h.soHD.startsWith('DEMO-')) { <span class="tag warn" title="Dữ liệu giả lập để xem đủ trạng thái">Demo</span> }
                 @if (r.xoa) { <app-tt v="Chờ xoá" /> }
               </td>
               <td>{{ r.h.tenKH }}<div class="sub">{{ r.h.mst }}</div></td>
@@ -176,7 +176,7 @@ export class HdbList {
   protected readonly tongSau = computed(() => sum(this.rows(), (r) => r.c.sauVAT));
   protected readonly tongCon = computed(() => sum(this.rows(), (r) => r.c.conPhaiThu));
   protected readonly kpi = computed(() => {
-    const rs = this.rows().filter((r) => r.h.trangThai !== 'Báo giá');
+    const rs = this.rows().filter((r) => r.h.trangThai !== 'Báo giá' && r.h.trangThai !== 'Huỷ');
     return {
       n: rs.length,
       tong: sum(rs, (r) => r.c.sauVAT),

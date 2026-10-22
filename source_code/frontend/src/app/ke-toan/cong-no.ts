@@ -140,7 +140,7 @@ export class CongNoTab {
     const me = this.store.meId();
     const own = this.store.ownOnly('congNo');
     return db.hopDongBan
-      .filter((h) => h.trangThai !== 'Báo giá' && (!own || h.sale === me))
+      .filter((h) => h.trangThai !== 'Báo giá' && h.trangThai !== 'Huỷ' && (!own || h.sale === me))
       .map((h) => {
         const c = hdbCalc(h, db);
         const han = c.dotGanNhat?.han;

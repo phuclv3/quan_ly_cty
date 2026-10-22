@@ -186,8 +186,8 @@ export class Store {
         for (const k of d.khachHang) if ((k.trangThaiData as string) === 'Data thô') k.trangThaiData = 'Chưa phân bổ';
         d.version = 9;
       }
-      // v9 → v10: giả lập mỗi trạng thái HĐ bán / HĐ mua 1 bản ghi (gồm HĐ mua Huỷ).
-      if (d && d.version === 9) {
+      // v9 → v10 → v11: giả lập mỗi trạng thái HĐ bán / HĐ mua 1 bản ghi (v11 thêm HĐ bán Huỷ — bỏ qua Số HĐ đã có).
+      if (d && (d.version === 9 || d.version === 10)) {
         d = structuredClone(d);
         themHdDemo(d);
         d.version = DB_VERSION;
@@ -853,7 +853,7 @@ export class Store {
   }
 
   hdbKhoa(h: HopDongBan): boolean {
-    return h.trangThai === 'Đã tất toán' || this.dangChoXoa('HopDongBan', h.id);
+    return h.trangThai === 'Đã tất toán' || h.trangThai === 'Huỷ' || this.dangChoXoa('HopDongBan', h.id);
   }
 
   /** Lưu HĐ (Tab 1 + Tab 3). Trả id khi thành công qua out.id. */
@@ -928,11 +928,29 @@ export class Store {
     if (e) return e;
     if (this.dangChoXoa('HopDongBan', id)) return 'HĐ đang chờ xoá';
     if (h.trangThai === 'Đã tất toán') return 'HĐ đã tất toán — dùng "Mở lại" (HDB-03-ML)';
+    if (h.trangThai === 'Huỷ') return 'HĐ đã huỷ';
     // Chỉ đi đúng bước kế tiếp; "Đang giao hàng" do ghi nhận giao hàng tự chuyển.
     if (toi !== this.hdbKeTiep(h) || toi === 'Đang giao hàng') return `Không chuyển được từ "${h.trangThai}" sang "${toi}"`;
     const thieu = hdbThieuDeChuyen(h, toi, this.db());
     if (thieu.length) return thieu.join(' · ');
     this.upsert('hopDongBan', { ...h, trangThai: toi });
+    return null;
+  }
+
+  /** Huỷ HĐ bán: chỉ khi chưa thu tiền, chưa xuất kho, không còn chi phí HĐ / đề nghị vật tư đang hiệu lực. */
+  huyHdb(id: string, lyDo: string): Result {
+    const h = this.hdbById(id);
+    if (!h) return 'Không tìm thấy HĐ';
+    const e = this.require('hdb', 'edit', h.sale);
+    if (e) return e;
+    if (this.hdbKhoa(h)) return h.trangThai === 'Huỷ' ? 'HĐ đã huỷ' : 'HĐ đã khoá (Đã tất toán hoặc đang chờ xoá)';
+    if (!lyDo.trim()) return 'Cần lý do huỷ';
+    const db = this.db();
+    if (this.hdbCoPhieuThu(h)) return 'Chỉ huỷ khi chưa thu tiền — xoá / từ chối phiếu Thu trước';
+    if (db.phieuKho.some((p) => p.loai === 'Xuất' && p.hdId === id && p.trangThai === 'Hiệu lực')) return 'Chỉ huỷ khi chưa xuất kho giao hàng';
+    if (db.chiPhiHD.some((c) => c.hdbId === id && c.trangThai !== 'Từ chối')) return 'HĐ còn chi phí thực hiện — xoá / từ chối chi phí trước';
+    if (db.deNghiVatTu.some((x) => x.hdbId === id && !x.lyDoHuy)) return 'HĐ có đề nghị cấp vật tư — huỷ đề nghị trước';
+    this.upsert('hopDongBan', { ...h, trangThai: 'Huỷ', lyDoHuy: lyDo.trim() });
     return null;
   }
 

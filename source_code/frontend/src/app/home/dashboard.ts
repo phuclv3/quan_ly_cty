@@ -166,7 +166,7 @@ export class Dashboard {
     const db = this.store.db();
     return this.store
       .hdbVisible()
-      .filter((h) => h.trangThai !== 'Báo giá')
+      .filter((h) => h.trangThai !== 'Báo giá' && h.trangThai !== 'Huỷ')
       .map((h) => ({ h, c: hdbCalc(h, db) }));
   });
   private readonly calcMua = computed(() => {

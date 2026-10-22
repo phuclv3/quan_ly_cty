@@ -53,7 +53,7 @@ import { fold, nextCode, nowIso, todayIso, uid, yy } from './util';
  * v7: đề nghị cấp vật tư; HĐ bán có dòng hàng, cờ tạm ứng, phạt HĐ (nangCapV7).
  * v8: việc được giao (ToDoList) + quyền TD-01 cho các nhóm hệ thống (nangCapV8).
  */
-export const DB_VERSION = 10;
+export const DB_VERSION = 11;
 
 export const CAU_HINH_MAC_DINH: CauHinh = {
   TNDN_NGUONG: 0.2,
@@ -627,7 +627,7 @@ export async function buildSeed(): Promise<Db> {
 
 /**
  * Giả lập mỗi trạng thái HĐ bán / HĐ mua 1 bản ghi (Số HĐ "DEMO-…", ghi chú "[Demo]") để xem đủ trạng thái
- * trên danh sách — gồm cả HĐ mua Huỷ. Chỉ dựng trạng thái, không sinh phiếu thu / chi / kho kèm theo.
+ * trên danh sách — gồm cả HĐ Huỷ. Chỉ dựng trạng thái, không sinh phiếu thu / chi / kho kèm theo.
  * Gọi lại không nhân bản (bỏ qua Số HĐ đã có).
  */
 export function themHdDemo(db: Db): void {
@@ -655,6 +655,7 @@ export function themHdDemo(db: Db): void {
         trangThai: tt,
         sale,
         ghiChu: `[Demo] HĐ bán trạng thái "${tt}"`,
+        lyDoHuy: tt === 'Huỷ' ? '[Demo] Khách không ký' : undefined,
         truocVAT: 10_000_000 * (i + 1),
         vat: 8,
         thucTeTruocVAT: 8_000_000 * (i + 1),

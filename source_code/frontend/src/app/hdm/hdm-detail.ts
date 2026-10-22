@@ -82,6 +82,32 @@ interface TraForm {
       @if (choXoa()) { <div class="note bad">HĐ đang có yêu cầu xoá chờ duyệt — tạm khoá sửa.</div> }
       @else if (locked()) { <div class="note info">HĐ ở trạng thái {{ saved()?.trangThai }} — đã khoá sửa.</div> }
       @if (dirty() && !isNew()) { <div class="note warn">Có thay đổi chưa lưu.</div> }
+
+      @if (!isNew() && saved()) {
+        <section class="card no-print">
+          <div class="between">
+            <div class="flow" aria-label="Luồng trạng thái">
+              @for (s of flow; track s; let last = $last) {
+                <span class="st" [class.cur]="s === trangThai()" [class.done]="trangThai() !== 'Huỷ' && flowIdx(s) < flowIdx(trangThai())">{{ s }}</span>
+                @if (!last) { <span class="sep">›</span> }
+              }
+              @if (trangThai() === 'Huỷ') { <span class="sep">·</span> <app-tt v="Huỷ" /> }
+            </div>
+            <div class="btn-row">
+              @if (trangThai() === 'Đã tất toán') {
+                @if (!choXoa() && store.canEdit('moLaiHdm')) { <button type="button" class="btn sm quiet" (click)="moLai()">Mở lại</button> }
+              } @else if (!locked() && store.canEdit('hdm') && keTiep(); as k) {
+                <button type="button" class="btn sm" [disabled]="thieuKeTiep().length > 0" (click)="chuyen(k)">Chuyển → {{ k }}</button>
+              }
+              @if (!locked() && store.canEdit('hdm')) { <button type="button" class="btn sm danger quiet" (click)="chuyen('Huỷ')">Huỷ HĐ</button> }
+            </div>
+          </div>
+          @if (!locked() && store.canEdit('hdm') && keTiep() && thieuKeTiep().length) {
+            <p class="note warn">Còn thiếu để chuyển "{{ keTiep() }}": {{ thieuKeTiep().join(' · ') }}</p>
+          }
+        </section>
+      }
+
       @if (ptDung(); as pt) {
         <div class="note info">
           Giá đầu vào của HĐ Phú Tài
@@ -179,32 +205,6 @@ interface TraForm {
           @if (!isNew()) {
           <app-file-hd chu="HDM" [chuId]="saved()?.id ?? ''" [edit]="edit()" [info]="infoFile()" [(pending)]="fileCho" />
 
-          <h3 class="section-title">Trạng thái</h3>
-          <section class="card stack">
-            <div class="flow">
-              @for (s of flow; track s; let last = $last) {
-                <span class="st" [class.cur]="s === trangThai()" [class.done]="flowIdx(s) < flowIdx(trangThai())">{{ s }}</span>
-                @if (!last) { <span class="sep">›</span> }
-              }
-              @if (trangThai() === 'Huỷ') { <span class="sep">·</span> <app-tt v="Huỷ" /> }
-            </div>
-            <div class="note info">“Đang nhận hàng” và “Đã nhận đủ” tự chuyển theo phiếu nhập kho (Tab 3). “Đã tất toán” cần đã nhận đủ hàng (HĐ của Oxy), Còn phải trả = 0, Xuất hoá đơn = Đã và đủ hồ sơ bắt buộc.</div>
-            @if (trangThai() === 'Đã tất toán' && !choXoa() && store.canEdit('moLaiHdm')) {
-              <div class="btn-row"><button type="button" class="btn quiet" (click)="moLai()">Mở lại HĐ</button></div>
-            }
-            @if (!isNew() && !locked() && store.canEdit('hdm')) {
-              @if (choTatToan() && thieuTatToan().length) {
-                <p class="note warn">Còn thiếu để chuyển “Đã tất toán”: {{ thieuTatToan().join(' · ') }}</p>
-              }
-              <div class="btn-row">
-                @if (trangThai() === 'Nháp') { <button type="button" class="btn" (click)="chuyen('Đã ký')">Chuyển “Đã ký”</button> }
-                @if (choTatToan()) {
-                  <button type="button" class="btn ok" [disabled]="thieuTatToan().length > 0" (click)="chuyen('Đã tất toán')">Chuyển “Đã tất toán”</button>
-                }
-                <button type="button" class="btn danger" (click)="chuyen('Huỷ')">Huỷ HĐ</button>
-              </div>
-            }
-          </section>
           }
         }
 
@@ -839,6 +839,20 @@ export class HdmDetail {
   /** HĐ Phú Tài mở màn này để tạo HĐ mua (?pt=). */
   protected readonly ptVe = computed(() => this.store.ptById(this.route.snapshot.queryParamMap.get('pt') ?? undefined));
   protected readonly choTatToan = computed(() => ['Đã ký', 'Đang nhận hàng', 'Đã nhận đủ'].includes(this.trangThai()));
+  /** Bước kế tiếp bấm tay: Nháp → Đã ký; đã ký trở đi → Đã tất toán ("Đang nhận hàng" / "Đã nhận đủ" tự chuyển theo phiếu nhập). */
+  protected readonly keTiep = computed<TrangThaiHDM | null>(() => (this.trangThai() === 'Nháp' ? 'Đã ký' : this.choTatToan() ? 'Đã tất toán' : null));
+  /** Điều kiện còn thiếu cho bước kế tiếp — cùng điều kiện Store kiểm khi chuyển. */
+  protected readonly thieuKeTiep = computed(() => {
+    if (this.keTiep() !== 'Đã ký') return this.thieuTatToan();
+    const s = this.saved();
+    if (!s) return [];
+    const out: string[] = [];
+    if (!s.soHD.trim()) out.push('Chưa có Số HĐ');
+    if (!s.maNCC) out.push('Chưa chọn NCC');
+    if (!s.ngayKy) out.push('Chưa có Ngày ký');
+    if (!s.chiTiet.length && hdmCalc(s, this.store.db()).tong <= 0) out.push('Chưa có dòng hàng / tổng giá trị');
+    return out;
+  });
   /** Điều kiện còn thiếu để tất toán — hiện trước khi bấm (như HĐ bán). */
   protected readonly thieuTatToan = computed(() => {
     const s = this.saved();

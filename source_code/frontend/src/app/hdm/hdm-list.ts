@@ -63,7 +63,7 @@ interface Dong {
             <tr class="click" (click)="mo(r.m.id)" [class.overdue]="r.c.quaHan > 0">
               <td>
                 <a [routerLink]="['/hop-dong-mua', r.m.id]" (click)="$event.stopPropagation()"><b>{{ r.m.soHD || '(chưa có số)' }}</b></a>
-                @if (r.m.import) { <app-tt v="Import" /> }
+                @if (r.m.import) { <span class="tag mute" title="HĐ thật — chuyển từ file Excel cũ">Import</span> } @else if (r.m.soHD.startsWith('DEMO-')) { <span class="tag warn" title="Dữ liệu giả lập để xem đủ trạng thái">Demo</span> }
                 @if (r.choXoa) { <app-tt v="Chờ xoá" /> }
               </td>
               <td>{{ r.m.tenNCC }}<div class="sub">{{ r.m.mst }}</div></td>

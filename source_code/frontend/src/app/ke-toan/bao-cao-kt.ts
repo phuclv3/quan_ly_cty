@@ -185,7 +185,7 @@ export class BaoCaoKtTab {
   protected readonly hdOpts = computed<PickOption[]>(() =>
     this.store
       .hdbVisible()
-      .filter((h) => h.trangThai !== 'Báo giá')
+      .filter((h) => h.trangThai !== 'Báo giá' && h.trangThai !== 'Huỷ')
       .map((h) => ({ value: h.id, label: h.soHD, hint: h.tenKH })),
   );
   protected readonly hd = computed(() => {

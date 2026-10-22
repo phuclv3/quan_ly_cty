@@ -249,7 +249,7 @@ export class BaoCaoPage {
     const sale = this.rieng() ? [] : this.sale();
     return this.store
       .hdbVisible()
-      .filter((h) => h.trangThai !== 'Báo giá')
+      .filter((h) => h.trangThai !== 'Báo giá' && h.trangThai !== 'Huỷ')
       .filter((h) => !this.rieng() || h.sale === me)
       .filter((h) => !sale.length || sale.includes(h.sale))
       .filter((h) => matches(q, h.soHD, h.tenKH, h.mst, this.store.userName(h.sale)))
