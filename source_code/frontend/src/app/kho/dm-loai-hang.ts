@@ -45,10 +45,11 @@ function goiYTen(l: LoaiHang): string {
 }
 
 /** KHO-02 (sheet "DM. Mã hàng"): danh mục mã hàng CỐ ĐỊNH — nhóm × loại khí / vật liệu × thể tích. */
+import { ImportDm } from '../shared/import-dm';
 @Component({
   selector: 'app-kho-loai-hang',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Modal, TrangThai, FilterBar, Pager],
+  imports: [Modal, TrangThai, FilterBar, Pager, ImportDm],
   template: `
     <div class="note info">
       <b>Mã hàng là cố định</b> (VD KC-NO-8L = Khí chuẩn · NO · 8L · Bình). Nồng độ khách đặt và đơn giá <b>không</b> nằm ở mã —
@@ -56,7 +57,7 @@ function goiYTen(l: LoaiHang): string {
     </div>
     <div class="section-title">
       <span class="sub">{{ rows().length }} mã hàng</span>
-      @if (edit()) { <button type="button" class="btn" (click)="moi()">+ Thêm mã hàng</button> }
+      @if (edit()) { <span class="btn-row"><app-import-dm loai="mh" /><button type="button" class="btn" (click)="moi()">+ Thêm mã hàng</button></span> }
     </div>
     <app-filter [(loc)]="loc" memo="kho-loai-hang" [time]="false" [facets]="facets()" placeholder="Tìm mã, tên, loại khí, tên tham chiếu…" />
     <div class="tbl-wrap">

@@ -8,14 +8,15 @@ import { guiXoa } from '../shared/ho-so';
 import { Modal, TrangThai } from '../shared/ui-kit';
 
 /** KHO-01: danh mục Kho / Vị trí. */
+import { ImportDm } from '../shared/import-dm';
 @Component({
   selector: 'app-kho-dm',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Modal, TrangThai],
+  imports: [Modal, TrangThai, ImportDm],
   template: `
     <div class="section-title">
       <span class="sub">{{ rows().length }} vị trí kho</span>
-      @if (edit()) { <button type="button" class="btn" (click)="moi()">+ Thêm kho</button> }
+      @if (edit()) { <span class="btn-row"><app-import-dm loai="kho" /><button type="button" class="btn" (click)="moi()">+ Thêm kho</button></span> }
     </div>
     <div class="tbl-wrap">
       <table class="tbl freeze">

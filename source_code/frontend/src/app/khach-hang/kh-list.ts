@@ -10,6 +10,7 @@ import { Pager, paginate } from '../shared/pager';
 import { SortTh, Sorter } from '../shared/sort';
 import { xuatCsv } from '../shared/export';
 import { Icon } from '../shared/icon';
+import { ImportDm } from '../shared/import-dm';
 import { KhForm } from './kh-form';
 import { TT, ttNhan } from '../core/trang-thai';
 
@@ -31,7 +32,7 @@ const optsTT = (xs: readonly string[]) => xs.map((x) => ({ value: x, label: ttNh
   selector: 'app-kh-list',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'page' },
-  imports: [RouterLink, FilterBar, Kpi, TrangThai, Pager, SortTh, Icon, KhForm],
+  imports: [RouterLink, FilterBar, Kpi, TrangThai, Pager, SortTh, Icon, KhForm, ImportDm],
   template: `
     <div class="page-head">
       <div>
@@ -42,6 +43,7 @@ const optsTT = (xs: readonly string[]) => xs.map((x) => ({ value: x, label: ttNh
       <div class="actions">
         <button type="button" class="btn quiet" (click)="xuat()"><app-icon name="download" [size]="16" /> Xuất CSV</button>
         @if (store.canEdit('khachHang')) {
+          <app-import-dm loai="kh" />
           <button type="button" class="btn" (click)="sua.set('')"><app-icon name="plus" [size]="16" /> Thêm khách hàng</button>
         }
       </div>

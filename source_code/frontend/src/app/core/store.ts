@@ -85,6 +85,9 @@ import { fold, money, nowIso, todayIso, uid, vnd, yy } from './util';
 const KEY = 'app-oxy:db';
 
 /** MST Việt Nam: 10 số, hoặc 10 số + "-" + 3 số (chi nhánh). Trống → bắt buộc nhập. */
+/** Id tài khoản quản trị hệ thống ẩn (backend: TaiKhoan.QUAN_TRI_AN). */
+const TK_QUAN_TRI_AN = 'TK-ROOT';
+
 export function kiemMST(mst: string | undefined): string | null {
   const s = (mst ?? '').trim();
   if (!s) return 'Mã số thuế là bắt buộc';
@@ -284,7 +287,8 @@ export class Store {
   }
 
   // ── Bảng (chỉ đọc) ────────────────────────────────────────────────────
-  readonly taiKhoan = computed(() => this.db().taiKhoan);
+  /** Danh sách tài khoản cho màn hình / select box — không gồm tài khoản quản trị hệ thống ẩn (TK-ROOT). Tra cứu theo id dùng db().taiKhoan. */
+  readonly taiKhoan = computed(() => this.db().taiKhoan.filter((t) => t.id !== TK_QUAN_TRI_AN));
   readonly cauHinh = computed(() => this.db().cauHinh);
   readonly cauHinhLog = computed(() => this.db().cauHinhLog);
   readonly yeuCauXoa = computed(() => this.db().yeuCauXoa);
@@ -415,7 +419,7 @@ export class Store {
   readonly khoDangDung = computed(() => this.db().kho.filter((k) => k.dangDung));
   /** Tài khoản nhận được KH / HĐ bán: đang hoạt động và có quyền HĐ bán từ "Sửa của mình" trở lên. */
   readonly dsSale = computed(() =>
-    this.db().taiKhoan.filter((t) => t.trangThai === TT.HOAT_DONG && atLeast(this.levelOfUser(t, 'hdb'), 'own')),
+    this.taiKhoan().filter((t) => t.trangThai === TT.HOAT_DONG && atLeast(this.levelOfUser(t, 'hdb'), 'own')),
   );
 
   /**

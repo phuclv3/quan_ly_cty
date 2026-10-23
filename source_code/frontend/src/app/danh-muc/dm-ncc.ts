@@ -17,16 +17,17 @@ const BLANK: NhaCungCap = { id: '', ten: '', mst: '', diaChi: '', quocGia: 'Vi�
 type F = Exclude<keyof NhaCungCap, 'id'>;
 
 /** HDM-10 — Danh mục Nhà cung cấp. */
+import { ImportDm } from '../shared/import-dm';
 @Component({
   selector: 'app-dm-ncc',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, Modal, TrangThai, FilterBar, Pager],
+  imports: [RouterLink, Modal, TrangThai, FilterBar, Pager, ImportDm],
   template: `
     <div class="between">
       <app-filter style="flex:1 1 auto;min-width:0" [(loc)]="loc" memo="dm-ncc" [time]="false" placeholder="Tìm mã, tên, MST, quốc gia, người liên hệ…" />
       <div class="btn-row" style="margin-bottom:12px">
         <button type="button" class="btn quiet" (click)="xuat()">Xuất CSV</button>
-        @if (store.canEdit('ncc')) { <button type="button" class="btn" (click)="mo(null)">+ Thêm nhà cung cấp</button> }
+        @if (store.canEdit('ncc')) { <app-import-dm loai="ncc" /> <button type="button" class="btn" (click)="mo(null)">+ Thêm nhà cung cấp</button> }
       </div>
     </div>
     <div class="tbl-wrap">

@@ -3,13 +3,14 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Auth } from '../core/auth';
 import { CACH_CHIA_PT, CachChiaPT, CauHinh, CauHinhKey, TableKey } from '../core/models';
+import { api } from '../core/api';
 import { Store } from '../core/store';
 import { fold, pct, viMoment } from '../core/util';
 import { Confirm } from '../shared/confirm';
 import { xuatBanSao } from '../shared/export';
 import { Pager, paginate } from '../shared/pager';
 
-type Tab = 'tham-so' | 'du-lieu';
+type Tab = 'tham-so' | 'du-lieu' | 'van-hanh';
 type Kieu = 'pct' | 'int' | 'text' | 'chon';
 
 const THAM_SO: { k: CauHinhKey; nhan: string; kieu: Kieu; hint: string }[] = [
@@ -71,6 +72,7 @@ const BANG: { k: TableKey; nhan: string }[] = [
     <div class="tabs" role="tablist">
       @if (coTab('tham-so')) { <button role="tab" [class.on]="tab() === 'tham-so'" (click)="setTab('tham-so')">Tham số</button> }
       @if (coTab('du-lieu')) { <button role="tab" [class.on]="tab() === 'du-lieu'" (click)="setTab('du-lieu')">Dữ liệu</button> }
+      @if (coTab('van-hanh')) { <button role="tab" [class.on]="tab() === 'van-hanh'" (click)="setTab('van-hanh')">Vận hành hệ thống</button> }
     </div>
 
     @switch (tab()) {
@@ -137,6 +139,17 @@ const BANG: { k: TableKey; nhan: string }[] = [
         <app-pager [pager]="pgLog" />
       }
 
+      @case ('van-hanh') {
+        <div class="note warn">
+          Thao tác ảnh hưởng toàn hệ thống — chỉ nhóm toàn quyền thấy tab này. Nên xuất bản sao dữ liệu (tab Dữ liệu) trước khi tắt.
+        </div>
+        <div class="card" style="margin-top:14px;max-width:640px">
+          <h3>Tắt hệ thống</h3>
+          <p class="sub">Dừng backend và thoát tiến trình máy chủ. Mọi người dùng mất kết nối ngay; muốn dùng lại phải khởi động backend thủ công hoặc bằng dịch vụ của hệ điều hành (nếu cấu hình tự khởi động lại thì máy chủ sẽ bật lại).</p>
+          <div class="btn-row" style="justify-content:flex-start;margin-top:10px"><button class="btn danger" (click)="tatHeThong()">Tắt hệ thống</button></div>
+        </div>
+      }
+
       @case ('du-lieu') {
         <div class="note warn">
           Dữ liệu lưu tập trung ở máy chủ (MySQL + kho tệp hồ sơ) — sao lưu định kỳ ở máy chủ theo hướng dẫn backend.
@@ -184,7 +197,7 @@ export class CauHinhPage {
   private readonly tabs = computed<Tab[]>(() => {
     const out: Tab[] = [];
     if (this.store.canView('cauHinh')) out.push('tham-so');
-    if (this.store.isGD()) out.push('du-lieu');
+    if (this.store.isGD()) out.push('du-lieu', 'van-hanh');
     return out;
   });
   protected readonly tab = computed<Tab>(() => {
@@ -282,6 +295,28 @@ export class CauHinhPage {
   protected xuat(): void {
     void xuatBanSao();
     this.store.say('Đã xuất bản sao dữ liệu');
+  }
+
+  protected async tatHeThong(): Promise<void> {
+    if (!this.store.isGD()) return;
+    const go = await this.confirm.prompt({
+      title: 'Tắt hệ thống và dừng backend?',
+      message: 'Backend sẽ thoát ngay sau khi xác nhận. Mọi người đang dùng bị ngắt kết nối, không thể bật lại từ giao diện này.',
+      warn: 'Bạn sẽ bị đăng xuất.',
+      label: 'Gõ TẮT để xác nhận',
+      placeholder: 'TẮT',
+      minLength: 3,
+      ok: 'Tắt hệ thống',
+    });
+    if (go === null) return;
+    if (fold(go).trim() !== 'tat') return this.store.say('Chưa gõ đúng "TẮT" — không thay đổi gì');
+    try {
+      await api('POST', '/admin/tat-he-thong');
+    } catch (e) {
+      return this.store.say(e instanceof Error ? e.message : 'Không gửi được lệnh tắt hệ thống', 'bad');
+    }
+    this.store.say('Đã gửi lệnh tắt — backend đang dừng');
+    this.auth.logout();
   }
 
   protected async napLai(): Promise<void> {
