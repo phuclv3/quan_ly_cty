@@ -113,7 +113,7 @@ public class HoSoController {
         .header("X-Content-Type-Options", "nosniff").body(res);
   }
 
-  private static boolean duocXem(Db d, String id) {
+  static boolean duocXem(Db d, String id) {
     return d.getHoSo().stream().anyMatch(h -> h.getFiles().stream().anyMatch(f -> f.getId().equals(id)))
         || d.getPhieuThuChi().stream().anyMatch(p -> p.getFiles().stream().anyMatch(f -> f.getId().equals(id)))
         || d.getChiPhiHD().stream().anyMatch(p -> p.getFiles().stream().anyMatch(f -> f.getId().equals(id)))

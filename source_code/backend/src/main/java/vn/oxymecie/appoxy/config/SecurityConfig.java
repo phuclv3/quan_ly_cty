@@ -83,7 +83,7 @@ public class SecurityConfig {
     c.setAllowedOrigins(origins);
     c.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
     c.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With"));
-    c.setExposedHeaders(List.of("Content-Disposition"));
+    c.setExposedHeaders(List.of("Content-Disposition", "X-Tep-Count"));
     c.setMaxAge(3600L);
     UrlBasedCorsConfigurationSource src = new UrlBasedCorsConfigurationSource();
     src.registerCorsConfiguration("/api/**", c);

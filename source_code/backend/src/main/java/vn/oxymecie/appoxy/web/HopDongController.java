@@ -3,8 +3,16 @@ package vn.oxymecie.appoxy.web;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import vn.oxymecie.appoxy.common.Dates;
+import vn.oxymecie.appoxy.domain.logic.ToTrinhDocx;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -64,6 +72,19 @@ public class HopDongController {
     var raw = cmd.raw();
     var ctx = new vn.oxymecie.appoxy.domain.logic.Ctx(raw, Cmd.user().id(), java.time.Clock.systemUTC(), null, null);
     return new HdbChiTiet(h, Calc.hdbCalc(h, raw), hdb.hdbKeTiep(ctx, h));
+  }
+
+  @Operation(summary = "Xuất Tờ trình chi phí kinh doanh (.docx) theo mẫu", description = "Điền số liệu HĐ đã lưu vào mẫu resources/mau/to-trinh.docx.")
+  @GetMapping("/hop-dong-ban/{id}/to-trinh")
+  public ResponseEntity<byte[]> toTrinhHdb(@PathVariable String id) throws Exception {
+    HopDongBan h = cmd.snapshot().getHopDongBan().stream().filter(x -> x.getId().equals(id)).findFirst()
+        .orElseThrow(() -> ApiException.notFound("Không tìm thấy HĐ"));
+    byte[] b = ToTrinhDocx.tao(h, Calc.hdbCalc(h, cmd.raw()), LocalDate.now(Dates.VN));
+    String so = h.getSoHD() == null || h.getSoHD().isBlank() ? "bao-gia" : h.getSoHD().replaceAll("[\\\\/:*?\"<>|]", "-");
+    return ResponseEntity.ok()
+        .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.wordprocessingml.document"))
+        .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment().filename("To-trinh_" + so + ".docx", StandardCharsets.UTF_8).build().toString())
+        .body(b);
   }
 
   @Operation(summary = "Tạo HĐ bán / báo giá", description = "Trạng thái khởi đầu Báo giá; tham số thuế lấy theo cấu hình hiện hành.")
