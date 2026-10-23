@@ -1,0 +1,8 @@
+target/
+data/
+.env
+scripts/.gen-seed-sql.mjs
+*.log
+.idea/
+*.iml
+.vscode/
