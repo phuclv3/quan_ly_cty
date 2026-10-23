@@ -26,13 +26,37 @@ public class AdminController {
   private final Cmd cmd;
   private final Clock clock;
   private final boolean resetEnabled;
+  private final org.springframework.context.ConfigurableApplicationContext ctx;
 
-  public AdminController(Flyway flyway, DataStore store, Cmd cmd, Clock clock, @Value("${app.dev.reset-enabled:false}") boolean resetEnabled) {
+  public AdminController(Flyway flyway, DataStore store, Cmd cmd, Clock clock, @Value("${app.dev.reset-enabled:false}") boolean resetEnabled,
+      org.springframework.context.ConfigurableApplicationContext ctx) {
+    this.ctx = ctx;
     this.flyway = flyway;
     this.store = store;
     this.cmd = cmd;
     this.clock = clock;
     this.resetEnabled = resetEnabled;
+  }
+
+  @Operation(summary = "Tắt hệ thống (dừng backend, thoát tiến trình) — nhóm toàn quyền",
+      description = "Trả 202 rồi dừng sau ~1 giây. Muốn chạy lại phải khởi động backend thủ công / bằng dịch vụ hệ điều hành.")
+  @PostMapping("/tat-he-thong")
+  public ResponseEntity<Void> tatHeThong() {
+    var u = Cmd.user();
+    if (!new Ctx(cmd.raw(), u.id(), clock, null, null).isGD()) throw ApiException.forbidden("Chỉ nhóm toàn quyền được tắt hệ thống");
+    log.warn("Tài khoản {} yêu cầu tắt hệ thống", u.id());
+    Thread t = new Thread(() -> {
+      try {
+        Thread.sleep(1000);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
+      int code = org.springframework.boot.SpringApplication.exit(ctx, () -> 0);
+      System.exit(code);
+    }, "tat-he-thong");
+    t.setDaemon(false);
+    t.start();
+    return ResponseEntity.accepted().build();
   }
 
   @Operation(summary = "Xoá toàn bộ dữ liệu và nạp lại dữ liệu mẫu (chỉ hồ sơ dev, nhóm toàn quyền)",
