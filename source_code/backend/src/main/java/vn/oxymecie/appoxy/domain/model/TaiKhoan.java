@@ -19,6 +19,14 @@ public class TaiKhoan {
    */
   public static final String QUAN_TRI_AN = "TK-ROOT";
 
+  /** Mã trạng thái tài khoản (cột trang_thai). */
+  public static final String HOAT_DONG = "Hoạt động";
+  public static final String KHOA = "Khoá";
+
+  public static boolean biKhoa(String trangThai) {
+    return KHOA.equals(trangThai);
+  }
+
   public static boolean laAn(String id) {
     return QUAN_TRI_AN.equals(id);
   }
