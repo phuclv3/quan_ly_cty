@@ -34,8 +34,8 @@ interface LinkDT {
     </div>
 
     <div class="note info">
-      Không xoá thẳng — kể cả Giám đốc. Mọi nút Xoá chỉ tạo yêu cầu, bản ghi hiện nhãn "Chờ xoá" và khoá sửa tới khi được duyệt.
-      Kế toán chỉ duyệt phiếu kế toán (phiếu thu chi, chi phí thực hiện HĐ, nguồn tiền, loại chi phí).
+      Không xoá trực tiếp, kể cả Giám đốc. Nhấn Xoá sẽ tạo yêu cầu, bản ghi chuyển sang trạng thái “Chờ xoá” và khoá chỉnh sửa đến khi được duyệt.
+      Kế toán chỉ được duyệt xoá các phiếu thu/chi, chi phí thực hiện hợp đồng, nguồn tiền và loại chi phí.
     </div>
     @if (!duyetDuoc()) {
       <p class="muted">Bạn chỉ thấy các yêu cầu do mình gửi.</p>

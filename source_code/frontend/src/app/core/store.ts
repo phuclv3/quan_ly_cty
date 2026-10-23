@@ -467,6 +467,15 @@ export class Store {
     return `${k}-${String(n).padStart(4, '0')}`;
   }
 
+  /** Số phiếu thu chi: {tiền tố}{yyMM}-{nnn}, đánh số lại từ 001 mỗi tháng của ngày chứng từ. */
+  private nextSoThang(prefix: string, ngay: string): string {
+    const iso = ngay || todayIso();
+    const k = prefix + yy(iso) + iso.slice(5, 7);
+    const n = (this.db().boDem[k] ?? 0) + 1;
+    this.db.update((d) => ({ ...d, boDem: { ...d.boDem, [k]: n } }));
+    return `${k}-${String(n).padStart(3, '0')}`;
+  }
+
   // ═════════════════════════════════════════════════════════════════════
   // HÀM GHI CÔNG KHAI — kiểm tra cục bộ (hàm _ bên dưới) rồi gửi lệnh tương ứng lên máy chủ
   // ═════════════════════════════════════════════════════════════════════
@@ -890,7 +899,10 @@ export class Store {
     }
     if (!clean.id) {
       clean.id = uid('PTC');
-      clean.soPhieu = this.nextSo(this.cauHinh().TIEN_TO_TC, clean.ngayLap);
+      clean.soPhieu = this.nextSoThang(this.cauHinh().TIEN_TO_TC, clean.ngayLap);
+    } else if (!clean.soPhieu.startsWith(`${this.cauHinh().TIEN_TO_TC}${yy(clean.ngayLap)}${clean.ngayLap.slice(5, 7)}-`)) {
+      // Phiếu chưa duyệt đổi sang tháng khác: cấp số mới của tháng đó (số cũ không tái dùng).
+      clean.soPhieu = this.nextSoThang(this.cauHinh().TIEN_TO_TC, clean.ngayLap);
     }
     const truoc = clean.trangThai;
     clean.trangThai = gui ? TT.CHO_DUYET : TT.NHAP;
@@ -1353,7 +1365,7 @@ export class Store {
     p.lichSu = this.ghiLichSu(cu?.lichSu, 'Gửi duyệt', cu ? 'Sửa ghi nhận thực thu' : 'Sinh từ ghi nhận thực thu');
     if (!p.id) {
       p.id = uid('PTC');
-      p.soPhieu = this.nextSo(this.cauHinh().TIEN_TO_TC, p.ngayLap);
+      p.soPhieu = this.nextSoThang(this.cauHinh().TIEN_TO_TC, p.ngayLap);
     }
     phieuThuId = p.id;
     this.upsert('phieuThuChi', p);
@@ -1757,7 +1769,7 @@ export class Store {
     p.lichSu = this.ghiLichSu(cu?.lichSu, 'Gửi duyệt', cu ? 'Sửa ghi nhận trả NCC' : 'Sinh từ ghi nhận trả NCC');
     if (!p.id) {
       p.id = uid('PTC');
-      p.soPhieu = this.nextSo(this.cauHinh().TIEN_TO_TC, p.ngayLap);
+      p.soPhieu = this.nextSoThang(this.cauHinh().TIEN_TO_TC, p.ngayLap);
     }
     this.upsert('phieuThuChi', p);
     this.upsert('hopDongMua', {

@@ -21,7 +21,7 @@ const THAM_SO: { k: CauHinhKey; nhan: string; kieu: Kieu; hint: string }[] = [
   { k: 'PT_GIU', nhan: 'Phú Tài giữ (phí quản lý)', kieu: 'pct', hint: 'Tính trên LN sau thuế (cách chia Nhân) hoặc LN trước thuế (cách chia Cộng)' },
   { k: 'PT_CACH_CHIA', nhan: 'Phú Tài — cách chia lợi nhuận', kieu: 'chon', hint: 'Nhân: Oxy = (1 − thuế) × (1 − PT giữ) — 72% với 20% / 10%. Cộng: Oxy = 1 − thuế − PT giữ — 70%. Áp cho HĐ Phú Tài tạo sau.' },
   { k: 'SO_DOT_TOI_DA', nhan: 'Số đợt thanh toán tối đa / HĐ', kieu: 'int', hint: 'Áp cho HĐ bán và HĐ mua' },
-  { k: 'TIEN_TO_TC', nhan: 'Tiền tố số phiếu thu chi', kieu: 'text', hint: 'VD TC26-0001' },
+  { k: 'TIEN_TO_TC', nhan: 'Tiền tố số phiếu thu chi', kieu: 'text', hint: 'VD TC2601-001 (số thứ tự đánh lại mỗi tháng)' },
   { k: 'TIEN_TO_CP', nhan: 'Tiền tố mã chi phí thực hiện HĐ', kieu: 'text', hint: 'VD CP26-0001' },
   { k: 'TIEN_TO_NK', nhan: 'Tiền tố phiếu nhập kho', kieu: 'text', hint: 'VD NK26-0001' },
   { k: 'TIEN_TO_XK', nhan: 'Tiền tố phiếu xuất kho', kieu: 'text', hint: 'VD XK26-0001' },

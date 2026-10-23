@@ -2,7 +2,6 @@ import { ChangeDetectionStrategy, Component, inject, signal, viewChild } from '@
 import { ActivatedRoute, Router } from '@angular/router';
 import { Icon } from './shared/icon';
 import { Auth } from './core/auth';
-import { MAT_KHAU_DEMO, TAI_KHOAN_DEMO } from './core/seed';
 import { CONG_TY } from './core/cong-ty';
 import { KiemTra } from './shared/kiem-tra';
 
@@ -34,12 +33,6 @@ import { KiemTra } from './shared/kiem-tra';
         @if (err()) { <div class="note bad" role="alert">{{ err() }}</div> }
         <button class="btn" type="submit" [disabled]="busy()">{{ busy() ? 'Đang đăng nhập…' : 'Đăng nhập' }}</button>
 
-        <details class="demo-list">
-          <summary class="muted">Tài khoản chạy thử (mật khẩu {{ demoPw }})</summary>
-          @for (t of demo; track t.email) {
-            <button type="button" class="linkish" (click)="email.set(t.email); pw.set(demoPw)">{{ t.email }} — {{ t.nhan }}</button>
-          }
-        </details>
       </form>
       <footer class="login-ct">
         <b>{{ congTy.ten }}</b>
@@ -60,8 +53,6 @@ export class Login {
   protected readonly show = signal(false);
   protected readonly err = signal<string | null>(null);
   protected readonly busy = signal(false);
-  protected readonly demo = TAI_KHOAN_DEMO;
-  protected readonly demoPw = MAT_KHAU_DEMO;
   protected readonly congTy = CONG_TY;
 
   protected async go(): Promise<void> {

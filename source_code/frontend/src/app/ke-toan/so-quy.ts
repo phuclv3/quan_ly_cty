@@ -54,10 +54,13 @@ export interface SqRow {
       </p>
       <div class="row">
         <button type="button" class="btn quiet" (click)="xuat()">Xuất CSV</button>
-        @if (coTheLap()) { <button type="button" class="btn" (click)="mo(store.newPhieu(laThu() ? 'Thu' : 'Chi'))">{{ laThu() ? '+ Lập phiếu thu' : '+ Lập phiếu chi' }}</button> }
+        @if (coTheLap()) {
+          @if (laTat() || laThu()) { <button type="button" class="btn" (click)="mo(store.newPhieu('Thu'))">+ Lập phiếu thu</button> }
+          @if (laTat() || !laThu()) { <button type="button" class="btn" (click)="mo(store.newPhieu('Chi'))">+ Lập phiếu chi</button> }
+        }
       </div>
     </div>
-    <app-filter [(loc)]="loc" [memo]="laThu() ? 'kt-phieu-thu' : 'kt-phieu-chi'" [facets]="facets()" placeholder="Tìm số phiếu, nội dung, người…">
+    <app-filter [(loc)]="loc" [memo]="laTat() ? 'kt-so-quy' : laThu() ? 'kt-phieu-thu' : 'kt-phieu-chi'" [facets]="facets()" placeholder="Tìm số phiếu, nội dung, người…">
       @if (!draftOnly() && !laThu()) {
         <label class="check-row"><input type="checkbox" [checked]="gop()" (change)="gop.set($any($event.target).checked)" /> Xem gộp CP HĐ</label>
       }
@@ -94,7 +97,7 @@ export interface SqRow {
               <td (click)="$event.stopPropagation()">@if (r.p) { <button type="button" class="btn sm quiet" [attr.aria-label]="'In chứng từ ' + r.so" (click)="inChungTu(r.p)">In</button> }</td>
             </tr>
           } @empty {
-            <tr><td [attr.colspan]="soCot()" class="empty">{{ all().length ? 'Không có phiếu khớp bộ lọc' : laThu() ? 'Chưa có phiếu thu nào' : 'Chưa có phiếu chi nào' }}</td></tr>
+            <tr><td [attr.colspan]="soCot()" class="empty">{{ all().length ? 'Không có phiếu khớp bộ lọc' : laTat() ? 'Chưa có phiếu thu chi nào' : laThu() ? 'Chưa có phiếu thu nào' : 'Chưa có phiếu chi nào' }}</td></tr>
           }
         </tbody>
         <tfoot>
@@ -113,7 +116,7 @@ export interface SqRow {
     </div>
     <app-pager [pager]="pg" />
 
-    <app-phieu-form [phieu]="phieu()" [nhom]="laThu() ? 'thu' : 'chi'" (closed)="phieu.set(null)" (moPhieu)="phieu.set(store.phieuById($event) ?? null)" />
+    <app-phieu-form [phieu]="phieu()" [nhom]="nhomForm()" (closed)="phieu.set(null)" (moPhieu)="phieu.set(store.phieuById($event) ?? null)" />
     <app-chi-phi-form [chiPhi]="cp()" (closed)="cp.set(null)" />
   `,
 })
@@ -122,8 +125,10 @@ export class SoQuyTab {
   protected readonly money = money;
   protected readonly viDate = viDate;
 
-  readonly mode = input<'thu' | 'chi'>('chi');
+  readonly mode = input<'thu' | 'chi' | 'tat'>('chi');
   protected readonly laThu = computed(() => this.mode() === 'thu');
+  protected readonly laTat = computed(() => this.mode() === 'tat');
+  protected readonly nhomForm = computed<'thu' | 'chi' | null>(() => (this.laTat() ? null : this.mode() === 'thu' ? 'thu' : 'chi'));
   protected readonly soCot = computed(() => (this.chonDuoc() ? 1 : 0) + (this.laThu() ? 9 : 11));
 
   protected readonly loc = signal<Loc>(nhoLoc('kt-so-quy', LOC_RONG));
@@ -135,7 +140,7 @@ export class SoQuyTab {
   protected readonly coTheLap = computed(() => this.store.phieuSuaDuoc(this.store.newPhieu()));
 
   protected readonly facets = computed<Facet[]>(() => [
-    { key: 'loai', label: 'Loại phiếu', options: [...LOAI_PHIEU.filter((l) => (l === 'Thu') === this.laThu()), ...(this.gop() && !this.laThu() ? [CP_HD] : [])].map((v) => ({ value: v, label: v })) },
+    { key: 'loai', label: 'Loại phiếu', options: [...LOAI_PHIEU.filter((l) => this.laTat() || (l === 'Thu') === this.laThu()), ...(this.gop() && !this.laThu() ? [CP_HD] : [])].map((v) => ({ value: v, label: v })) },
     { key: 'nguon', label: 'Nguồn tiền', options: this.store.nguonTien().map((n) => ({ value: n.id, label: n.ten })) },
     { key: 'tt', label: 'Trạng thái', options: TRANG_THAI.map((v) => ({ value: v, label: ttNhan(v) })) },
     { key: 'lcp', label: 'Loại chi phí', options: this.store.loaiChiPhi().map((l) => ({ value: l.id, label: l.ten, hint: l.nhom })) },
@@ -165,7 +170,8 @@ export class SoQuyTab {
     const db = s.db();
     const me = s.meId();
     const thu = this.laThu();
-    const phieus = db.phieuThuChi.filter((p) => (p.loai === 'Thu') === thu && (!this.draftOnly() || p.nguoiDeNghi === me));
+    const tat = this.laTat();
+    const phieus = db.phieuThuChi.filter((p) => (tat || (p.loai === 'Thu') === thu) && (!this.draftOnly() || p.nguoiDeNghi === me));
     const out: SqRow[] = phieus.map((p) => {
       let thu = p.soTienThu;
       let chi = p.soTienChi;
@@ -266,6 +272,6 @@ export class SoQuyTab {
     const head = ['Số phiếu', 'Ngày lập', 'Loại phiếu', 'Nguồn tiền', 'Loại chi phí', 'Nội dung', 'Thu', 'Chi', 'Người đề nghị', 'Trạng thái'];
     const body = this.rows().map((r) => [r.so, viDate(r.ngay), r.loai, r.nguon, r.lcp ?? '', r.noiDung, r.thu, r.chi, r.nguoi, ttNhan(r.trangThai)]);
     body.push(['Tổng (không gồm Luân chuyển)', '', '', '', '', '', this.tongThu(), this.tongChi(), '', '']);
-    void xuatCsv(this.laThu() ? 'phieu-thu' : 'phieu-chi', [head, ...body]);
+    void xuatCsv(this.laTat() ? 'so-quy' : this.laThu() ? 'phieu-thu' : 'phieu-chi', [head, ...body]);
   }
 }

@@ -45,7 +45,7 @@ import { TT, ttNhan } from '../core/trang-thai';
         @if (err()) { <div class="note bad">{{ err() }}</div> }
 
         <div class="form-grid">
-          <div class="field"><span class="lbl">Số phiếu</span><div class="ro">{{ p.soPhieu || 'Tự sinh khi lưu (TC' + p.ngayLap.slice(2, 4) + '-nnnn)' }}</div></div>
+          <div class="field"><span class="lbl">Số phiếu</span><div class="ro">{{ p.soPhieu || 'Tự sinh khi lưu (TC' + p.ngayLap.slice(2, 4) + p.ngayLap.slice(5, 7) + '-nnn)' }}</div></div>
           <div class="field">
             <label for="pf-loai">Loại phiếu</label>
             <select id="pf-loai" [disabled]="!edit()" (change)="setLoai($any($event.target).value)">
