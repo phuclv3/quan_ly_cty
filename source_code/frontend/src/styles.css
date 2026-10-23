@@ -230,7 +230,11 @@ app-icon { display: inline-flex; align-items: center; justify-content: center; f
   background: var(--surf); border-right: 1px solid var(--line);
   padding: 18px 14px 24px; display: flex; flex-direction: column; gap: 4px;
 }
-.side { overflow-x: hidden; }
+.side { overflow-x: hidden; scrollbar-width: thin; scrollbar-color: transparent transparent; }
+.side:hover { scrollbar-color: var(--line) transparent; }
+.side::-webkit-scrollbar { width: 6px; }
+.side::-webkit-scrollbar-thumb { background: transparent; border-radius: 3px; }
+.side:hover::-webkit-scrollbar-thumb { background: var(--line); }
 /* Không cho mục menu bị co khi menu dài hơn màn hình — menu cuộn thay vì dồn chữ. */
 .side > * { flex-shrink: 0; }
 .side .grp-label {
@@ -262,12 +266,15 @@ app-icon { display: inline-flex; align-items: center; justify-content: center; f
   .shell.collapsed .side .lb { opacity: 0; max-width: 0; transition: opacity 0.12s ease, max-width var(--nav-dur) var(--ease-out); }
   .shell.collapsed .side .count { opacity: 0; transform: scale(0.6); position: absolute; pointer-events: none; }
   .shell.collapsed .side .grp-label { opacity: 0; max-height: 0; padding-top: 6px; padding-bottom: 6px; }
-  .shell.collapsed .side a, .shell.collapsed .side button.nav { gap: 0; padding-left: 14px; padding-right: 14px; }
-  .shell.collapsed .side a .ico, .shell.collapsed .side button.nav .ico { transform: translateX(4px); }
+  /* Thu gọn: ẩn thanh cuộn (vẫn cuộn được) để ô 52px không bị cắt, icon nằm giữa ô vuông. */
+  .shell.collapsed .side { padding-left: 14px; padding-right: 14px; scrollbar-width: none; }
+  .shell.collapsed .side::-webkit-scrollbar { display: none; }
+  .shell.collapsed .side a, .shell.collapsed .side button.nav { gap: 0; padding: 12px 0; justify-content: center; border-radius: 10px; }
+  .shell.collapsed .side .foot { margin-left: -14px; margin-right: -14px; padding-left: 14px; padding-right: 14px; }
   /* Còn việc chờ khi đang thu gọn: chấm đỏ trên icon */
   .shell.collapsed .side a:has(.count) { position: relative; }
   .shell.collapsed .side a:has(.count)::after {
-    content: ''; position: absolute; top: 10px; left: 38px; width: 9px; height: 9px; border-radius: 50%;
+    content: ''; position: absolute; top: 8px; left: calc(50% + 6px); width: 9px; height: 9px; border-radius: 50%;
     background: var(--bad-fg); box-shadow: 0 0 0 2px var(--surf);
   }
 }

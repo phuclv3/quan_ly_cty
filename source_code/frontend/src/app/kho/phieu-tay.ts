@@ -47,7 +47,7 @@ const xuatRong = (): DongXuatF => ({ loaiHang: '', lo: '', soLuong: 0, tenTrenHD
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [Modal, Pick],
   template: `
-    <app-modal #mTay [open]="open()" [title]="f().loai === 'Nhập' ? 'Lập phiếu nhập kho' : 'Lập phiếu xuất kho'" sub="Nguồn gốc: Nhập tay – điều chỉnh" size="lg" [dirty]="dirty()" (closed)="closed.emit()">
+    <app-modal #mTay [open]="open()" [title]="f().loai === 'Nhập' ? 'Lập phiếu nhập kho' : 'Lập phiếu xuất kho'" [sub]="f().loai === 'Nhập' ? 'Nhập kho' : 'Nguồn gốc: Nhập tay – điều chỉnh'" size="lg" [dirty]="dirty()" (closed)="closed.emit()">
       <div class="form-grid">
         <div class="field"><label for="pt-ngay">Ngày <span class="req">*</span></label><input id="pt-ngay" type="date" [value]="f().ngay" (input)="set('ngay', $any($event.target).value)" /></div>
         <div class="field">
@@ -73,8 +73,8 @@ const xuatRong = (): DongXuatF => ({ loaiHang: '', lo: '', soLuong: 0, tenTrenHD
             <span class="hint">Mã lô sinh theo số hoá đơn: L259-01, L259-02…</span>
           </div>
           <div class="field">
-            <span class="lbl">HĐ mua liên quan (tuỳ chọn)</span>
-            <app-pick [options]="hdOpts()" [value]="f().hdId" [allowEmpty]="true" placeholder="— Không gắn HĐ —" (valueChange)="set('hdId', $event)" />
+            <span class="lbl">HĐ mua liên quan <span class="req">*</span></span>
+            <app-pick [options]="hdOpts()" [value]="f().hdId" placeholder="— Chọn HĐ mua —" (valueChange)="set('hdId', $event)" />
           </div>
         } @else {
           <div class="field wide">
@@ -87,6 +87,7 @@ const xuatRong = (): DongXuatF => ({ loaiHang: '', lo: '', soLuong: 0, tenTrenHD
 
       @if (f().loai === 'Nhập') {
         <h3 class="section-title">Lô nhập <button type="button" class="btn sm quiet" (click)="themNhap()">+ Thêm dòng</button></h3>
+        <div class="note warn">Lưu ý: mã nhập kho và tên hàng xuất hoá đơn phải ghi đúng theo hoá đơn NCC gửi về.</div>
         <div class="tbl-wrap">
           <table class="tbl compact">
             <thead><tr><th style="min-width:260px">Mã hàng <span class="req">*</span></th><th>Quy cách / nồng độ</th><th class="num">SL <span class="req">*</span></th><th class="num">Đơn giá chưa VAT <span class="req">*</span></th><th class="num">VAT %</th><th class="num">Thành tiền</th><th>Ghi chú</th><th></th></tr></thead>
