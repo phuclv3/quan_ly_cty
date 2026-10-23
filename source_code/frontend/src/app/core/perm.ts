@@ -11,6 +11,7 @@
  */
 import { NhomQuyen } from './models';
 import { TT } from './trang-thai';
+import type { IconName } from '../shared/icon';
 
 /**
  * Mức quyền, xếp từ thấp tới cao:
@@ -62,6 +63,7 @@ export type Perm =
   | 'khoDanhMuc'
   | 'khoPhieuTay'
   | 'khoTon'
+  | 'inTem'
   | 'phuTai'
   | 'phuTaiTyLe'
   | 'baoCao'
@@ -110,6 +112,7 @@ export const CHUC_NANG: ChucNang[] = [
   { ma: 'KHO-01', perm: 'khoDanhMuc', module: 'Kho', ten: 'Danh mục kho & loại hàng', moTa: '', mucDo: ['none', 'view', 'edit'] },
   { ma: 'KHO-06', perm: 'khoPhieuTay', module: 'Kho', ten: 'Phiếu nhập / xuất điều chỉnh', moTa: 'Phiếu nhập tay — điều chỉnh', mucDo: ['none', 'view', 'edit'] },
   { ma: 'KHO-09', perm: 'khoTon', module: 'Kho', ten: 'Tồn kho & giá trị theo HĐ', moTa: '', mucDo: ['none', 'view'] },
+  { ma: 'KHO-10', perm: 'inTem', module: 'Kho', ten: 'In tem bình khí', moTa: 'Nhập thông tin và xuất PDF tem dán bình khí (không lưu dữ liệu)', mucDo: ['none', 'view'] },
   // Phú Tài
   { ma: 'PT-01', perm: 'phuTai', module: 'Phú Tài', ten: 'HĐ Phú Tài & quỹ ảo', moTa: '', mucDo: ['none', 'view', 'edit'] },
   { ma: 'PT-06', perm: 'phuTaiTyLe', module: 'Phú Tài', ten: 'Sửa tỷ lệ chia lợi nhuận', moTa: 'Tỷ lệ thuế / Phú Tài giữ theo từng HĐ', mucDo: ['none', 'edit'] },
@@ -119,6 +122,48 @@ export const CHUC_NANG: ChucNang[] = [
 ];
 
 export const MODULES = [...new Set(CHUC_NANG.map((c) => c.module))];
+
+/** Một màn hình trong menu bên trái và các khoá quyền thuộc màn đó. */
+export interface MucMenu {
+  ten: string;
+  icon: IconName;
+  perms: Perm[];
+}
+
+/**
+ * Cây phân quyền bố trí giống menu ứng dụng (shell.ts): Nhóm menu → Màn hình → Chức năng.
+ * Thêm chức năng mới ở CHUC_NANG mà chưa xếp vào đây thì màn Nhóm quyền tự đưa vào mục "Khác".
+ */
+export const CAY_MENU: { ten: string; muc: MucMenu[] }[] = [
+  { ten: 'Chung', muc: [{ ten: 'Việc được giao', icon: 'list', perms: ['viec'] }] },
+  {
+    ten: 'Kinh doanh',
+    muc: [
+      { ten: 'Khách hàng', icon: 'contact', perms: ['khachHang', 'phanBoKH'] },
+      { ten: 'Hợp đồng bán', icon: 'sell', perms: ['hdb', 'hdbTab3', 'hdbThucThu', 'hdbGiaoHang', 'moLaiHdb'] },
+      { ten: 'Hợp đồng mua', icon: 'buy', perms: ['hdm', 'hdmTab4', 'hdmNhapKho', 'moLaiHdm'] },
+      { ten: 'Nhà cung cấp', icon: 'truck', perms: ['ncc'] },
+    ],
+  },
+  {
+    ten: 'Vận hành',
+    muc: [
+      { ten: 'Kho', icon: 'box', perms: ['khoDanhMuc', 'khoPhieuTay', 'khoTon'] },
+      { ten: 'In tem bình khí', icon: 'box', perms: ['inTem'] },
+      { ten: 'Kế toán', icon: 'wallet', perms: ['nguonTien', 'soQuy', 'soQuyDuyet', 'tuDuyet', 'cpHD', 'cpHDDuyet', 'congNo'] },
+      { ten: 'Phú Tài', icon: 'handshake', perms: ['phuTai', 'phuTaiTyLe'] },
+      { ten: 'Báo cáo', icon: 'chart', perms: ['baoCao'] },
+    ],
+  },
+  {
+    ten: 'Hệ thống',
+    muc: [
+      { ten: 'Duyệt xoá', icon: 'trash', perms: ['duyetXoa', 'duyetXoaKT'] },
+      { ten: 'Tài khoản & phân quyền', icon: 'users', perms: ['taiKhoan'] },
+      { ten: 'Cấu hình', icon: 'settings', perms: ['cauHinh'] },
+    ],
+  },
+];
 const BY_PERM = new Map(CHUC_NANG.map((c) => [c.perm, c]));
 export const chucNangOf = (p: Perm) => BY_PERM.get(p)!;
 export const maOf = (p: Perm) => BY_PERM.get(p)!.ma;
@@ -153,23 +198,23 @@ const MAU: { id: string; ma: string; ten: string; moTa: string; toanQuyen?: bool
   { id: 'NQ-GD', ma: 'GIAM_DOC', ten: 'Giám đốc', moTa: 'Toàn quyền mọi chức năng', toanQuyen: true, q: {} },
   {
     id: 'NQ-KT', ma: 'KE_TOAN', ten: 'Kế toán', moTa: 'Sổ quỹ, duyệt phiếu, công nợ, Phú Tài',
-    q: { cauHinh: 'view', duyetXoa: 'request', duyetXoaKT: 'approve', nguonTien: 'edit', soQuy: 'edit', soQuyDuyet: 'approve', cpHD: 'edit', cpHDDuyet: 'approve', congNo: 'view', khachHang: 'view', ncc: 'view', hdb: 'view', hdbTab3: 'view', hdbThucThu: 'edit', hdm: 'view', hdmTab4: 'edit', khoDanhMuc: 'view', khoPhieuTay: 'view', khoTon: 'view', phuTai: 'edit', phuTaiTyLe: 'edit', baoCao: 'view', viec: 'edit' },
+    q: { cauHinh: 'view', duyetXoa: 'request', duyetXoaKT: 'approve', nguonTien: 'edit', soQuy: 'edit', soQuyDuyet: 'approve', cpHD: 'edit', cpHDDuyet: 'approve', congNo: 'view', khachHang: 'view', ncc: 'view', hdb: 'view', hdbTab3: 'view', hdbThucThu: 'edit', hdm: 'view', hdmTab4: 'edit', khoDanhMuc: 'view', khoPhieuTay: 'view', khoTon: 'view', inTem: 'view', phuTai: 'edit', phuTaiTyLe: 'edit', baoCao: 'view', viec: 'edit' },
   },
   {
     id: 'NQ-SALE', ma: 'SALE', ten: 'Sale', moTa: 'Chỉ HĐ bán mình phụ trách; danh mục khách hàng',
-    q: { duyetXoa: 'request', soQuy: 'draft', cpHD: 'own', congNo: 'ownView', khachHang: 'own', hdb: 'own', hdbTab3: 'own', hdbGiaoHang: 'own', hdm: 'ownView', hdmTab4: 'ownView', khoDanhMuc: 'view', khoTon: 'view', baoCao: 'ownView', viec: 'own' },
+    q: { duyetXoa: 'request', soQuy: 'draft', cpHD: 'own', congNo: 'ownView', khachHang: 'own', hdb: 'own', hdbTab3: 'own', hdbGiaoHang: 'own', hdm: 'ownView', hdmTab4: 'ownView', khoDanhMuc: 'view', khoTon: 'view', inTem: 'view', baoCao: 'ownView', viec: 'own' },
   },
   {
     id: 'NQ-ADMIN', ma: 'ADMIN_KD', ten: 'Admin kinh doanh', moTa: 'HĐ bán / mua, hồ sơ, giao nhận',
-    q: { duyetXoa: 'request', soQuy: 'draft', cpHD: 'edit', congNo: 'view', khachHang: 'edit', phanBoKH: 'edit', ncc: 'edit', hdb: 'edit', hdbTab3: 'edit', hdbGiaoHang: 'edit', hdm: 'edit', hdmTab4: 'edit', hdmNhapKho: 'edit', khoDanhMuc: 'view', khoTon: 'view', phuTai: 'view', baoCao: 'view', viec: 'edit' },
+    q: { duyetXoa: 'request', soQuy: 'draft', cpHD: 'edit', congNo: 'view', khachHang: 'edit', phanBoKH: 'edit', ncc: 'edit', hdb: 'edit', hdbTab3: 'edit', hdbGiaoHang: 'edit', hdm: 'edit', hdmTab4: 'edit', hdmNhapKho: 'edit', khoDanhMuc: 'view', khoTon: 'view', inTem: 'view', phuTai: 'view', baoCao: 'view', viec: 'edit' },
   },
   {
-    id: 'NQ-KHO', ma: 'KHO', ten: 'Kho', moTa: 'Tồn kho, nhập / xuất, phiếu điều chỉnh',
-    q: { duyetXoa: 'request', ncc: 'view', hdb: 'view', hdbGiaoHang: 'edit', hdm: 'view', hdmTab4: 'view', hdmNhapKho: 'edit', khoDanhMuc: 'edit', khoPhieuTay: 'edit', khoTon: 'view', viec: 'edit' },
+    id: 'NQ-KHO', ma: 'KHO', ten: 'Kho', moTa: 'Mua hàng – Giao hàng – Kho; không xem giá trị HĐ bán',
+    q: { ncc: 'view', hdb: 'view', hdbGiaoHang: 'edit', hdm: 'view', hdmTab4: 'view', hdmNhapKho: 'edit', khoDanhMuc: 'edit', khoPhieuTay: 'edit', khoTon: 'view', inTem: 'view' },
   },
   {
     id: 'NQ-XEM', ma: 'CHI_XEM', ten: 'Chỉ xem', moTa: 'Xem mọi số liệu, không có nút hành động',
-    q: { nguonTien: 'view', soQuy: 'view', cpHD: 'view', congNo: 'view', khachHang: 'view', ncc: 'view', hdb: 'view', hdbTab3: 'view', hdm: 'view', hdmTab4: 'view', khoDanhMuc: 'view', khoPhieuTay: 'view', khoTon: 'view', phuTai: 'view', baoCao: 'view', viec: 'own' },
+    q: { nguonTien: 'view', soQuy: 'view', cpHD: 'view', congNo: 'view', khachHang: 'view', ncc: 'view', hdb: 'view', hdbTab3: 'view', hdm: 'view', hdmTab4: 'view', khoDanhMuc: 'view', khoPhieuTay: 'view', khoTon: 'view', inTem: 'view', phuTai: 'view', baoCao: 'view', viec: 'own' },
   },
 ];
 

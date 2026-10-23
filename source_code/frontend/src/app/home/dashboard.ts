@@ -283,7 +283,7 @@ export class Dashboard {
     const s = this.store;
     const me = s.meId();
     const out: Viec[] = [];
-    if (s.canView('hdb')) {
+    if (s.canView('hdbTab3')) {
       for (const { h, c } of this.calcBan()) {
         if (c.quaHan > 0)
           out.push({
@@ -331,7 +331,7 @@ export class Dashboard {
           });
       }
     }
-    if (s.canView('hdb')) {
+    if (s.canView('hdbTab3')) {
       for (const { h, c } of this.calcBan()) {
         if (h.trangThai === TT.HOAN_THANH)
           out.push({

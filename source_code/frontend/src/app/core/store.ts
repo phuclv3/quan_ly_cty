@@ -1849,6 +1849,11 @@ export class Store {
       nguoiThucHien: this.meId()!,
     };
     this.upsert('phieuKho', out);
+    // Thủ kho xuất hàng cho HĐ bán → HĐ bán tự sang "Đang giao hàng" (như ghi nhận giao hàng ở HĐ bán).
+    if (out.loai === 'Xuất' && out.hdId) {
+      const h = this.hdbById(out.hdId);
+      if (h?.trangThai === TT.HIEU_LUC) this.upsert('hopDongBan', { ...h, trangThai: TT.DANG_GIAO_HANG });
+    }
     return { id: out.id };
   }
 
@@ -2453,9 +2458,9 @@ export class Store {
         this.patch('phieuKho', (r) => r.map((x) => (x.id === id ? { ...x, trangThai: TT.DA_HUY } : x)));
         if (p?.nguonGoc === 'Tự động HĐ Mua' && p.hdId) this.capNhatTrangThaiNhan(p.hdId);
         // HĐ bán không còn lần giao nào → về lại "Hiệu lực".
-        if (p?.nguonGoc === 'Tự động HĐ Bán' && p.hdId) {
+        if (p?.loai === 'Xuất' && p.hdId && this.hdbById(p.hdId)) {
           const h = this.hdbById(p.hdId);
-          const conGiao = this.db().phieuKho.some((x) => x.hdId === p.hdId && x.nguonGoc === 'Tự động HĐ Bán' && x.trangThai === TT.HIEU_LUC);
+          const conGiao = this.db().phieuKho.some((x) => x.hdId === p.hdId && x.loai === 'Xuất' && x.trangThai === TT.HIEU_LUC);
           if (h && h.trangThai === TT.DANG_GIAO_HANG && !conGiao) this.upsert('hopDongBan', { ...h, trangThai: TT.HIEU_LUC });
         }
         return;

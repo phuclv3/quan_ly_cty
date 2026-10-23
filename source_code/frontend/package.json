@@ -5,8 +5,7 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
-    "watch": "ng build --watch --configuration development",
-    "gen:sql": "esbuild scripts/gen-sql-phan-quyen.ts --bundle --platform=node --format=esm --outfile=scripts/.gen-sql.mjs --log-level=warning && node scripts/.gen-sql.mjs"
+    "watch": "ng build --watch --configuration development"
   },
   "prettier": {
     "printWidth": 100,

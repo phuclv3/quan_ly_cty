@@ -3,7 +3,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Store } from '../core/store';
 import { NhomQuyen } from '../core/models';
-import { CHUC_NANG, ChucNang, LEVEL_LABEL, Level, MODULES, maxLevel } from '../core/perm';
+import { CAY_MENU, CHUC_NANG, ChucNang, LEVEL_LABEL, Level, chucNangOf, maxLevel } from '../core/perm';
 import { fold, viMoment } from '../core/util';
 import { Confirm } from '../shared/confirm';
 import { TrangThai } from '../shared/ui-kit';
@@ -109,43 +109,57 @@ export const LEVEL_TONE: Record<Level, string> = {
           } @else if (sua()) {
             <p class="sub" style="margin-bottom:8px">Bấm vào mức quyền muốn cấp cho từng chức năng. Dùng các nút ở đầu mỗi khối để cấp nhanh cả module.</p>
           }
-          @for (m of modules; track m) {
-            @if (cnCua(m).length) {
-              <details class="pq-mod" [open]="q().trim().length > 0">
-                <summary>
-                  <span class="pq-ten">{{ m }}</span>
-                  <span class="pq-dem" [class.co]="demCap(n, m) > 0">{{ demCap(n, m) }}/{{ tongCN(m) }} chức năng được cấp</span>
-                  @if (sua() && !n.toanQuyen) {
-                    <span class="row pq-nhanh" style="gap:4px" (click)="$event.stopPropagation()">
-                      <button type="button" class="btn sm quiet" (click)="datModule(m, 'max')">Cấp tối đa</button>
-                      <button type="button" class="btn sm quiet" (click)="datModule(m, 'view')">Chỉ xem</button>
-                      <button type="button" class="btn sm quiet" (click)="datModule(m, 'none')">Bỏ hết</button>
-                    </span>
-                  }
-                </summary>
-                <div class="pq-ds">
-                  @for (c of cnCua(m); track c.ma) {
-                    @let hien = n.toanQuyen ? max(c) : muc(n, c);
-                    <div class="pq-dong" [class.co]="hien !== 'none'">
-                      <div class="pq-cn">
-                        <b>{{ c.ten }}</b>
-                        @if (c.moTa) { <span class="sub">{{ c.moTa }}</span> }
-                        <span class="mono muted pq-ma">{{ c.ma }}</span>
-                      </div>
-                      <div class="pq-lv" role="group" [attr.aria-label]="'Mức quyền ' + c.ten">
-                        @if (sua() && !n.toanQuyen) {
-                          @for (l of c.mucDo; track l) {
-                            <button type="button" class="lv" [class.on]="l === hien" [attr.data-l]="l" [attr.aria-pressed]="l === hien" (click)="datMuc(c.ma, l)">{{ l === 'none' ? 'Không' : levelLabel[l] }}</button>
+          @for (g of cay(); track g.ten) {
+            <details class="pq-mod" open>
+              <summary>
+                <span class="pq-ten">{{ g.ten }}</span>
+                <span class="pq-dem" [class.co]="demCap(n, g.cn) > 0">{{ demCap(n, g.cn) }}/{{ g.cn.length }} chức năng được cấp</span>
+                @if (sua() && !n.toanQuyen) {
+                  <span class="row pq-nhanh" style="gap:4px" (click)="$event.stopPropagation()">
+                    <button type="button" class="btn sm quiet" (click)="dat(g.cn, 'max')">Cấp tối đa</button>
+                    <button type="button" class="btn sm quiet" (click)="dat(g.cn, 'view')">Chỉ xem</button>
+                    <button type="button" class="btn sm quiet" (click)="dat(g.cn, 'none')">Bỏ hết</button>
+                  </span>
+                }
+              </summary>
+              @for (m of g.muc; track m.ten) {
+                <details class="pq-sub" [open]="q().trim().length > 0">
+                  <summary>
+                    <app-icon [name]="m.icon" [size]="16" />
+                    <span class="pq-ten2">{{ m.ten }}</span>
+                    <span class="pq-dem" [class.co]="demCap(n, m.cn) > 0">{{ demCap(n, m.cn) }}/{{ m.tong }}</span>
+                    @if (sua() && !n.toanQuyen) {
+                      <span class="row pq-nhanh" style="gap:4px" (click)="$event.stopPropagation()">
+                        <button type="button" class="btn sm quiet" (click)="dat(m.cn, 'max')">Tối đa</button>
+                        <button type="button" class="btn sm quiet" (click)="dat(m.cn, 'view')">Chỉ xem</button>
+                        <button type="button" class="btn sm quiet" (click)="dat(m.cn, 'none')">Bỏ</button>
+                      </span>
+                    }
+                  </summary>
+                  <div class="pq-ds">
+                    @for (c of m.cn; track c.ma) {
+                      @let hien = n.toanQuyen ? max(c) : muc(n, c);
+                      <div class="pq-dong" [class.co]="hien !== 'none'">
+                        <div class="pq-cn">
+                          <b>{{ c.ten }}</b>
+                          @if (c.moTa) { <span class="sub">{{ c.moTa }}</span> }
+                          <span class="mono muted pq-ma">{{ c.ma }}</span>
+                        </div>
+                        <div class="pq-lv" role="group" [attr.aria-label]="'Mức quyền ' + c.ten">
+                          @if (sua() && !n.toanQuyen) {
+                            @for (l of c.mucDo; track l) {
+                              <button type="button" class="lv" [class.on]="l === hien" [attr.data-l]="l" [attr.aria-pressed]="l === hien" (click)="datMuc(c.ma, l)">{{ l === 'none' ? 'Không' : levelLabel[l] }}</button>
+                            }
+                          } @else {
+                            @if (hien === 'none') { <span class="muted">Không có quyền</span> } @else { <app-tt [v]="levelLabel[hien]" [t]="tone[hien]" /> }
                           }
-                        } @else {
-                          @if (hien === 'none') { <span class="muted">Không có quyền</span> } @else { <app-tt [v]="levelLabel[hien]" [t]="tone[hien]" /> }
-                        }
+                        </div>
                       </div>
-                    </div>
-                  }
-                </div>
-              </details>
-            }
+                    }
+                  </div>
+                </details>
+              }
+            </details>
           }
 
           @if (loi()) { <div class="note bad" style="margin-top:12px">{{ loi() }}</div> }
@@ -189,6 +203,14 @@ export const LEVEL_TONE: Record<Level, string> = {
       .pq-mod > summary::before { content: '▸'; color: var(--ink-3); transition: transform 0.12s; }
       .pq-mod[open] > summary::before { transform: rotate(90deg); }
       .pq-ten { font-weight: 700; font-size: 16px; }
+      .pq-sub { border-top: 1px solid var(--line); }
+      .pq-sub > summary { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; padding: 9px 14px 9px 28px; cursor: pointer; list-style: none; }
+      .pq-sub > summary::-webkit-details-marker { display: none; }
+      .pq-sub > summary::before { content: '▸'; color: var(--ink-3); transition: transform 0.12s; }
+      .pq-sub[open] > summary::before { transform: rotate(90deg); }
+      .pq-sub[open] > summary { background: var(--surf-2); }
+      .pq-ten2 { font-weight: 600; }
+      .pq-sub .pq-ds { padding-left: 14px; }
       .pq-dem { color: var(--ink-3); font-size: 14px; flex: 1; }
       .pq-dem.co { color: var(--brand); font-weight: 600; }
       .pq-dong { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 16px; align-items: center; padding: 10px 14px; border-top: 1px solid var(--line); }
@@ -221,7 +243,7 @@ export class NhomQuyenTab {
   private readonly router = inject(Router);
 
   private readonly host = inject(ElementRef<HTMLElement>);
-  protected readonly modules = MODULES;
+
   protected readonly levelLabel = LEVEL_LABEL;
   protected readonly tone = LEVEL_TONE;
   protected readonly viMoment = viMoment;
@@ -272,22 +294,29 @@ export class NhomQuyenTab {
   protected demQuyen(g: NhomQuyen): number {
     return Object.values(g.quyen).filter((l) => l && l !== 'none').length;
   }
-  protected cnCua(m: string): ChucNang[] {
+  /** Cây phân quyền giống menu: Nhóm menu → Màn hình → Chức năng (đã lọc theo ô tìm kiếm / "chỉ hiện đã cấp"). */
+  protected readonly cay = computed(() => {
     const q = fold(this.q().trim());
     const n = this.f();
-    return CHUC_NANG.filter(
-      (c) => c.module === m && (!q || fold(`${c.ma} ${c.ten} ${c.moTa}`).includes(q)) && (!this.chiCap() || !n || n.toanQuyen || this.muc(n, c) !== 'none'),
-    );
-  }
-  /** Mở / thu gọn mọi module (cây mặc định thu gọn). */
+    const loc = (cs: ChucNang[]) =>
+      cs.filter((c) => (!q || fold(`${c.ma} ${c.ten} ${c.moTa}`).includes(q)) && (!this.chiCap() || !n || n.toanQuyen || this.muc(n, c) !== 'none'));
+    const daXep = new Set(CAY_MENU.flatMap((g) => g.muc.flatMap((m) => m.perms)));
+    const nhom = CAY_MENU.map((g) => ({ ten: g.ten, muc: g.muc.map((m) => ({ ten: m.ten, icon: m.icon, tatCa: m.perms.map(chucNangOf) })) }));
+    const khac = CHUC_NANG.filter((c) => !daXep.has(c.perm));
+    if (khac.length) nhom.push({ ten: 'Khác', muc: [{ ten: 'Chức năng khác', icon: 'list', tatCa: khac }] });
+    return nhom
+      .map((g) => {
+        const muc = g.muc.map((m) => ({ ten: m.ten, icon: m.icon, tong: m.tatCa.length, cn: loc(m.tatCa) })).filter((m) => m.cn.length);
+        return { ten: g.ten, muc, cn: muc.flatMap((m) => m.cn) };
+      })
+      .filter((g) => g.muc.length);
+  });
+  /** Mở / thu gọn mọi nhóm và màn hình (mặc định nhóm mở, màn hình thu gọn). */
   protected moHet(mo: boolean): void {
-    (this.host.nativeElement as HTMLElement).querySelectorAll<HTMLDetailsElement>('details.pq-mod').forEach((d) => (d.open = mo));
+    (this.host.nativeElement as HTMLElement).querySelectorAll<HTMLDetailsElement>('details.pq-mod, details.pq-sub').forEach((d) => (d.open = mo));
   }
-  protected tongCN(m: string): number {
-    return CHUC_NANG.filter((c) => c.module === m).length;
-  }
-  protected demCap(n: NhomQuyen, m: string): number {
-    return CHUC_NANG.filter((c) => c.module === m && (n.toanQuyen || this.muc(n, c) !== 'none')).length;
+  protected demCap(n: NhomQuyen, cs: ChucNang[]): number {
+    return cs.filter((c) => n.toanQuyen || this.muc(n, c) !== 'none').length;
   }
   protected muc(n: NhomQuyen, c: ChucNang): Level {
     return n.quyen[c.ma] ?? 'none';
@@ -315,11 +344,11 @@ export class NhomQuyenTab {
   protected datMuc(ma: string, l: Level): void {
     this.f.update((n) => (n ? { ...n, quyen: { ...n.quyen, [ma]: l } } : n));
   }
-  protected datModule(m: string, cach: 'max' | 'view' | 'none'): void {
+  protected dat(cs: ChucNang[], cach: 'max' | 'view' | 'none'): void {
     this.f.update((n) => {
       if (!n) return n;
       const quyen = { ...n.quyen };
-      for (const c of CHUC_NANG.filter((x) => x.module === m)) {
+      for (const c of cs) {
         quyen[c.ma] = cach === 'max' ? maxLevel(c) : cach === 'view' ? (c.mucDo.includes('view') ? 'view' : quyen[c.ma] ?? 'none') : 'none';
       }
       return { ...n, quyen };
