@@ -8,7 +8,7 @@ import { Facet, FilterBar, LOC_RONG, Loc, khopQ, khopSel } from '../shared/filte
 import { Kpi, TrangThai } from '../shared/ui-kit';
 import { Pager, paginate } from '../shared/pager';
 import { SortTh, Sorter } from '../shared/sort';
-import { csv, downloadFile, fileName } from '../shared/export';
+import { xuatCsv } from '../shared/export';
 import { Icon } from '../shared/icon';
 import { KhForm } from './kh-form';
 import { TT, ttNhan } from '../core/trang-thai';
@@ -270,7 +270,7 @@ export class KhList {
       k.phuTrach ? this.store.userName(k.phuTrach) : '', ttNhan(k.trangThaiData), viDate(k.ngayTiepNhan), viDate(k.ngayPhanBo),
       viDate(csCuoi), soHD, k.ghiChu,
     ]);
-    downloadFile(fileName('khach-hang', 'csv'), 'text/csv', csv([head, ...body]));
+    void xuatCsv('khach-hang', [head, ...body]);
   }
   protected boChon(): void {
     this.chon.set(new Set());

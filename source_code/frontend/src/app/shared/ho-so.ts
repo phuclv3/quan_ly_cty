@@ -4,7 +4,8 @@ import { MoneyInput, TrangThai } from './ui-kit';
 import { Confirm } from './confirm';
 import { Store } from '../core/store';
 import { ChuHoSo, DoiTuong, FileRef, HO_SO_BAT_BUOC, HoaDon, LOAI_HO_SO, LoaiHoSo } from '../core/models';
-import { HO_SO_ACCEPT, moTep, taiZip, viSize } from '../core/files';
+import { xuatZip } from './export';
+import { HO_SO_ACCEPT, moTep, viSize } from '../core/files';
 import { money, sum, todayIso, viDate } from '../core/util';
 import { KiemTra } from './kiem-tra';
 
@@ -196,9 +197,9 @@ export class HoSoPanel {
     const entries = this.store
       .hoSo()
       .filter((h) => h.chu === this.chu() && h.chuId === this.chuId())
-      .flatMap((h) => h.files.map((file) => ({ path: `${h.loai.replace('/', '-')}/${file.name}`, file })));
-    const n = await taiZip(`ho-so-${(this.soHD() || this.chuId()).replace(/[^\w.-]+/g, '_')}.zip`, entries);
-    this.store.say(n ? `Đã gói ${n} tệp` : 'Không có tệp nào còn trên máy này');
+      .flatMap((h) => h.files.map((file) => ({ path: `${h.loai.replace('/', '-')}/${file.name}`, fileId: file.id })));
+    const n = await xuatZip(`ho-so-${(this.soHD() || this.chuId()).replace(/[^\w.-]+/g, '_')}.zip`, entries);
+    if (n !== null) this.store.say(`Đã gói ${n} tệp`);
   }
 }
 

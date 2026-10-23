@@ -5,7 +5,7 @@ import { KHO_CHUYEN_THANG, KiemKe } from '../core/models';
 import { Store } from '../core/store';
 import { nhoLoc } from '../core/ui';
 import { money, sum, viDate, vndShort } from '../core/util';
-import { csv, downloadFile, fileName } from '../shared/export';
+import { xuatCsv } from '../shared/export';
 import { Facet, FilterBar, LOC_RONG, Loc, khopQ, khopSel } from '../shared/filter-bar';
 import { Pager, paginate } from '../shared/pager';
 import { Kpi, Modal } from '../shared/ui-kit';
@@ -352,12 +352,12 @@ export class TonKhoTab {
         const k = this.kk(r);
         rows.push([r.loaiHang, lh?.ten ?? '', lh?.moTa ?? '', this.tenHD(r.loaiHang).join('; '), lh?.nhom ?? '', lh?.theTich ?? '', lh?.dvt ?? '', this.store.khoTen(r.kho), r.nhap, r.xuat, r.ton, r.soLo, Math.round(r.giaTri), k ? viDate(k.ngay) : '', k?.thucTe ?? '', k?.lech ?? '']);
       }
-      downloadFile(fileName('ton-kho-theo-ma', 'csv'), 'text/csv', csv(rows));
+      void xuatCsv('ton-kho-theo-ma', rows);
       return;
     }
     const rows: (string | number)[][] = [['Mã lô', 'Ngày nhập', 'Số hoá đơn', 'NCC', 'Mã hàng', 'Mô tả', 'Tên trên hoá đơn', 'Quy cách / nồng độ', 'Vị trí kho', 'SL nhập', 'Đã xuất', 'Tồn', 'Đơn giá', 'VAT %', 'Giá trị tồn']];
     for (const l of this.rowsLo())
       rows.push([l.lo, viDate(l.ngay), l.soHoaDon ?? '', this.store.nccById(l.ncc)?.ten ?? '', l.loaiHang, this.store.loaiHangById(l.loaiHang)?.moTa ?? '', this.tenHD(l.loaiHang, l.lo).join('; '), l.quyCach, this.store.khoTen(l.kho), l.nhap, l.xuat, l.ton, l.donGia, l.vat, Math.round(l.giaTriTon)]);
-    downloadFile(fileName('ton-kho-theo-lo', 'csv'), 'text/csv', csv(rows));
+    void xuatCsv('ton-kho-theo-lo', rows);
   }
 }

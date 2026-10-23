@@ -1,3 +1,4 @@
+import { dangKyBaoLoi } from '../shared/export';
 /**
  * Kho dữ liệu trung tâm + toàn bộ luồng nghiệp vụ ghi dữ liệu.
  *
@@ -124,6 +125,7 @@ export class Store {
   readonly syncing = signal(false);
 
   constructor() {
+    dangKyBaoLoi((m) => this.say(m, 'bad'));
     this.db.set(dbRong());
     this.firstLoad = this.load();
     // Người khác sửa dữ liệu → phiên bản máy chủ tăng → nạp lại (30 giây / lần, chỉ khi không có lệnh đang gửi).

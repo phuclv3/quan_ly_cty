@@ -7,7 +7,7 @@ import { money, sum, viDate } from '../core/util';
 import { TrangThai } from '../shared/ui-kit';
 import { Facet, FilterBar, LOC_RONG, Loc, khopQ, khopSel, khopThoiGian } from '../shared/filter-bar';
 import { Pager, paginate } from '../shared/pager';
-import { csv, downloadFile, fileName } from '../shared/export';
+import { xuatCsv } from '../shared/export';
 import { ChiPhiForm } from './chi-phi-form';
 import { SortTh, Sorter } from '../shared/sort';
 import { TT, ttNhan } from '../core/trang-thai';
@@ -161,6 +161,6 @@ export class ChiPhiTab {
         ttNhan(c.trangThai),
       ];
     });
-    downloadFile(fileName('chi-phi-hd', 'csv'), 'text/csv', csv([head, ...body]));
+    void xuatCsv('chi-phi-hd', [head, ...body]);
   }
 }

@@ -3,7 +3,7 @@ import { Store } from '../core/store';
 import { NhomQuyen } from '../core/models';
 import { CHUC_NANG, ChucNang, LEVEL_LABEL, Level, MODULES, maxLevel } from '../core/perm';
 import { fold } from '../core/util';
-import { csv, downloadFile, fileName } from '../shared/export';
+import { xuatCsv } from '../shared/export';
 import { TrangThai } from '../shared/ui-kit';
 import { Icon } from '../shared/icon';
 import { LEVEL_TONE } from './nhom-quyen';
@@ -74,7 +74,7 @@ export class ChucNangTab {
   protected xuat(): void {
     const rows: (string | number)[][] = [['Mã chức năng', 'Module', 'Tên chức năng', 'Mô tả', 'Mức cho phép']];
     for (const c of CHUC_NANG) rows.push([c.ma, c.module, c.ten, c.moTa, c.mucDo.filter((l) => l !== 'none').map((l) => LEVEL_LABEL[l]).join(', ')]);
-    downloadFile(fileName('danh-muc-chuc-nang', 'csv'), 'text/csv', csv(rows));
+    void xuatCsv('danh-muc-chuc-nang', rows);
   }
 }
 
@@ -127,6 +127,6 @@ export class MaTranTab {
     const gs = this.store.nhomQuyen();
     const rows: (string | number)[][] = [['Mã chức năng', 'Chức năng', ...gs.map((g) => `${g.ten} (${g.ma})`)]];
     for (const c of CHUC_NANG) rows.push([c.ma, c.ten, ...gs.map((g) => { const l = mucCua(g, c); return l === 'none' ? '' : LEVEL_LABEL[l]; })]);
-    downloadFile(fileName('ma-tran-phan-quyen', 'csv'), 'text/csv', csv(rows));
+    void xuatCsv('ma-tran-phan-quyen', rows);
   }
 }

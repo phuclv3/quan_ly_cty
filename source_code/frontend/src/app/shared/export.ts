@@ -1,59 +1,81 @@
 /**
- * Kết xuất tệp ngay trên trình duyệt.
- *
- * Bản mẫu không có máy chủ, nhưng "xuất báo cáo" mà chỉ hiện thông báo thì
- * không kiểm chứng được nội dung. Các hàm dưới đây tạo tệp thật để chi ủy mở
- * bằng Excel / Word và đối chiếu.
+ * Xuất / tải tệp: mọi tệp (CSV, Excel, ZIP hồ sơ, tờ trình Word, bản sao lưu) do backend dựng
+ * (web/XuatController, HopDongController); frontend chỉ gửi dữ liệu đang xem và lưu tệp trả về.
  */
+import { API_BASE, ApiError, authHeaders } from '../core/api';
 
-/** Tải một tệp do trình duyệt tự tạo. */
-export function downloadFile(name: string, mime: string, content: string): void {
-  // BOM UTF-8: thiếu nó thì Excel mở CSV tiếng Việt ra ký tự lỗi.
-  const blob = new Blob(['\ufeff', content], { type: `${mime};charset=utf-8` });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = name;
-  a.rel = 'noopener';
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 2000);
+let baoLoi: (msg: string) => void = () => undefined;
+/** Store đăng ký hàm hiện toast lỗi để các nút xuất không phải tự bắt lỗi. */
+export function dangKyBaoLoi(fn: (msg: string) => void): void {
+  baoLoi = fn;
 }
 
-/**
- * Ghép bảng thành CSV. Dùng dấu chấm phẩy vì Excel bản tiếng Việt đọc dấu phẩy
- * là dấu thập phân, dùng dấu phẩy sẽ dồn hết một dòng vào một ô.
- */
-export function csv(rows: (string | number | null)[][]): string {
-  return rows
-    .map((row) =>
-      row
-        .map((cell) => {
-          const text = cell === null ? '' : String(cell);
-          return /[";\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
-        })
-        .join(';'),
-    )
-    .join('\r\n');
+/** 'Tờ trình.docx' từ Content-Disposition (ưu tiên filename*=UTF-8''…). */
+function tenTuHeader(cd: string | null, macDinh: string): string {
+  const m = /filename\*=UTF-8''([^;]+)/i.exec(cd ?? '') ?? /filename="?([^";]+)"?/i.exec(cd ?? '');
+  try {
+    return m ? decodeURIComponent(m[1]) : macDinh;
+  } catch {
+    return macDinh;
+  }
 }
 
-/** 'bao-cao-thang' -> 'bao-cao-thang-2026-08-26.csv' */
-export function fileName(prefix: string, ext: string, when = new Date()): string {
-  const p = (n: number) => String(n).padStart(2, '0');
-  const stamp = `${when.getFullYear()}-${p(when.getMonth() + 1)}-${p(when.getDate())}`;
-  return `${prefix}-${stamp}.${ext}`;
+/** Gọi backend lấy tệp rồi tải xuống. Trả số tệp gói (ZIP) hoặc 0; null nếu lỗi (đã hiện toast). */
+async function tai(method: 'GET' | 'POST', path: string, body: unknown, macDinh: string): Promise<number | null> {
+  try {
+    const res = await fetch(API_BASE + path, {
+      method,
+      headers: { ...authHeaders(), ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}) },
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    });
+    if (!res.ok) {
+      let msg = 'Không xuất được tệp';
+      try {
+        msg = ((await res.json()) as { message?: string }).message ?? msg;
+      } catch {
+        /* thân lỗi không phải JSON */
+      }
+      throw new ApiError(msg, res.status);
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = tenTuHeader(res.headers.get('Content-Disposition'), macDinh);
+    a.rel = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    return Number(res.headers.get('X-Tep-Count') ?? 0);
+  } catch (e) {
+    baoLoi(e instanceof ApiError ? e.message : 'Không kết nối được máy chủ để xuất tệp');
+    return null;
+  }
 }
 
-/** Tải một tệp có sẵn (vd. tài liệu chi ủy đã tải lên, lấy từ IndexedDB). */
-export function downloadBlob(name: string, blob: Blob): void {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = name;
-  a.rel = 'noopener';
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 2000);
+export type Cell = string | number | null;
+
+/** CSV từ bảng đang xem — 'bao-cao-thang' → bao-cao-thang-2026-08-26.csv. */
+export const xuatCsv = (ten: string, dong: Cell[][]) => tai('POST', '/xuat/csv', { ten, dong }, `${ten}.csv`);
+
+export interface SheetXlsx {
+  ten: string;
+  dong: (string | number)[][];
+  /** Độ rộng cột (đơn vị ký tự Excel). */
+  rong?: number[];
+  /** Dòng đầu là tiêu đề: in đậm + nền xám. */
+  tieuDe?: boolean;
 }
+
+/** Tệp .xlsx nhiều sheet (tệp mẫu nhập liệu). */
+export const xuatXlsx = (ten: string, sheets: SheetXlsx[]) => tai('POST', '/xuat/xlsx', { ten, sheets }, ten);
+
+/** Gói ZIP các tệp hồ sơ (backend kiểm quyền từng tệp). Trả số tệp đã gói. */
+export const xuatZip = (ten: string, muc: { path: string; fileId: string }[]) => tai('POST', '/xuat/zip', { ten, muc }, ten);
+
+/** Bản sao lưu dữ liệu (JSON). */
+export const xuatBanSao = () => tai('GET', '/xuat/ban-sao', undefined, 'app-oxy-ban-sao.json');
+
+/** Tờ trình chi phí kinh doanh của HĐ bán (Word, theo mẫu). */
+export const xuatToTrinhHdb = (id: string) => tai('GET', `/hop-dong-ban/${encodeURIComponent(id)}/to-trinh`, undefined, 'to-trinh.docx');

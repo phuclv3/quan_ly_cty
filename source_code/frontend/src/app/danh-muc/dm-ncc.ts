@@ -11,7 +11,7 @@ import { FilterBar, LOC_RONG, Loc, khopQ } from '../shared/filter-bar';
 import { Pager, paginate } from '../shared/pager';
 import { Confirm } from '../shared/confirm';
 import { guiXoa } from '../shared/ho-so';
-import { downloadFile, csv, fileName } from '../shared/export';
+import { xuatCsv } from '../shared/export';
 
 const BLANK: NhaCungCap = { id: '', ten: '', mst: '', diaChi: '', quocGia: 'Việt Nam', nguoiLienHe: '', dienThoai: '', email: '', ghiChu: '' };
 type F = Exclude<keyof NhaCungCap, 'id'>;
@@ -209,6 +209,6 @@ export class DmNcc {
     const rows: (string | number)[][] = [['Mã NCC', 'Tên', 'MST', 'Địa chỉ', 'Quốc gia', 'Người liên hệ', 'Điện thoại', 'Email', 'Ghi chú', 'Số HĐ mua']];
     for (const n of this.list())
       rows.push([n.id, n.ten, n.mst, n.diaChi, n.quocGia, n.nguoiLienHe, n.dienThoai, n.email, n.ghiChu, this.soHD().get(n.id) ?? 0]);
-    downloadFile(fileName('nha-cung-cap', 'csv'), 'text/csv', csv(rows));
+    void xuatCsv('nha-cung-cap', rows);
   }
 }

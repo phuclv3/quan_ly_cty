@@ -5,7 +5,7 @@ import { Store } from '../core/store';
 import { TT } from '../core/trang-thai';
 import { nhoLoc } from '../core/ui';
 import { money, sum, viDate } from '../core/util';
-import { csv, downloadFile, fileName } from '../shared/export';
+import { xuatCsv } from '../shared/export';
 import { Facet, FilterBar, LOC_RONG, Loc, khopQ, khopSel } from '../shared/filter-bar';
 import { Pager, paginate } from '../shared/pager';
 import { Kpi } from '../shared/ui-kit';
@@ -176,6 +176,6 @@ export class GiaTriHdTab {
     for (const r of this.rows())
       for (const d of r.dong)
         rows.push([r.hd.soHD, r.hd.tenKH, viDate(d.ngay), d.soPhieu, d.lo, d.loaiHang, d.quyCach, d.tenTrenHD, d.sl, d.donGia, Math.round(d.thanhTien), d.cach]);
-    downloadFile(fileName('gia-von-theo-hd', 'csv'), 'text/csv', csv(rows));
+    void xuatCsv('gia-von-theo-hd', rows);
   }
 }

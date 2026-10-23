@@ -6,7 +6,7 @@ import { CACH_CHIA_PT, CachChiaPT, CauHinh, CauHinhKey, TableKey } from '../core
 import { Store } from '../core/store';
 import { fold, pct, viMoment } from '../core/util';
 import { Confirm } from '../shared/confirm';
-import { downloadFile, fileName } from '../shared/export';
+import { xuatBanSao } from '../shared/export';
 import { Pager, paginate } from '../shared/pager';
 
 type Tab = 'tham-so' | 'du-lieu';
@@ -280,7 +280,7 @@ export class CauHinhPage {
   protected readonly tongBanGhi = computed(() => this.demBang().reduce((s, b) => s + b.n, 0));
 
   protected xuat(): void {
-    downloadFile(fileName('app-oxy-ban-sao', 'json'), 'application/json', JSON.stringify(this.store.db()));
+    void xuatBanSao();
     this.store.say('Đã xuất bản sao dữ liệu');
   }
 

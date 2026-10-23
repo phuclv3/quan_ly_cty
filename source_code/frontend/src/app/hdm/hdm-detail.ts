@@ -13,8 +13,8 @@ import { Confirm } from '../shared/confirm';
 import { Icon } from '../shared/icon';
 import { FileHd, ThongTinHd, XemFileHd, taiFileCho } from '../shared/file-hd';
 import { COT_DONG_HANG, parseDanExcel, parseDongHang } from './hdm-util';
-import { docBang, taoXlsx } from '../shared/excel';
-import { taiBlob } from '../core/files';
+import { docBang } from '../shared/excel';
+import { xuatXlsx } from '../shared/export';
 import { ThemDoiTac } from '../shared/them-doi-tac';
 import { Unsaved, canhBaoChuaLuu } from '../shared/unsaved';
 import { linkPhieuKho, maHangOpts } from '../kho/kho-util';
@@ -960,7 +960,7 @@ export class HdmDetail {
   protected readonly dangDoc = signal(false);
   /** File mẫu .xlsx: sheet "Hàng hoá" (tiêu đề + 2 dòng ví dụ) và sheet "Hướng dẫn". */
   protected taiMau(): void {
-    const blob = taoXlsx([
+    void xuatXlsx('mau-dong-hang-hd-mua.xlsx', [
       {
         ten: 'Hàng hoá',
         tieuDe: true,
@@ -983,7 +983,6 @@ export class HdmDetail {
         ],
       },
     ]);
-    taiBlob('mau-dong-hang-hd-mua.xlsx', blob);
   }
   protected async taiFile(e: Event): Promise<void> {
     const el = e.target as HTMLInputElement;

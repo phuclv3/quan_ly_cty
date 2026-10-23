@@ -6,7 +6,7 @@ import { dotMuaDaTra, hdbCalc, hdmCalc, soNgayQuaHan } from '../core/calc';
 import { matches, money, sum, viDate } from '../core/util';
 import { Kpi } from '../shared/ui-kit';
 import { Pager, paginate } from '../shared/pager';
-import { csv, downloadFile, fileName } from '../shared/export';
+import { xuatCsv } from '../shared/export';
 import { TT } from '../core/trang-thai';
 
 interface CnRow {
@@ -195,6 +195,6 @@ export class CongNoTab {
     const body: (string | number)[][] = this.rows().map((r) => [r.soHD, r.doiTac, r.giaTri, r.da, r.con, viDate(r.han), r.quaHan]);
     const tg = this.tong();
     body.push(['Tổng', '', tg.giaTri, tg.da, tg.con, '', '']);
-    downloadFile(fileName(t ? 'cong-no-phai-thu' : 'cong-no-phai-tra', 'csv'), 'text/csv', csv([head, ...body]));
+    void xuatCsv(t ? 'cong-no-phai-thu' : 'cong-no-phai-tra', [head, ...body]);
   }
 }

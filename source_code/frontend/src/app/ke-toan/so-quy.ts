@@ -8,7 +8,7 @@ import { money, sum, viDate } from '../core/util';
 import { TrangThai } from '../shared/ui-kit';
 import { Facet, FilterBar, LOC_RONG, Loc, khopQ, khopSel, khopThoiGian } from '../shared/filter-bar';
 import { Pager, paginate } from '../shared/pager';
-import { csv, downloadFile, fileName } from '../shared/export';
+import { xuatCsv } from '../shared/export';
 import { PhieuForm } from './phieu-form';
 import { ChiPhiForm } from './chi-phi-form';
 import { SortTh, Sorter } from '../shared/sort';
@@ -227,6 +227,6 @@ export class SoQuyTab {
     const head = ['Số phiếu', 'Ngày lập', 'Loại phiếu', 'Nguồn tiền', 'Loại chi phí', 'Nội dung', 'Thu', 'Chi', 'Người đề nghị', 'Trạng thái'];
     const body = this.rows().map((r) => [r.so, viDate(r.ngay), r.loai, r.nguon, r.lcp ?? '', r.noiDung, r.thu, r.chi, r.nguoi, ttNhan(r.trangThai)]);
     body.push(['Tổng (không gồm Luân chuyển)', '', '', '', '', '', this.tongThu(), this.tongChi(), '', '']);
-    downloadFile(fileName('so-quy', 'csv'), 'text/csv', csv([head, ...body]));
+    void xuatCsv('so-quy', [head, ...body]);
   }
 }

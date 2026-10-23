@@ -10,7 +10,7 @@ import { Facet, FilterBar, LOC_RONG, Loc, khopQ, khopSel, khopThoiGian } from '.
 import { Kpi, TrangThai } from '../shared/ui-kit';
 import { Pager, paginate } from '../shared/pager';
 import { SortTh, Sorter } from '../shared/sort';
-import { csv, downloadFile, fileName } from '../shared/export';
+import { xuatCsv } from '../shared/export';
 import { Icon } from '../shared/icon';
 import { ImportHd } from '../shared/import-hd';
 
@@ -208,6 +208,6 @@ export class HdbList {
       this.store.userName(h.sale),
       ttNhan(h.trangThai),
     ]);
-    downloadFile(fileName('hop-dong-ban', 'csv'), 'text/csv', csv([head, ...body]));
+    void xuatCsv('hop-dong-ban', [head, ...body]);
   }
 }

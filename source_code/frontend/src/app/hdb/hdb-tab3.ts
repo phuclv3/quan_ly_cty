@@ -3,7 +3,8 @@ import { Store } from '../core/store';
 import { TT } from '../core/trang-thai';
 import { DongHangBan, DotTTBan, HopDongBan, LCP_HOA_HONG } from '../core/models';
 import { Buoc, apDungTuDongHdb, congNgay, dotBanDaThu, dotQuaHan, hdbCalc, kiemTraDongBan, loConHang, tongDongBan, tongDongBanTH } from '../core/calc';
-import { money, moneyInWords, pct, sum, todayIso, uid, viDate } from '../core/util';
+import { xuatToTrinhHdb } from '../shared/export';
+import { money, pct, sum, todayIso, uid, viDate } from '../core/util';
 import { BuocTable, Kpi, MoneyInput, Pick, TrangThai } from '../shared/ui-kit';
 import { maHangOpts, moTaMa } from '../kho/kho-util';
 import { Icon } from '../shared/icon';
@@ -37,7 +38,7 @@ interface ThuNhap {
           @if (thieuMua().length && saved() && edit()) {
             <button type="button" class="btn sm danger" (click)="deNghi()"><app-icon name="truck" [size]="15" /> Gửi đề nghị cấp vật tư ({{ thieuMua().length }} dòng thiếu)</button>
           }
-          <button type="button" class="btn sm quiet" (click)="inToTrinh()"><app-icon name="print" [size]="15" /> Xuất tờ trình (PDF)</button>
+          <button type="button" class="btn sm quiet" (click)="inToTrinh()"><app-icon name="print" [size]="15" /> Xuất tờ trình (Word)</button>
           @if (edit()) { <button type="button" class="btn sm quiet" (click)="themSP()"><app-icon name="plus" [size]="15" /> Thêm sản phẩm</button> }
         </div>
       </div>
@@ -355,49 +356,11 @@ export class HdbTab3 {
     this.store.say(`Đã gửi ${r.ids.length} đề nghị cấp vật tư — xem ở Kho › Đề nghị vật tư hoặc tạo HĐ mua từ đề nghị`);
   }
 
-  /** Tờ trình / Bảng tính giá (mẫu "Bảng tính giá"): mở trang in — chọn "Lưu dưới dạng PDF" để lưu. */
-  protected inToTrinh(): void {
-    const h = this.f();
-    const c = this.c();
-    const t = c.thue;
-    const ds = h.dongHang?.length
-      ? h.dongHang
-      : [{ id: '', loaiHang: '', tenHang: 'Giá trị hợp đồng', soLuong: 1, donGia: h.truocVAT, donGiaTH: h.thucTeTruocVAT }];
-    const m = (n: number) => money(n);
-    const esc = (s: string) => s.replace(/[&<>"]/g, (x) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[x]!);
-    const dong = ds
-      .map((d) => `<tr><td>${esc(d.tenHang || d.loaiHang)}${d.loaiHang ? ` <small>(${esc(d.loaiHang)})</small>` : ''}</td><td class="n">${d.soLuong}</td><td class="n">${m(d.donGiaTH)}</td><td class="n">${m(d.soLuong * d.donGiaTH)}</td><td class="n">${m(d.donGia)}</td><td class="n">${m(d.soLuong * d.donGia)}</td></tr>`)
-      .join('');
-    const ts = h.thamSoThue;
-    const html = `<!doctype html><html lang="vi"><head><meta charset="utf-8"><title>Tờ trình ${esc(h.soHD || 'báo giá')}</title>
-<style>body{font:14px/1.5 "Times New Roman",serif;margin:24px;color:#000}h1{text-align:center;font-size:18px;margin:0 0 4px}p.c{text-align:center;margin:0 0 14px}
-table{border-collapse:collapse;width:100%}td,th{border:1px solid #000;padding:4px 6px}th{background:#eee}.n{text-align:right;white-space:nowrap}
-.tong td{font-weight:bold}.kq{width:auto;margin-top:12px}.kq td:first-child{background:#eef3e6}.ht td{background:#cfe8f0;font-weight:bold}
-.ky{display:grid;grid-template-columns:repeat(3,1fr);text-align:center;margin-top:36px}.ky span{display:block;margin-top:70px;font-style:italic}
-@media print{button{display:none}}</style></head><body>
-<button onclick="print()">In / Lưu PDF</button>
-<h1>TỜ TRÌNH — BẢNG TÍNH GIÁ</h1>
-<p class="c">Khách hàng: <b>${esc(h.tenKH)}</b>${h.mst ? ' · MST ' + esc(h.mst) : ''}<br>HĐ số: <b>${esc(h.soHD || '(báo giá)')}</b> · Ngày ký: ${viDate(h.ngayKy)} · Ngày lập: ${viDate(todayIso())}</p>
-<table><thead><tr><th>Hàng hoá</th><th>Số lượng</th><th>Đơn giá thực hiện</th><th>Thành tiền thực hiện</th><th>Đơn giá hợp đồng</th><th>Thành tiền hợp đồng</th></tr></thead>
-<tbody>${dong}<tr class="tong"><td>Thành tiền</td><td></td><td></td><td class="n">${m(h.thucTeTruocVAT)}</td><td></td><td class="n">${m(h.truocVAT)}</td></tr></tbody></table>
-<table class="kq"><tbody>
-<tr><td>Chênh lệch</td><td class="n">${m(c.chenhLech)}</td></tr>
-<tr><td><b>Tỉ lệ chênh lệch</b></td><td class="n"><b>${pct(c.tyLeCL)}</b></td></tr>
-<tr><td>Tổng phí quản lý</td><td class="n">${m(t.thue)}</td></tr>
-<tr><td>Phí QL (≤ ${pct(ts.nguong)}) — ${pct(ts.muc1)}</td><td class="n">${m(t.thue1)}</td></tr>
-<tr><td>Phí QL (&gt; ${pct(ts.nguong)}) — ${pct(ts.muc2)}</td><td class="n">${m(t.thue2)}</td></tr>
-<tr class="ht"><td>Hoàn trả</td><td class="n">${m(c.chenhLech - t.thue)}</td></tr>
-</tbody></table>
-<p>Hoàn trả bằng chữ: <i>${esc(moneyInWords(Math.max(c.chenhLech - t.thue, 0)))}</i></p>
-<p>Giá trị HĐ sau VAT ${h.vat}%: <b>${m(c.sauVAT)}</b>${c.phat ? ` · Phạt HĐ ${m(c.phat)} · Giá trị quyết toán <b>${m(c.giaTriQT)}</b>` : ''}</p>
-<div class="ky"><div><b>Người lập</b><span>(Ký, ghi rõ họ tên)</span></div><div><b>Kế toán</b><span>(Ký, ghi rõ họ tên)</span></div><div><b>Giám đốc</b><span>(Ký, ghi rõ họ tên)</span></div></div>
-</body></html>`;
-    const w = window.open('', '_blank');
-    if (!w) return this.store.say('Trình duyệt chặn cửa sổ mới — cho phép popup để xuất tờ trình');
-    w.document.open();
-    w.document.write(html);
-    w.document.close();
-    setTimeout(() => w.print(), 300);
+  /** Tờ trình chi phí kinh doanh của HĐ: backend điền số liệu đã lưu vào mẫu Word rồi trả file .docx. */
+  protected async inToTrinh(): Promise<void> {
+    const s = this.saved();
+    if (!s) return this.store.say('Lưu HĐ trước khi xuất tờ trình');
+    await xuatToTrinhHdb(s.id);
   }
   /** F-08: đã có phiếu Thu (chưa bị từ chối) → khoá Giá trị trước VAT / VAT. */
   protected readonly khoaGiaTri = computed(() => !!this.saved() && this.store.hdbCoPhieuThu(this.saved()!));

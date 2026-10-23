@@ -9,7 +9,7 @@ import { TT, ttNhan } from '../core/trang-thai';
 import { nhoLoc } from '../core/ui';
 import { money, sum, viDate, viMoment } from '../core/util';
 import { Confirm } from '../shared/confirm';
-import { csv, downloadFile, fileName } from '../shared/export';
+import { xuatCsv } from '../shared/export';
 import { Facet, FilterBar, LOC_RONG, Loc, khopQ, khopSel, khopThoiGian } from '../shared/filter-bar';
 import { guiXoa } from '../shared/ho-so';
 import { Pager, paginate } from '../shared/pager';
@@ -388,6 +388,6 @@ export class PhieuKhoTab {
           ttNhan(p.trangThai),
         ]);
       });
-    downloadFile(fileName(this.loai() === 'Nhập' ? 'phieu-nhap' : 'phieu-xuat', 'csv'), 'text/csv', csv(rows));
+    void xuatCsv(this.loai() === 'Nhập' ? 'phieu-nhap' : 'phieu-xuat', rows);
   }
 }

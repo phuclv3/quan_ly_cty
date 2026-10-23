@@ -8,7 +8,7 @@ import { HdbCalc, dotBanDaThu, dotQuaHan, hdbCalc, ptCalc } from '../core/calc';
 import { matches, money, pct, sum, viDate, vndShort } from '../core/util';
 import { Kpi, Multi, PickOption, TrangThai } from '../shared/ui-kit';
 import { Icon } from '../shared/icon';
-import { csv, downloadFile, fileName } from '../shared/export';
+import { xuatCsv } from '../shared/export';
 import { TT, ttNhan } from '../core/trang-thai';
 
 type Tab = 'doanh-thu' | 'loi-nhuan' | 'thanh-toan' | 'phu-tai';
@@ -385,6 +385,6 @@ export class BaoCaoPage {
             r.c.conPhaiThu, r.c.quaHan, r.tienQuaHan, r.c.dotGanNhat?.han ? viDate(r.c.dotGanNhat.han) : null,
           ]);
     }
-    downloadFile(fileName(ten, 'csv'), 'text/csv', csv(out));
+    void xuatCsv(ten, out);
   }
 }

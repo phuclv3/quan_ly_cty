@@ -4,9 +4,9 @@ import { DongHangBan, DongHangMua, HopDongBan, HopDongMua, KhachHang, LoaiHang, 
 import { apDungTuDongHdb, hdbThieuDeChuyen, hdmTong, sauVAT, tongDongBan } from '../core/calc';
 import { fold, money, uid } from '../core/util';
 import { TT, ttNhan } from '../core/trang-thai';
-import { taiBlob } from '../core/files';
 import { doanLoaiHang, parseLoaiTien, parseSo } from '../hdm/hdm-util';
-import { docBang, taoXlsx } from './excel';
+import { docBang } from './excel';
+import { xuatXlsx } from './export';
 import { Modal } from './ui-kit';
 import { Icon } from './icon';
 
@@ -392,7 +392,7 @@ export class ImportHd {
     const cot = this.loai() === 'ban' ? COT_BAN : COT_MUA;
     const viDu = this.loai() === 'ban' ? VI_DU_BAN : VI_DU_MUA;
     const ma = this.store.loaiHang().filter((l) => l.dangDung);
-    const blob = taoXlsx([
+    void xuatXlsx(this.loai() === 'ban' ? 'mau-import-hd-ban.xlsx' : 'mau-import-hd-mua.xlsx', [
       { ten: this.tenHd(), tieuDe: true, rong: cot.map((c) => c.rong), dong: [cot.map((c) => c.ten), ...viDu] },
       {
         ten: 'Hướng dẫn',
@@ -406,7 +406,6 @@ export class ImportHd {
       },
       { ten: 'Mã hàng', tieuDe: true, rong: [18, 40, 10], dong: [['Mã hàng', 'Tên', 'ĐVT'], ...ma.map((l) => [l.id, l.ten, l.dvt])] },
     ]);
-    taiBlob(this.loai() === 'ban' ? 'mau-import-hd-ban.xlsx' : 'mau-import-hd-mua.xlsx', blob);
   }
 
   protected async chonFile(e: Event): Promise<void> {

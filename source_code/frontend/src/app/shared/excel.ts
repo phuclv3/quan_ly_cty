@@ -1,83 +1,9 @@
 /**
- * Đọc / ghi bảng tính không cần thư viện ngoài:
- *  - taoXlsx(): file .xlsx tối giản (zip STORE + XML, chuỗi inline) — làm file mẫu để người dùng điền.
+ * Đọc bảng tính không cần thư viện ngoài (file tạo ra do backend — shared/export.ts):
  *  - docBang(): đọc file người dùng tải lên thành mảng dòng × cột (chuỗi): .xlsx (sheet đầu tiên),
  *    .csv (tự nhận dấu phân cách , ; Tab), .txt (Tab — như dán từ Excel).
  * Giải nén .xlsx bằng DecompressionStream('deflate-raw') có sẵn trong trình duyệt.
  */
-import { taoZip } from '../core/files';
-
-export interface SheetXlsx {
-  ten: string;
-  dong: (string | number)[][];
-  /** Độ rộng cột (đơn vị ký tự Excel). */
-  rong?: number[];
-  /** Dòng đầu là tiêu đề: in đậm + nền xám. */
-  tieuDe?: boolean;
-}
-
-const enc = new TextEncoder();
-const xml = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-const cot = (i: number): string => (i < 26 ? '' : cot(Math.floor(i / 26) - 1)) + String.fromCharCode(65 + (i % 26));
-
-function sheetXml(sh: SheetXlsx): string {
-  const cols = sh.rong?.length
-    ? `<cols>${sh.rong.map((w, i) => `<col min="${i + 1}" max="${i + 1}" width="${w}" customWidth="1"/>`).join('')}</cols>`
-    : '';
-  const rows = sh.dong
-    .map((r, ri) => {
-      const st = sh.tieuDe && ri === 0 ? ' s="1"' : '';
-      const cells = r
-        .map((v, ci) => {
-          const ref = `${cot(ci)}${ri + 1}`;
-          if (typeof v === 'number') return `<c r="${ref}"${st}><v>${v}</v></c>`;
-          if (v === '') return '';
-          return `<c r="${ref}" t="inlineStr"${st}><is><t xml:space="preserve">${xml(v)}</t></is></c>`;
-        })
-        .join('');
-      return `<row r="${ri + 1}">${cells}</row>`;
-    })
-    .join('');
-  const pane = sh.tieuDe ? '<sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>' : '';
-  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">${pane}${cols}<sheetData>${rows}</sheetData></worksheet>`;
-}
-
-/** Tạo file .xlsx từ các sheet. */
-export function taoXlsx(sheets: SheetXlsx[]): Blob {
-  const ns = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main';
-  const rel = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
-  const files: { path: string; data: Uint8Array }[] = [
-    {
-      path: '[Content_Types].xml',
-      data: enc.encode(
-        `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>${sheets.map((_, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('')}</Types>`,
-      ),
-    },
-    {
-      path: '_rels/.rels',
-      data: enc.encode(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="${rel}/officeDocument" Target="xl/workbook.xml"/></Relationships>`),
-    },
-    {
-      path: 'xl/workbook.xml',
-      data: enc.encode(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="${ns}" xmlns:r="${rel}"><sheets>${sheets.map((s, i) => `<sheet name="${xml(s.ten.slice(0, 31))}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`).join('')}</sheets></workbook>`),
-    },
-    {
-      path: 'xl/_rels/workbook.xml.rels',
-      data: enc.encode(
-        `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${sheets.map((_, i) => `<Relationship Id="rId${i + 1}" Type="${rel}/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`).join('')}<Relationship Id="rId${sheets.length + 1}" Type="${rel}/styles" Target="styles.xml"/></Relationships>`,
-      ),
-    },
-    {
-      path: 'xl/styles.xml',
-      data: enc.encode(
-        `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="${ns}"><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFE6F8E6"/></patternFill></fill></fills><borders count="1"><border/></borders><cellStyleXfs count="1"><xf/></cellStyleXfs><cellXfs count="2"><xf/><xf fontId="1" fillId="2" applyFont="1" applyFill="1"/></cellXfs></styleSheet>`,
-      ),
-    },
-    ...sheets.map((s, i) => ({ path: `xl/worksheets/sheet${i + 1}.xml`, data: enc.encode(sheetXml(s)) })),
-  ];
-  return taoZip(files, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-}
-
 // ── Đọc file tải lên ────────────────────────────────────────────────────
 
 /** Giải nén zip (STORE / DEFLATE) → map đường dẫn → nội dung. */

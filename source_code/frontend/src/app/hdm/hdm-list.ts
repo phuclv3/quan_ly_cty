@@ -9,7 +9,7 @@ import { money, pct, sum, viDate, vndShort } from '../core/util';
 import { FilterBar, khopQ, khopSel, khopThoiGian, Loc, LOC_RONG, Facet } from '../shared/filter-bar';
 import { Kpi, TrangThai } from '../shared/ui-kit';
 import { Pager, paginate } from '../shared/pager';
-import { csv, downloadFile, fileName } from '../shared/export';
+import { xuatCsv } from '../shared/export';
 import { Icon } from '../shared/icon';
 import { ImportHd } from '../shared/import-hd';
 import { SortTh, Sorter } from '../shared/sort';
@@ -215,6 +215,6 @@ export class HdmList {
       r.m.thuocPhuTai ? 'Có' : '',
       r.choXoa ? `${ttNhan(r.m.trangThai)} (Chờ xoá)` : ttNhan(r.m.trangThai),
     ]);
-    downloadFile(fileName('hop-dong-mua', 'csv'), 'text/csv', csv([head, ...body]));
+    void xuatCsv('hop-dong-mua', [head, ...body]);
   }
 }
