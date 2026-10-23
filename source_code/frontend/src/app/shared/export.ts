@@ -20,36 +20,49 @@ function tenTuHeader(cd: string | null, macDinh: string): string {
   }
 }
 
+interface Tep {
+  blob: Blob;
+  ten: string;
+  soTep: number;
+}
+
+/** Gọi backend lấy tệp. Ném ApiError (câu tiếng Việt của máy chủ) nếu lỗi. */
+async function layTep(method: 'GET' | 'POST', path: string, body: unknown, macDinh: string): Promise<Tep> {
+  const res = await fetch(API_BASE + path, {
+    method,
+    headers: { ...authHeaders(), ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}) },
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  });
+  if (!res.ok) {
+    let msg = 'Không xuất được tệp';
+    try {
+      msg = ((await res.json()) as { message?: string }).message ?? msg;
+    } catch {
+      /* thân lỗi không phải JSON */
+    }
+    throw new ApiError(msg, res.status);
+  }
+  return { blob: await res.blob(), ten: tenTuHeader(res.headers.get('Content-Disposition'), macDinh), soTep: Number(res.headers.get('X-Tep-Count') ?? 0) };
+}
+
+const loiKetNoi = (e: unknown) => (e instanceof ApiError ? e.message : 'Không kết nối được máy chủ để xuất tệp');
+
 /** Gọi backend lấy tệp rồi tải xuống. Trả số tệp gói (ZIP) hoặc 0; null nếu lỗi (đã hiện toast). */
 async function tai(method: 'GET' | 'POST', path: string, body: unknown, macDinh: string): Promise<number | null> {
   try {
-    const res = await fetch(API_BASE + path, {
-      method,
-      headers: { ...authHeaders(), ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}) },
-      body: body !== undefined ? JSON.stringify(body) : undefined,
-    });
-    if (!res.ok) {
-      let msg = 'Không xuất được tệp';
-      try {
-        msg = ((await res.json()) as { message?: string }).message ?? msg;
-      } catch {
-        /* thân lỗi không phải JSON */
-      }
-      throw new ApiError(msg, res.status);
-    }
-    const blob = await res.blob();
+    const { blob, ten, soTep } = await layTep(method, path, body, macDinh);
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = tenTuHeader(res.headers.get('Content-Disposition'), macDinh);
+    a.download = ten;
     a.rel = 'noopener';
     document.body.appendChild(a);
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 2000);
-    return Number(res.headers.get('X-Tep-Count') ?? 0);
+    return soTep;
   } catch (e) {
-    baoLoi(e instanceof ApiError ? e.message : 'Không kết nối được máy chủ để xuất tệp');
+    baoLoi(loiKetNoi(e));
     return null;
   }
 }
@@ -70,6 +83,41 @@ export interface SheetXlsx {
 
 /** Tệp .xlsx nhiều sheet (tệp mẫu nhập liệu). */
 export const xuatXlsx = (ten: string, sheets: SheetXlsx[]) => tai('POST', '/xuat/xlsx', { ten, sheets }, ten);
+
+export interface TemBinhKhiReq {
+  loai: string;
+  quyCachVan: string;
+  vatLieu: string;
+  apSuat: string;
+  soSeri: string;
+  maUn: string;
+  dinhLuong: string;
+  xuatXu: string;
+  bienPhap: string[];
+  huongDan: string[];
+  ngaySanXuat: string;
+  hanSuDung: string;
+  tenKhiChuan: string;
+  thanhPhan: { ten: string; kyHieu: string; nongDo: string }[];
+  soLuong: number;
+  /** true = xem trực tiếp khi đang nhập dở: backend bỏ qua kiểm tra bắt buộc. */
+  xemTruoc?: boolean;
+}
+
+/** PDF tem dán bình khí (mỗi tem 1 trang) — backend dựng theo mẫu tem. */
+export const xuatTemBinhKhi = (req: TemBinhKhiReq) => tai('POST', '/xuat/tem-binh-khi', req, 'tem-binh-khi.pdf');
+
+/**
+ * PDF tem để xem trên màn hình (không tải xuống). Lỗi trả về trong `loi` thay vì hiện toast,
+ * vì xem trực tiếp gọi lại sau mỗi lần sửa — lỗi nhập dở (thiếu số seri…) không đáng làm phiền.
+ */
+export async function xemTemBinhKhi(req: TemBinhKhiReq): Promise<{ blob: Blob | null; loi: string }> {
+  try {
+    return { blob: (await layTep('POST', '/xuat/tem-binh-khi', req, 'tem-binh-khi.pdf')).blob, loi: '' };
+  } catch (e) {
+    return { blob: null, loi: loiKetNoi(e) };
+  }
+}
 
 /** Gói ZIP các tệp hồ sơ (backend kiểm quyền từng tệp). Trả số tệp đã gói. */
 export const xuatZip = (ten: string, muc: { path: string; fileId: string }[]) => tai('POST', '/xuat/zip', { ten, muc }, ten);

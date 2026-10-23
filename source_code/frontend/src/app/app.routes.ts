@@ -61,6 +61,7 @@ export const routes: Routes = [
         loadComponent: () => import('./hdm/hdm-detail').then((m) => m.HdmDetail),
       },
       { path: 'kho', title: T('Kho'), canActivate: [permGuard('khoTon')], loadComponent: () => import('./kho/kho').then((m) => m.KhoPage) },
+      { path: 'in-tem', title: T('In tem bình khí'), canActivate: [permGuard('khoTon')], loadComponent: () => import('./kho/in-tem').then((m) => m.InTemPage) },
       {
         path: 'ke-toan',
         title: T('Kế toán'),
