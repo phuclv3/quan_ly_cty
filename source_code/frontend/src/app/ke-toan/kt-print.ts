@@ -4,6 +4,11 @@
  */
 
 import { CONG_TY } from '../core/cong-ty';
+import { chenhLechQuyetToan } from '../core/calc';
+import { PhieuThuChi } from '../core/models';
+import { Store } from '../core/store';
+import { money, moneyInWords } from '../core/util';
+import { ttNhan } from '../core/trang-thai';
 
 export function esc(s: string | number | null | undefined): string {
   return String(s ?? '')
@@ -52,4 +57,47 @@ export function inGiay(title: string, body: string, kho: 'A5' | 'A4'): boolean {
     w.print();
   }, 150);
   return true;
+}
+
+/** In chứng từ Phiếu thu / chi A5 (dùng ở popup phiếu và nút In ở từng dòng danh sách). */
+export function inPhieuThuChi(p: PhieuThuChi, store: Store): void {
+  const cl = chenhLechQuyetToan(p, store.db());
+  const goc = store.phieuById(p.phieuTamUngGoc);
+  let tieuDe = 'PHIẾU CHI';
+  let soTien = p.soTienChi;
+  let nguoiTien = 'Người nhận tiền';
+  if (p.loai === 'Thu') {
+    tieuDe = 'PHIẾU THU';
+    soTien = p.soTienThu;
+    nguoiTien = 'Người nộp tiền';
+  } else if (p.loai === 'Quyết toán tạm ứng') {
+    tieuDe = cl > 0 ? 'PHIẾU THU (HOÀN ỨNG)' : 'PHIẾU CHI (QUYẾT TOÁN TẠM ỨNG)';
+    soTien = Math.abs(cl);
+    nguoiTien = cl > 0 ? 'Người nộp tiền' : 'Người nhận tiền';
+  } else if (p.loai === 'Luân chuyển') {
+    tieuDe = 'PHIẾU LUÂN CHUYỂN TIỀN';
+  }
+  const ten = p.nguoiNhan || store.userName(p.nguoiDeNghi);
+  const nguon =
+    p.loai === 'Luân chuyển' ? `${store.nguonTen(p.nguonTien)} → ${store.nguonTen(p.nguonTienDen)}` : store.nguonTen(p.nguonTien);
+  const d = p.ngayLap.split('-');
+  const body = `
+    <div class="head">${donVi()}<div class="r">Số: <b>${esc(p.soPhieu)}</b><br>Trạng thái: ${esc(ttNhan(p.trangThai))}</div></div>
+    <h1>${tieuDe}</h1>
+    <p class="c m">Ngày ${d[2]} tháng ${d[1]} năm ${d[0]}</p>
+    <div class="dong"><b>Họ tên ${nguoiTien.toLowerCase()}:</b> ${esc(ten)}</div>
+    <div class="dong"><b>Lý do:</b> ${esc(p.noiDung)}</div>
+    <div class="dong"><b>Nguồn tiền:</b> ${esc(nguon)}</div>
+    ${p.loaiChiPhi ? `<div class="dong"><b>Loại chi phí:</b> ${esc(store.lcpTen(p.loaiChiPhi))}</div>` : ''}
+    ${
+      p.loai === 'Quyết toán tạm ứng'
+        ? `<div class="dong"><b>Tạm ứng gốc:</b> ${esc(goc?.soPhieu)} — ${money(goc?.soTienChi ?? 0)} đ; thực chi ${money(p.soTienThucChi ?? 0)} đ</div>`
+        : ''
+    }
+    <div class="dong"><b>Số tiền:</b> <strong>${money(soTien)} đ</strong></div>
+    <div class="dong"><b>Bằng chữ:</b> <i>${esc(moneyInWords(soTien))}</i></div>
+    ${p.ghiChu ? `<div class="dong"><b>Ghi chú:</b> ${esc(p.ghiChu)}</div>` : ''}
+    ${kyTen(['Giám đốc', 'Kế toán', 'Người lập phiếu', 'Thủ quỹ', nguoiTien])}
+  `;
+  if (!inGiay(`${tieuDe} ${p.soPhieu}`, body, 'A5')) store.say('Trình duyệt chặn cửa sổ in — hãy cho phép cửa sổ bật lên');
 }

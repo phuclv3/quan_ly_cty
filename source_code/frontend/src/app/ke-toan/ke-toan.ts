@@ -11,7 +11,7 @@ import { ChoDuyetTab } from './cho-duyet';
 import { CongNoTab } from './cong-no';
 import { BaoCaoKtTab } from './bao-cao-kt';
 
-type Tab = 'nguon' | 'lcp' | 'so-quy' | 'chi-phi' | 'cho-duyet' | 'cong-no' | 'bao-cao';
+type Tab = 'nguon' | 'lcp' | 'phieu-thu' | 'phieu-chi' | 'chi-phi' | 'cho-duyet' | 'cong-no' | 'bao-cao';
 
 /** Màn Kế toán: các tab đồng bộ ?tab= (KT-01…KT-18; Loại chi phí KT-03 cùng quyền KT-01 Nguồn tiền). */
 @Component({
@@ -34,7 +34,8 @@ type Tab = 'nguon' | 'lcp' | 'so-quy' | 'chi-phi' | 'cho-duyet' | 'cong-no' | 'b
     @switch (tab()) {
       @case ('nguon') { <app-kt-nguon /> }
       @case ('lcp') { <app-dm-lcp /> }
-      @case ('so-quy') { <app-kt-so-quy /> }
+      @case ('phieu-thu') { <app-kt-so-quy mode="thu" /> }
+      @case ('phieu-chi') { <app-kt-so-quy mode="chi" /> }
       @case ('chi-phi') { <app-kt-chi-phi /> }
       @case ('cho-duyet') { <app-kt-cho-duyet /> }
       @case ('cong-no') { <app-kt-cong-no /> }
@@ -48,13 +49,24 @@ export class KeToanPage {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
 
-  private readonly qTab = toSignal(this.route.queryParamMap.pipe(map((m) => m.get('tab'))), { initialValue: null });
+  /** ?tab=so-quy (liên kết cũ) → Phiếu thu nếu ?id là phiếu Thu, còn lại Phiếu chi. */
+  private readonly qTab = toSignal(
+    this.route.queryParamMap.pipe(
+      map((m) => {
+        const t = m.get('tab');
+        if (t !== 'so-quy') return t;
+        const id = m.get('id');
+        return id && this.store.phieuById(id)?.loai === 'Thu' ? 'phieu-thu' : 'phieu-chi';
+      }),
+    ),
+    { initialValue: null },
+  );
 
   protected readonly tabs = computed(() => {
     const s = this.store;
     const out: { k: Tab; t: string }[] = [];
     if (s.canView('nguonTien')) out.push({ k: 'nguon', t: 'Nguồn tiền' }, { k: 'lcp', t: 'Danh mục loại chi phí' });
-    if (s.canView('soQuy')) out.push({ k: 'so-quy', t: 'Sổ quỹ' });
+    if (s.canView('soQuy')) out.push({ k: 'phieu-thu', t: 'Phiếu thu' }, { k: 'phieu-chi', t: 'Phiếu chi' });
     if (s.canView('cpHD')) out.push({ k: 'chi-phi', t: 'Chi phí HĐ' });
     if (s.canApprove('soQuyDuyet') || s.canApprove('cpHDDuyet')) out.push({ k: 'cho-duyet', t: 'Chờ duyệt' });
     if (s.canView('congNo')) out.push({ k: 'cong-no', t: 'Công nợ' });

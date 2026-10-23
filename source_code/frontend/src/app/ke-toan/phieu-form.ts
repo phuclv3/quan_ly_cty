@@ -9,7 +9,7 @@ import { Confirm } from '../shared/confirm';
 import { guiXoa } from '../shared/ho-so';
 import { LichSu } from '../shared/lich-su';
 import { TepDinhKem } from '../shared/tep-dinh-kem';
-import { donVi, esc, inGiay, kyTen } from './kt-print';
+import { inPhieuThuChi } from './kt-print';
 import { TT, ttNhan } from '../core/trang-thai';
 
 /** Popup Lập / Sửa phiếu thu chi (KT-05, KT-06, KT-08, KT-10) + In phiếu A5. */
@@ -49,7 +49,7 @@ import { TT, ttNhan } from '../core/trang-thai';
           <div class="field">
             <label for="pf-loai">Loại phiếu</label>
             <select id="pf-loai" [disabled]="!edit()" (change)="setLoai($any($event.target).value)">
-              @for (l of loais; track l) { <option [value]="l" [selected]="l === p.loai">{{ l }}</option> }
+              @for (l of loais(); track l) { <option [value]="l" [selected]="l === p.loai">{{ l }}</option> }
             </select>
           </div>
           <div class="field"><label for="pf-ngay">Ngày lập <span class="req">*</span></label><input id="pf-ngay" type="date" [disabled]="!edit()" [value]="p.ngayLap" (input)="set('ngayLap', $any($event.target).value)" /></div>
@@ -161,7 +161,12 @@ export class PhieuForm {
     return n ? this.store.soDu(n).soDu : 0;
   });
   protected readonly err = linkedSignal({ source: this.phieu, computation: () => '' });
-  protected readonly loais = LOAI_PHIEU;
+  /** Giới hạn Loại phiếu theo tab Phiếu thu / Phiếu chi; null = tất cả. */
+  readonly nhom = input<'thu' | 'chi' | null>(null);
+  protected readonly loais = computed(() => {
+    const n = this.nhom();
+    return n ? LOAI_PHIEU.filter((l) => (l === 'Thu') === (n === 'thu')) : LOAI_PHIEU;
+  });
   protected readonly money = money;
   protected readonly viMoment = viMoment;
 
@@ -274,44 +279,6 @@ export class PhieuForm {
 
   protected inPhieu(): void {
     const p = this.f();
-    if (!p) return;
-    const cl = this.chenh();
-    let tieuDe = 'PHIẾU CHI';
-    let soTien = p.soTienChi;
-    let nguoiTien = 'Người nhận tiền';
-    if (p.loai === 'Thu') {
-      tieuDe = 'PHIẾU THU';
-      soTien = p.soTienThu;
-      nguoiTien = 'Người nộp tiền';
-    } else if (p.loai === 'Quyết toán tạm ứng') {
-      tieuDe = cl > 0 ? 'PHIẾU THU (HOÀN ỨNG)' : 'PHIẾU CHI (QUYẾT TOÁN TẠM ỨNG)';
-      soTien = Math.abs(cl);
-      nguoiTien = cl > 0 ? 'Người nộp tiền' : 'Người nhận tiền';
-    } else if (p.loai === 'Luân chuyển') {
-      tieuDe = 'PHIẾU LUÂN CHUYỂN TIỀN';
-    }
-    const ten = p.nguoiNhan || this.store.userName(p.nguoiDeNghi);
-    const nguon =
-      p.loai === 'Luân chuyển' ? `${this.store.nguonTen(p.nguonTien)} → ${this.store.nguonTen(p.nguonTienDen)}` : this.store.nguonTen(p.nguonTien);
-    const d = p.ngayLap.split('-');
-    const body = `
-      <div class="head">${donVi()}<div class="r">Số: <b>${esc(p.soPhieu)}</b><br>Trạng thái: ${esc(ttNhan(p.trangThai))}</div></div>
-      <h1>${tieuDe}</h1>
-      <p class="c m">Ngày ${d[2]} tháng ${d[1]} năm ${d[0]}</p>
-      <div class="dong"><b>Họ tên ${nguoiTien.toLowerCase()}:</b> ${esc(ten)}</div>
-      <div class="dong"><b>Lý do:</b> ${esc(p.noiDung)}</div>
-      <div class="dong"><b>Nguồn tiền:</b> ${esc(nguon)}</div>
-      ${p.loaiChiPhi ? `<div class="dong"><b>Loại chi phí:</b> ${esc(this.store.lcpTen(p.loaiChiPhi))}</div>` : ''}
-      ${
-        p.loai === 'Quyết toán tạm ứng'
-          ? `<div class="dong"><b>Tạm ứng gốc:</b> ${esc(this.goc()?.soPhieu)} — ${money(this.goc()?.soTienChi ?? 0)} đ; thực chi ${money(p.soTienThucChi ?? 0)} đ</div>`
-          : ''
-      }
-      <div class="dong"><b>Số tiền:</b> <strong>${money(soTien)} đ</strong></div>
-      <div class="dong"><b>Bằng chữ:</b> <i>${esc(moneyInWords(soTien))}</i></div>
-      ${p.ghiChu ? `<div class="dong"><b>Ghi chú:</b> ${esc(p.ghiChu)}</div>` : ''}
-      ${kyTen(['Giám đốc', 'Kế toán', 'Người lập phiếu', 'Thủ quỹ', nguoiTien])}
-    `;
-    if (!inGiay(`${tieuDe} ${p.soPhieu}`, body, 'A5')) this.store.say('Trình duyệt chặn cửa sổ in — hãy cho phép cửa sổ bật lên');
+    if (p) inPhieuThuChi(p, this.store);
   }
 }
