@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, model } from '@angular/core';
 import { Store } from '../core/store';
+import { TT, ttNhan } from '../core/trang-thai';
 import { HopDongBan } from '../core/models';
 import { PickGo, PickOption } from '../shared/ui-kit';
 import { ThemDoiTac } from '../shared/them-doi-tac';
@@ -17,12 +18,12 @@ import { viDate } from '../core/util';
       <h2 class="section-title">Thông tin chung</h2>
       <div class="form-grid">
         <div class="field">
-          <label for="hdb-so">Số HĐ bán @if (f().trangThai !== 'Báo giá') { <span class="req">*</span> }</label>
-          <input id="hdb-so" [value]="f().soHD" [disabled]="!edit() || khoaDinhDanh()" [placeholder]="f().trangThai === 'Báo giá' ? 'Chưa ký thì để trống' : 'Nhập số hợp đồng'" (input)="set('soHD', $any($event.target).value)" />
+          <label for="hdb-so">Số HĐ bán @if (f().trangThai !== TT.BAO_GIA) { <span class="req">*</span> }</label>
+          <input id="hdb-so" [value]="f().soHD" [disabled]="!edit() || khoaDinhDanh()" [placeholder]="f().trangThai === TT.BAO_GIA ? 'Chưa ký thì để trống' : 'Nhập số hợp đồng'" (input)="set('soHD', $any($event.target).value)" />
           <!-- F-08: Báo giá chưa cần Số HĐ; bắt buộc khi chuyển Hiệu lực; từ Hiệu lực khoá Số HĐ + Khách hàng. -->
           @if (khoaDinhDanh()) {
             <span class="hint">HĐ đã Hiệu lực — Số HĐ và Khách hàng không sửa được nữa.</span>
-          } @else if (f().trangThai === 'Báo giá') {
+          } @else if (f().trangThai === TT.BAO_GIA) {
             <span class="hint">Đang ở Báo giá nên có thể để trống. Phải nhập trước khi chuyển sang <b>Hiệu lực</b> (sau đó không sửa được).</span>
           }
         </div>
@@ -82,6 +83,7 @@ import { viDate } from '../core/util';
 })
 export class HdbTab1 {
   protected readonly store = inject(Store);
+  protected readonly TT = TT;
   readonly f = model.required<HopDongBan>({ alias: 'draft' });
   readonly edit = input(false);
   /** F-08: từ Hiệu lực khoá Số HĐ và Khách hàng. */
@@ -91,11 +93,11 @@ export class HdbTab1 {
     this.store
       .khachHang()
       // Chỉ khách Đang dùng; HĐ cũ đã gắn khách nay Ngưng vẫn giữ để hiện đúng tên (F-09).
-      .filter((k) => k.trangThai !== 'Ngưng' || k.id === this.f().maKH)
+      .filter((k) => k.trangThai !== TT.NGUNG || k.id === this.f().maKH)
       .map((k) => ({
         value: k.id,
         label: k.ten,
-        hint: [k.mst ? 'MST ' + k.mst : k.id, k.tinh, k.phuTrach ? this.store.userName(k.phuTrach) : '', k.trangThai === 'Ngưng' ? 'Ngưng' : '']
+        hint: [k.mst ? 'MST ' + k.mst : k.id, k.tinh, k.phuTrach ? this.store.userName(k.phuTrach) : '', k.trangThai === TT.NGUNG ? ttNhan(TT.NGUNG) : '']
           .filter(Boolean)
           .join(' · '),
       })),

@@ -3,6 +3,7 @@ import { RouterLink } from '@angular/router';
 import { lechKiemKe, tonKho } from '../core/calc';
 import { DongKiemKe, KHO_CHUYEN_THANG, KiemKe } from '../core/models';
 import { Store } from '../core/store';
+import { TT, ttNhan } from '../core/trang-thai';
 import { money, sum, todayIso, viDate } from '../core/util';
 import { Confirm } from '../shared/confirm';
 import { dirtyOf } from '../shared/unsaved';
@@ -106,7 +107,7 @@ const dongRong = (loaiHang = ''): DongForm => ({ loaiHang, soLuong: 0, tenHang: 
         </div>
         @if (phieuDC().length) {
           <p>Phiếu điều chỉnh:
-            @for (p of phieuDC(); track p.id) { <a routerLink="/kho" [queryParams]="link(p)" (click)="xem.set(null)">{{ p.soPhieu }}</a> ({{ p.loai }}, {{ p.trangThai }}) }
+            @for (p of phieuDC(); track p.id) { <a routerLink="/kho" [queryParams]="link(p)" (click)="xem.set(null)">{{ p.soPhieu }}</a> ({{ p.loai }}, {{ ttNhan(p.trangThai) }}) }
           </p>
         }
       }
@@ -177,6 +178,7 @@ const dongRong = (loaiHang = ''): DongForm => ({ loaiHang, soLuong: 0, tenHang: 
 export class KiemKeTab {
   private readonly mKK = viewChild<Modal>('mKK');
   protected readonly store = inject(Store);
+  protected readonly ttNhan = ttNhan;
   private readonly confirm = inject(Confirm);
   protected readonly money = money;
   protected readonly viDate = viDate;
@@ -222,7 +224,7 @@ export class KiemKeTab {
     return lechKiemKe(this.store.db(), k).filter((r) => r.lech !== 0).length;
   }
   protected daDieuChinh(k: KiemKe): boolean {
-    return this.store.phieuKho().some((p) => p.kiemKeId === k.id && p.trangThai === 'Hiệu lực');
+    return this.store.phieuKho().some((p) => p.kiemKeId === k.id && p.trangThai === TT.HIEU_LUC);
   }
   protected moTa(lh: string): string {
     return moTaMa(this.store.loaiHangById(lh));

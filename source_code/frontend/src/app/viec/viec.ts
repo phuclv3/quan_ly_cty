@@ -6,6 +6,7 @@ import { daysFromToday, todayIso, viDate, viMoment } from '../core/util';
 import { Icon } from '../shared/icon';
 import { Modal, PickGo, PickOption } from '../shared/ui-kit';
 import { dirtyOf } from '../shared/unsaved';
+import { TT } from '../core/trang-thai';
 
 type Xem = 'chua' | 'xong';
 type PhamVi = 'toi' | 'toiGiao' | 'tatCa';
@@ -207,13 +208,13 @@ export class ViecPage {
   protected readonly nguoiOpts = computed<PickOption[]>(() =>
     this.store
       .taiKhoan()
-      .filter((t) => t.trangThai === 'Hoạt động' && t.id !== this.store.meId() && !this.soan()?.nguoiNhan.includes(t.id))
+      .filter((t) => t.trangThai === TT.HOAT_DONG && t.id !== this.store.meId() && !this.soan()?.nguoiNhan.includes(t.id))
       .map((t) => ({ value: t.id, label: t.hoTen, hint: t.email })),
   );
   protected readonly hdOpts = computed<PickOption[]>(() =>
     this.store
       .hdbVisible()
-      .filter((h) => h.trangThai !== 'Đã tất toán')
+      .filter((h) => h.trangThai !== TT.DA_TAT_TOAN)
       .map((h) => ({ value: h.id, label: h.soHD || '(báo giá)', hint: `${h.tenKH} · ${this.store.userName(h.sale)}` })),
   );
   protected readonly hanNhanh = (() => {

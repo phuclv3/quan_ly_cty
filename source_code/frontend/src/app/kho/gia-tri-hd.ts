@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { RouterLink } from '@angular/router';
 import { HopDongBan, KHO_CHUYEN_THANG } from '../core/models';
 import { Store } from '../core/store';
+import { TT } from '../core/trang-thai';
 import { nhoLoc } from '../core/ui';
 import { money, sum, viDate } from '../core/util';
 import { csv, downloadFile, fileName } from '../shared/export';
@@ -115,7 +116,7 @@ export class GiaTriHdTab {
     const out: HdGT[] = [];
     for (const hd of this.store.hdbVisible()) {
       const ps = db.phieuKho
-        .filter((p) => p.loai === 'Xuất' && p.hdId === hd.id && p.trangThai === 'Hiệu lực')
+        .filter((p) => p.loai === 'Xuất' && p.hdId === hd.id && p.trangThai === TT.HIEU_LUC)
         .sort((a, b) => (a.ngay < b.ngay ? -1 : 1));
       if (!ps.length && !this.caHd()) continue;
       const dong: DongGT[] = [];

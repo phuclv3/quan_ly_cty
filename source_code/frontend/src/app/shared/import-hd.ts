@@ -3,6 +3,7 @@ import { Store, kiemMST } from '../core/store';
 import { DongHangBan, DongHangMua, HopDongBan, HopDongMua, KhachHang, LoaiHang, NhaCungCap } from '../core/models';
 import { apDungTuDongHdb, hdbThieuDeChuyen, hdmTong, sauVAT, tongDongBan } from '../core/calc';
 import { fold, money, uid } from '../core/util';
+import { TT, ttNhan } from '../core/trang-thai';
 import { taiBlob } from '../core/files';
 import { doanLoaiHang, parseLoaiTien, parseSo } from '../hdm/hdm-util';
 import { docBang, taoXlsx } from './excel';
@@ -173,7 +174,7 @@ export function docHdBan(rows: string[][], store: Store): KetQuaHd<HopDongBan>[]
     const ngayKy = parseNgay(o(r0, 'Ngày ký'));
     if (ngayKy === null) loi.push(`Ngày ký "${o(r0, 'Ngày ký')}" không hợp lệ`);
     const tt = fold(o(r0, 'Trạng thái'));
-    const trangThai = !tt || tt === fold('Báo giá') ? 'Báo giá' : tt === fold('Hiệu lực') ? 'Hiệu lực' : null;
+    const trangThai = !tt || tt === fold(ttNhan(TT.BAO_GIA)) || tt === fold(TT.BAO_GIA) ? TT.BAO_GIA : tt === fold(ttNhan(TT.HIEU_LUC)) || tt === fold(TT.HIEU_LUC) ? TT.HIEU_LUC : null;
     if (!trangThai) loi.push(`Trạng thái "${o(r0, 'Trạng thái')}" không hợp lệ (Báo giá / Hiệu lực)`);
     const vatRaw = o(r0, 'VAT %').replace('%', '');
     const vatN = vatRaw ? parseSo(vatRaw) : 8;
@@ -208,7 +209,7 @@ export function docHdBan(rows: string[][], store: Store): KetQuaHd<HopDongBan>[]
       mst: mst || k?.mst || '',
       diaChi: o(r0, 'Địa chỉ') || k?.diaChi || '',
       ngayKy: ngayKy || undefined,
-      trangThai: trangThai ?? 'Báo giá',
+      trangThai: trangThai ?? TT.BAO_GIA,
       sale: sale ?? '',
       ghiChu: o(r0, 'Ghi chú'),
       vat: vat ?? 8,
@@ -219,8 +220,8 @@ export function docHdBan(rows: string[][], store: Store): KetQuaHd<HopDongBan>[]
       import: true,
     };
     h = apDungTuDongHdb(h);
-    if (trangThai === 'Hiệu lực') {
-      const thieu = hdbThieuDeChuyen(h, 'Hiệu lực', db);
+    if (trangThai === TT.HIEU_LUC) {
+      const thieu = hdbThieuDeChuyen(h, TT.HIEU_LUC, db);
       if (thieu.length) loi.push(`Chưa đủ để Hiệu lực: ${thieu.join(', ')}`);
     }
     return { soHD, dong: g.map((x) => x.n), doiTac: k?.ten ?? tenKH, doiTacMoi: !!khMoi, soDongHang: dongHang.length, giaTri: sau, trangThai: h.trangThai, loi, hd: h, khMoi };
@@ -257,7 +258,7 @@ export function docHdMua(rows: string[][], store: Store): KetQuaHd<HopDongMua>[]
     const ngayKy = parseNgay(o(r0, 'Ngày ký'));
     if (ngayKy === null) loi.push(`Ngày ký "${o(r0, 'Ngày ký')}" không hợp lệ`);
     const tt = fold(o(r0, 'Trạng thái'));
-    const trangThai = !tt || tt === fold('Nháp') ? 'Nháp' : tt === fold('Đã ký') ? 'Đã ký' : null;
+    const trangThai = !tt || tt === fold(ttNhan(TT.NHAP)) || tt === fold(TT.NHAP) ? TT.NHAP : tt === fold(ttNhan(TT.DA_KY)) || tt === fold(TT.DA_KY) ? TT.DA_KY : null;
     if (!trangThai) loi.push(`Trạng thái "${o(r0, 'Trạng thái')}" không hợp lệ (Nháp / Đã ký)`);
     const soHDB = o(r0, 'Số HĐ bán liên quan');
     const hdb = soHDB ? db.hopDongBan.find((x) => fold(x.soHD) === fold(soHDB)) : undefined;
@@ -289,7 +290,7 @@ export function docHdMua(rows: string[][], store: Store): KetQuaHd<HopDongMua>[]
       ngayKy: ngayKy || undefined,
       hdbId: hdb?.id,
       thuocPhuTai: fold(o(r0, 'Thuộc Phú Tài')) === fold('Có'),
-      trangThai: trangThai ?? 'Nháp',
+      trangThai: trangThai ?? TT.NHAP,
       ghiChu: o(r0, 'Ghi chú'),
       chiTiet,
       import: true,
@@ -343,7 +344,7 @@ export function docHdMua(rows: string[][], store: Store): KetQuaHd<HopDongMua>[]
                     <td>{{ x.doiTac || '—' }} @if (x.doiTacMoi) { <span class="tag info">Mới</span> }</td>
                     <td class="num">{{ x.soDongHang }}</td>
                     <td class="num">{{ money(x.giaTri) }}</td>
-                    <td>{{ x.trangThai }}</td>
+                    <td>{{ ttNhan(x.trangThai) }}</td>
                     <td>
                       @if (x.loi.length) { <div class="neg sub">@for (e of x.loi; track $index) { <div>{{ e }}</div> }</div> }
                       @else { <span class="tag ok">Hợp lệ</span> }
@@ -367,6 +368,7 @@ export class ImportHd {
   private readonly store = inject(Store);
   readonly loai = input.required<LoaiImport>();
   protected readonly money = money;
+  protected readonly ttNhan = ttNhan;
   protected readonly open = signal(false);
   protected readonly dangDoc = signal(false);
   protected readonly tenFile = signal('');

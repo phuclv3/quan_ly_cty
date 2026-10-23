@@ -6,6 +6,7 @@ import { money, sum, todayIso, vnd, viDate } from '../core/util';
 import { Modal, MoneyInput, TrangThai } from '../shared/ui-kit';
 import { Confirm } from '../shared/confirm';
 import { guiXoa } from '../shared/ho-so';
+import { TT } from '../core/trang-thai';
 
 interface Card {
   n: NguonTien;
@@ -69,8 +70,8 @@ interface Card {
           <div class="field">
             <label for="nt-tt">Trạng thái</label>
             <select id="nt-tt" (change)="set('trangThai', $any($event.target).value)">
-              <option value="Đang dùng" [selected]="n.trangThai === 'Đang dùng'">Đang dùng</option>
-              <option value="Ngưng" [selected]="n.trangThai === 'Ngưng'">Ngưng</option>
+              <option [value]="TT.DANG_DUNG" [selected]="n.trangThai === TT.DANG_DUNG">Đang dùng</option>
+              <option [value]="TT.NGUNG" [selected]="n.trangThai === TT.NGUNG">Ngưng</option>
             </select>
             <span class="hint">Nguồn Ngưng không hiện khi lập phiếu mới.</span>
           </div>
@@ -88,6 +89,7 @@ interface Card {
   `,
 })
 export class NguonTienTab {
+  protected readonly TT = TT;
   private readonly mNguon = viewChild<Modal>('mNguon');
   protected readonly store = inject(Store);
   protected readonly money = money;
@@ -98,7 +100,7 @@ export class NguonTienTab {
     this.store.db();
     return this.store.nguonTien().map((n) => ({ n, s: this.store.soDu(n.id) }));
   });
-  protected readonly cards = computed(() => this.all().filter((c) => c.n.trangThai === 'Đang dùng'));
+  protected readonly cards = computed(() => this.all().filter((c) => c.n.trangThai === TT.DANG_DUNG));
   protected readonly tong = computed(() => sum(this.all(), (c) => c.s.soDu));
 
   protected readonly f = signal<NguonTien | null>(null);
@@ -116,7 +118,7 @@ export class NguonTienTab {
   protected moi(): void {
     this.err.set('');
     this.isNew.set(true);
-    this.f.set({ id: '', ten: '', loai: 'Tiền mặt', soDuDauKy: 0, ngayDauKy: todayIso(), trangThai: 'Đang dùng' });
+    this.f.set({ id: '', ten: '', loai: 'Tiền mặt', soDuDauKy: 0, ngayDauKy: todayIso(), trangThai: TT.DANG_DUNG });
     this.goc.set(JSON.stringify(this.f()));
   }
   protected sua(n: NguonTien): void {

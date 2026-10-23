@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { Store } from '../core/store';
+import { TT, ttNhan } from '../core/trang-thai';
 import { HdbCalc, hdbCalc } from '../core/calc';
 import { HopDongBan, TRANG_THAI_HDB } from '../core/models';
 import { nhoLoc } from '../core/ui';
@@ -118,6 +119,8 @@ interface Row {
 })
 export class HdbList {
   protected readonly store = inject(Store);
+  protected readonly TT = TT;
+  protected readonly ttNhan = ttNhan;
   private readonly router = inject(Router);
   protected readonly money = money;
   protected readonly pct = pct;
@@ -139,7 +142,7 @@ export class HdbList {
   protected readonly facets = computed<Facet[]>(() => {
     const sales = [...new Set(this.store.hdbVisible().map((h) => h.sale))];
     return [
-      { key: 'tt', label: 'Trạng thái', options: TRANG_THAI_HDB.map((t) => ({ value: t, label: t })) },
+      { key: 'tt', label: 'Trạng thái', options: TRANG_THAI_HDB.map((t) => ({ value: t, label: ttNhan(t) })) },
       { key: 'sale', label: 'Sale phụ trách', options: sales.map((s) => ({ value: s, label: this.store.userName(s) })) },
       { key: 'hoSo', label: 'Hồ sơ', options: [{ value: 'Thiếu', label: 'Thiếu hồ sơ' }, { value: 'Đủ', label: 'Đủ hồ sơ' }] },
       { key: 'gh', label: 'Giao hàng', options: ['Chưa giao', 'Đang giao', 'Đã giao'].map((t) => ({ value: t, label: t })) },
@@ -176,7 +179,7 @@ export class HdbList {
   protected readonly tongSau = computed(() => sum(this.rows(), (r) => r.c.sauVAT));
   protected readonly tongCon = computed(() => sum(this.rows(), (r) => r.c.conPhaiThu));
   protected readonly kpi = computed(() => {
-    const rs = this.rows().filter((r) => r.h.trangThai !== 'Báo giá' && r.h.trangThai !== 'Huỷ');
+    const rs = this.rows().filter((r) => r.h.trangThai !== TT.BAO_GIA && r.h.trangThai !== TT.HUY);
     return {
       n: rs.length,
       tong: sum(rs, (r) => r.c.sauVAT),
@@ -203,7 +206,7 @@ export class HdbList {
       c.giaoHang,
       c.hoSoThieu.length ? `Thiếu: ${c.hoSoThieu.join(', ')}` : 'Đủ',
       this.store.userName(h.sale),
-      h.trangThai,
+      ttNhan(h.trangThai),
     ]);
     downloadFile(fileName('hop-dong-ban', 'csv'), 'text/csv', csv([head, ...body]));
   }

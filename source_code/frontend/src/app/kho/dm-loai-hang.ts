@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal, viewChild
 import { tonKho } from '../core/calc';
 import { KHO_CHUYEN_THANG, LoaiHang, NHOM_HANG, NhomHang } from '../core/models';
 import { Store } from '../core/store';
+import { TT, ttNhan } from '../core/trang-thai';
 import { dirtyOf } from '../shared/unsaved';
 import { nhoLoc } from '../core/ui';
 import { money } from '../core/util';
@@ -76,7 +77,7 @@ function goiYTen(l: LoaiHang): string {
                 @if (l.bietDanh?.length) { {{ l.bietDanh![0] }}@if (l.bietDanh!.length > 1) { <span class="tag mute">+{{ l.bietDanh!.length - 1 }}</span> } } @else { — }
               </td>
               <td>
-                <app-tt [v]="l.dangDung ? 'Đang dùng' : 'Ngưng'" />
+                <app-tt [v]="l.dangDung ? TT.DANG_DUNG : TT.NGUNG" />
                 @if (choXoa(l)) { <app-tt v="Chờ xoá" /> }
               </td>
               @if (edit()) {
@@ -154,6 +155,7 @@ function goiYTen(l: LoaiHang): string {
 export class DmLoaiHangTab {
   private readonly mLh = viewChild<Modal>('mLh');
   protected readonly store = inject(Store);
+  protected readonly TT = TT;
   private readonly confirm = inject(Confirm);
   protected readonly nhoms = NHOM_HANG;
   protected readonly money = money;
@@ -161,7 +163,7 @@ export class DmLoaiHangTab {
   protected readonly loc = signal<Loc>(nhoLoc('kho-loai-hang', LOC_RONG));
   protected readonly facets = computed<Facet[]>(() => [
     { key: 'nhom', label: 'Nhóm', options: nhomOpts() },
-    { key: 'dd', label: 'Trạng thái', options: [{ value: 'Đang dùng', label: 'Đang dùng' }, { value: 'Ngưng', label: 'Ngưng' }] },
+    { key: 'dd', label: 'Trạng thái', options: [TT.DANG_DUNG, TT.NGUNG].map((v) => ({ value: v, label: ttNhan(v) })) },
   ]);
   protected readonly f = signal<Form | null>(null);
   protected readonly dirty = dirtyOf(this.f);
@@ -181,7 +183,7 @@ export class DmLoaiHangTab {
       .filter(
         (x) =>
           khopSel(l, 'nhom', x.nhom) &&
-          khopSel(l, 'dd', x.dangDung ? 'Đang dùng' : 'Ngưng') &&
+          khopSel(l, 'dd', x.dangDung ? TT.DANG_DUNG : TT.NGUNG) &&
           khopQ(l, x.id, x.ten, x.moTa, x.dvt, x.nhom, x.loaiKhi, x.theTich, ...(x.bietDanh ?? [])),
       )
       .sort((a, b) => (thu.get(a.nhom) ?? 9) - (thu.get(b.nhom) ?? 9) || a.id.localeCompare(b.id, 'en', { numeric: true }));

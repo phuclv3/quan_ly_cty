@@ -9,6 +9,7 @@ import { matches, money, pct, sum, viDate, vndShort } from '../core/util';
 import { Kpi, Multi, PickOption, TrangThai } from '../shared/ui-kit';
 import { Icon } from '../shared/icon';
 import { csv, downloadFile, fileName } from '../shared/export';
+import { TT, ttNhan } from '../core/trang-thai';
 
 type Tab = 'doanh-thu' | 'loi-nhuan' | 'thanh-toan' | 'phu-tai';
 const TABS: { k: Tab; t: string }[] = [
@@ -17,7 +18,7 @@ const TABS: { k: Tab; t: string }[] = [
   { k: 'thanh-toan', t: 'Tiến độ thanh toán' },
   { k: 'phu-tai', t: 'Kênh Phú Tài' },
 ];
-const DANG_TH: HopDongBan['trangThai'][] = ['Hiệu lực', 'Đang giao hàng', 'Hoàn thành'];
+const DANG_TH: HopDongBan['trangThai'][] = [TT.HIEU_LUC, TT.DANG_GIAO_HANG, TT.HOAN_THANH];
 
 interface Dong {
   h: HopDongBan;
@@ -249,7 +250,7 @@ export class BaoCaoPage {
     const sale = this.rieng() ? [] : this.sale();
     return this.store
       .hdbVisible()
-      .filter((h) => h.trangThai !== 'Báo giá' && h.trangThai !== 'Huỷ')
+      .filter((h) => h.trangThai !== TT.BAO_GIA && h.trangThai !== TT.HUY)
       .filter((h) => !this.rieng() || h.sale === me)
       .filter((h) => !sale.length || sale.includes(h.sale))
       .filter((h) => matches(q, h.soHD, h.tenKH, h.mst, this.store.userName(h.sale)))
@@ -330,7 +331,7 @@ export class BaoCaoPage {
     const q = this.q();
     return this.store
       .hopDongPhuTai()
-      .filter((p) => p.trangThai !== 'Huỷ' && p.ngayKy?.startsWith(this.nam()) && matches(q, p.soHD, p.tenKH, p.mst))
+      .filter((p) => p.trangThai !== TT.HUY && p.ngayKy?.startsWith(this.nam()) && matches(q, p.soHD, p.tenKH, p.mst))
       .map((p) => ({ p, c: ptCalc(p, db) }))
       .sort((a, b) => (b.p.ngayKy ?? '').localeCompare(a.p.ngayKy ?? ''));
   });
@@ -355,7 +356,7 @@ export class BaoCaoPage {
       case 'doanh-thu':
         ten = `bao-cao-doanh-thu-${this.nam()}`;
         out = [['Số HĐ', 'Khách hàng', 'Sale', 'Ngày ký', 'Trạng thái', 'Giá trị (chưa VAT)', 'Sau VAT', 'Đã thu']];
-        for (const r of this.namRows()) out.push([r.h.soHD, r.h.tenKH, u(r.h.sale), viDate(r.h.ngayKy), r.h.trangThai, r.h.truocVAT, r.c.sauVAT, r.c.daThu]);
+        for (const r of this.namRows()) out.push([r.h.soHD, r.h.tenKH, u(r.h.sale), viDate(r.h.ngayKy), ttNhan(r.h.trangThai), r.h.truocVAT, r.c.sauVAT, r.c.daThu]);
         out.push(['Tổng', `${this.namRows().length} HĐ`, null, null, null, this.dtKpi().truoc, this.dtKpi().sau, this.dtKpi().thu]);
         break;
       case 'loi-nhuan':
@@ -373,14 +374,14 @@ export class BaoCaoPage {
         ten = `bao-cao-kenh-phu-tai-${this.nam()}`;
         out = [['Số HĐ', 'Khách hàng cuối', 'Ngày ký', 'Cách chia', 'Giá bán', 'Giá đầu vào', 'LN trước thuế', 'Oxy hưởng (gộp)', 'Hoa hồng', 'LN thực Oxy', 'Trạng thái']];
         for (const r of this.ptRows())
-          out.push([r.p.soHD, r.p.tenKH, viDate(r.p.ngayKy), r.p.cachChia ?? 'Nhân', r.p.truocVAT, r.c.giaDauVao, r.c.lnTruoc, r.c.oxyGop, r.c.hoaHong, r.c.lnThuc, r.p.trangThai]);
+          out.push([r.p.soHD, r.p.tenKH, viDate(r.p.ngayKy), r.p.cachChia ?? 'Nhân', r.p.truocVAT, r.c.giaDauVao, r.c.lnTruoc, r.c.oxyGop, r.c.hoaHong, r.c.lnThuc, ttNhan(r.p.trangThai)]);
         break;
       default:
         ten = 'bao-cao-tien-do-thanh-toan';
         out = [['Số HĐ', 'Khách hàng', 'Sale', 'Trạng thái', 'Sau VAT', 'Đã thu', '% đã thu', 'Đã xuất hoá đơn', '% hoá đơn', 'Còn phải thu', 'Đợt quá hạn', 'Tiền quá hạn', 'Hạn đợt gần nhất']];
         for (const r of this.ttRows())
           out.push([
-            r.h.soHD, r.h.tenKH, u(r.h.sale), r.h.trangThai, r.c.sauVAT, r.c.daThu, pct(r.c.pctThu), r.c.daXuatHD, pct(this.hdPct(r)),
+            r.h.soHD, r.h.tenKH, u(r.h.sale), ttNhan(r.h.trangThai), r.c.sauVAT, r.c.daThu, pct(r.c.pctThu), r.c.daXuatHD, pct(this.hdPct(r)),
             r.c.conPhaiThu, r.c.quaHan, r.tienQuaHan, r.c.dotGanNhat?.han ? viDate(r.c.dotGanNhat.han) : null,
           ]);
     }

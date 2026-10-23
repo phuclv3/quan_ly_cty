@@ -3,6 +3,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { map } from 'rxjs';
 import { Store } from '../core/store';
+import { TT, ttNhan } from '../core/trang-thai';
 import { hdmTong, ptCalc, soDuQuyPT } from '../core/calc';
 import { CACH_CHIA_PT, HopDongPhuTai, LOAI_TIEN, TRANG_THAI_PT, TrangThaiPT } from '../core/models';
 import { money, num, pct, todayIso, uid, viDate, viMoment } from '../core/util';
@@ -15,7 +16,7 @@ import { KiemTra } from '../shared/kiem-tra';
 type ArrKey = 'chiPhi' | 'dotKH' | 'dotTraNCC' | 'doiChieu';
 type Row<K extends ArrKey> = HopDongPhuTai[K][number];
 
-const LUONG: TrangThaiPT[] = TRANG_THAI_PT.filter((t) => t !== 'Huỷ');
+const LUONG: TrangThaiPT[] = TRANG_THAI_PT.filter((t) => t !== TT.HUY);
 const TABS = [
   { k: '1', t: 'Thông tin chung' },
   { k: '2', t: 'Giá bán' },
@@ -51,7 +52,7 @@ const quyDoi = (soTien: number, loaiTien: string, tyGia: number) => Math.round(s
           @if (dirty() && p.id) { <button type="button" class="btn quiet" (click)="hoanTac()">Hoàn tác</button> }
           <button type="button" class="btn ok" [disabled]="!dirty()" (click)="luu()">Lưu</button>
         }
-        @if (p.id && store.canEdit('phuTai') && !choXoa() && daLuu()?.trangThai !== 'Đã tất toán') {
+        @if (p.id && store.canEdit('phuTai') && !choXoa() && daLuu()?.trangThai !== TT.DA_TAT_TOAN) {
           <button type="button" class="btn quiet danger" (click)="xoa()">Xoá</button>
         }
       </div>
@@ -61,7 +62,7 @@ const quyDoi = (soTien: number, loaiTien: string, tyGia: number) => Math.round(s
       <span class="tag pt">PT</span>
       <span>Module riêng — không đụng quỹ, kho, công nợ của Oxy. Phú Tài là bên xuất hoá đơn cho khách cuối.</span>
     </div>
-    @if (khoa()) { <div class="note warn" style="margin-bottom:12px">HĐ đang khoá ({{ choXoa() ? 'chờ duyệt xoá' : p.trangThai }}) — không sửa được.</div> }
+    @if (khoa()) { <div class="note warn" style="margin-bottom:12px">HĐ đang khoá ({{ choXoa() ? 'chờ duyệt xoá' : ttNhan(p.trangThai) }}) — không sửa được.</div> }
     @if (loi()) { <div class="note bad" style="margin-bottom:12px">{{ loi() }}</div> }
 
     <div class="tabs" role="tablist">
@@ -105,15 +106,15 @@ const quyDoi = (soTien: number, loaiTien: string, tyGia: number) => Math.round(s
         <section class="card">
           <div class="flow">
             @for (s of luong; track s; let last = $last) {
-              <span class="st" [class.cur]="s === p.trangThai" [class.done]="daQua(s)">{{ s }}</span>
+              <span class="st" [class.cur]="s === p.trangThai" [class.done]="daQua(s)">{{ ttNhan(s) }}</span>
               @if (!last) { <span class="sep">→</span> }
             }
-            @if (p.trangThai === 'Huỷ') { <span class="sep">·</span><span class="st cur">Huỷ</span>@if (p.lyDoHuy) { <span class="sub">— {{ p.lyDoHuy }}</span> } }
+            @if (p.trangThai === TT.HUY) { <span class="sep">·</span><span class="st cur">{{ ttNhan(TT.HUY) }}</span>@if (p.lyDoHuy) { <span class="sub">— {{ p.lyDoHuy }}</span> } }
           </div>
           @if (p.id && store.canEdit('phuTai') && !khoa()) {
             <div class="btn-row" style="justify-content:flex-start;margin-top:10px">
               @if (keTiep(); as k) { <button type="button" class="btn sm" [disabled]="dirty()" (click)="chuyen(k)">Chuyển → {{ k }}</button> }
-              <button type="button" class="btn sm quiet danger" [disabled]="dirty()" (click)="chuyen('Huỷ')">Huỷ HĐ</button>
+              <button type="button" class="btn sm quiet danger" [disabled]="dirty()" (click)="chuyen(TT.HUY)">Huỷ HĐ</button>
               @if (dirty()) { <span class="sub">Lưu thay đổi trước khi chuyển trạng thái.</span> }
             </div>
             <p class="sub">→ Hiệu lực cần Số HĐ, Ngày ký, Giá bán. → Đã tất toán: KH đã trả PT đủ và Phú Tài đã chuyển đủ phần Oxy được hưởng — ghi các lần Phú Tài chuyển cho Oxy là dòng "Chi từ PT" ở <a routerLink="/phu-tai" [queryParams]="{ tab: 'dong-tien', hd: p.id }">sổ quỹ ảo của HĐ</a>. "Đã tất toán" / "Huỷ" khoá HĐ.</p>
@@ -397,6 +398,8 @@ const quyDoi = (soTien: number, loaiTien: string, tyGia: number) => Math.round(s
 export class PtDetail {
   private readonly kt = inject(KiemTra);
   protected readonly store = inject(Store);
+  protected readonly TT = TT;
+  protected readonly ttNhan = ttNhan;
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly confirm = inject(Confirm);
@@ -440,14 +443,14 @@ export class PtDetail {
   protected readonly khOpts = computed<PickOption[]>(() =>
     this.store
       .khachHang()
-      .filter((k) => k.trangThai !== 'Ngưng' || k.id === this.f().maKH)
-      .map((k) => ({ value: k.id, label: k.ten, hint: k.mst + (k.trangThai === 'Ngưng' ? ' · Ngưng' : '') })),
+      .filter((k) => k.trangThai !== TT.NGUNG || k.id === this.f().maKH)
+      .map((k) => ({ value: k.id, label: k.ten, hint: k.mst + (k.trangThai === TT.NGUNG ? ' · ' + ttNhan(TT.NGUNG) : '') })),
   );
   protected readonly hdmOpts = computed(() => {
     const db = this.store.db();
     const me = this.f();
     return db.hopDongMua
-      .filter((m) => m.thuocPhuTai && (m.trangThai !== 'Huỷ' || me.hdMua.includes(m.id)))
+      .filter((m) => m.thuocPhuTai && (m.trangThai !== TT.HUY || me.hdMua.includes(m.id)))
       .map((m) => ({
         id: m.id,
         soHD: m.soHD,
@@ -472,7 +475,7 @@ export class PtDetail {
   );
   /** Σ "Chi từ PT" của HĐ = tiền Phú Tài đã chuyển trả Oxy (điều kiện tất toán). */
   protected readonly daChuyenOxy = computed(() => soDuQuyPT(this.store.db(), { hdptId: this.f().id }).chi);
-  protected readonly hdmHuy = computed(() => this.hdmOpts().filter((m) => m.trangThai === 'Huỷ' && this.f().hdMua.includes(m.id)).map((m) => m.soHD));
+  protected readonly hdmHuy = computed(() => this.hdmOpts().filter((m) => m.trangThai === TT.HUY && this.f().hdMua.includes(m.id)).map((m) => m.soHD));
   protected readonly hdmTrung = computed(() => this.hdmOpts().filter((m) => m.khac && this.f().hdMua.includes(m.id)).map((m) => `${m.soHD} (${m.khac})`));
   private readonly unsaved = inject(Unsaved);
 
@@ -605,9 +608,9 @@ export class PtDetail {
     const p = this.f();
     const c = this.calc();
     let canhBao = '';
-    if (toi === 'Đã tất toán' && c.khDaTra < c.sauVAT) canhBao = `KH mới trả PT ${money(c.khDaTra)} / ${money(c.sauVAT)} đ.`;
+    if (toi === TT.DA_TAT_TOAN && c.khDaTra < c.sauVAT) canhBao = `KH mới trả PT ${money(c.khDaTra)} / ${money(c.sauVAT)} đ.`;
     let lyDo: string | undefined;
-    if (toi === 'Huỷ') {
+    if (toi === TT.HUY) {
       const r = await this.confirm.prompt({
         title: `Huỷ HĐ ${p.soHD}?`,
         message: 'Sau khi huỷ, HĐ bị khoá sửa.',
@@ -620,15 +623,15 @@ export class PtDetail {
       lyDo = r;
     } else {
       const ok = await this.confirm.ask({
-        title: `Chuyển ${p.soHD} sang "${toi}"?`,
-        message: toi === 'Đã tất toán' ? 'Sau khi chuyển, HĐ bị khoá sửa.' : undefined,
-        warn: canhBao || (toi === 'Đã tất toán' ? 'Kiểm tra Phú Tài đã chuyển đủ phần Oxy được hưởng.' : undefined),
+        title: `Chuyển ${p.soHD} sang "${ttNhan(toi)}"?`,
+        message: toi === TT.DA_TAT_TOAN ? 'Sau khi chuyển, HĐ bị khoá sửa.' : undefined,
+        warn: canhBao || (toi === TT.DA_TAT_TOAN ? 'Kiểm tra Phú Tài đã chuyển đủ phần Oxy được hưởng.' : undefined),
         ok: 'Chuyển',
       });
       if (!ok) return;
     }
     const err = this.store.chuyenTrangThaiPt(p.id, toi, lyDo);
-    this.store.say(err ?? `Đã chuyển sang ${toi}`);
+    this.store.say(err ?? `Đã chuyển sang ${ttNhan(toi)}`);
     if (!err) this.nap(p.id);
   }
 

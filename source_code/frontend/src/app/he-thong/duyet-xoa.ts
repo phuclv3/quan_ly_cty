@@ -10,6 +10,7 @@ import { FilterBar, Facet, LOC_RONG, Loc, khopQ, khopSel } from '../shared/filte
 import { Pager, paginate } from '../shared/pager';
 import { Modal, TrangThai } from '../shared/ui-kit';
 import { linkPhieuKho } from '../kho/kho-util';
+import { TT } from '../core/trang-thai';
 
 type Tab = 'cho-duyet' | 'da-xu-ly';
 
@@ -76,15 +77,15 @@ interface LinkDT {
               <td>{{ y.lyDo }}</td>
               <td>
                 <app-tt [v]="y.trangThai" />
-                @if (y.trangThai === 'Đã duyệt' || y.trangThai === 'Từ chối') {
+                @if (y.trangThai === TT.DA_DUYET || y.trangThai === TT.TU_CHOI) {
                   <div class="sub">{{ store.userName(y.nguoiDuyet) }} · {{ viMoment(y.ngayDuyet) }}</div>
-                } @else if (y.trangThai === 'Đã rút') {
+                } @else if (y.trangThai === TT.DA_RUT) {
                   <div class="sub">{{ viMoment(y.ngayDuyet) }}</div>
                 }
                 @if (y.lyDoTuChoi) { <div class="sub">Lý do: {{ y.lyDoTuChoi }}</div> }
               </td>
               <td>
-                @if (y.trangThai === 'Chờ duyệt') {
+                @if (y.trangThai === TT.CHO_DUYET) {
                   <div class="btn-row" style="justify-content:flex-start">
                     @if (store.duyetXoaDuoc(y)) {
                       <button class="btn sm danger" (click)="duyet(y)">Duyệt xoá</button>
@@ -121,10 +122,10 @@ interface LinkDT {
           <table class="tbl compact"><tbody>
             @for (r of tt; track r[0]) { <tr><th scope="row">{{ r[0] }}</th><td>{{ r[1] }}</td></tr> }
           </tbody></table>
-        } @else if (y.trangThai === 'Chờ duyệt' && !link(y)) {
+        } @else if (y.trangThai === TT.CHO_DUYET && !link(y)) {
           <p class="note warn">Không còn tìm thấy bản ghi.</p>
         }
-        @if (y.trangThai === 'Chờ duyệt') {
+        @if (y.trangThai === TT.CHO_DUYET) {
           @let ah = store.anhHuongXoa(y);
           @if (ah.length) {
             <div class="note warn"><b>Duyệt sẽ kéo theo:</b><ul style="margin:4px 0 0 18px">@for (a of ah; track a) { <li>{{ a }}</li> }</ul></div>
@@ -136,7 +137,7 @@ interface LinkDT {
           @if (link(y); as l) { <a class="btn quiet" [routerLink]="l.path" [queryParams]="l.query">Mở bản ghi</a> }
           <span style="flex:1"></span>
           <button type="button" class="btn quiet" (click)="xem.set(null)">Đóng</button>
-          @if (y.trangThai === 'Chờ duyệt' && store.duyetXoaDuoc(y)) {
+          @if (y.trangThai === TT.CHO_DUYET && store.duyetXoaDuoc(y)) {
             <button type="button" class="btn quiet" (click)="tuChoi(y)">Từ chối</button>
             <button type="button" class="btn danger-solid" (click)="duyet(y)">Duyệt xoá</button>
           }
@@ -146,6 +147,7 @@ interface LinkDT {
   `,
 })
 export class DuyetXoaPage {
+  protected readonly TT = TT;
   protected readonly store = inject(Store);
   private readonly confirm = inject(Confirm);
   private readonly route = inject(ActivatedRoute);
@@ -175,12 +177,12 @@ export class DuyetXoaPage {
 
   protected readonly choDuyet = computed(() =>
     this.locDung()
-      .filter((y) => y.trangThai === 'Chờ duyệt')
+      .filter((y) => y.trangThai === TT.CHO_DUYET)
       .sort((a, b) => a.ngayGui.localeCompare(b.ngayGui)),
   );
   private readonly daXuLy = computed(() =>
     this.locDung()
-      .filter((y) => y.trangThai !== 'Chờ duyệt')
+      .filter((y) => y.trangThai !== TT.CHO_DUYET)
       .sort((a, b) => (b.ngayDuyet ?? b.ngayGui).localeCompare(a.ngayDuyet ?? a.ngayGui)),
   );
   private readonly rows = computed(() => (this.tab() === 'cho-duyet' ? this.choDuyet() : this.daXuLy()));

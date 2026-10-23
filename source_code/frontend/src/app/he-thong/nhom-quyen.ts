@@ -9,6 +9,7 @@ import { Confirm } from '../shared/confirm';
 import { TrangThai } from '../shared/ui-kit';
 import { Icon } from '../shared/icon';
 import { KiemTra } from '../shared/kiem-tra';
+import { TT } from '../core/trang-thai';
 
 /** Màu nhãn theo mức quyền (dùng chung với Ma trận). */
 export const LEVEL_TONE: Record<Level, string> = {
@@ -44,7 +45,7 @@ export const LEVEL_TONE: Record<Level, string> = {
             <span class="mono muted">{{ g.ma }}</span>
             <span class="row" style="gap:4px">
               @if (g.toanQuyen) { <app-tt v="Toàn quyền" t="done" /> } @else { <span class="sub">{{ demQuyen(g) }} chức năng</span> }
-              @if (g.trangThai === 'Ngưng') { <app-tt v="Ngưng" /> }
+              @if (g.trangThai === TT.NGUNG) { <app-tt [v]="TT.NGUNG" /> }
               @if (g.heThong) { <span class="sub">· mặc định</span> }
             </span>
           </button>
@@ -74,8 +75,8 @@ export const LEVEL_TONE: Record<Level, string> = {
               <div class="field">
                 <label for="nq-tt">Trạng thái</label>
                 <select id="nq-tt" [disabled]="!sua()" [value]="n.trangThai" (change)="set('trangThai', $any($event.target).value)">
-                  <option value="Hoạt động" [selected]="n.trangThai === 'Hoạt động'">Hoạt động</option>
-                  <option value="Ngưng" [selected]="n.trangThai === 'Ngưng'">Ngưng (thành viên mất quyền của nhóm)</option>
+                  <option [value]="TT.HOAT_DONG" [selected]="n.trangThai === TT.HOAT_DONG">Hoạt động</option>
+                  <option [value]="TT.NGUNG" [selected]="n.trangThai === TT.NGUNG">Ngưng (thành viên mất quyền của nhóm)</option>
                 </select>
               </div>
               <div class="field wide">
@@ -152,9 +153,9 @@ export const LEVEL_TONE: Record<Level, string> = {
             <div class="card">
               <div class="tv-grid">
                 @for (t of store.taiKhoan(); track t.id) {
-                  <label class="tv" [class.on]="tv().includes(t.id)" [class.off]="t.trangThai === 'Khoá'">
+                  <label class="tv" [class.on]="tv().includes(t.id)" [class.off]="t.trangThai === TT.KHOA">
                     <input type="checkbox" [disabled]="!sua()" [checked]="tv().includes(t.id)" (change)="flipTV(t.id)" />
-                    <span><b>{{ t.hoTen }}</b><small class="muted">{{ t.email }}@if (t.trangThai === 'Khoá') { · Khoá }</small></span>
+                    <span><b>{{ t.hoTen }}</b><small class="muted">{{ t.email }}@if (t.trangThai === TT.KHOA) { · Khoá }</small></span>
                   </label>
                 }
               </div>
@@ -208,6 +209,7 @@ export const LEVEL_TONE: Record<Level, string> = {
   ],
 })
 export class NhomQuyenTab {
+  protected readonly TT = TT;
   private readonly ktNq = viewChild('ktNq', { read: KiemTra });
   protected readonly store = inject(Store);
   private readonly confirm = inject(Confirm);

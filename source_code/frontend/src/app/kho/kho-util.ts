@@ -1,6 +1,7 @@
 import { maLo } from '../core/calc';
 import { Db, KHO_CHUYEN_THANG, LoaiHang, NHOM_HANG, PhieuKho } from '../core/models';
 import { Store } from '../core/store';
+import { TT } from '../core/trang-thai';
 import { PickOption } from '../shared/ui-kit';
 
 /** Một dòng thẻ kho (KHO-09): một dòng phiếu đụng tới lô / mã hàng đang xem. */
@@ -22,7 +23,7 @@ export interface DongTheKho {
  */
 export function theKho(db: Db, o: { loaiHang?: string; lo?: string; kho?: string }): DongTheKho[] {
   const ps = db.phieuKho
-    .filter((p) => p.trangThai === 'Hiệu lực' && (o.kho ? p.kho === o.kho : p.kho !== KHO_CHUYEN_THANG))
+    .filter((p) => p.trangThai === TT.HIEU_LUC && (o.kho ? p.kho === o.kho : p.kho !== KHO_CHUYEN_THANG))
     .sort((a, b) => (a.ngay === b.ngay ? a.soPhieu.localeCompare(b.soPhieu) : a.ngay < b.ngay ? -1 : 1));
   const out: DongTheKho[] = [];
   let lk = 0;

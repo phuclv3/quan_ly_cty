@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal, viewChild } from '@angular/core';
 import { KHO_CHUYEN_THANG, Kho } from '../core/models';
 import { Store } from '../core/store';
+import { TT } from '../core/trang-thai';
 import { dirtyOf } from '../shared/unsaved';
 import { Confirm } from '../shared/confirm';
 import { guiXoa } from '../shared/ho-so';
@@ -26,7 +27,7 @@ import { Modal, TrangThai } from '../shared/ui-kit';
               <td>{{ r.k.ten }}</td>
               <td>{{ r.k.loai }}</td>
               <td>
-                <app-tt [v]="r.k.dangDung ? 'Đang dùng' : 'Ngưng'" />
+                <app-tt [v]="r.k.dangDung ? TT.DANG_DUNG : TT.NGUNG" />
                 @if (choXoa(r.k)) { <app-tt v="Chờ xoá" /> }
               </td>
               <td class="num">{{ r.soPhieu }}</td>
@@ -75,6 +76,7 @@ import { Modal, TrangThai } from '../shared/ui-kit';
 export class DmKhoTab {
   private readonly mKho = viewChild<Modal>('mKho');
   protected readonly store = inject(Store);
+  protected readonly TT = TT;
   private readonly confirm = inject(Confirm);
   protected readonly ctId = KHO_CHUYEN_THANG;
   protected readonly edit = computed(() => this.store.canEdit('khoDanhMuc'));

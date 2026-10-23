@@ -5,6 +5,7 @@ import { giaTriPhieu, maLo, tongSL } from '../core/calc';
 import { KHO_CHUYEN_THANG, PhieuKho } from '../core/models';
 import { Perm } from '../core/perm';
 import { Store } from '../core/store';
+import { TT, ttNhan } from '../core/trang-thai';
 import { nhoLoc } from '../core/ui';
 import { money, sum, viDate, viMoment } from '../core/util';
 import { Confirm } from '../shared/confirm';
@@ -110,10 +111,10 @@ const quyenSua = (p: PhieuKho): Perm =>
             @if (p.lyDo) { <div class="field full"><span class="lbl">Lý do điều chỉnh</span><div class="ro">{{ p.lyDo }}</div></div> }
             @if (yeuCau(p); as y) {
               <div class="field full">
-                <span class="lbl">{{ y.trangThai === 'Đã duyệt' ? 'Đã huỷ' : 'Yêu cầu huỷ' }}</span>
+                <span class="lbl">{{ y.trangThai === TT.DA_DUYET ? ttNhan(TT.DA_HUY) : 'Yêu cầu huỷ' }}</span>
                 <div class="ro">
                   {{ store.userName(y.nguoiGui) }} gửi yêu cầu lúc {{ viMoment(y.ngayGui) }} — lý do: {{ y.lyDo }}
-                  @if (y.nguoiDuyet && y.trangThai === 'Đã duyệt') { · {{ store.userName(y.nguoiDuyet) }} duyệt lúc {{ viMoment(y.ngayDuyet) }} }
+                  @if (y.nguoiDuyet && y.trangThai === TT.DA_DUYET) { · {{ store.userName(y.nguoiDuyet) }} duyệt lúc {{ viMoment(y.ngayDuyet) }} }
                 </div>
               </div>
             }
@@ -219,6 +220,8 @@ const quyenSua = (p: PhieuKho): Perm =>
 export class PhieuKhoTab {
   private readonly mPK = viewChild<Modal>('mPK');
   protected readonly store = inject(Store);
+  protected readonly TT = TT;
+  protected readonly ttNhan = ttNhan;
   private readonly confirm = inject(Confirm);
   readonly loai = input.required<PhieuKho['loai']>();
   protected readonly money = money;
@@ -234,7 +237,7 @@ export class PhieuKhoTab {
   protected readonly facets = computed<Facet[]>(() => [
     { key: 'kho', label: 'Kho', options: khoOpts(this.store.db()) },
     { key: 'nguonGoc', label: 'Nguồn gốc', options: NGUON_GOC_OPTS.filter((o) => o.value !== (this.loai() === 'Nhập' ? 'Tự động HĐ Bán' : 'Tự động HĐ Mua')) },
-    { key: 'tt', label: 'Trạng thái', options: [{ value: 'Hiệu lực', label: 'Hiệu lực' }, { value: 'Đã huỷ', label: 'Đã huỷ' }] },
+    { key: 'tt', label: 'Trạng thái', options: [TT.HIEU_LUC, TT.DA_HUY].map((v) => ({ value: v, label: ttNhan(v) })) },
   ]);
 
   protected readonly rows = computed(() => {
@@ -262,8 +265,8 @@ export class PhieuKhoTab {
       .sort((a, b) => (a.ngay === b.ngay ? b.soPhieu.localeCompare(a.soPhieu) : a.ngay < b.ngay ? 1 : -1));
   });
   protected readonly pg = paginate(this.rows);
-  protected readonly tongAll = computed(() => sum(this.rows().filter((p) => p.trangThai === 'Hiệu lực'), tongSL));
-  protected readonly giaTriAll = computed(() => sum(this.rows().filter((p) => p.trangThai === 'Hiệu lực'), giaTriPhieu));
+  protected readonly tongAll = computed(() => sum(this.rows().filter((p) => p.trangThai === TT.HIEU_LUC), tongSL));
+  protected readonly giaTriAll = computed(() => sum(this.rows().filter((p) => p.trangThai === TT.HIEU_LUC), giaTriPhieu));
 
   // ── Chi tiết ──
   private readonly selId = signal<string | null>(null);
@@ -294,7 +297,7 @@ export class PhieuKhoTab {
   protected yeuCau(p: PhieuKho) {
     return this.store
       .yeuCauXoa()
-      .filter((y) => y.loai === 'PhieuKho' && y.maDoiTuong === p.id && (y.trangThai === 'Đã duyệt' || y.trangThai === 'Chờ duyệt'))
+      .filter((y) => y.loai === 'PhieuKho' && y.maDoiTuong === p.id && (y.trangThai === TT.DA_DUYET || y.trangThai === TT.CHO_DUYET))
       .sort((a, b) => (a.ngayGui < b.ngayGui ? 1 : -1))[0];
   }
 
@@ -305,10 +308,10 @@ export class PhieuKhoTab {
     return this.store.dangChoXoa('PhieuKho', p.id);
   }
   protected suaDuoc(p: PhieuKho): boolean {
-    return p.trangThai === 'Hiệu lực' && !this.choXoa(p) && this.store.canEdit(quyenSua(p));
+    return p.trangThai === TT.HIEU_LUC && !this.choXoa(p) && this.store.canEdit(quyenSua(p));
   }
   protected huyDuoc(p: PhieuKho): boolean {
-    return p.trangThai === 'Hiệu lực' && !this.choXoa(p) && this.store.level('duyetXoa') !== 'none' && this.store.canEdit(quyenSua(p));
+    return p.trangThai === TT.HIEU_LUC && !this.choXoa(p) && this.store.level('duyetXoa') !== 'none' && this.store.canEdit(quyenSua(p));
   }
   protected vatPhieu(p: PhieuKho): number {
     return sum(p.dong, (d) => Math.round(((d.donGia ?? 0) * d.soLuong * (d.vat ?? 0)) / 100));
@@ -316,7 +319,7 @@ export class PhieuKhoTab {
   protected soDongXuatLo(p: PhieuKho, i: number): number {
     const lo = maLo(p, i);
     return sum(
-      this.store.phieuKho().filter((q) => q.loai === 'Xuất' && q.trangThai === 'Hiệu lực'),
+      this.store.phieuKho().filter((q) => q.loai === 'Xuất' && q.trangThai === TT.HIEU_LUC),
       (q) => q.dong.filter((d) => d.lo === lo).length,
     );
   }
@@ -382,7 +385,7 @@ export class PhieuKhoTab {
           d.vat ?? '',
           d.ghiChu ?? '',
           this.store.userName(p.nguoiThucHien),
-          p.trangThai,
+          ttNhan(p.trangThai),
         ]);
       });
     downloadFile(fileName(this.loai() === 'Nhập' ? 'phieu-nhap' : 'phieu-xuat', 'csv'), 'text/csv', csv(rows));

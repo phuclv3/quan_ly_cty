@@ -3,6 +3,7 @@
  * chọn nhiều, bảng từng bước tính. Không dùng FormsModule — giá trị bind bằng [value]/(input)
  * hoặc model() signal.
  */
+import { TT, ttNhan } from '../core/trang-thai';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -84,52 +85,55 @@ export class Modal {
   }
 }
 
+export { TT, ttNhan };
+
 // ── Nhãn trạng thái (màu theo nghĩa) ────────────────────────────────────
 
+/** Khoá = mã trạng thái (TT) hoặc nhãn suy diễn không lưu DB (Chưa giao, Chờ mua, Đủ hồ sơ…). */
 const TONE: Record<string, string> = {
-  'Báo giá': 'mute',
-  Nháp: 'mute',
+  [TT.BAO_GIA]: 'mute',
+  [TT.NHAP]: 'mute',
   'Chưa giao': 'mute',
   'Chưa': 'mute',
-  'Hiệu lực': 'info',
-  'Đã ký': 'info',
-  'Đang giao hàng': 'warn',
+  [TT.HIEU_LUC]: 'info',
+  [TT.DA_KY]: 'info',
+  [TT.DANG_GIAO_HANG]: 'warn',
   'Đang giao': 'warn',
-  'Đang nhận hàng': 'warn',
-  'Đang thực hiện': 'warn',
-  'Chờ duyệt': 'warn',
+  [TT.DANG_NHAN_HANG]: 'warn',
+  [TT.DANG_THUC_HIEN]: 'warn',
+  [TT.CHO_DUYET]: 'warn',
   'Chờ mua': 'bad',
   'Đang mua một phần': 'warn',
   'Đã lên HĐ mua': 'ok',
   'Chờ xoá': 'bad',
-  'Hoàn thành': 'ok',
-  'Đã nhận đủ': 'ok',
+  [TT.HOAN_THANH]: 'ok',
+  [TT.DA_NHAN_DU]: 'ok',
   'Đã giao': 'ok',
-  'Đã duyệt': 'ok',
+  [TT.DA_DUYET]: 'ok',
   'Đã': 'ok',
-  'Đang dùng': 'ok',
-  'Hoạt động': 'ok',
+  [TT.DANG_DUNG]: 'ok',
+  [TT.HOAT_DONG]: 'ok',
   'Đủ hồ sơ': 'ok',
-  'Đã tất toán': 'done',
-  'Từ chối': 'bad',
-  Huỷ: 'bad',
-  'Đã huỷ': 'bad',
-  Khoá: 'bad',
+  [TT.DA_TAT_TOAN]: 'done',
+  [TT.TU_CHOI]: 'bad',
+  [TT.HUY]: 'bad',
+  'Huỷ': 'bad',
+  [TT.DA_HUY]: 'bad',
+  [TT.KHOA]: 'bad',
   'Thiếu hồ sơ': 'bad',
   'Quá hạn': 'bad',
-  Ngưng: 'mute',
-  'Chưa liên hệ': 'mute',
-  'Đang liên hệ': 'info',
-  'Hợp đồng': 'ok',
-  'Chưa tiếp cận': 'mute',
-  'Đã báo giá': 'info',
-  'Đang đàm phán': 'warn',
-  'Ký hợp đồng': 'ok',
-  'Đã giao hàng': 'ok',
-  'Chưa phân bổ': 'mute',
-  'Đã phân bổ': 'info',
-  'Đã rút': 'mute',
-  'Hiệu lực ': 'ok',
+  [TT.NGUNG]: 'mute',
+  [TT.CHUA_LIEN_HE]: 'mute',
+  [TT.DANG_LIEN_HE]: 'info',
+  [TT.HOP_DONG]: 'ok',
+  [TT.CHUA_TIEP_CAN]: 'mute',
+  [TT.DA_BAO_GIA]: 'info',
+  [TT.DANG_DAM_PHAN]: 'warn',
+  [TT.KY_HOP_DONG]: 'ok',
+  [TT.DA_GIAO_HANG]: 'ok',
+  [TT.CHUA_PHAN_BO]: 'mute',
+  [TT.DA_PHAN_BO]: 'info',
+  [TT.DA_RUT]: 'mute',
   'Thuộc Phú Tài': 'pt',
   Import: 'mute',
 };
@@ -137,11 +141,13 @@ const TONE: Record<string, string> = {
 @Component({
   selector: 'app-tt',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `<span class="tag" [class]="'tag ' + tone()">{{ v() }}</span>`,
+  template: `<span class="tag" [class]="'tag ' + tone()">{{ nhan() }}</span>`,
 })
 export class TrangThai {
   readonly v = input.required<string>();
   readonly t = input<string>('');
+  /** `v` là mã trạng thái (TT.*) hoặc nhãn suy diễn; hiển thị qua ttNhan. */
+  protected readonly nhan = computed(() => ttNhan(this.v()));
   protected readonly tone = computed(() => this.t() || TONE[this.v()] || 'mute');
 }
 

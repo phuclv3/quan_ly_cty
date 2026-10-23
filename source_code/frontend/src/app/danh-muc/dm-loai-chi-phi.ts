@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal, viewChild } from '@angular/core';
 import { Store } from '../core/store';
+import { TT } from '../core/trang-thai';
 import { LoaiChiPhi, NhomChiPhi } from '../core/models';
 import { Modal, TrangThai } from '../shared/ui-kit';
 import { Confirm } from '../shared/confirm';
@@ -32,7 +33,7 @@ const NHOM: NhomChiPhi[] = ['Vận hành', 'Thực hiện HĐ'];
                     <td class="mono">{{ l.id }}</td>
                     <td>{{ l.ten }}</td>
                     <td>
-                      <app-tt [v]="l.dangDung ? 'Đang dùng' : 'Ngưng'" />
+                      <app-tt [v]="l.dangDung ? TT.DANG_DUNG : TT.NGUNG" />
                       @if (store.dangChoXoa('DM_LoaiChiPhi', l.id)) { <app-tt v="Chờ xoá" /> }
                     </td>
                     <td class="num">{{ daDung().get(l.id) ?? 0 }}</td>
@@ -79,6 +80,7 @@ const NHOM: NhomChiPhi[] = ['Vận hành', 'Thực hiện HĐ'];
 export class DmLoaiChiPhi {
   private readonly mLcp = viewChild<Modal>('mLcp');
   protected readonly store = inject(Store);
+  protected readonly TT = TT;
   private readonly confirm = inject(Confirm);
   protected readonly nhom = NHOM;
   protected readonly f = signal<LoaiChiPhi | null>(null);

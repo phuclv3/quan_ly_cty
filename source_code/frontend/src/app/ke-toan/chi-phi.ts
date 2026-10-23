@@ -10,8 +10,9 @@ import { Pager, paginate } from '../shared/pager';
 import { csv, downloadFile, fileName } from '../shared/export';
 import { ChiPhiForm } from './chi-phi-form';
 import { SortTh, Sorter } from '../shared/sort';
+import { TT, ttNhan } from '../core/trang-thai';
 
-const TRANG_THAI = ['Nháp', 'Chờ duyệt', 'Đã duyệt', 'Từ chối'];
+const TRANG_THAI = [TT.NHAP, TT.CHO_DUYET, TT.DA_DUYET, TT.TU_CHOI];
 
 /** Tab Chi phí thực hiện HĐ (KT-12) — sổ tách riêng khỏi Sổ quỹ. Hỗ trợ ?hdb=<id> để mở popup nhập sẵn HĐ. */
 @Component({
@@ -92,7 +93,7 @@ export class ChiPhiTab {
           .map((h) => ({ value: h.id, label: h.soHD, hint: h.tenKH })),
       },
       { key: 'lcp', label: 'Loại chi phí', options: this.store.loaiChiPhi().filter((l) => l.nhom === 'Thực hiện HĐ').map((l) => ({ value: l.id, label: l.ten })) },
-      { key: 'tt', label: 'Trạng thái', options: TRANG_THAI.map((v) => ({ value: v, label: v })) },
+      { key: 'tt', label: 'Trạng thái', options: TRANG_THAI.map((v) => ({ value: v, label: ttNhan(v) })) },
     ];
   });
 
@@ -157,7 +158,7 @@ export class ChiPhiTab {
         this.store.userName(c.nguoiThucHien),
         c.nguoiNhan ?? '',
         c.donViVanChuyen ?? '',
-        c.trangThai,
+        ttNhan(c.trangThai),
       ];
     });
     downloadFile(fileName('chi-phi-hd', 'csv'), 'text/csv', csv([head, ...body]));

@@ -25,6 +25,7 @@ import {
   ThamSoThue,
 } from './models';
 import { daysFromToday, sum, todayIso, vnd } from './util';
+import { TT, ttNhan } from './trang-thai';
 
 // ── Chung ───────────────────────────────────────────────────────────────
 
@@ -70,14 +71,14 @@ export function soNgayQuaHan(han?: string): number {
 export function dotBanDaThu(d: DotTTBan, db: Db): number {
   if (!d.phieuThuId) return d.soTienThu ?? 0;
   const p = db.phieuThuChi.find((x) => x.id === d.phieuThuId);
-  return p && p.trangThai === 'Đã duyệt' ? p.soTienThu : 0;
+  return p && p.trangThai === TT.DA_DUYET ? p.soTienThu : 0;
 }
 
 /** Phần thực thu đã ghi nhận nhưng phiếu Thu còn Chờ duyệt. */
 export function dotBanChoDuyet(d: DotTTBan, db: Db): number {
   if (!d.phieuThuId) return 0;
   const p = db.phieuThuChi.find((x) => x.id === d.phieuThuId);
-  return p && p.trangThai === 'Chờ duyệt' ? p.soTienThu : 0;
+  return p && p.trangThai === TT.CHO_DUYET ? p.soTienThu : 0;
 }
 
 export type GiaoHangTT = 'Chưa giao' | 'Đang giao' | 'Đã giao';
@@ -124,19 +125,19 @@ export function hdbCalc(h: HopDongBan, db: Db): HdbCalc {
   const daThu = sum(h.dotTT, (d) => dotBanDaThu(d, db));
   const daThuCho = sum(h.dotTT, (d) => dotBanChoDuyet(d, db));
   const cps = db.chiPhiHD.filter((c) => c.hdbId === h.id);
-  const hh = cps.filter((c) => c.loaiChiPhi === LCP_HOA_HONG && c.trangThai !== 'Từ chối');
+  const hh = cps.filter((c) => c.loaiChiPhi === LCP_HOA_HONG && c.trangThai !== TT.TU_CHOI);
   const cpDuyet = sum(
-    cps.filter((c) => c.trangThai === 'Đã duyệt'),
+    cps.filter((c) => c.trangThai === TT.DA_DUYET),
     (c) => c.soTien,
   );
   const cpCho = sum(
-    cps.filter((c) => c.trangThai === 'Chờ duyệt'),
+    cps.filter((c) => c.trangThai === TT.CHO_DUYET),
     (c) => c.soTien,
   );
   const phat = Math.max(h.phatHD ?? 0, 0);
-  const xk = db.phieuKho.filter((p) => p.loai === 'Xuất' && p.hdId === h.id && p.trangThai === 'Hiệu lực');
+  const xk = db.phieuKho.filter((p) => p.loai === 'Xuất' && p.hdId === h.id && p.trangThai === TT.HIEU_LUC);
   const giaVonXK = sum(xk, (p) => sum(p.dong, (d) => (d.donGiaGoc ?? 0) * d.soLuong));
-  const hdms = db.hopDongMua.filter((m) => m.trangThai !== 'Huỷ' && hdmChoHdb(m, h.id));
+  const hdms = db.hopDongMua.filter((m) => m.trangThai !== TT.HUY && hdmChoHdb(m, h.id));
   const giaVonHDM = sum(hdms, (m) => (m.hdbId === h.id ? hdmTong(m) : sum(dongMuaChoHdb(m, h.id), thanhTienVND)));
   const giaVon = giaVonXK > 0 ? giaVonXK : giaVonHDM;
   const giaVonNguon = giaVonXK > 0 ? 'Xuất kho' : giaVonHDM > 0 ? 'HĐ Mua liên quan' : 'Chưa có';
@@ -158,7 +159,7 @@ export function hdbCalc(h: HopDongBan, db: Db): HdbCalc {
     pctThu: sau - phat > 0 ? daThu / (sau - phat) : 0,
     tienTraKhach: sum(hh, (c) => c.soTien),
     tienTraKhachDuyet: sum(
-      hh.filter((c) => c.trangThai === 'Đã duyệt'),
+      hh.filter((c) => c.trangThai === TT.DA_DUYET),
       (c) => c.soTien,
     ),
     traKhachToiDa: Math.max(0, chenhLech - thue.thue),
@@ -172,7 +173,7 @@ export function hdbCalc(h: HopDongBan, db: Db): HdbCalc {
     daXuatHD,
     conPhaiXuatHD: sau - daXuatHD,
     giaoHang:
-      h.trangThai === 'Hoàn thành' || h.trangThai === 'Đã tất toán'
+      h.trangThai === TT.HOAN_THANH || h.trangThai === TT.DA_TAT_TOAN
         ? 'Đã giao'
         : xk.length > 0
           ? 'Đang giao'
@@ -256,7 +257,7 @@ export function slDaDeNghi(db: Db, hdbId: string): Map<string, number> {
 }
 
 /** HĐ bán đang giữ hàng: đã Hiệu lực / Đang giao hàng và có dòng sản phẩm. */
-const giuHang = (h: HopDongBan) => (h.trangThai === 'Hiệu lực' || h.trangThai === 'Đang giao hàng') && !!h.dongHang?.length;
+const giuHang = (h: HopDongBan) => (h.trangThai === TT.HIEU_LUC || h.trangThai === TT.DANG_GIAO_HANG) && !!h.dongHang?.length;
 
 /** SL còn phải giao theo mã của một HĐ bán = Σ dòng sản phẩm − đã xuất kho cho HĐ. */
 function conPhaiGiaoTheoMa(db: Db, h: HopDongBan): Map<string, number> {
@@ -264,7 +265,7 @@ function conPhaiGiaoTheoMa(db: Db, h: HopDongBan): Map<string, number> {
   for (const d of h.dongHang ?? []) if (d.loaiHang) out.set(d.loaiHang, (out.get(d.loaiHang) ?? 0) + d.soLuong);
   if (h.id)
     for (const p of db.phieuKho)
-      if (p.loai === 'Xuất' && p.hdId === h.id && p.trangThai === 'Hiệu lực')
+      if (p.loai === 'Xuất' && p.hdId === h.id && p.trangThai === TT.HIEU_LUC)
         for (const x of p.dong) if (out.has(x.loaiHang)) out.set(x.loaiHang, Math.max(out.get(x.loaiHang)! - x.soLuong, 0));
   return out;
 }
@@ -305,7 +306,7 @@ export function kiemTraDongBan(
 ): { d: DongHangBan; daGiao: number; con: number; ton: number; tonThuc: number; daGiuKhac: number; thieu: number; daDeNghi: number; trangThai: TrangThaiKhoDong }[] {
   const daGiao = new Map<string, number>();
   for (const p of db.phieuKho)
-    if (p.loai === 'Xuất' && p.hdId === h.id && h.id && p.trangThai === 'Hiệu lực')
+    if (p.loai === 'Xuất' && p.hdId === h.id && h.id && p.trangThai === TT.HIEU_LUC)
       for (const x of p.dong) daGiao.set(x.loaiHang, (daGiao.get(x.loaiHang) ?? 0) + x.soLuong);
   const deNghi = h.id ? slDaDeNghi(db, h.id) : new Map<string, number>();
   const conTon = new Map<string, number>();
@@ -341,7 +342,7 @@ export function dnvtTinhTrang(db: Db, dn: DeNghiVatTu): { trangThai: 'Huỷ' | '
   const daMua = new Map<string, number>();
   const hdm: HopDongMua[] = [];
   for (const m of db.hopDongMua) {
-    if (m.trangThai === 'Huỷ') continue;
+    if (m.trangThai === TT.HUY) continue;
     let co = false;
     for (const d of m.chiTiet)
       if (d.dnvtId === dn.id && d.dnvtDong) {
@@ -361,13 +362,13 @@ export function dnvtTinhTrang(db: Db, dn: DeNghiVatTu): { trangThai: 'Huỷ' | '
 export function hdbThieuDeChuyen(h: HopDongBan, toi: HopDongBan['trangThai'], db: Db): string[] {
   const c = hdbCalc(h, db);
   const out: string[] = [];
-  if (toi === 'Hiệu lực') {
+  if (toi === TT.HIEU_LUC) {
     if (!h.soHD.trim()) out.push('Chưa có Số HĐ');
     if (!h.mst?.trim()) out.push('Chưa có MST khách hàng');
     if (!h.ngayKy) out.push('Chưa có Ngày ký');
     if (h.truocVAT <= 0) out.push('Chưa có Giá trị HĐ');
   }
-  if (toi === 'Đã tất toán') {
+  if (toi === TT.DA_TAT_TOAN) {
     if (c.conPhaiThu > 0) out.push(`Còn phải thu ${vnd(c.conPhaiThu)}`);
     if (c.hoSoThieu.length) out.push(`Thiếu hồ sơ: ${c.hoSoThieu.join(', ')}`);
     if (c.cpCho > 0) out.push('Còn chi phí thực hiện Chờ duyệt');
@@ -392,7 +393,7 @@ export function hdmTong(m: HopDongMua): number {
 export function slDaNhap(dongId: string, db: Db): number {
   let s = 0;
   for (const p of db.phieuKho) {
-    if (p.loai !== 'Nhập' || p.trangThai !== 'Hiệu lực') continue;
+    if (p.loai !== 'Nhập' || p.trangThai !== TT.HIEU_LUC) continue;
     for (const d of p.dong) if (d.dongHDMua === dongId) s += d.soLuong;
   }
   return s;
@@ -403,7 +404,7 @@ export function dotMuaDaTra(m: HopDongMua, dot: HopDongMua['dotTT'][number], db:
   if (m.thuocPhuTai) return dot.soTienTra ?? 0;
   if (!dot.phieuChiId) return 0;
   const p = db.phieuThuChi.find((x) => x.id === dot.phieuChiId);
-  return p && p.trangThai === 'Đã duyệt' ? p.soTienChi : 0;
+  return p && p.trangThai === TT.DA_DUYET ? p.soTienChi : 0;
 }
 
 export interface HdmCalc {
@@ -491,7 +492,7 @@ export function soDuNguon(nguonId: string, db: Db, denNgay?: string): SoDuNguon 
   const tu = n?.ngayDauKy ?? '';
   const inRange = (d: string) => d >= tu && (!denNgay || d <= denNgay);
   for (const p of db.phieuThuChi) {
-    if (p.trangThai !== 'Đã duyệt' || !inRange(p.ngayLap)) continue;
+    if (p.trangThai !== TT.DA_DUYET || !inRange(p.ngayLap)) continue;
     if (p.loai === 'Luân chuyển') {
       if (p.nguonTien === nguonId) out.lcRa += p.soTienChi;
       if (p.nguonTienDen === nguonId) out.lcVao += p.soTienChi;
@@ -507,7 +508,7 @@ export function soDuNguon(nguonId: string, db: Db, denNgay?: string): SoDuNguon 
     }
   }
   for (const c of db.chiPhiHD) {
-    if (c.trangThai === 'Đã duyệt' && c.nguonTien === nguonId && inRange(c.ngay)) out.cpHD += c.soTien;
+    if (c.trangThai === TT.DA_DUYET && c.nguonTien === nguonId && inRange(c.ngay)) out.cpHD += c.soTien;
   }
   out.soDu = out.dauKy + out.thu - out.chi + out.qtThu - out.qtChi + out.lcVao - out.lcRa - out.cpHD;
   return out;
@@ -523,20 +524,20 @@ export function chenhLechQuyetToan(p: PhieuThuChi, db: Db): number {
 export function tamUngTreo(db: Db): PhieuThuChi[] {
   const daQT = new Set(
     db.phieuThuChi
-      .filter((p) => p.loai === 'Quyết toán tạm ứng' && p.trangThai === 'Đã duyệt')
+      .filter((p) => p.loai === 'Quyết toán tạm ứng' && p.trangThai === TT.DA_DUYET)
       .map((p) => p.phieuTamUngGoc),
   );
-  return db.phieuThuChi.filter((p) => p.loai === 'Tạm ứng' && p.trangThai === 'Đã duyệt' && !daQT.has(p.id));
+  return db.phieuThuChi.filter((p) => p.loai === 'Tạm ứng' && p.trangThai === TT.DA_DUYET && !daQT.has(p.id));
 }
 
 /** Tạm ứng có thể chọn làm gốc khi lập quyết toán: đã duyệt, chưa có quyết toán nào chưa bị từ chối. */
 export function tamUngChoQuyetToan(db: Db, truPhieu?: string): PhieuThuChi[] {
   const dangQT = new Set(
     db.phieuThuChi
-      .filter((p) => p.loai === 'Quyết toán tạm ứng' && p.trangThai !== 'Từ chối' && p.id !== truPhieu)
+      .filter((p) => p.loai === 'Quyết toán tạm ứng' && p.trangThai !== TT.TU_CHOI && p.id !== truPhieu)
       .map((p) => p.phieuTamUngGoc),
   );
-  return db.phieuThuChi.filter((p) => p.loai === 'Tạm ứng' && p.trangThai === 'Đã duyệt' && !dangQT.has(p.id));
+  return db.phieuThuChi.filter((p) => p.loai === 'Tạm ứng' && p.trangThai === TT.DA_DUYET && !dangQT.has(p.id));
 }
 
 export const isHoaHong = (c: ChiPhiHD) => c.loaiChiPhi === LCP_HOA_HONG;
@@ -580,7 +581,7 @@ function donGiaNhap(d: DongPhieuKho, dongMua: Map<string, DongHangMua>): number 
 export function tonTheoLo(db: Db, denNgay?: string): DongLo[] {
   const dongMua = new Map<string, DongHangMua>();
   for (const m of db.hopDongMua) for (const d of m.chiTiet) dongMua.set(d.id, d);
-  const hl = db.phieuKho.filter((p) => p.trangThai === 'Hiệu lực' && (!denNgay || p.ngay <= denNgay));
+  const hl = db.phieuKho.filter((p) => p.trangThai === TT.HIEU_LUC && (!denNgay || p.ngay <= denNgay));
   const map = new Map<string, DongLo>();
   for (const p of hl) {
     if (p.loai !== 'Nhập') continue;
@@ -647,7 +648,7 @@ export function tonKho(db: Db, denNgay?: string): DongTon[] {
     return r;
   };
   for (const p of db.phieuKho) {
-    if (p.trangThai !== 'Hiệu lực' || (denNgay && p.ngay > denNgay)) continue;
+    if (p.trangThai !== TT.HIEU_LUC || (denNgay && p.ngay > denNgay)) continue;
     for (const d of p.dong) {
       const r = row(d.loaiHang, p.kho);
       if (p.loai === 'Nhập') r.nhap += d.soLuong;
@@ -711,7 +712,7 @@ export function kiemTraKho(db: Db, loaiHang: string, soLuong: number): { ton: nu
 export function donGiaChuyenThang(db: Db, hdbId: string | undefined, loaiHang: string): number {
   if (!hdbId) return 0;
   const d = db.hopDongMua
-    .filter((m) => m.trangThai !== 'Huỷ' && hdmChoHdb(m, hdbId))
+    .filter((m) => m.trangThai !== TT.HUY && hdmChoHdb(m, hdbId))
     .flatMap((m) => dongMuaChoHdb(m, hdbId))
     .find((x) => x.loaiHang === loaiHang);
   return d ? Math.round(donGiaVND(d)) : 0;
@@ -787,7 +788,7 @@ export interface PtCalc {
 /** PT-06: chia lợi nhuận từng bước. Lỗ: thuế = 0, Phú Tài giữ = 0, Oxy chịu toàn bộ (D-21). */
 export function ptCalc(p: HopDongPhuTai, db: Db): PtCalc {
   const giaMua = sum(
-    db.hopDongMua.filter((m) => p.hdMua.includes(m.id) && m.trangThai !== 'Huỷ'),
+    db.hopDongMua.filter((m) => p.hdMua.includes(m.id) && m.trangThai !== TT.HUY),
     hdmTong,
   );
   const by = (l: string) => sum(p.chiPhi.filter((c) => c.loai === l), (c) => c.soTien);
@@ -881,13 +882,13 @@ export function soDuQuyPT(db: Db, o: { hdptId?: string; denNgay?: string } = {})
 export function hdbConChuaGiao(h: HopDongBan, db: Db): { loaiHang: string; con: number }[] {
   const daGiao = new Map<string, number>();
   for (const p of db.phieuKho) {
-    if (p.loai !== 'Xuất' || p.hdId !== h.id || p.trangThai !== 'Hiệu lực') continue;
+    if (p.loai !== 'Xuất' || p.hdId !== h.id || p.trangThai !== TT.HIEU_LUC) continue;
     for (const d of p.dong) daGiao.set(d.loaiHang, (daGiao.get(d.loaiHang) ?? 0) + d.soLuong);
   }
   // Có dòng hàng trên HĐ bán → so theo dòng hàng; chưa có thì so theo các HĐ mua liên quan như trước.
   const can = h.dongHang?.length
     ? h.dongHang.map((d) => ({ loaiHang: d.loaiHang, soLuong: d.soLuong }))
-    : db.hopDongMua.filter((m) => m.trangThai !== 'Huỷ' && hdmChoHdb(m, h.id)).flatMap((m) => dongMuaChoHdb(m, h.id));
+    : db.hopDongMua.filter((m) => m.trangThai !== TT.HUY && hdmChoHdb(m, h.id)).flatMap((m) => dongMuaChoHdb(m, h.id));
   const out: { loaiHang: string; con: number }[] = [];
   for (const d of can) {
     const tru = Math.min(daGiao.get(d.loaiHang) ?? 0, d.soLuong);
@@ -901,7 +902,7 @@ export function hdbConChuaGiao(h: HopDongBan, db: Db): { loaiHang: string; con: 
 export function hdbKhongGiaoHang(h: HopDongBan, db: Db): boolean {
   return (
     !h.dongHang?.length &&
-    !db.hopDongMua.some((m) => m.trangThai !== 'Huỷ' && hdmChoHdb(m, h.id)) &&
-    !db.phieuKho.some((p) => p.loai === 'Xuất' && p.hdId === h.id && p.trangThai === 'Hiệu lực')
+    !db.hopDongMua.some((m) => m.trangThai !== TT.HUY && hdmChoHdb(m, h.id)) &&
+    !db.phieuKho.some((p) => p.loai === 'Xuất' && p.hdId === h.id && p.trangThai === TT.HIEU_LUC)
   );
 }

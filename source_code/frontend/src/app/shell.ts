@@ -5,6 +5,7 @@ import { Store } from './core/store';
 import { Ui } from './core/ui';
 import { Auth } from './core/auth';
 import { Perm } from './core/perm';
+import { TT } from './core/trang-thai';
 
 interface NavItem {
   path: string;
@@ -82,7 +83,7 @@ export class Shell {
     this.store.canApprove('soQuyDuyet') ? this.store.phieuChoDuyet().length + this.store.cpChoDuyet().length : 0,
   );
   /** Không thuộc nhóm quyền nào đang Hoạt động → không vào app (tránh trang chủ rỗng khó hiểu). */
-  protected readonly chuaCapQuyen = computed(() => !this.store.myGroups().some((g) => g.trangThai === 'Hoạt động'));
+  protected readonly chuaCapQuyen = computed(() => !this.store.myGroups().some((g) => g.trangThai === TT.HOAT_DONG));
 
   private readonly choXoa = computed(() => {
     const ys = this.store.xoaChoDuyet();

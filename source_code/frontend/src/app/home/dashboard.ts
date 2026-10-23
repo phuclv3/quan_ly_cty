@@ -6,6 +6,7 @@ import { hdbCalc, hdmCalc, hoSoThieu, ptCalc, soDuQuyPT, tamUngTreo, tonKho } fr
 import { money, sum, viDate, viMoment, vndShort, nowIso } from '../core/util';
 import { Kpi } from '../shared/ui-kit';
 import { Icon } from '../shared/icon';
+import { TT } from '../core/trang-thai';
 
 interface Viec {
   text: string;
@@ -206,21 +207,21 @@ export class Dashboard {
     const db = this.store.db();
     return this.store
       .hdbVisible()
-      .filter((h) => h.trangThai !== 'Báo giá' && h.trangThai !== 'Huỷ')
+      .filter((h) => h.trangThai !== TT.BAO_GIA && h.trangThai !== TT.HUY)
       .map((h) => ({ h, c: hdbCalc(h, db) }));
   });
   private readonly calcMua = computed(() => {
     const db = this.store.db();
     return this.store
       .hdmVisible()
-      .filter((m) => !m.thuocPhuTai && m.trangThai !== 'Huỷ')
+      .filter((m) => !m.thuocPhuTai && m.trangThai !== TT.HUY)
       .map((m) => ({ m, c: hdmCalc(m, db) }));
   });
 
   protected readonly nguon = computed(() =>
     this.store
       .nguonTien()
-      .filter((n) => n.trangThai === 'Đang dùng')
+      .filter((n) => n.trangThai === TT.DANG_DUNG)
       .map((n) => ({ id: n.id, ten: n.ten, soDu: this.store.soDu(n.id).soDu })),
   );
   protected readonly tongSoDu = computed(() => sum(this.nguon(), (n) => n.soDu));
@@ -308,7 +309,7 @@ export class Dashboard {
     }
     if (s.canView('soQuy')) {
       for (const p of s.phieuThuChi()) {
-        if (p.trangThai === 'Từ chối' && p.nguoiDeNghi === me)
+        if (p.trangThai === TT.TU_CHOI && p.nguoiDeNghi === me)
           out.push({
             text: `Phiếu ${p.soPhieu || p.loai} bị từ chối`,
             sub: `${viDate(p.ngayLap)} · ${p.lyDoTuChoi || p.noiDung}`,
@@ -320,7 +321,7 @@ export class Dashboard {
     }
     if (s.canView('cpHD')) {
       for (const c of s.chiPhiHD()) {
-        if (c.trangThai === 'Từ chối' && c.nguoiThucHien === me)
+        if (c.trangThai === TT.TU_CHOI && c.nguoiThucHien === me)
           out.push({
             text: `Chi phí HĐ ${c.maCP || ''} bị từ chối`,
             sub: `${s.hdbById(c.hdbId)?.soHD ?? ''} · ${c.lyDoTuChoi || c.noiDung}`,
@@ -332,7 +333,7 @@ export class Dashboard {
     }
     if (s.canView('hdb')) {
       for (const { h, c } of this.calcBan()) {
-        if (h.trangThai === 'Hoàn thành')
+        if (h.trangThai === TT.HOAN_THANH)
           out.push({
             text: `HĐ bán ${h.soHD} Hoàn thành — chưa tất toán`,
             sub: [
@@ -350,7 +351,7 @@ export class Dashboard {
     if (s.canView('phuTai')) {
       const db = s.db();
       for (const p of s.hopDongPhuTai()) {
-        if (p.trangThai !== 'Hoàn thành' || s.dangChoXoa('HopDongPhuTai', p.id)) continue;
+        if (p.trangThai !== TT.HOAN_THANH || s.dangChoXoa('HopDongPhuTai', p.id)) continue;
         const c = ptCalc(p, db);
         const thieu = hoSoThieu(db, 'HDPT', p.id);
         out.push({

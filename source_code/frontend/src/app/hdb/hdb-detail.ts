@@ -3,6 +3,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { map } from 'rxjs';
 import { Store } from '../core/store';
+import { TT, ttNhan } from '../core/trang-thai';
 import { HopDongBan, TRANG_THAI_HDB, TrangThaiHDB } from '../core/models';
 import { dnvtTinhTrang, hdbCalc, hdbConChuaGiao, hdbThieuDeChuyen, hdmCalc, hdmChoHdb } from '../core/calc';
 import { money, pct } from '../core/util';
@@ -64,44 +65,44 @@ const TABS = [
           @if (saved() && (edit1() || edit3())) {
             <button type="button" class="btn" [disabled]="!dirty()" (click)="luu()"><app-icon name="check" [size]="16" /> Lưu</button>
           }
-          @if (saved() && !choXoa() && saved()!.trangThai !== 'Đã tất toán' && store.level('duyetXoa') !== 'none' && store.canEdit('hdb', saved()!.sale)) {
+          @if (saved() && !choXoa() && saved()!.trangThai !== TT.DA_TAT_TOAN && store.level('duyetXoa') !== 'none' && store.canEdit('hdb', saved()!.sale)) {
             <button type="button" class="btn danger quiet" (click)="xoa()"><app-icon name="trash" [size]="16" /> Xoá</button>
           }
         </div>
       </div>
 
       @if (choXoa()) { <p class="note bad"><app-icon name="lock" [size]="16" /> HĐ đang có yêu cầu xoá chờ duyệt — khoá sửa.</p> }
-      @else if (saved()?.trangThai === 'Huỷ') { <p class="note bad"><app-icon name="lock" [size]="16" /> HĐ đã huỷ — khoá toàn bộ.@if (saved()!.lyDoHuy) { Lý do: {{ saved()!.lyDoHuy }} }</p> }
-      @else if (saved()?.trangThai === 'Đã tất toán') { <p class="note info"><app-icon name="lock" [size]="16" /> HĐ đã tất toán — khoá toàn bộ. Mở lại cần quyền "Mở lại HĐ đã tất toán" (HDB-03-ML).</p> }
+      @else if (saved()?.trangThai === TT.HUY) { <p class="note bad"><app-icon name="lock" [size]="16" /> HĐ đã huỷ — khoá toàn bộ.@if (saved()!.lyDoHuy) { Lý do: {{ saved()!.lyDoHuy }} }</p> }
+      @else if (saved()?.trangThai === TT.DA_TAT_TOAN) { <p class="note info"><app-icon name="lock" [size]="16" /> HĐ đã tất toán — khoá toàn bộ. Mở lại cần quyền "Mở lại HĐ đã tất toán" (HDB-03-ML).</p> }
 
       @if (saved(); as s) {
         <section class="card no-print">
           <div class="between">
             <div class="flow" aria-label="Luồng trạng thái">
               @for (t of flow; track t; let last = $last) {
-                <span class="st" [class.done]="s.trangThai !== 'Huỷ' && idx(t) < idx(s.trangThai)" [class.cur]="t === s.trangThai">{{ t }}</span>
+                <span class="st" [class.done]="s.trangThai !== TT.HUY && idx(t) < idx(s.trangThai)" [class.cur]="t === s.trangThai">{{ ttNhan(t) }}</span>
                 @if (!last) { <span class="sep">›</span> }
               }
-              @if (s.trangThai === 'Huỷ') { <span class="sep">·</span> <app-tt v="Huỷ" /> }
+              @if (s.trangThai === TT.HUY) { <span class="sep">·</span> <app-tt [v]="TT.HUY" /> }
             </div>
             <div class="btn-row">
-              @if (s.trangThai === 'Đã tất toán') {
+              @if (s.trangThai === TT.DA_TAT_TOAN) {
                 @if (store.canEdit('moLaiHdb') && !choXoa()) { <button type="button" class="btn sm quiet" (click)="moLai()">Mở lại</button> }
-              } @else if (s.trangThai === 'Huỷ') {
+              } @else if (s.trangThai === TT.HUY) {
               } @else if (keTiep() && canFlow()) {
-                @if (keTiep() === 'Đang giao hàng') {
+                @if (keTiep() === TT.DANG_GIAO_HANG) {
                   <span class="sub">Tự chuyển "Đang giao hàng" khi ghi nhận lần giao đầu tiên. HĐ không giao hàng (không có HĐ mua liên quan) chuyển thẳng "Hoàn thành".</span>
                 } @else {
-                  <button type="button" class="btn sm" [disabled]="thieu().length > 0" (click)="chuyen()">Chuyển → {{ keTiep() }}</button>
+                  <button type="button" class="btn sm" [disabled]="thieu().length > 0" (click)="chuyen()">Chuyển → {{ ttNhan(keTiep()) }}</button>
                 }
               }
               @if (huyDuoc()) { <button type="button" class="btn sm danger quiet" (click)="huyHd()">Huỷ HĐ</button> }
             </div>
           </div>
-          @if (s.trangThai !== 'Đã tất toán' && s.trangThai !== 'Huỷ' && keTiep() !== 'Đang giao hàng' && thieu().length) {
-            <p class="note warn">Còn thiếu để chuyển "{{ keTiep() }}": {{ thieu().join(' · ') }}</p>
+          @if (s.trangThai !== TT.DA_TAT_TOAN && s.trangThai !== TT.HUY && keTiep() !== TT.DANG_GIAO_HANG && thieu().length) {
+            <p class="note warn">Còn thiếu để chuyển "{{ ttNhan(keTiep()) }}": {{ thieu().join(' · ') }}</p>
           }
-          @if (keTiep() === 'Hoàn thành' && c().hoSoThieu.length) {
+          @if (keTiep() === TT.HOAN_THANH && c().hoSoThieu.length) {
             <p class="note warn">Lưu ý: thiếu hồ sơ {{ c().hoSoThieu.join(', ') }} — sẽ chặn bước "Đã tất toán".</p>
           }
         </section>
@@ -122,7 +123,7 @@ const TABS = [
 
       @switch (tab()) {
         @case ('1') {
-          <app-hdb-tab1 [(draft)]="f" [edit]="edit1()" [khoaDinhDanh]="!!saved() && saved()!.trangThai !== 'Báo giá'" />
+          <app-hdb-tab1 [(draft)]="f" [edit]="edit1()" [khoaDinhDanh]="!!saved() && saved()!.trangThai !== TT.BAO_GIA" />
           <app-file-hd chu="HDB" [chuId]="saved()?.id ?? ''" [edit]="edit1()" [info]="infoFile()" [(pending)]="fileCho" />
           @if (saved(); as s) {
             <app-hdb-giao-hang [h]="s" [khoa]="khoa()" />
@@ -236,6 +237,8 @@ const TABS = [
 export class HdbDetail {
   private readonly kt = inject(KiemTra);
   protected readonly store = inject(Store);
+  protected readonly TT = TT;
+  protected readonly ttNhan = ttNhan;
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly confirm = inject(Confirm);
@@ -243,7 +246,7 @@ export class HdbDetail {
   protected readonly money = money;
   protected readonly pct = pct;
   /** Luồng chính (không gồm Huỷ — hiện riêng như HĐ mua). */
-  protected readonly flow = TRANG_THAI_HDB.filter((t) => t !== 'Huỷ');
+  protected readonly flow = TRANG_THAI_HDB.filter((t) => t !== TT.HUY);
 
   private readonly id = toSignal(this.route.paramMap.pipe(map((m) => m.get('id') ?? 'moi')), { initialValue: this.route.snapshot.paramMap.get('id') ?? 'moi' });
   private readonly qTab = toSignal(this.route.queryParamMap.pipe(map((m) => m.get('tab'))), { initialValue: this.route.snapshot.queryParamMap.get('tab') });
@@ -410,29 +413,29 @@ export class HdbDetail {
       if (!this.luu()) return;
     }
     const msg =
-      k === 'Hoàn thành'
+      k === TT.HOAN_THANH
         ? 'Xác nhận đã giao đủ hàng cho khách.'
-        : k === 'Đã tất toán'
+        : k === TT.DA_TAT_TOAN
           ? 'Sau khi tất toán, HĐ bị khoá toàn bộ; chỉ người có quyền "Mở lại HĐ đã tất toán" (HDB-03-ML) mở lại được.'
           : undefined;
-    const chuaGiao = k === 'Hoàn thành' ? hdbConChuaGiao(s, this.store.db()) : [];
+    const chuaGiao = k === TT.HOAN_THANH ? hdbConChuaGiao(s, this.store.db()) : [];
     const warn =
       [
-        k === 'Hoàn thành' && this.c().hoSoThieu.length ? `Thiếu hồ sơ: ${this.c().hoSoThieu.join(', ')}` : '',
+        k === TT.HOAN_THANH && this.c().hoSoThieu.length ? `Thiếu hồ sơ: ${this.c().hoSoThieu.join(', ')}` : '',
         chuaGiao.length ? `Còn hàng theo HĐ mua chưa giao: ${chuaGiao.map((x) => `${x.loaiHang} × ${x.con}`).join('; ')}` : '',
-        k === 'Hoàn thành' && s.trangThai === 'Hiệu lực' ? 'HĐ không có HĐ mua / phiếu xuất — xác nhận đây là HĐ không giao hàng (dịch vụ).' : '',
+        k === TT.HOAN_THANH && s.trangThai === TT.HIEU_LUC ? 'HĐ không có HĐ mua / phiếu xuất — xác nhận đây là HĐ không giao hàng (dịch vụ).' : '',
       ]
         .filter(Boolean)
         .join(' · ') || undefined;
-    if (!(await this.confirm.ask({ title: `Chuyển HĐ ${s.soHD} sang "${k}"?`, message: msg, warn, ok: 'Chuyển' }))) return;
+    if (!(await this.confirm.ask({ title: `Chuyển HĐ ${s.soHD} sang "${ttNhan(k)}"?`, message: msg, warn, ok: 'Chuyển' }))) return;
     const err = this.store.chuyenTrangThaiHdb(s.id, k);
-    this.store.say(err ?? `Đã chuyển sang "${k}"`);
+    this.store.say(err ?? `Đã chuyển sang "${ttNhan(k)}"`);
   }
 
   /** Huỷ HĐ: chưa tất toán / chưa huỷ, có quyền sửa HĐ — điều kiện chi tiết (chưa thu, chưa xuất kho…) Store kiểm. */
   protected readonly huyDuoc = computed(() => {
     const s = this.saved();
-    return !!s && s.trangThai !== 'Đã tất toán' && s.trangThai !== 'Huỷ' && !this.choXoa() && this.store.canEdit('hdb', s.sale);
+    return !!s && s.trangThai !== TT.DA_TAT_TOAN && s.trangThai !== TT.HUY && !this.choXoa() && this.store.canEdit('hdb', s.sale);
   });
   protected async huyHd(): Promise<void> {
     const s = this.saved();

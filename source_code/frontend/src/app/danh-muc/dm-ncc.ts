@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal, viewChild
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Store } from '../core/store';
 import { NhaCungCap } from '../core/models';
+import { TT, ttNhan } from '../core/trang-thai';
 import { hdmTong } from '../core/calc';
 import { money, viDate } from '../core/util';
 import { nhoLoc } from '../core/ui';
@@ -37,7 +38,7 @@ type F = Exclude<keyof NhaCungCap, 'id'>;
           @for (n of pg.items(); track n.id) {
             <tr class="click" [class.sel]="mo1() === n.id" (click)="mo1.set(mo1() === n.id ? null : n.id)">
               <td class="mono"><button type="button" class="linkish" [attr.aria-expanded]="mo1() === n.id">{{ n.id }}</button></td>
-              <td><b>{{ n.ten }}</b>@if (n.trangThai === 'Ngưng') { <app-tt v="Ngưng" /> }@if (store.dangChoXoa('DM_NCC', n.id)) { <app-tt v="Chờ xoá" /> }</td>
+              <td><b>{{ n.ten }}</b>@if (n.trangThai === TT.NGUNG) { <app-tt [v]="TT.NGUNG" /> }@if (store.dangChoXoa('DM_NCC', n.id)) { <app-tt v="Chờ xoá" /> }</td>
               <td class="mono">{{ n.mst || '—' }}</td>
               <td>{{ n.diaChi }}</td>
               <td>{{ n.quocGia }}</td>
@@ -88,8 +89,8 @@ type F = Exclude<keyof NhaCungCap, 'id'>;
           <div class="field">
             <label for="ncc-tt">Trạng thái</label>
             <select id="ncc-tt" (change)="set('trangThai', $any($event.target).value)">
-              <option value="Đang dùng" [selected]="d.trangThai !== 'Ngưng'">Đang dùng</option>
-              <option value="Ngưng" [selected]="d.trangThai === 'Ngưng'">Ngưng</option>
+              <option [value]="TT.DANG_DUNG" [selected]="d.trangThai !== TT.NGUNG">{{ ttNhan(TT.DANG_DUNG) }}</option>
+              <option [value]="TT.NGUNG" [selected]="d.trangThai === TT.NGUNG">{{ ttNhan(TT.NGUNG) }}</option>
             </select>
             <span class="hint">Ngưng: không chọn được cho HĐ mới; HĐ cũ giữ nguyên.</span>
           </div>
@@ -123,6 +124,8 @@ export class DmNcc {
   protected readonly store = inject(Store);
   private readonly confirm = inject(Confirm);
   protected readonly money = money;
+  protected readonly TT = TT;
+  protected readonly ttNhan = ttNhan;
   protected readonly viDate = viDate;
   protected readonly loc = signal<Loc>(nhoLoc('dm-ncc', LOC_RONG));
   protected readonly mo1 = signal<string | null>(null);

@@ -9,6 +9,7 @@ import { Confirm } from '../shared/confirm';
 import { guiXoa } from '../shared/ho-so';
 import { LichSu } from '../shared/lich-su';
 import { TepDinhKem } from '../shared/tep-dinh-kem';
+import { TT, ttNhan } from '../core/trang-thai';
 
 /** Popup Nhập chi phí thực hiện HĐ (KT-13, KT-15). */
 @Component({
@@ -18,7 +19,7 @@ import { TepDinhKem } from '../shared/tep-dinh-kem';
   template: `
     @if (f(); as c) {
       <app-modal #mCP [open]="true" [title]="c.id ? 'Chi phí ' + c.maCP : 'Nhập chi phí thực hiện HĐ'" size="md" [dirty]="dirty()" (closed)="closed.emit()">
-        @if (c.trangThai === 'Từ chối' && c.lyDoTuChoi) {
+        @if (c.trangThai === TT.TU_CHOI && c.lyDoTuChoi) {
           <div class="note bad">Bị từ chối bởi {{ store.userName(c.nguoiDuyet) }} ({{ viMoment(c.ngayDuyet) }}): {{ c.lyDoTuChoi }}</div>
         }
         @if (choXoa()) { <div class="note bad">Chi phí đang có yêu cầu xoá chờ duyệt — khoá sửa.</div> }
@@ -46,7 +47,7 @@ import { TepDinhKem } from '../shared/tep-dinh-kem';
           }
           <div class="field full"><label for="cf-nd">Nội dung <span class="req">*</span></label><textarea id="cf-nd" rows="2" [disabled]="!edit()" [value]="c.noiDung" (input)="set('noiDung', $any($event.target).value)"></textarea></div>
           <div class="field wide"><label for="cf-gc">Ghi chú</label><input id="cf-gc" [disabled]="!edit()" [value]="c.ghiChu || ''" (input)="set('ghiChu', $any($event.target).value)" /></div>
-          @if (c.nguoiDuyet && c.trangThai === 'Đã duyệt') {
+          @if (c.nguoiDuyet && c.trangThai === TT.DA_DUYET) {
             <div class="field"><span class="lbl">Người duyệt</span><div class="ro">{{ store.userName(c.nguoiDuyet) }} · {{ viMoment(c.ngayDuyet) }}</div></div>
           }
           @if (duyetDuoc() && hd(); as h) {
@@ -55,14 +56,14 @@ import { TepDinhKem } from '../shared/tep-dinh-kem';
             </div>
           }
           <app-tep-dinh-kem class="full" [files]="c.files" [edit]="edit()" (filesChange)="set('files', $event)" />
-          <app-lich-su class="full" [rows]="c.lichSu ?? []" [mo]="c.trangThai === 'Từ chối' || duyetDuoc()" />
+          <app-lich-su class="full" [rows]="c.lichSu ?? []" [mo]="c.trangThai === TT.TU_CHOI || duyetDuoc()" />
         </div>
         @if (c.loaiChiPhi === HH) {
           <p class="hint muted">Hoa hồng ghi ở đây, không lập thêm phiếu Chi ở Sổ quỹ (tránh trừ quỹ 2 lần) — duyệt xong trừ thẳng Nguồn tiền đã chọn.</p>
         }
 
         <div foot>
-          @if (chiPhi()?.trangThai === 'Nháp' && c.id && edit()) {
+          @if (chiPhi()?.trangThai === TT.NHAP && c.id && edit()) {
             <button type="button" class="btn danger quiet" (click)="xoaNhap()">Xoá nháp</button>
           } @else if (c.id && !choXoa() && store.level('duyetXoa') !== 'none') {
             <button type="button" class="btn danger quiet" (click)="xoa()">Xoá</button>
@@ -74,7 +75,7 @@ import { TepDinhKem } from '../shared/tep-dinh-kem';
             <button type="button" class="btn quiet" (click)="luu(false)">Lưu nháp</button>
             <button type="button" class="btn" (click)="luu(true)">Gửi duyệt</button>
           }
-          @if (duyetDuoc() && c.trangThai === 'Chờ duyệt' && !choXoa()) {
+          @if (duyetDuoc() && c.trangThai === TT.CHO_DUYET && !choXoa()) {
             <button type="button" class="btn danger quiet" (click)="tuChoi.emit()">Từ chối</button>
             <button type="button" class="btn ok" (click)="duyet.emit()">Duyệt</button>
           }
@@ -84,6 +85,7 @@ import { TepDinhKem } from '../shared/tep-dinh-kem';
   `,
 })
 export class ChiPhiForm {
+  protected readonly TT = TT;
   private readonly mCP = viewChild<Modal>('mCP');
   protected readonly store = inject(Store);
   private readonly confirm = inject(Confirm);
@@ -122,10 +124,10 @@ export class ChiPhiForm {
   protected readonly hdOpts = computed<PickOption[]>(() => {
     const list = this.store
       .hdbVisible()
-      .filter((h) => h.trangThai !== 'Báo giá' && h.trangThai !== 'Huỷ')
+      .filter((h) => h.trangThai !== TT.BAO_GIA && h.trangThai !== TT.HUY)
       .map((h) => ({ value: h.id, label: h.soHD, hint: h.tenKH }));
     const cur = this.hd();
-    if (cur && !list.some((o) => o.value === cur.id)) list.push({ value: cur.id, label: cur.soHD, hint: cur.trangThai });
+    if (cur && !list.some((o) => o.value === cur.id)) list.push({ value: cur.id, label: cur.soHD, hint: ttNhan(cur.trangThai) });
     return list;
   });
   protected readonly lcpOpts = computed<PickOption[]>(() => {
@@ -149,7 +151,7 @@ export class ChiPhiForm {
     if (!c || !h || c.loaiChiPhi !== LCP_HOA_HONG) return '';
     const db = this.store.db();
     const khac = sum(
-      db.chiPhiHD.filter((x) => x.hdbId === h.id && x.id !== c.id && x.loaiChiPhi === LCP_HOA_HONG && x.trangThai !== 'Từ chối'),
+      db.chiPhiHD.filter((x) => x.hdbId === h.id && x.id !== c.id && x.loaiChiPhi === LCP_HOA_HONG && x.trangThai !== TT.TU_CHOI),
       (x) => x.soTien,
     );
     const tong = khac + (c.soTien || 0);
@@ -184,7 +186,7 @@ export class ChiPhiForm {
 
   protected readonly rutDuoc = computed(() => {
     const c = this.chiPhi();
-    return !!c && c.trangThai === 'Chờ duyệt' && !this.choXoa() && !this.duyetDuoc() && this.store.canEdit('cpHD', this.hd()?.sale);
+    return !!c && c.trangThai === TT.CHO_DUYET && !this.choXoa() && !this.duyetDuoc() && this.store.canEdit('cpHD', this.hd()?.sale);
   });
   protected async xoaNhap(): Promise<void> {
     const c = this.chiPhi();

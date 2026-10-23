@@ -7,6 +7,7 @@
  *  - Mọi số tiền là VNĐ, số nguyên (trừ đơn giá ngoại tệ ở HĐ Mua).
  *  - Trường "tự tính" (Số dư, Còn phải thu, Tồn…) KHÔNG lưu — tính ở core/calc.ts.
  */
+import { TT } from './trang-thai';
 
 // ── Nền tảng ────────────────────────────────────────────────────────────
 
@@ -22,7 +23,7 @@ export interface NhomQuyen {
   moTa: string;
   /** Toàn quyền: mức cao nhất mọi chức năng (Giám đốc / Owner). */
   toanQuyen: boolean;
-  trangThai: 'Hoạt động' | 'Ngưng';
+  trangThai: typeof TT.HOAT_DONG | typeof TT.NGUNG;
   quyen: Record<string, import('./perm').Level>;
   /** Nhóm khởi tạo sẵn (không xoá được). */
   heThong?: boolean;
@@ -37,7 +38,7 @@ export interface TaiKhoan {
   hoTen: string;
   /** Id các nhóm quyền (bảng TaiKhoan_Nhom). */
   nhom: string[];
-  trangThai: 'Hoạt động' | 'Khoá';
+  trangThai: typeof TT.HOAT_DONG | typeof TT.KHOA;
   /** Mật khẩu băm (BCrypt) chỉ nằm ở máy chủ — không bao giờ gửi về trình duyệt. */
   batDoiMK: boolean;
   soLanSai: number;
@@ -122,7 +123,7 @@ export const DOI_TUONG_LABEL: Record<DoiTuong, string> = {
   DM_LoaiHang: 'Mã hàng',
 };
 
-export type TrangThaiYC = 'Chờ duyệt' | 'Đã duyệt' | 'Từ chối' | 'Đã rút';
+export type TrangThaiYC = typeof TT.CHO_DUYET | typeof TT.DA_DUYET | typeof TT.TU_CHOI | typeof TT.DA_RUT;
 
 export interface YeuCauXoa {
   id: string;
@@ -191,7 +192,7 @@ export interface NguonTien {
   nganHang?: string;
   soDuDauKy: number;
   ngayDauKy: string;
-  trangThai: 'Đang dùng' | 'Ngưng';
+  trangThai: typeof TT.DANG_DUNG | typeof TT.NGUNG;
 }
 
 export type NhomChiPhi = 'Vận hành' | 'Thực hiện HĐ';
@@ -208,15 +209,15 @@ export const LCP_HOA_HONG = 'CPTH-HH';
 export const LCP_VAN_CHUYEN = 'CPTH-VC';
 
 // ── Khách hàng & theo dõi kinh doanh (danh mục theo sheet "DANH MỤC" của file theo dõi KH) ──
-export const TIEP_CAN = ['Chưa liên hệ', 'Đang liên hệ', 'Hợp đồng', 'Huỷ'] as const;
+export const TIEP_CAN = [TT.CHUA_LIEN_HE, TT.DANG_LIEN_HE, TT.HOP_DONG, TT.HUY] as const;
 export type TiepCan = (typeof TIEP_CAN)[number];
-export const CO_HOI = ['Chưa tiếp cận', 'Đã báo giá', 'Đang đàm phán', 'Ký hợp đồng', 'Đã giao hàng', 'Hoàn thành', 'Huỷ'] as const;
+export const CO_HOI = [TT.CHUA_TIEP_CAN, TT.DA_BAO_GIA, TT.DANG_DAM_PHAN, TT.KY_HOP_DONG, TT.DA_GIAO_HANG, TT.HOAN_THANH, TT.HUY] as const;
 export type CoHoi = (typeof CO_HOI)[number];
 export const PHAN_LOAI_KH = ['End-user Tư nhân', 'End-user FDI', 'Thương mại'] as const;
 export const NGUON_KH = ['Hotline', 'Đối tác', 'Khách cũ', 'Tự tìm kiếm'] as const;
 export const HINH_THUC_HD = ['Trực tiếp', 'Đấu thầu'] as const;
 export const LOAI_SP_KH = ['Khí chuẩn', 'Khí công nghiệp', 'Dung dịch chuẩn', 'Khác'] as const;
-export const TRANG_THAI_DATA = ['Chưa phân bổ', 'Đã phân bổ'] as const;
+export const TRANG_THAI_DATA = [TT.CHUA_PHAN_BO, TT.DA_PHAN_BO] as const;
 export type TrangThaiData = (typeof TRANG_THAI_DATA)[number];
 export const TINH_THANH = [
   'An Giang', 'Bà Rịa - Vũng Tàu', 'Bắc Giang', 'Bắc Kạn', 'Bạc Liêu', 'Bắc Ninh', 'Bến Tre', 'Bình Định', 'Bình Dương', 'Bình Phước',
@@ -250,7 +251,7 @@ export interface KhachHang {
   email: string;
   ghiChu: string;
   /** F-09: Ngưng → không chọn được cho HĐ mới (thiếu = Đang dùng). */
-  trangThai?: 'Đang dùng' | 'Ngưng';
+  trangThai?: typeof TT.DANG_DUNG | typeof TT.NGUNG;
   // ── Theo dõi kinh doanh (thiếu = chưa khai thác) ──
   tinh?: string;
   chucVu?: string;
@@ -283,7 +284,7 @@ export interface NhaCungCap {
   email: string;
   ghiChu: string;
   /** F-09: Ngưng → không chọn được cho HĐ mới (thiếu = Đang dùng). */
-  trangThai?: 'Đang dùng' | 'Ngưng';
+  trangThai?: typeof TT.DANG_DUNG | typeof TT.NGUNG;
 }
 
 export interface Kho {
@@ -327,7 +328,7 @@ export interface LoaiHang {
 
 // ── Kế toán ─────────────────────────────────────────────────────────────
 
-export type TrangThaiDuyet = 'Nháp' | 'Chờ duyệt' | 'Đã duyệt' | 'Từ chối';
+export type TrangThaiDuyet = typeof TT.NHAP | typeof TT.CHO_DUYET | typeof TT.DA_DUYET | typeof TT.TU_CHOI;
 
 export type LoaiPhieu = 'Thu' | 'Chi' | 'Tạm ứng' | 'Quyết toán tạm ứng' | 'Luân chuyển';
 export const LOAI_PHIEU: LoaiPhieu[] = ['Thu', 'Chi', 'Tạm ứng', 'Quyết toán tạm ứng', 'Luân chuyển'];
@@ -400,14 +401,14 @@ export interface ChiPhiHD {
 
 // ── Kinh doanh ──────────────────────────────────────────────────────────
 
-export type TrangThaiHDB = 'Báo giá' | 'Hiệu lực' | 'Đang giao hàng' | 'Hoàn thành' | 'Đã tất toán' | 'Huỷ';
+export type TrangThaiHDB = typeof TT.BAO_GIA | typeof TT.HIEU_LUC | typeof TT.DANG_GIAO_HANG | typeof TT.HOAN_THANH | typeof TT.DA_TAT_TOAN | typeof TT.HUY;
 export const TRANG_THAI_HDB: TrangThaiHDB[] = [
-  'Báo giá',
-  'Hiệu lực',
-  'Đang giao hàng',
-  'Hoàn thành',
-  'Đã tất toán',
-  'Huỷ',
+  TT.BAO_GIA,
+  TT.HIEU_LUC,
+  TT.DANG_GIAO_HANG,
+  TT.HOAN_THANH,
+  TT.DA_TAT_TOAN,
+  TT.HUY,
 ];
 
 export interface ThamSoThue {
@@ -517,14 +518,14 @@ export interface HopDongBan {
   import?: boolean;
 }
 
-export type TrangThaiHDM = 'Nháp' | 'Đã ký' | 'Đang nhận hàng' | 'Đã nhận đủ' | 'Đã tất toán' | 'Huỷ';
+export type TrangThaiHDM = typeof TT.NHAP | typeof TT.DA_KY | typeof TT.DANG_NHAN_HANG | typeof TT.DA_NHAN_DU | typeof TT.DA_TAT_TOAN | typeof TT.HUY;
 export const TRANG_THAI_HDM: TrangThaiHDM[] = [
-  'Nháp',
-  'Đã ký',
-  'Đang nhận hàng',
-  'Đã nhận đủ',
-  'Đã tất toán',
-  'Huỷ',
+  TT.NHAP,
+  TT.DA_KY,
+  TT.DANG_NHAN_HANG,
+  TT.DA_NHAN_DU,
+  TT.DA_TAT_TOAN,
+  TT.HUY,
 ];
 
 export type LoaiTien = 'VNĐ' | 'USD' | 'RMB';
@@ -648,7 +649,7 @@ export interface PhieuKho {
   kho: string;
   lyDo?: string;
   nguoiThucHien: string;
-  trangThai: 'Hiệu lực' | 'Đã huỷ';
+  trangThai: typeof TT.HIEU_LUC | typeof TT.DA_HUY;
   ghiChu?: string;
   dong: DongPhieuKho[];
   /** Phiếu nhập: số hoá đơn NCC (VD "HĐ 259"). */
@@ -702,14 +703,14 @@ export interface AnhXaTen {
 
 // ── Phú Tài ─────────────────────────────────────────────────────────────
 
-export type TrangThaiPT = 'Báo giá' | 'Hiệu lực' | 'Đang thực hiện' | 'Hoàn thành' | 'Đã tất toán' | 'Huỷ';
+export type TrangThaiPT = typeof TT.BAO_GIA | typeof TT.HIEU_LUC | typeof TT.DANG_THUC_HIEN | typeof TT.HOAN_THANH | typeof TT.DA_TAT_TOAN | typeof TT.HUY;
 export const TRANG_THAI_PT: TrangThaiPT[] = [
-  'Báo giá',
-  'Hiệu lực',
-  'Đang thực hiện',
-  'Hoàn thành',
-  'Đã tất toán',
-  'Huỷ',
+  TT.BAO_GIA,
+  TT.HIEU_LUC,
+  TT.DANG_THUC_HIEN,
+  TT.HOAN_THANH,
+  TT.DA_TAT_TOAN,
+  TT.HUY,
 ];
 
 export interface ChiPhiPT {

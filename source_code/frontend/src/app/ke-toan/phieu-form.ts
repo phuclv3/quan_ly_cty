@@ -10,6 +10,7 @@ import { guiXoa } from '../shared/ho-so';
 import { LichSu } from '../shared/lich-su';
 import { TepDinhKem } from '../shared/tep-dinh-kem';
 import { donVi, esc, inGiay, kyTen } from './kt-print';
+import { TT, ttNhan } from '../core/trang-thai';
 
 /** Popup Lập / Sửa phiếu thu chi (KT-05, KT-06, KT-08, KT-10) + In phiếu A5. */
 @Component({
@@ -33,11 +34,11 @@ import { donVi, esc, inGiay, kyTen } from './kt-print';
           <p class="note info">
             Đã có quyết toán:
             @for (q of quyetToan(); track q.id; let last = $last) {
-              <button type="button" class="linkish" (click)="moPhieu.emit(q.id)">{{ q.soPhieu }}</button> ({{ q.trangThai }})@if (!last) {, }
+              <button type="button" class="linkish" (click)="moPhieu.emit(q.id)">{{ q.soPhieu }}</button> ({{ ttNhan(q.trangThai) }})@if (!last) {, }
             }
           </p>
         }
-        @if (p.trangThai === 'Từ chối' && p.lyDoTuChoi) {
+        @if (p.trangThai === TT.TU_CHOI && p.lyDoTuChoi) {
           <div class="note bad">Bị từ chối bởi {{ store.userName(p.nguoiDuyet) }} ({{ viMoment(p.ngayDuyet) }}): {{ p.lyDoTuChoi }}</div>
         }
         @if (choXoa()) { <div class="note bad">Phiếu đang có yêu cầu xoá chờ duyệt — khoá sửa.</div> }
@@ -99,19 +100,19 @@ import { donVi, esc, inGiay, kyTen } from './kt-print';
 
           <div class="field full"><label for="pf-nd">Nội dung <span class="req">*</span></label><textarea id="pf-nd" rows="2" [disabled]="!edit()" [value]="p.noiDung" (input)="set('noiDung', $any($event.target).value)"></textarea></div>
           <div class="field"><span class="lbl">Người đề nghị</span><div class="ro">{{ store.userName(p.nguoiDeNghi) }}</div></div>
-          @if (p.nguoiDuyet && p.trangThai === 'Đã duyệt') {
+          @if (p.nguoiDuyet && p.trangThai === TT.DA_DUYET) {
             <div class="field"><span class="lbl">Người duyệt</span><div class="ro">{{ store.userName(p.nguoiDuyet) }} · {{ viMoment(p.ngayDuyet) }}</div></div>
           }
           <div class="field wide"><label for="pf-gc">Ghi chú</label><input id="pf-gc" [disabled]="!edit()" [value]="p.ghiChu || ''" (input)="set('ghiChu', $any($event.target).value)" /></div>
           <app-tep-dinh-kem class="full" [files]="p.files" [edit]="edit()" (filesChange)="set('files', $event)" />
-          <app-lich-su class="full" [rows]="p.lichSu ?? []" [mo]="p.trangThai === 'Từ chối' || duyetDuoc()" />
+          <app-lich-su class="full" [rows]="p.lichSu ?? []" [mo]="p.trangThai === TT.TU_CHOI || duyetDuoc()" />
         </div>
 
         <div foot>
           @if (p.id) { <button type="button" class="btn quiet" (click)="inPhieu()">In phiếu</button> }
-          @if (phieu()?.trangThai === 'Nháp' && p.id && edit()) {
+          @if (phieu()?.trangThai === TT.NHAP && p.id && edit()) {
             <button type="button" class="btn danger quiet" (click)="xoaNhap()">Xoá nháp</button>
-          } @else if (p.id && (!p.phatSinh || p.trangThai === 'Đã duyệt') && !choXoa() && store.level('duyetXoa') !== 'none') {
+          } @else if (p.id && (!p.phatSinh || p.trangThai === TT.DA_DUYET) && !choXoa() && store.level('duyetXoa') !== 'none') {
             <!-- F-03: phiếu sinh từ đợt TT đã duyệt mà sai → yêu cầu xoá, duyệt xong ghi lại ở HĐ. -->
             <button type="button" class="btn danger quiet" (click)="xoa()">{{ p.phatSinh ? 'Yêu cầu xoá phiếu' : 'Xoá' }}</button>
           }
@@ -122,7 +123,7 @@ import { donVi, esc, inGiay, kyTen } from './kt-print';
             <button type="button" class="btn quiet" (click)="luu(false)">Lưu nháp</button>
             <button type="button" class="btn" (click)="luu(true)">Gửi duyệt</button>
           }
-          @if (duyetDuoc() && p.trangThai === 'Chờ duyệt' && !choXoa()) {
+          @if (duyetDuoc() && p.trangThai === TT.CHO_DUYET && !choXoa()) {
             <button type="button" class="btn danger quiet" (click)="tuChoi.emit()">Từ chối</button>
             <button type="button" class="btn ok" (click)="duyet.emit()">Duyệt</button>
           }
@@ -132,6 +133,8 @@ import { donVi, esc, inGiay, kyTen } from './kt-print';
   `,
 })
 export class PhieuForm {
+  protected readonly TT = TT;
+  protected readonly ttNhan = ttNhan;
   private readonly mPhieu = viewChild<Modal>('mPhieu');
   protected readonly store = inject(Store);
   private readonly confirm = inject(Confirm);
@@ -244,7 +247,7 @@ export class PhieuForm {
   /** Người lập rút phiếu Chờ duyệt về Nháp (không áp cho phiếu sinh tự động — sửa tại HĐ). */
   protected readonly rutDuoc = computed(() => {
     const p = this.phieu();
-    return !!p && p.trangThai === 'Chờ duyệt' && !p.phatSinh && !this.choXoa() && !this.duyetDuoc() && (p.nguoiDeNghi === this.store.meId() || this.store.canEdit('soQuy'));
+    return !!p && p.trangThai === TT.CHO_DUYET && !p.phatSinh && !this.choXoa() && !this.duyetDuoc() && (p.nguoiDeNghi === this.store.meId() || this.store.canEdit('soQuy'));
   });
   protected async xoaNhap(): Promise<void> {
     const p = this.phieu();
@@ -292,7 +295,7 @@ export class PhieuForm {
       p.loai === 'Luân chuyển' ? `${this.store.nguonTen(p.nguonTien)} → ${this.store.nguonTen(p.nguonTienDen)}` : this.store.nguonTen(p.nguonTien);
     const d = p.ngayLap.split('-');
     const body = `
-      <div class="head">${donVi()}<div class="r">Số: <b>${esc(p.soPhieu)}</b><br>Trạng thái: ${esc(p.trangThai)}</div></div>
+      <div class="head">${donVi()}<div class="r">Số: <b>${esc(p.soPhieu)}</b><br>Trạng thái: ${esc(ttNhan(p.trangThai))}</div></div>
       <h1>${tieuDe}</h1>
       <p class="c m">Ngày ${d[2]} tháng ${d[1]} năm ${d[0]}</p>
       <div class="dong"><b>Họ tên ${nguoiTien.toLowerCase()}:</b> ${esc(ten)}</div>

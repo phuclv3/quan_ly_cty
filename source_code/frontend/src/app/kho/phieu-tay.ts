@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, effect, inject, input, ou
 import { DongLo, loConHang, phanBoLo, tonTai } from '../core/calc';
 import { KHO_CHUYEN_THANG, PhieuKho } from '../core/models';
 import { Store } from '../core/store';
+import { TT } from '../core/trang-thai';
 import { money, sum, todayIso } from '../core/util';
 import { Modal, Pick, PickOption } from '../shared/ui-kit';
 import { maHangOpts, moTaMa } from './kho-util';
@@ -224,7 +225,7 @@ export class PhieuTayForm {
   protected readonly nccOpts = computed<PickOption[]>(() =>
     this.store
       .ncc()
-      .filter((n) => n.trangThai !== 'Ngưng')
+      .filter((n) => n.trangThai !== TT.NGUNG)
       .map((n) => ({ value: n.id, label: n.ten, hint: n.id })),
   );
   protected readonly maOpts = computed(() => maHangOpts(this.store.loaiHang().filter((l) => l.dangDung)));

@@ -11,6 +11,7 @@ import { SortTh, Sorter } from '../shared/sort';
 import { csv, downloadFile, fileName } from '../shared/export';
 import { Icon } from '../shared/icon';
 import { KhForm } from './kh-form';
+import { TT, ttNhan } from '../core/trang-thai';
 
 interface Row {
   k: KhachHang;
@@ -23,6 +24,7 @@ interface Row {
 /** Giá trị bộ lọc "Phụ trách" cho data chưa phân bổ. */
 const CHUA_PB = '__chua__';
 const opts = (xs: readonly string[]) => xs.map((x) => ({ value: x, label: x }));
+const optsTT = (xs: readonly string[]) => xs.map((x) => ({ value: x, label: ttNhan(x) }));
 
 /** HDB-13 — Khách hàng & theo dõi kinh doanh (data từ file theo dõi KH của Kinh doanh). Nguồn khách cho HĐ bán. */
 @Component({
@@ -95,16 +97,16 @@ const opts = (xs: readonly string[]) => xs.map((x) => ({ value: x, label: x }));
               <td class="mono c-ma"><a [routerLink]="['/khach-hang', r.k.id]" (click)="$event.stopPropagation()"><b>{{ r.k.id }}</b></a></td>
               <td>
                 <b>{{ r.k.ten }}</b>
-                @if (r.k.trangThai === 'Ngưng') { <app-tt v="Ngưng" /> }
+                @if (r.k.trangThai === TT.NGUNG) { <app-tt [v]="TT.NGUNG" /> }
                 @if (r.xoa) { <app-tt v="Chờ xoá" /> }
                 <div class="sub">{{ r.k.mst ? 'MST ' + r.k.mst : '' }}{{ r.k.mst && r.k.phanLoai ? ' · ' : '' }}{{ r.k.phanLoai }}</div>
               </td>
               <td>{{ r.k.tinh || '—' }}</td>
               <td class="lh-cell">{{ r.k.nguoiLienHe }}<div class="sub">{{ r.k.dienThoai }}</div></td>
-              <td><app-tt [v]="r.k.tiepCan || 'Chưa liên hệ'" /></td>
-              <td><app-tt [v]="r.k.coHoi || 'Chưa tiếp cận'" /></td>
+              <td><app-tt [v]="r.k.tiepCan || TT.CHUA_LIEN_HE" /></td>
+              <td><app-tt [v]="r.k.coHoi || TT.CHUA_TIEP_CAN" /></td>
               <td class="num">{{ r.k.giaTriCoHoi ? money(r.k.giaTriCoHoi) : '—' }}</td>
-              <td>@if (r.k.phuTrach) { {{ store.userName(r.k.phuTrach) }} } @else { <app-tt v="Chưa phân bổ" /> }</td>
+              <td>@if (r.k.phuTrach) { {{ store.userName(r.k.phuTrach) }} } @else { <app-tt [v]="TT.CHUA_PHAN_BO" /> }</td>
               <td>{{ viDate(r.csCuoi) }}</td>
               <td class="num">{{ r.soHD }}</td>
               <td (click)="$event.stopPropagation()">
@@ -132,6 +134,7 @@ const opts = (xs: readonly string[]) => xs.map((x) => ({ value: x, label: x }));
   `,
 })
 export class KhList {
+  protected readonly TT = TT;
   protected readonly store = inject(Store);
   private readonly router = inject(Router);
   protected readonly money = money;
@@ -161,8 +164,8 @@ export class KhList {
     const tinh = new Set(ks.map((k) => k.tinh).filter(Boolean));
     const phuTrach = [...new Set(ks.map((k) => k.phuTrach).filter((x): x is string => !!x))];
     return [
-      { key: 'tiepCan', label: 'Tiếp cận', options: opts(TIEP_CAN) },
-      { key: 'coHoi', label: 'Cơ hội', options: opts(CO_HOI) },
+      { key: 'tiepCan', label: 'Tiếp cận', options: optsTT(TIEP_CAN) },
+      { key: 'coHoi', label: 'Cơ hội', options: optsTT(CO_HOI) },
       {
         key: 'phuTrach',
         label: 'Phụ trách',
@@ -182,8 +185,8 @@ export class KhList {
     id: (r) => r.k.id,
     ten: (r) => r.k.ten,
     tinh: (r) => r.k.tinh,
-    tiepCan: (r) => TIEP_CAN.indexOf(r.k.tiepCan ?? 'Chưa liên hệ'),
-    coHoi: (r) => CO_HOI.indexOf(r.k.coHoi ?? 'Chưa tiếp cận'),
+    tiepCan: (r) => TIEP_CAN.indexOf(r.k.tiepCan ?? TT.CHUA_LIEN_HE),
+    coHoi: (r) => CO_HOI.indexOf(r.k.coHoi ?? TT.CHUA_TIEP_CAN),
     giaTri: (r) => r.k.giaTriCoHoi ?? 0,
     phuTrach: (r) => (r.k.phuTrach ? this.store.userName(r.k.phuTrach) : ''),
     cs: (r) => r.csCuoi,
@@ -196,8 +199,8 @@ export class KhList {
       this.all().filter(
         ({ k }) =>
           khopQ(l, k.id, k.ten, k.mst, k.tinh, k.diaChi, k.nguoiLienHe, k.dienThoai, k.email, k.ghiChu) &&
-          khopSel(l, 'tiepCan', k.tiepCan ?? 'Chưa liên hệ') &&
-          khopSel(l, 'coHoi', k.coHoi ?? 'Chưa tiếp cận') &&
+          khopSel(l, 'tiepCan', k.tiepCan ?? TT.CHUA_LIEN_HE) &&
+          khopSel(l, 'coHoi', k.coHoi ?? TT.CHUA_TIEP_CAN) &&
           khopSel(l, 'phuTrach', k.phuTrach || CHUA_PB) &&
           khopSel(l, 'tinh', k.tinh) &&
           khopSel(l, 'nguon', k.nguon) &&
@@ -210,12 +213,12 @@ export class KhList {
 
   protected readonly kpi = computed(() => {
     const rs = this.rows();
-    const mo = rs.filter((r) => r.k.coHoi === 'Đã báo giá' || r.k.coHoi === 'Đang đàm phán');
+    const mo = rs.filter((r) => r.k.coHoi === TT.DA_BAO_GIA || r.k.coHoi === TT.DANG_DAM_PHAN);
     return {
       n: rs.length,
       coHD: rs.filter((r) => r.soHD > 0).length,
       tho: rs.filter((r) => !r.k.phuTrach).length,
-      dangCS: rs.filter((r) => r.k.tiepCan === 'Đang liên hệ').length,
+      dangCS: rs.filter((r) => r.k.tiepCan === TT.DANG_LIEN_HE).length,
       mo: mo.length,
       giaTriMo: sum(mo, (r) => r.k.giaTriCoHoi ?? 0),
     };
@@ -263,8 +266,8 @@ export class KhList {
     ];
     const body = this.rows().map(({ k, soHD, csCuoi }) => [
       k.id, k.ten, k.mst, k.diaChi, k.tinh ?? '', k.nguoiLienHe, k.chucVu ?? '', k.dienThoai, k.email, k.phanLoai ?? '',
-      k.nguon ?? '', k.loaiSP ?? '', k.hinhThucHD ?? '', k.tiepCan ?? '', k.coHoi ?? '', k.giaTriCoHoi ?? '',
-      k.phuTrach ? this.store.userName(k.phuTrach) : '', k.trangThaiData ?? '', viDate(k.ngayTiepNhan), viDate(k.ngayPhanBo),
+      k.nguon ?? '', k.loaiSP ?? '', k.hinhThucHD ?? '', ttNhan(k.tiepCan), ttNhan(k.coHoi), k.giaTriCoHoi ?? '',
+      k.phuTrach ? this.store.userName(k.phuTrach) : '', ttNhan(k.trangThaiData), viDate(k.ngayTiepNhan), viDate(k.ngayPhanBo),
       viDate(csCuoi), soHD, k.ghiChu,
     ]);
     downloadFile(fileName('khach-hang', 'csv'), 'text/csv', csv([head, ...body]));

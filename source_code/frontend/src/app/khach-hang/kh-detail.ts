@@ -12,6 +12,7 @@ import { guiXoa } from '../shared/ho-so';
 import { canhBaoChuaLuu } from '../shared/unsaved';
 import { Icon } from '../shared/icon';
 import { KhForm } from './kh-form';
+import { TT, ttNhan } from '../core/trang-thai';
 
 /** HDB-13 — Chi tiết khách hàng: thông tin (sửa bằng popup), nhật ký chăm sóc, HĐ bán của khách. */
 @Component({
@@ -26,14 +27,14 @@ import { KhForm } from './kh-form';
           <div class="crumbs"><a routerLink="/">Trang chủ</a> › <a routerLink="/khach-hang">Khách hàng</a> › {{ k.id }}</div>
           <h1>
             {{ k.ten || k.id }}
-            <app-tt [v]="k.coHoi || 'Chưa tiếp cận'" />
-            @if (k.trangThai === 'Ngưng') { <app-tt v="Ngưng" /> }
+            <app-tt [v]="k.coHoi || TT.CHUA_TIEP_CAN" />
+            @if (k.trangThai === TT.NGUNG) { <app-tt [v]="TT.NGUNG" /> }
             @if (choXoa()) { <app-tt v="Chờ xoá" /> }
           </h1>
           <p class="sub">{{ k.id }} · Phụ trách: {{ k.phuTrach ? store.userName(k.phuTrach) : 'chưa phân bổ' }}@if (k.ngayTiepNhan) { · Tiếp nhận {{ viDate(k.ngayTiepNhan) }} }</p>
         </div>
         <div class="actions">
-          @if (store.canEdit('hdb') && k.trangThai !== 'Ngưng') {
+          @if (store.canEdit('hdb') && k.trangThai !== TT.NGUNG) {
             <a class="btn quiet" routerLink="/hop-dong-ban/moi" [queryParams]="{ kh: k.id }"><app-icon name="plus" [size]="16" /> Tạo HĐ bán</a>
           }
           @if (edit()) {
@@ -57,12 +58,12 @@ import { KhForm } from './kh-form';
           <div class="field"><span class="lbl">Người liên hệ</span><div class="ro">{{ k.nguoiLienHe || '—' }}{{ k.chucVu ? ' · ' + k.chucVu : '' }}</div></div>
           <div class="field"><span class="lbl">SĐT / Zalo</span><div class="ro">{{ k.dienThoai || '—' }}</div></div>
           <div class="field"><span class="lbl">Email</span><div class="ro">{{ k.email || '—' }}</div></div>
-          <div class="field"><span class="lbl">Tiếp cận</span><div class="ro"><app-tt [v]="k.tiepCan || 'Chưa liên hệ'" /></div></div>
-          <div class="field"><span class="lbl">Cơ hội</span><div class="ro"><app-tt [v]="k.coHoi || 'Chưa tiếp cận'" /></div></div>
+          <div class="field"><span class="lbl">Tiếp cận</span><div class="ro"><app-tt [v]="k.tiepCan || TT.CHUA_LIEN_HE" /></div></div>
+          <div class="field"><span class="lbl">Cơ hội</span><div class="ro"><app-tt [v]="k.coHoi || TT.CHUA_TIEP_CAN" /></div></div>
           <div class="field"><span class="lbl">Giá trị cơ hội (chưa VAT)</span><div class="ro num">{{ k.giaTriCoHoi ? money(k.giaTriCoHoi) + ' đ' : '—' }}</div></div>
           <div class="field"><span class="lbl">Phân loại / Nguồn</span><div class="ro">{{ k.phanLoai || '—' }} · {{ k.nguon || '—' }}</div></div>
           <div class="field"><span class="lbl">Sản phẩm / Hình thức HĐ</span><div class="ro">{{ k.loaiSP || '—' }} · {{ k.hinhThucHD || '—' }}</div></div>
-          <div class="field"><span class="lbl">Trạng thái data</span><div class="ro">{{ k.phuTrach ? 'Đã phân bổ' : 'Chưa phân bổ' }}{{ k.ngayPhanBo ? ' · ' + viDate(k.ngayPhanBo) : '' }}</div></div>
+          <div class="field"><span class="lbl">Trạng thái data</span><div class="ro">{{ ttNhan(k.phuTrach ? TT.DA_PHAN_BO : TT.CHUA_PHAN_BO) }}{{ k.ngayPhanBo ? ' · ' + viDate(k.ngayPhanBo) : '' }}</div></div>
           @if (k.ghiChu) { <div class="field span-3"><span class="lbl">Ghi chú</span><div class="ro">{{ k.ghiChu }}</div></div> }
         </div>
       </section>
@@ -80,14 +81,14 @@ import { KhForm } from './kh-form';
                 <label for="cs-tc">Đổi tiếp cận</label>
                 <select id="cs-tc" (change)="csTc.set($any($event.target).value)">
                   <option value="" [selected]="!csTc()">— Giữ nguyên —</option>
-                  @for (o of TIEP_CAN; track o) { @if (o !== k.tiepCan) { <option [value]="o" [selected]="o === csTc()">{{ o }}</option> } }
+                  @for (o of TIEP_CAN; track o) { @if (o !== k.tiepCan) { <option [value]="o" [selected]="o === csTc()">{{ ttNhan(o) }}</option> } }
                 </select>
               </div>
               <div class="field">
                 <label for="cs-ch">Đổi cơ hội</label>
                 <select id="cs-ch" (change)="csCh.set($any($event.target).value)">
                   <option value="" [selected]="!csCh()">— Giữ nguyên —</option>
-                  @for (o of CO_HOI; track o) { @if (o !== k.coHoi) { <option [value]="o" [selected]="o === csCh()">{{ o }}</option> } }
+                  @for (o of CO_HOI; track o) { @if (o !== k.coHoi) { <option [value]="o" [selected]="o === csCh()">{{ ttNhan(o) }}</option> } }
                 </select>
               </div>
             </div>
@@ -122,7 +123,7 @@ import { KhForm } from './kh-form';
           } @empty {
             <p class="muted">Chưa có HĐ bán (trong phạm vi bạn được xem).</p>
           }
-          @if (store.canEdit('hdb') && k.trangThai !== 'Ngưng') {
+          @if (store.canEdit('hdb') && k.trangThai !== TT.NGUNG) {
             <a class="btn sm quiet" style="margin-top:10px" routerLink="/hop-dong-ban/moi" [queryParams]="{ kh: k.id }"><app-icon name="plus" [size]="16" /> Tạo HĐ bán cho khách này</a>
           }
         </section>
@@ -145,6 +146,8 @@ import { KhForm } from './kh-form';
   `,
 })
 export class KhDetail {
+  protected readonly TT = TT;
+  protected readonly ttNhan = ttNhan;
   protected readonly store = inject(Store);
   private readonly route = inject(ActivatedRoute);
   private readonly confirm = inject(Confirm);

@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, model, signal, viewChild } from '@angular/core';
 import { Store } from '../core/store';
+import { TT } from '../core/trang-thai';
 import { DongHangBan, DotTTBan, HopDongBan, LCP_HOA_HONG } from '../core/models';
 import { Buoc, apDungTuDongHdb, congNgay, dotBanDaThu, dotQuaHan, hdbCalc, kiemTraDongBan, loConHang, tongDongBan, tongDongBanTH } from '../core/calc';
 import { money, moneyInWords, pct, sum, todayIso, uid, viDate } from '../core/util';
@@ -189,7 +190,7 @@ interface ThuNhap {
           </div>
         </div>
         <div class="btn-row" style="margin-top:8px"><button type="button" class="btn sm" (click)="luuHH()"><app-icon name="plus" [size]="16" /> Thêm (gửi duyệt)</button></div>
-      } @else if (saved() && saved()!.trangThai === 'Báo giá') {
+      } @else if (saved() && saved()!.trangThai === TT.BAO_GIA) {
         <p class="sub">HĐ ở Báo giá — chỉ thêm tiền trả khách từ Hiệu lực trở đi.</p>
       }
     </section>
@@ -247,7 +248,7 @@ interface ThuNhap {
                     @if (xemPhieu()) { <a class="sub linkish" routerLink="/ke-toan" [queryParams]="{ tab: 'so-quy', id: p.id }">{{ p.soPhieu }}</a> }
                     @else { <span class="sub">{{ p.soPhieu }}</span> }
                     @if (store.dangChoXoa('PhieuThuChi', p.id)) { <app-tt v="Chờ xoá" /> } @else { <app-tt [v]="p.trangThai" /> }
-                    @if (p.trangThai === 'Đã duyệt' && !khoa() && store.canEdit('hdbThucThu') && store.level('duyetXoa') !== 'none' && !store.dangChoXoa('PhieuThuChi', p.id)) {
+                    @if (p.trangThai === TT.DA_DUYET && !khoa() && store.canEdit('hdbThucThu') && store.level('duyetXoa') !== 'none' && !store.dangChoXoa('PhieuThuChi', p.id)) {
                       <button type="button" class="linkish sub" title="Phiếu đã duyệt mà ghi sai: gửi yêu cầu xoá, duyệt xong ghi nhận lại" (click)="xoaPhieu(p.id, p.soPhieu, d.dot)">Yêu cầu xoá phiếu</button>
                     }
                   } @else { <span class="muted">—</span> }
@@ -271,7 +272,7 @@ interface ThuNhap {
       @if (store.canEdit('hdbThucThu') && chuaLuuDot()) {
         <p class="sub">Lưu HĐ trước khi ghi thực thu cho đợt mới / đợt vừa sửa.</p>
       }
-      @if (store.canEdit('hdbThucThu') && saved()?.trangThai === 'Báo giá') {
+      @if (store.canEdit('hdbThucThu') && saved()?.trangThai === TT.BAO_GIA) {
         <p class="sub">
           @if (saved()!.coTamUng) { HĐ có tạm ứng: ghi thực thu đợt 1 ngay ở Báo giá — ngày thu đợt 1 thành Ngày hiệu lực. }
           @else { HĐ ở Báo giá — chỉ ghi thực thu từ Hiệu lực trở đi. Có tạm ứng thì tích "HĐ có tạm ứng" ở Tab 1. }
@@ -285,6 +286,7 @@ interface ThuNhap {
 export class HdbTab3 {
   private readonly ktHH = viewChild('ktHH', { read: KiemTra });
   protected readonly store = inject(Store);
+  protected readonly TT = TT;
   private readonly confirm = inject(Confirm);
   readonly f = model.required<HopDongBan>({ alias: 'draft' });
   readonly saved = input<HopDongBan | null>(null);
@@ -424,7 +426,7 @@ table{border-collapse:collapse;width:100%}td,th{border:1px solid #000;padding:4p
   );
   protected readonly themHH = computed(() => {
     const s = this.saved();
-    return !!s && !this.khoa() && s.trangThai !== 'Báo giá' && this.store.canEdit('cpHD', s.sale);
+    return !!s && !this.khoa() && s.trangThai !== TT.BAO_GIA && this.store.canEdit('cpHD', s.sale);
   });
   protected readonly hh = signal({ nguoiNhan: '', soTien: 0, ngay: todayIso(), nguonTien: '' });
   protected setHH(k: 'nguoiNhan' | 'ngay' | 'nguonTien', v: string): void;
@@ -520,11 +522,11 @@ table{border-collapse:collapse;width:100%}td,th{border:1px solid #000;padding:4p
   protected thuSua(d: DotTTBan): boolean {
     if (this.khoa() || !this.store.canEdit('hdbThucThu')) return false;
     const s = this.saved();
-    if (!s || (s.trangThai === 'Báo giá' && !(s.coTamUng && d.dot === 1))) return false;
+    if (!s || (s.trangThai === TT.BAO_GIA && !(s.coTamUng && d.dot === 1))) return false;
     const luu = this.dotLuu(d.dot);
     if (!luu) return false;
     const p = this.store.phieuById(luu.phieuThuId);
-    return !p || p.trangThai !== 'Đã duyệt';
+    return !p || p.trangThai !== TT.DA_DUYET;
   }
   protected thu(d: DotTTBan): ThuNhap {
     return (

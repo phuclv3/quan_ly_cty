@@ -10,6 +10,7 @@
  * Đây là kiểm tra ở giao diện; khi có máy chủ, máy chủ phải kiểm lại theo đúng bảng này (NT-04).
  */
 import { NhomQuyen } from './models';
+import { TT } from './trang-thai';
 
 /**
  * Mức quyền, xếp từ thấp tới cao:
@@ -131,7 +132,7 @@ export function levelOf(groups: readonly NhomQuyen[], p: Perm): Level {
   if (!c) return 'none';
   let best: Level = 'none';
   for (const g of groups) {
-    if (g.trangThai !== 'Hoạt động') continue;
+    if (g.trangThai !== TT.HOAT_DONG) continue;
     if (g.toanQuyen) return maxLevel(c);
     const l = g.quyen[c.ma] ?? 'none';
     if (!c.mucDo.includes(l)) continue;
@@ -179,7 +180,7 @@ export function nhomMacDinh(now: string): NhomQuyen[] {
     ten: m.ten,
     moTa: m.moTa,
     toanQuyen: !!m.toanQuyen,
-    trangThai: 'Hoạt động',
+    trangThai: TT.HOAT_DONG,
     heThong: true,
     quyen: Object.fromEntries(Object.entries(m.q).map(([p, l]) => [maOf(p as Perm), l as Level])),
     taoLuc: now,

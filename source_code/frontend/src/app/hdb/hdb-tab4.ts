@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { Store } from '../core/store';
+import { TT, ttNhan } from '../core/trang-thai';
 import { HopDongBan, LCP_VAN_CHUYEN } from '../core/models';
 import { hdbBuocLoiNhuan, hdbCalc } from '../core/calc';
 import { money, moneyInWords, sum, todayIso, viDate } from '../core/util';
@@ -66,7 +67,7 @@ import { Icon } from '../shared/icon';
           <thead><tr><th>#</th><th>Ngày</th><th>Nội dung</th><th>Đơn vị vận chuyển</th><th class="num">Số tiền</th><th>Trạng thái</th></tr></thead>
           <tbody>
             @for (x of vanChuyen(); track x.id; let i = $index) {
-              <tr><td>{{ i + 1 }}</td><td>{{ viDate(x.ngay) }}</td><td>{{ x.noiDung }}</td><td>{{ x.donViVanChuyen || '—' }}</td><td class="num">{{ money(x.soTien) }}</td><td>{{ x.trangThai }}</td></tr>
+              <tr><td>{{ i + 1 }}</td><td>{{ viDate(x.ngay) }}</td><td>{{ x.noiDung }}</td><td>{{ x.donViVanChuyen || '—' }}</td><td class="num">{{ money(x.soTien) }}</td><td>{{ ttNhan(x.trangThai) }}</td></tr>
             } @empty {
               <tr><td colspan="6" class="muted">Chưa có chi phí vận chuyển</td></tr>
             }
@@ -87,6 +88,8 @@ import { Icon } from '../shared/icon';
 })
 export class HdbTab4 {
   protected readonly store = inject(Store);
+  protected readonly TT = TT;
+  protected readonly ttNhan = ttNhan;
   readonly h = input.required<HopDongBan>();
 
   protected readonly money = money;
@@ -100,7 +103,7 @@ export class HdbTab4 {
   /** Chỉ hiện lối nhập chi phí khi có quyền KT-12 cho HĐ này và HĐ còn mở, từ Hiệu lực trở đi. */
   protected readonly nhapDuoc = computed(() => {
     const h = this.h();
-    return this.store.canEdit('cpHD', h.sale) && h.trangThai !== 'Báo giá' && !this.store.hdbKhoa(h);
+    return this.store.canEdit('cpHD', h.sale) && h.trangThai !== TT.BAO_GIA && !this.store.hdbKhoa(h);
   });
   protected readonly xemCP = computed(() => this.store.canView('cpHD'));
   protected moCP(id: string): void {
@@ -114,9 +117,9 @@ export class HdbTab4 {
       .sort((a, b) => (a.ngay < b.ngay ? 1 : -1)),
   );
   protected readonly vanChuyen = computed(() =>
-    this.cps().filter((x) => x.loaiChiPhi === LCP_VAN_CHUYEN && x.trangThai !== 'Từ chối' && x.trangThai !== 'Nháp'),
+    this.cps().filter((x) => x.loaiChiPhi === LCP_VAN_CHUYEN && x.trangThai !== TT.TU_CHOI && x.trangThai !== TT.NHAP),
   );
-  protected readonly tongVC = computed(() => sum(this.vanChuyen().filter((x) => x.trangThai === 'Đã duyệt'), (x) => x.soTien));
+  protected readonly tongVC = computed(() => sum(this.vanChuyen().filter((x) => x.trangThai === TT.DA_DUYET), (x) => x.soTien));
 
   /** In riêng khối quyết toán: ẩn phần còn lại của trang khi in. */
   protected inQT(): void {

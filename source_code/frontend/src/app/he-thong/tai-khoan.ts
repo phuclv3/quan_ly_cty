@@ -15,6 +15,7 @@ import { Modal, TrangThai } from '../shared/ui-kit';
 import { Icon } from '../shared/icon';
 import { NhomQuyenTab } from './nhom-quyen';
 import { ChucNangTab, MaTranTab } from './chuc-nang';
+import { TT, ttNhan } from '../core/trang-thai';
 
 type Tab = 'tai-khoan' | 'nhom' | 'chuc-nang' | 'ma-tran';
 const TABS: { k: Tab; t: string }[] = [
@@ -95,7 +96,7 @@ interface FormTK {
                   <td>{{ t.email }}</td>
                   <td>
                     <span class="row" style="gap:4px">
-                      @for (g of nhomCua(t); track g.id) { <app-tt [v]="g.ten" [t]="g.toanQuyen ? 'done' : g.trangThai === 'Ngưng' ? 'mute' : 'info'" /> }
+                      @for (g of nhomCua(t); track g.id) { <app-tt [v]="g.ten" [t]="g.toanQuyen ? 'done' : g.trangThai === TT.NGUNG ? 'mute' : 'info'" /> }
                       @empty { <span class="muted">(chưa có nhóm)</span> }
                     </span>
                   </td>
@@ -106,8 +107,8 @@ interface FormTK {
                       <div class="btn-row" style="justify-content:flex-start">
                         <button type="button" class="btn sm quiet" (click)="moSua(t)">Sửa</button>
                         @if (t.id !== store.meId()) {
-                          <button type="button" class="btn sm" [class.quiet]="t.trangThai === 'Khoá'" [class.danger]="t.trangThai === 'Hoạt động'" (click)="doiTrangThai(t)">
-                            {{ t.trangThai === 'Khoá' ? 'Mở khoá' : 'Khoá' }}
+                          <button type="button" class="btn sm" [class.quiet]="t.trangThai === TT.KHOA" [class.danger]="t.trangThai === TT.HOAT_DONG" (click)="doiTrangThai(t)">
+                            {{ t.trangThai === TT.KHOA ? 'Mở khoá' : 'Khoá' }}
                           </button>
                         }
                         @if (t.id !== store.meId()) { <button type="button" class="btn sm quiet" (click)="moDatLai(t)">Đặt lại mật khẩu</button> }
@@ -156,7 +157,7 @@ interface FormTK {
                 <span>
                   <b>{{ g.ten }}</b> <span class="mono muted">{{ g.ma }}</span>
                   @if (g.toanQuyen) { <app-tt v="Toàn quyền" t="done" /> }
-                  @if (g.trangThai === 'Ngưng') { <app-tt v="Ngưng" /> }
+                  @if (g.trangThai === TT.NGUNG) { <app-tt [v]="TT.NGUNG" /> }
                   <small class="muted">{{ g.moTa || soQuyen(g.id) + ' quyền' }}</small>
                 </span>
               </label>
@@ -204,6 +205,7 @@ interface FormTK {
   ],
 })
 export class TaiKhoanPage {
+  protected readonly TT = TT;
   private readonly mTK = viewChild<Modal>('mTK');
   protected readonly store = inject(Store);
   private readonly auth = inject(Auth);
@@ -225,7 +227,7 @@ export class TaiKhoanPage {
   protected readonly loc = signal<Loc>(nhoLoc('tai-khoan', LOC_RONG));
   protected readonly facets = computed<Facet[]>(() => [
     { key: 'nhom', label: 'Nhóm quyền', options: this.store.nhomQuyen().map((g) => ({ value: g.id, label: g.ten })) },
-    { key: 'trangThai', label: 'Trạng thái', options: ['Hoạt động', 'Khoá'].map((v) => ({ value: v, label: v })) },
+    { key: 'trangThai', label: 'Trạng thái', options: [TT.HOAT_DONG, TT.KHOA].map((v) => ({ value: v, label: ttNhan(v) })) },
   ]);
   private readonly list = computed(() => {
     const l = this.loc();
@@ -300,7 +302,7 @@ export class TaiKhoanPage {
   }
 
   protected async doiTrangThai(t: TaiKhoan): Promise<void> {
-    const khoa = t.trangThai === 'Hoạt động';
+    const khoa = t.trangThai === TT.HOAT_DONG;
     const ok = await this.confirm.ask({
       title: khoa ? `Khoá tài khoản ${t.hoTen}?` : `Mở khoá tài khoản ${t.hoTen}?`,
       message: khoa

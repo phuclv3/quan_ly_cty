@@ -43,6 +43,7 @@ import { RAW_KH_CRM } from './seed-kh';
 import { RAW_ANH_XA, RAW_KIEM_KE, RAW_LO_NHAP, RAW_MA_HANG, RawMaHang } from './seed-kho';
 import { nhomMacDinh } from './perm';
 import { fold, nextCode, nowIso, todayIso, uid, yy } from './util';
+import { TT, ttNhan } from './trang-thai';
 
 /**
  * v2: phân quyền theo nhóm (NhomQuyen) thay cho vai trò cố định.
@@ -101,7 +102,7 @@ export async function themTaiKhoanSale(db: Db): Promise<void> {
       email: t.email,
       hoTen: t.hoTen,
       nhom: ['NQ-SALE'],
-      trangThai: 'Hoạt động',
+      trangThai: TT.HOAT_DONG,
       batDoiMK: true,
       soLanSai: 0,
     });
@@ -154,7 +155,7 @@ export async function buildSeed(): Promise<Db> {
       email: t.email,
       hoTen: t.hoTen,
       nhom: t.nhom,
-      trangThai: 'Hoạt động',
+      trangThai: TT.HOAT_DONG,
       batDoiMK: false,
       soLanSai: 0,
     };
@@ -169,7 +170,7 @@ export async function buildSeed(): Promise<Db> {
 
   // ── Danh mục cố định theo spec ──
   db.nguonTien.push(
-    { id: 'NT-TM', ten: 'Tiền mặt', loai: 'Tiền mặt', soDuDauKy: 50_000_000, ngayDauKy: '2026-01-01', trangThai: 'Đang dùng' },
+    { id: 'NT-TM', ten: 'Tiền mặt', loai: 'Tiền mặt', soDuDauKy: 50_000_000, ngayDauKy: '2026-01-01', trangThai: TT.DANG_DUNG },
     {
       id: 'NT-NH',
       ten: 'Ngân hàng (UNC)',
@@ -177,7 +178,7 @@ export async function buildSeed(): Promise<Db> {
       nganHang: CXD,
       soDuDauKy: 900_000_000,
       ngayDauKy: '2026-01-01',
-      trangThai: 'Đang dùng',
+      trangThai: TT.DANG_DUNG,
     },
   );
   const lcp: LoaiChiPhi[] = [
@@ -296,7 +297,7 @@ export async function buildSeed(): Promise<Db> {
       diaChi: k.diaChi,
       ngayKy: r.ngayKy,
       ngayHieuLuc: r.ngayKy,
-      trangThai: daGiao ? 'Hoàn thành' : 'Hiệu lực',
+      trangThai: daGiao ? TT.HOAN_THANH : TT.HIEU_LUC,
       sale: SALE,
       ghiChu: [r.ghiChu, r.trangThai && !daGiao ? `Tình trạng hàng (file cũ): ${r.trangThai}` : '', r.phuongAnTT ? `Phương án TT: ${r.phuongAnTT.replace(/\n/g, '; ')}` : '']
         .filter(Boolean)
@@ -377,7 +378,7 @@ export async function buildSeed(): Promise<Db> {
       ngayKy: r.ngayKy,
       hdbId: hdb?.id,
       thuocPhuTai: pt,
-      trangThai: 'Đã ký',
+      trangThai: TT.DA_KY,
       ghiChu: [
         r.ghiChu,
         r.hdBanLienQuan && !hdb ? `Dùng cho (file cũ): ${r.hdBanLienQuan}` : '',
@@ -443,7 +444,7 @@ export async function buildSeed(): Promise<Db> {
       mst: n.mst,
       ngayKy: r0.ngay,
       thuocPhuTai: false,
-      trangThai: 'Đã nhận đủ',
+      trangThai: TT.DA_NHAN_DU,
       ghiChu: 'Dựng từ sheet "1. NhapKho" của KhoOxyMecie_v3 (lô nhập theo hoá đơn).',
       chiTiet: dongs,
       nhapTay: false,
@@ -461,7 +462,7 @@ export async function buildSeed(): Promise<Db> {
       hdId: m.id,
       kho: 'KHO-OM',
       nguoiThucHien: KHO,
-      trangThai: 'Hiệu lực',
+      trangThai: TT.HIEU_LUC,
       ghiChu: 'Import KhoOxyMecie_v3',
       soHoaDon: r0.soHoaDon,
       ncc: n.id,
@@ -510,7 +511,7 @@ export async function buildSeed(): Promise<Db> {
         mst: n.mst,
         ngayKy: r.ngayKy,
         thuocPhuTai: true,
-        trangThai: 'Đã ký',
+        trangThai: TT.DA_KY,
         ghiChu: 'Dựng từ cột giá mua của sheet "Hợp đồng ký về Phú Tài" (Công nợ Phú Tài Miền Nam).',
         chiTiet: [],
         nhapTay: true,
@@ -531,7 +532,7 @@ export async function buildSeed(): Promise<Db> {
       mst: k.mst,
       ngayKy: r.ngayKy,
       ngayHieuLuc: r.ngayKy,
-      trangThai: daTra >= sau && sau > 0 ? 'Hoàn thành' : 'Đang thực hiện',
+      trangThai: daTra >= sau && sau > 0 ? TT.HOAN_THANH : TT.DANG_THUC_HIEN,
       ghiChu: r.ghiChu ?? '',
       truocVAT: r.giaBanTruocVAT,
       vat: ([0, 8, 10].includes(vat) ? vat : 8) as 0 | 8 | 10,
@@ -591,7 +592,7 @@ export async function buildSeed(): Promise<Db> {
       soTien: 0,
       nguonTien: 'NT-TM',
       nguoiThucHien: ADMIN,
-      trangThai: 'Chờ duyệt',
+      trangThai: TT.CHO_DUYET,
       files: [],
       ...o,
     });
@@ -611,7 +612,7 @@ export async function buildSeed(): Promise<Db> {
     noiDung: '[Demo] Mua văn phòng phẩm tháng này',
     soTienChi: 640_000,
     nguoiDeNghi: SALE,
-    trangThai: 'Chờ duyệt',
+    trangThai: TT.CHO_DUYET,
   });
   void KT;
   ghepDataKH(db);
@@ -637,7 +638,7 @@ export function themHdDemo(db: Db): void {
     TRANG_THAI_HDB.forEach((tt, i) => {
       const soHD = `DEMO-HDB-${i + 1}`;
       if (co(soHD, db.hopDongBan)) return;
-      const baoGia = tt === 'Báo giá';
+      const baoGia = tt === TT.BAO_GIA;
       db.hopDongBan.push({
         id: uid('HDB'),
         soHD,
@@ -649,8 +650,8 @@ export function themHdDemo(db: Db): void {
         ngayHieuLuc: baoGia ? undefined : ngay,
         trangThai: tt,
         sale,
-        ghiChu: `[Demo] HĐ bán trạng thái "${tt}"`,
-        lyDoHuy: tt === 'Huỷ' ? '[Demo] Khách không ký' : undefined,
+        ghiChu: `[Demo] HĐ bán trạng thái "${ttNhan(tt)}"`,
+        lyDoHuy: tt === TT.HUY ? '[Demo] Khách không ký' : undefined,
         truocVAT: 10_000_000 * (i + 1),
         vat: 8,
         thucTeTruocVAT: 8_000_000 * (i + 1),
@@ -672,10 +673,10 @@ export function themHdDemo(db: Db): void {
         tenNCC: n.ten,
         diaChi: n.diaChi,
         mst: n.mst,
-        ngayKy: tt === 'Nháp' ? undefined : ngay,
+        ngayKy: tt === TT.NHAP ? undefined : ngay,
         thuocPhuTai: false,
         trangThai: tt,
-        ghiChu: `[Demo] HĐ mua trạng thái "${tt}"`,
+        ghiChu: `[Demo] HĐ mua trạng thái "${ttNhan(tt)}"`,
         chiTiet: lh ? [{ id: uid('DM'), loaiHang: lh.id, tenHang: lh.ten, thongSo: '', soLuong: i + 1, dvt: lh.dvt, donGia: 5_000_000, loaiTien: 'VNĐ', tyGia: 1 }] : [],
         nhapTay: false,
         dotTT: [],
@@ -729,17 +730,17 @@ export function ghepDataKH(db: Db): void {
   for (const k of db.khachHang) {
     const hds = db.hopDongBan.filter((h) => h.maKH === k.id).sort((a, b) => ((a.ngayKy ?? a.taoLuc) < (b.ngayKy ?? b.taoLuc) ? 1 : -1));
     if (hds.length) {
-      if (!k.tiepCan || k.tiepCan === 'Chưa liên hệ') k.tiepCan = 'Hợp đồng';
-      if (!k.coHoi || CO_HOI.indexOf(k.coHoi) < CO_HOI.indexOf('Ký hợp đồng')) {
-        k.coHoi = hds.every((h) => h.trangThai === 'Hoàn thành' || h.trangThai === 'Đã tất toán') ? 'Hoàn thành' : 'Ký hợp đồng';
+      if (!k.tiepCan || k.tiepCan === TT.CHUA_LIEN_HE) k.tiepCan = TT.HOP_DONG;
+      if (!k.coHoi || CO_HOI.indexOf(k.coHoi) < CO_HOI.indexOf(TT.KY_HOP_DONG)) {
+        k.coHoi = hds.every((h) => h.trangThai === TT.HOAN_THANH || h.trangThai === TT.DA_TAT_TOAN) ? TT.HOAN_THANH : TT.KY_HOP_DONG;
       }
       k.nguon ??= 'Khách cũ';
       k.phuTrach ??= hds[0].sale || undefined;
     }
-    k.tiepCan ??= 'Chưa liên hệ';
-    k.coHoi ??= 'Chưa tiếp cận';
-    // Dữ liệu cũ lưu 'Data thô' → đổi tên trạng thái thành 'Chưa phân bổ'.
-    k.trangThaiData = k.phuTrach ? 'Đã phân bổ' : 'Chưa phân bổ';
+    k.tiepCan ??= TT.CHUA_LIEN_HE;
+    k.coHoi ??= TT.CHUA_TIEP_CAN;
+    // Dữ liệu cũ lưu 'Data thô' → đổi tên trạng thái thành TT.CHUA_PHAN_BO.
+    k.trangThaiData = k.phuTrach ? TT.DA_PHAN_BO : TT.CHUA_PHAN_BO;
   }
 }
 
@@ -877,12 +878,12 @@ export function nangCapKhoV5(d: Db): void {
       }
       daCo.add(x.lo);
       if (x.donGia == null && dm) x.donGia = Math.round(dm.donGia * (dm.loaiTien === 'VNĐ' ? 1 : dm.tyGia || 0));
-      lo.push({ lo: x.lo, loaiHang: x.loaiHang, kho: p.kho, ton: x.soLuong, donGia: x.donGia ?? 0, quyCach: x.thuocTinh, hl: p.trangThai === 'Hiệu lực' });
+      lo.push({ lo: x.lo, loaiHang: x.loaiHang, kho: p.kho, ton: x.soLuong, donGia: x.donGia ?? 0, quyCach: x.thuocTinh, hl: p.trangThai === TT.HIEU_LUC });
     });
   }
   for (const p of ps) {
     if (p.loai !== 'Xuất' || p.kho === KHO_CHUYEN_THANG) continue;
-    const hl = p.trangThai === 'Hiệu lực';
+    const hl = p.trangThai === TT.HIEU_LUC;
     const out: typeof p.dong = [];
     for (const x of p.dong) {
       if (x.lo) {
@@ -934,7 +935,7 @@ function phieu(
     id: uid('PTC'),
     soPhieu: so(db.cauHinh.TIEN_TO_TC, o.ngayLap),
     nguoiDeNghi: CXD,
-    trangThai: 'Đã duyệt',
+    trangThai: TT.DA_DUYET,
     nguoiDuyet: 'Import',
     ngayDuyet: o.ngayLap,
     import: true,

@@ -7,8 +7,9 @@ import { csv, downloadFile, fileName } from '../shared/export';
 import { TrangThai } from '../shared/ui-kit';
 import { Icon } from '../shared/icon';
 import { LEVEL_TONE } from './nhom-quyen';
+import { TT } from '../core/trang-thai';
 
-const mucCua = (g: NhomQuyen, c: ChucNang): Level => (g.trangThai !== 'Hoạt động' ? 'none' : g.toanQuyen ? maxLevel(c) : (g.quyen[c.ma] ?? 'none'));
+const mucCua = (g: NhomQuyen, c: ChucNang): Level => (g.trangThai !== TT.HOAT_DONG ? 'none' : g.toanQuyen ? maxLevel(c) : (g.quyen[c.ma] ?? 'none'));
 
 /** Danh mục chức năng phân quyền — mỗi chức năng một mã (bảng ChucNang). */
 @Component({
@@ -92,7 +93,7 @@ export class ChucNangTab {
         <thead>
           <tr>
             <th>Chức năng</th>
-            @for (g of store.nhomQuyen(); track g.id) { <th>{{ g.ten }}@if (g.trangThai === 'Ngưng') { <span class="sub">Ngưng</span> }</th> }
+            @for (g of store.nhomQuyen(); track g.id) { <th>{{ g.ten }}@if (g.trangThai === TT.NGUNG) { <span class="sub">Ngưng</span> }</th> }
           </tr>
         </thead>
         <tbody>
@@ -113,6 +114,7 @@ export class ChucNangTab {
   `,
 })
 export class MaTranTab {
+  protected readonly TT = TT;
   protected readonly store = inject(Store);
   protected readonly modules = MODULES;
   protected readonly label = LEVEL_LABEL;

@@ -5,6 +5,7 @@ import { CO_HOI, HINH_THUC_HD, KhachHang, LOAI_SP_KH, NGUON_KH, PHAN_LOAI_KH, TI
 import { viDate } from '../core/util';
 import { Modal, MoneyInput, PickGo, PickOption } from '../shared/ui-kit';
 import { KetQuaMST, TraMst } from '../shared/tra-mst';
+import { TT, ttNhan } from '../core/trang-thai';
 
 const BLANK: KhachHang = { id: '', ten: '', mst: '', diaChi: '', nguoiLienHe: '', dienThoai: '', email: '', ghiChu: '' };
 type F = Exclude<keyof KhachHang, 'id' | 'chamSoc'>;
@@ -66,8 +67,8 @@ type F = Exclude<keyof KhachHang, 'id' | 'chamSoc'>;
           <div class="field">
             <label for="khf-tt">Trạng thái</label>
             <select id="khf-tt" (change)="set('trangThai', $any($event.target).value)">
-              <option value="Đang dùng" [selected]="k.trangThai !== 'Ngưng'">Đang dùng</option>
-              <option value="Ngưng" [selected]="k.trangThai === 'Ngưng'">Ngưng</option>
+              <option [value]="TT.DANG_DUNG" [selected]="k.trangThai !== TT.NGUNG">Đang dùng</option>
+              <option [value]="TT.NGUNG" [selected]="k.trangThai === TT.NGUNG">Ngưng</option>
             </select>
             <span class="hint">Ngưng: không chọn được cho HĐ bán mới.</span>
           </div>
@@ -98,13 +99,13 @@ type F = Exclude<keyof KhachHang, 'id' | 'chamSoc'>;
           <div class="field">
             <label for="khf-tc">Trạng thái tiếp cận</label>
             <select id="khf-tc" (change)="set('tiepCan', $any($event.target).value)">
-              @for (o of TIEP_CAN; track o) { <option [value]="o" [selected]="o === (k.tiepCan ?? 'Chưa liên hệ')">{{ o }}</option> }
+              @for (o of TIEP_CAN; track o) { <option [value]="o" [selected]="o === (k.tiepCan ?? TT.CHUA_LIEN_HE)">{{ ttNhan(o) }}</option> }
             </select>
           </div>
           <div class="field">
             <label for="khf-ch">Trạng thái cơ hội</label>
             <select id="khf-ch" (change)="set('coHoi', $any($event.target).value)">
-              @for (o of CO_HOI; track o) { <option [value]="o" [selected]="o === (k.coHoi ?? 'Chưa tiếp cận')">{{ o }}</option> }
+              @for (o of CO_HOI; track o) { <option [value]="o" [selected]="o === (k.coHoi ?? TT.CHUA_TIEP_CAN)">{{ ttNhan(o) }}</option> }
             </select>
           </div>
           <div class="field">
@@ -144,7 +145,7 @@ type F = Exclude<keyof KhachHang, 'id' | 'chamSoc'>;
           </div>
           <div class="field">
             <span class="lbl">Trạng thái data</span>
-            <div class="ro">{{ k.phuTrach ? 'Đã phân bổ' : 'Chưa phân bổ' }}{{ k.ngayPhanBo ? ' · ' + viDate(k.ngayPhanBo) : '' }}</div>
+            <div class="ro">{{ ttNhan(k.phuTrach ? TT.DA_PHAN_BO : TT.CHUA_PHAN_BO) }}{{ k.ngayPhanBo ? ' · ' + viDate(k.ngayPhanBo) : '' }}</div>
           </div>
           <div class="field span-3">
             <label for="khf-gc">Ghi chú</label>
@@ -161,6 +162,8 @@ type F = Exclude<keyof KhachHang, 'id' | 'chamSoc'>;
   `,
 })
 export class KhForm {
+  protected readonly TT = TT;
+  protected readonly ttNhan = ttNhan;
   protected readonly store = inject(Store);
   private readonly m = viewChild<Modal>('m');
   protected readonly viDate = viDate;

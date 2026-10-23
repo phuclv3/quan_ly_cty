@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, model, output, signal } from '@angular/core';
 import { Store } from '../core/store';
+import { TT, ttNhan } from '../core/trang-thai';
 import { hdbCalc } from '../core/calc';
 import { HopDongBan, LOAI_HO_SO } from '../core/models';
 import { money, viDate } from '../core/util';
@@ -54,7 +55,7 @@ import { HdbTab3 } from './hdb-tab3';
               <dd>@if (tongCho()) { @for (loai of loais; track loai) { @if (cho()[loai]?.length) { <span class="chip">{{ loai }}: {{ cho()[loai]!.length }}</span> } } } @else { <span class="muted">Chưa chọn tệp — bổ sung sau ở Tab "Lưu trữ hồ sơ"</span> }</dd>
               <button type="button" class="btn sm quiet" (click)="den(iBuoc('hs'))">Sửa</button>
             </div>
-            <div><dt>Trạng thái khi lưu</dt><dd><span class="tag mute">Báo giá</span> <span class="muted">— chuyển Hiệu lực ở màn chi tiết khi đã ký.</span></dd><span></span></div>
+            <div><dt>Trạng thái khi lưu</dt><dd><span class="tag mute">{{ ttNhan(TT.BAO_GIA) }}</span> <span class="muted">— chuyển Hiệu lực ở màn chi tiết khi đã ký.</span></dd><span></span></div>
           </dl>
         </section>
       }
@@ -78,6 +79,8 @@ import { HdbTab3 } from './hdb-tab3';
 })
 export class HdbTaoMoi {
   protected readonly store = inject(Store);
+  protected readonly TT = TT;
+  protected readonly ttNhan = ttNhan;
   private readonly kt = inject(KiemTra, { self: true });
   protected readonly money = money;
   protected readonly viDate = viDate;

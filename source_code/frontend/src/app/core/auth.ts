@@ -5,6 +5,7 @@ import { ChangeSet, Store } from './store';
 import { api, readToken, setUnauthorizedHandler, writeToken } from './api';
 import { loiMatKhauMoi } from './crypto';
 import { fold } from './util';
+import { TT } from './trang-thai';
 
 /**
  * Đăng nhập nội bộ email + mật khẩu (NT-01), đổi / đặt lại mật khẩu (NT-02), tài khoản (NT-03).
@@ -125,7 +126,7 @@ export class Auth {
     const t = this.store.db().taiKhoan.find((x) => x.id === id);
     if (!t) return 'Không tìm thấy tài khoản';
     if (t.id === this.store.meId()) return 'Không tự khoá tài khoản đang dùng';
-    const moi: TaiKhoan['trangThai'] = t.trangThai === 'Khoá' ? 'Hoạt động' : 'Khoá';
+    const moi: TaiKhoan['trangThai'] = t.trangThai === TT.KHOA ? TT.HOAT_DONG : TT.KHOA;
     const ds = this.store.db().taiKhoan.map((x) => (x.id === id ? { ...x, trangThai: moi } : x));
     if (!this.store.conQuanTri(ds, this.store.db().nhomQuyen)) return 'Không khoá tài khoản quản trị cuối cùng';
     this.gui('POST', `/tai-khoan/${encodeURIComponent(id)}/doi-trang-thai`);

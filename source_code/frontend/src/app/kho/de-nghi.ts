@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { RouterLink } from '@angular/router';
 import { dnvtTinhTrang, tonTai } from '../core/calc';
 import { Store } from '../core/store';
+import { TT, ttNhan } from '../core/trang-thai';
 import { nhoLoc } from '../core/ui';
 import { viDate } from '../core/util';
 import { Confirm } from '../shared/confirm';
@@ -9,7 +10,7 @@ import { Facet, FilterBar, LOC_RONG, Loc, khopQ, khopSel } from '../shared/filte
 import { Pager, paginate } from '../shared/pager';
 import { TrangThai } from '../shared/ui-kit';
 
-const TT_OPTS = ['Chờ mua', 'Đang mua một phần', 'Đã lên HĐ mua', 'Huỷ'].map((v) => ({ value: v, label: v }));
+const TT_OPTS = ['Chờ mua', 'Đang mua một phần', 'Đã lên HĐ mua', TT.HUY].map((v) => ({ value: v, label: ttNhan(v) }));
 
 /**
  * Đề nghị cấp vật tư (mọi HĐ bán): hàng thiếu trong kho → bộ phận mua lập HĐ mua từ đề nghị.

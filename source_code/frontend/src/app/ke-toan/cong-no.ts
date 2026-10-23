@@ -7,6 +7,7 @@ import { matches, money, sum, viDate } from '../core/util';
 import { Kpi } from '../shared/ui-kit';
 import { Pager, paginate } from '../shared/pager';
 import { csv, downloadFile, fileName } from '../shared/export';
+import { TT } from '../core/trang-thai';
 
 interface CnRow {
   id: string;
@@ -140,7 +141,7 @@ export class CongNoTab {
     const me = this.store.meId();
     const own = this.store.ownOnly('congNo');
     return db.hopDongBan
-      .filter((h) => h.trangThai !== 'Báo giá' && h.trangThai !== 'Huỷ' && (!own || h.sale === me))
+      .filter((h) => h.trangThai !== TT.BAO_GIA && h.trangThai !== TT.HUY && (!own || h.sale === me))
       .map((h) => {
         const c = hdbCalc(h, db);
         const han = c.dotGanNhat?.han;
@@ -154,7 +155,7 @@ export class CongNoTab {
     const own = this.store.ownOnly('congNo');
     const mine = new Set(db.hopDongBan.filter((h) => h.sale === me).map((h) => h.id));
     return db.hopDongMua
-      .filter((m) => !m.thuocPhuTai && m.trangThai !== 'Huỷ' && (!own || (!!m.hdbId && mine.has(m.hdbId))))
+      .filter((m) => !m.thuocPhuTai && m.trangThai !== TT.HUY && (!own || (!!m.hdbId && mine.has(m.hdbId))))
       .map((m) => {
         const c = hdmCalc(m, db);
         const han = hanGanNhatMua(m, db);

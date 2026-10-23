@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { Store } from '../core/store';
+import { TT, ttNhan } from '../core/trang-thai';
 import { hdmCalc, HdmCalc } from '../core/calc';
 import { HopDongMua, TRANG_THAI_HDM } from '../core/models';
 import { nhoLoc } from '../core/ui';
@@ -109,6 +110,8 @@ interface Dong {
 })
 export class HdmList {
   protected readonly store = inject(Store);
+  protected readonly TT = TT;
+  protected readonly ttNhan = ttNhan;
   private readonly router = inject(Router);
   protected readonly money = money;
   protected readonly pct = pct;
@@ -120,7 +123,7 @@ export class HdmList {
   protected readonly facets = computed<Facet[]>(() => {
     const nccIds = new Set(this.store.hdmVisible().map((m) => m.maNCC));
     return [
-      { key: 'tt', label: 'Trạng thái', options: TRANG_THAI_HDM.map((t) => ({ value: t, label: t })) },
+      { key: 'tt', label: 'Trạng thái', options: TRANG_THAI_HDM.map((t) => ({ value: t, label: ttNhan(t) })) },
       {
         key: 'ncc',
         label: 'NCC',
@@ -179,7 +182,7 @@ export class HdmList {
 
   protected readonly kpi = computed(() => {
     const rs = this.rows();
-    const hl = rs.filter((r) => r.m.trangThai !== 'Huỷ');
+    const hl = rs.filter((r) => r.m.trangThai !== TT.HUY);
     const oxy = hl.filter((r) => !r.m.thuocPhuTai);
     return {
       n: hl.length,
@@ -188,7 +191,7 @@ export class HdmList {
       daTra: sum(oxy, (r) => r.c.daTra),
       conPhaiTra: sum(oxy, (r) => Math.max(0, r.c.conPhaiTra)),
       quaHan: sum(oxy, (r) => r.c.quaHan),
-      dangNhan: rs.filter((r) => r.m.trangThai === 'Đang nhận hàng').length,
+      dangNhan: rs.filter((r) => r.m.trangThai === TT.DANG_NHAN_HANG).length,
     };
   });
 
@@ -210,7 +213,7 @@ export class HdmList {
       r.m.thuocPhuTai ? '' : pct(r.c.pctNhap),
       r.soHDB,
       r.m.thuocPhuTai ? 'Có' : '',
-      r.choXoa ? `${r.m.trangThai} (Chờ xoá)` : r.m.trangThai,
+      r.choXoa ? `${ttNhan(r.m.trangThai)} (Chờ xoá)` : ttNhan(r.m.trangThai),
     ]);
     downloadFile(fileName('hop-dong-mua', 'csv'), 'text/csv', csv([head, ...body]));
   }

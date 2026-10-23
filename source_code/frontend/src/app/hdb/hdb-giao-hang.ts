@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal, viewChild } from '@angular/core';
 import { Store } from '../core/store';
+import { TT } from '../core/trang-thai';
 import { HopDongBan, KHO_CHUYEN_THANG, PhieuKho } from '../core/models';
 import { DongLo, dongMuaChoHdb, hdmChoHdb, loConHang, tonTai, tongSL } from '../core/calc';
 import { num, todayIso, viDate } from '../core/util';
@@ -33,7 +34,7 @@ const dongRong = (): DongNhap => ({ loaiHang: '', lo: '', soLuong: 0, tenTrenHD:
           <button type="button" class="btn sm" (click)="mo()"><app-icon name="truck" [size]="16" /> Ghi nhận giao hàng</button>
         }
       </div>
-      @if (h().trangThai === 'Báo giá') { <p class="sub">HĐ chưa Hiệu lực — chưa ghi nhận giao hàng được.</p> }
+      @if (h().trangThai === TT.BAO_GIA) { <p class="sub">HĐ chưa Hiệu lực — chưa ghi nhận giao hàng được.</p> }
       <div class="tbl-wrap">
         <table class="tbl compact">
           <thead><tr><th>Ngày</th><th>Số phiếu XK</th><th>Kho</th><th>Hàng</th><th class="num">SL</th><th>Trạng thái</th><th></th></tr></thead>
@@ -50,7 +51,7 @@ const dongRong = (): DongNhap => ({ loaiHang: '', lo: '', soLuong: 0, tenTrenHD:
                   @if (store.dangChoXoa('PhieuKho', p.id)) { <app-tt v="Chờ xoá" /> }
                 </td>
                 <td>
-                  @if (coTheGiao() && p.trangThai === 'Hiệu lực' && !store.dangChoXoa('PhieuKho', p.id)) {
+                  @if (coTheGiao() && p.trangThai === TT.HIEU_LUC && !store.dangChoXoa('PhieuKho', p.id)) {
                     <button type="button" class="btn sm quiet" (click)="huy(p)">Huỷ lần giao</button>
                   }
                 </td>
@@ -128,6 +129,7 @@ const dongRong = (): DongNhap => ({ loaiHang: '', lo: '', soLuong: 0, tenTrenHD:
 export class HdbGiaoHang {
   private readonly mGH = viewChild<Modal>('mGH');
   protected readonly store = inject(Store);
+  protected readonly TT = TT;
   private readonly confirm = inject(Confirm);
   readonly h = input.required<HopDongBan>();
   /** Đã khoá (tất toán / chờ xoá). */
@@ -150,7 +152,7 @@ export class HdbGiaoHang {
   protected readonly dirty = computed(() => this.open() && this.anh() !== this.goc());
 
   protected readonly coTheGiao = computed(
-    () => !this.khoa() && this.h().trangThai !== 'Báo giá' && this.h().trangThai !== 'Hoàn thành' && this.store.canEdit('hdbGiaoHang', this.h().sale),
+    () => !this.khoa() && this.h().trangThai !== TT.BAO_GIA && this.h().trangThai !== TT.HOAN_THANH && this.store.canEdit('hdbGiaoHang', this.h().sale),
   );
   protected readonly phieus = computed(() =>
     this.store
@@ -182,12 +184,12 @@ export class HdbGiaoHang {
     const id = this.h().id;
     const daGiao = new Map<string, number>();
     for (const p of this.phieus()) {
-      if (p.trangThai !== 'Hiệu lực') continue;
+      if (p.trangThai !== TT.HIEU_LUC) continue;
       for (const d of p.dong) daGiao.set(d.loaiHang, (daGiao.get(d.loaiHang) ?? 0) + d.soLuong);
     }
     const can = this.h().dongHang?.length
       ? this.h().dongHang!
-      : this.store.hopDongMua().filter((m) => m.trangThai !== 'Huỷ' && hdmChoHdb(m, id)).flatMap((m) => dongMuaChoHdb(m, id));
+      : this.store.hopDongMua().filter((m) => m.trangThai !== TT.HUY && hdmChoHdb(m, id)).flatMap((m) => dongMuaChoHdb(m, id));
     const out: { loaiHang: string; con: number; tenHang: string }[] = [];
     for (const d of can) {
       if (!d.loaiHang) continue;

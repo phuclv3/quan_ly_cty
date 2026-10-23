@@ -10,6 +10,7 @@ import { LCP_HOA_HONG } from '../core/models';
 import { hdbCalc } from '../core/calc';
 import { PhieuForm } from './phieu-form';
 import { ChiPhiForm } from './chi-phi-form';
+import { TT } from '../core/trang-thai';
 
 type Kieu = 'P' | 'C';
 
@@ -155,7 +156,7 @@ export class ChoDuyetTab {
         const h = s.hdbById(c.hdbId);
         let canhBao: string | undefined;
         if (h && c.loaiChiPhi === LCP_HOA_HONG) {
-          const tong = sum(db.chiPhiHD.filter((x) => x.hdbId === h.id && x.loaiChiPhi === LCP_HOA_HONG && x.trangThai !== 'Từ chối'), (x) => x.soTien);
+          const tong = sum(db.chiPhiHD.filter((x) => x.hdbId === h.id && x.loaiChiPhi === LCP_HOA_HONG && x.trangThai !== TT.TU_CHOI), (x) => x.soTien);
           const toiDa = hdbCalc(h, db).traKhachToiDa;
           if (tong > toiDa) canhBao = `Tổng hoa hồng HĐ ${h.soHD} ${money(tong)} đ > gợi ý tối đa ${money(toiDa)} đ`;
         }

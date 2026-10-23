@@ -3,6 +3,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { map } from 'rxjs';
 import { Store } from '../core/store';
+import { TT, ttNhan } from '../core/trang-thai';
 import { dirtyOf } from '../shared/unsaved';
 import { nhoLoc } from '../core/ui';
 import { PtCalc, ptCalc, soDuQuyPT } from '../core/calc';
@@ -227,6 +228,8 @@ const formRong = (): FormDT => ({ ngay: todayIso(), chieu: 'Thu về PT', hdptId
 export class PtList {
   private readonly mDong = viewChild<Modal>('mDong');
   protected readonly store = inject(Store);
+  protected readonly TT = TT;
+  protected readonly ttNhan = ttNhan;
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly confirm = inject(Confirm);
@@ -244,7 +247,7 @@ export class PtList {
   // ── Tab Hợp đồng ──
   protected readonly loc = signal<Loc>(nhoLoc('pt-list', LOC_RONG));
   protected readonly facets = computed<Facet[]>(() => [
-    { key: 'tt', label: 'Trạng thái', options: TRANG_THAI_PT.map((t) => ({ value: t, label: t })) },
+    { key: 'tt', label: 'Trạng thái', options: TRANG_THAI_PT.map((t) => ({ value: t, label: ttNhan(t) })) },
   ]);
   protected readonly sx = new Sorter<{ p: HopDongPhuTai; c: PtCalc }>({
     soHD: (r) => r.p.soHD,
@@ -269,7 +272,7 @@ export class PtList {
   });
   protected readonly pg = paginate(this.rows);
   protected readonly kpi = computed(() => {
-    const hl = this.rows().filter((r) => r.p.trangThai !== 'Huỷ');
+    const hl = this.rows().filter((r) => r.p.trangThai !== TT.HUY);
     let giaBan = 0;
     let oxyGop = 0;
     for (const r of hl) {

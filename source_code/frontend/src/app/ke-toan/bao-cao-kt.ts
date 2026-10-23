@@ -6,6 +6,7 @@ import { tamUngTreo } from '../core/calc';
 import { daysFromToday, money, sum, todayIso, viDate } from '../core/util';
 import { MoneyInput, Pick, PickOption, TrangThai } from '../shared/ui-kit';
 import { donVi, esc, inGiay, kyTen } from './kt-print';
+import { TT, ttNhan } from '../core/trang-thai';
 
 type Muc = 'tam-ung' | 'so-du' | 'van-chuyen';
 
@@ -171,7 +172,7 @@ export class BaoCaoKtTab {
     return this.store.nguonTien().map((n) => {
       const s = this.store.soDu(n.id, x);
       const t = tt[n.id];
-      return { id: n.id, ten: n.ten, ngung: n.trangThai === 'Ngưng', s, cl: t === undefined ? null : t - s.soDu };
+      return { id: n.id, ten: n.ten, ngung: n.trangThai === TT.NGUNG, s, cl: t === undefined ? null : t - s.soDu };
     });
   });
   protected readonly tongSoDu = computed(() => sum(this.soDu(), (r) => r.s.soDu));
@@ -185,7 +186,7 @@ export class BaoCaoKtTab {
   protected readonly hdOpts = computed<PickOption[]>(() =>
     this.store
       .hdbVisible()
-      .filter((h) => h.trangThai !== 'Báo giá' && h.trangThai !== 'Huỷ')
+      .filter((h) => h.trangThai !== TT.BAO_GIA && h.trangThai !== TT.HUY)
       .map((h) => ({ value: h.id, label: h.soHD, hint: h.tenKH })),
   );
   protected readonly hd = computed(() => {
@@ -198,8 +199,8 @@ export class BaoCaoKtTab {
       .filter((c) => c.hdbId === this.hdb() && c.loaiChiPhi === LCP_VAN_CHUYEN)
       .sort((a, b) => (a.ngay < b.ngay ? -1 : 1)),
   );
-  protected readonly vcDuyet = computed(() => sum(this.vc().filter((c) => c.trangThai === 'Đã duyệt'), (c) => c.soTien));
-  protected readonly vcCho = computed(() => sum(this.vc().filter((c) => c.trangThai === 'Chờ duyệt'), (c) => c.soTien));
+  protected readonly vcDuyet = computed(() => sum(this.vc().filter((c) => c.trangThai === TT.DA_DUYET), (c) => c.soTien));
+  protected readonly vcCho = computed(() => sum(this.vc().filter((c) => c.trangThai === TT.CHO_DUYET), (c) => c.soTien));
 
   constructor() {
     const q = this.route.snapshot.queryParamMap;
@@ -217,7 +218,7 @@ export class BaoCaoKtTab {
     const rows = this.vc()
       .map(
         (c, i) =>
-          `<tr><td class="c">${i + 1}</td><td>${viDate(c.ngay)}</td><td>${esc(c.noiDung)}</td><td>${esc(c.donViVanChuyen || '')}</td><td class="r">${money(c.soTien)}</td><td>${esc(this.store.nguonTen(c.nguonTien))}</td><td>${esc(c.trangThai)}</td></tr>`,
+          `<tr><td class="c">${i + 1}</td><td>${viDate(c.ngay)}</td><td>${esc(c.noiDung)}</td><td>${esc(c.donViVanChuyen || '')}</td><td class="r">${money(c.soTien)}</td><td>${esc(this.store.nguonTen(c.nguonTien))}</td><td>${esc(ttNhan(c.trangThai))}</td></tr>`,
       )
       .join('');
     const d = todayIso().split('-');

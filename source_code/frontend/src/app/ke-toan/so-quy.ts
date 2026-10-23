@@ -12,9 +12,10 @@ import { csv, downloadFile, fileName } from '../shared/export';
 import { PhieuForm } from './phieu-form';
 import { ChiPhiForm } from './chi-phi-form';
 import { SortTh, Sorter } from '../shared/sort';
+import { TT, ttNhan } from '../core/trang-thai';
 
 const CP_HD = 'CP HĐ';
-const TRANG_THAI = ['Nháp', 'Chờ duyệt', 'Đã duyệt', 'Từ chối'];
+const TRANG_THAI = [TT.NHAP, TT.CHO_DUYET, TT.DA_DUYET, TT.TU_CHOI];
 
 export interface SqRow {
   key: string;
@@ -118,7 +119,7 @@ export class SoQuyTab {
   protected readonly facets = computed<Facet[]>(() => [
     { key: 'loai', label: 'Loại phiếu', options: [...LOAI_PHIEU, ...(this.gop() ? [CP_HD] : [])].map((v) => ({ value: v, label: v })) },
     { key: 'nguon', label: 'Nguồn tiền', options: this.store.nguonTien().map((n) => ({ value: n.id, label: n.ten })) },
-    { key: 'tt', label: 'Trạng thái', options: TRANG_THAI.map((v) => ({ value: v, label: v })) },
+    { key: 'tt', label: 'Trạng thái', options: TRANG_THAI.map((v) => ({ value: v, label: ttNhan(v) })) },
     { key: 'lcp', label: 'Loại chi phí', options: this.store.loaiChiPhi().map((l) => ({ value: l.id, label: l.ten, hint: l.nhom })) },
   ]);
 
@@ -174,7 +175,7 @@ export class SoQuyTab {
     });
     if (this.gop() && !this.draftOnly()) {
       for (const c of db.chiPhiHD) {
-        if (c.trangThai !== 'Đã duyệt') continue;
+        if (c.trangThai !== TT.DA_DUYET) continue;
         out.push({
           key: 'C' + c.id,
           so: c.maCP,
@@ -224,7 +225,7 @@ export class SoQuyTab {
 
   protected xuat(): void {
     const head = ['Số phiếu', 'Ngày lập', 'Loại phiếu', 'Nguồn tiền', 'Loại chi phí', 'Nội dung', 'Thu', 'Chi', 'Người đề nghị', 'Trạng thái'];
-    const body = this.rows().map((r) => [r.so, viDate(r.ngay), r.loai, r.nguon, r.lcp ?? '', r.noiDung, r.thu, r.chi, r.nguoi, r.trangThai]);
+    const body = this.rows().map((r) => [r.so, viDate(r.ngay), r.loai, r.nguon, r.lcp ?? '', r.noiDung, r.thu, r.chi, r.nguoi, ttNhan(r.trangThai)]);
     body.push(['Tổng (không gồm Luân chuyển)', '', '', '', '', '', this.tongThu(), this.tongChi(), '', '']);
     downloadFile(fileName('so-quy', 'csv'), 'text/csv', csv([head, ...body]));
   }
