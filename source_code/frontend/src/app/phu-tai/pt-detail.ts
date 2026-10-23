@@ -50,7 +50,7 @@ const quyDoi = (soTien: number, loaiTien: string, tyGia: number) => Math.round(s
         @if (dirty()) { <span class="tag warn">● Chưa lưu</span> }
         @if (edit()) {
           @if (dirty() && p.id) { <button type="button" class="btn quiet" (click)="hoanTac()">Hoàn tác</button> }
-          <button type="button" class="btn ok" [disabled]="!dirty()" (click)="luu()">Lưu</button>
+          <button type="button" class="btn ok" [disabled]="!dirty()" [attr.title]="dirty() ? null : 'Chưa có thay đổi nào để lưu'" (click)="luu()">Lưu</button>
         }
         @if (p.id && store.canEdit('phuTai') && !choXoa() && daLuu()?.trangThai !== TT.DA_TAT_TOAN) {
           <button type="button" class="btn quiet danger" (click)="xoa()">Xoá</button>
@@ -113,8 +113,8 @@ const quyDoi = (soTien: number, loaiTien: string, tyGia: number) => Math.round(s
           </div>
           @if (p.id && store.canEdit('phuTai') && !khoa()) {
             <div class="btn-row" style="justify-content:flex-start;margin-top:10px">
-              @if (keTiep(); as k) { <button type="button" class="btn sm" [disabled]="dirty()" (click)="chuyen(k)">Chuyển → {{ k }}</button> }
-              <button type="button" class="btn sm quiet danger" [disabled]="dirty()" (click)="chuyen(TT.HUY)">Huỷ HĐ</button>
+              @if (keTiep(); as k) { <button type="button" class="btn sm" [disabled]="dirty()" [attr.title]="dirty() ? 'Có thay đổi chưa lưu — lưu trước rồi mới đổi trạng thái' : null" (click)="chuyen(k)">Chuyển → {{ k }}</button> }
+              <button type="button" class="btn sm quiet danger" [disabled]="dirty()" [attr.title]="dirty() ? 'Có thay đổi chưa lưu — lưu trước rồi mới đổi trạng thái' : null" (click)="chuyen(TT.HUY)">Huỷ HĐ</button>
               @if (dirty()) { <span class="sub">Lưu thay đổi trước khi chuyển trạng thái.</span> }
             </div>
             <p class="sub">→ Hiệu lực cần Số HĐ, Ngày ký, Giá bán. → Đã tất toán: KH đã trả PT đủ và Phú Tài đã chuyển đủ phần Oxy được hưởng — ghi các lần Phú Tài chuyển cho Oxy là dòng "Chi từ PT" ở <a routerLink="/phu-tai" [queryParams]="{ tab: 'dong-tien', hd: p.id }">sổ quỹ ảo của HĐ</a>. "Đã tất toán" / "Huỷ" khoá HĐ.</p>

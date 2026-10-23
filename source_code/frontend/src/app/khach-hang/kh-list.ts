@@ -11,6 +11,8 @@ import { SortTh, Sorter } from '../shared/sort';
 import { xuatCsv } from '../shared/export';
 import { Icon } from '../shared/icon';
 import { ImportDm } from '../shared/import-dm';
+import { Confirm } from '../shared/confirm';
+import { guiXoa, guiXoaNhieu } from '../shared/ho-so';
 import { KhForm } from './kh-form';
 import { TT, ttNhan } from '../core/trang-thai';
 
@@ -58,14 +60,17 @@ const optsTT = (xs: readonly string[]) => xs.map((x) => ({ value: x, label: ttNh
 
     <app-filter [(loc)]="loc" memo="kh-list" [time]="false" [facets]="facets()" placeholder="Tìm mã, tên, MST, tỉnh, người liên hệ, điện thoại, ghi chú…" />
 
-    @if (phanBo() && chon().size) {
+    @if (coChon() && chon().size) {
       <div class="note info bulk">
         <b>Đã chọn {{ chon().size }} khách</b>
-        <select aria-label="Giao cho Sale" [value]="giaoCho()" (change)="giaoCho.set($any($event.target).value)">
-          <option value="">— Trả về chưa phân bổ —</option>
-          @for (o of store.saleOpts(); track o.value) { <option [value]="o.value" [selected]="o.value === giaoCho()">{{ o.label }} — {{ o.hint }}</option> }
-        </select>
-        <button type="button" class="btn sm" (click)="phanBoChon()">Phân bổ</button>
+        @if (phanBo()) {
+          <select aria-label="Giao cho Sale" [value]="giaoCho()" (change)="giaoCho.set($any($event.target).value)">
+            <option value="">— Trả về chưa phân bổ —</option>
+            @for (o of store.saleOpts(); track o.value) { <option [value]="o.value" [selected]="o.value === giaoCho()">{{ o.label }} — {{ o.hint }}</option> }
+          </select>
+          <button type="button" class="btn sm" (click)="phanBoChon()">Phân bổ</button>
+        }
+        @if (xoaNhieuDuoc()) { <button type="button" class="btn sm danger" (click)="xoaNhieu()">Xoá {{ chon().size }} đã chọn</button> }
         <button type="button" class="btn sm quiet" (click)="boChon()">Bỏ chọn</button>
       </div>
     }
@@ -74,7 +79,7 @@ const optsTT = (xs: readonly string[]) => xs.map((x) => ({ value: x, label: ttNh
       <table class="tbl freeze">
         <thead>
           <tr>
-            @if (phanBo()) {
+            @if (coChon()) {
               <th style="width:36px"><input type="checkbox" aria-label="Chọn cả trang" [checked]="caTrang()" (change)="chonTrang($any($event.target).checked)" /></th>
             }
             <th app-sort-th [sx]="sx" k="id" class="c-ma">Mã KH</th>
@@ -93,7 +98,7 @@ const optsTT = (xs: readonly string[]) => xs.map((x) => ({ value: x, label: ttNh
         <tbody>
           @for (r of pg.items(); track r.k.id) {
             <tr class="click" (click)="mo(r.k.id)">
-              @if (phanBo()) {
+              @if (coChon()) {
                 <td (click)="$event.stopPropagation()"><input type="checkbox" [attr.aria-label]="'Chọn ' + r.k.ten" [checked]="chon().has(r.k.id)" (change)="flip(r.k.id)" /></td>
               }
               <td class="mono c-ma"><a [routerLink]="['/khach-hang', r.k.id]" (click)="$event.stopPropagation()"><b>{{ r.k.id }}</b></a></td>
@@ -112,11 +117,17 @@ const optsTT = (xs: readonly string[]) => xs.map((x) => ({ value: x, label: ttNh
               <td>{{ viDate(r.csCuoi) }}</td>
               <td class="num">{{ r.soHD }}</td>
               <td (click)="$event.stopPropagation()">
-                @if (store.canEditKH(r.k) && !r.xoa) { <button type="button" class="btn sm quiet" (click)="sua.set(r.k.id)">Sửa</button> }
+                @if (store.canEditKH(r.k) && !r.xoa) {
+                  <div class="row" style="flex-wrap:nowrap">
+                    <button type="button" class="btn sm quiet" (click)="sua.set(r.k.id)">Sửa</button>
+                    @let vuong = store.lyDoKhongXoa('DM_KhachHang', r.k.id);
+                    <button type="button" class="btn sm quiet danger" [attr.title]="vuong ? vuong + ' — không xoá được' : null" (click)="xoa(r.k)">Xoá</button>
+                  </div>
+                }
               </td>
             </tr>
           } @empty {
-            <tr><td [attr.colspan]="phanBo() ? 12 : 11" class="empty">Không có khách hàng phù hợp bộ lọc.</td></tr>
+            <tr><td [attr.colspan]="coChon() ? 12 : 11" class="empty">Không có khách hàng phù hợp bộ lọc.</td></tr>
           }
         </tbody>
       </table>
@@ -139,12 +150,16 @@ export class KhList {
   protected readonly TT = TT;
   protected readonly store = inject(Store);
   private readonly router = inject(Router);
+  private readonly confirm = inject(Confirm);
   protected readonly money = money;
   protected readonly viDate = viDate;
   protected readonly short = vndShort;
 
   protected readonly loc = signal<Loc>(nhoLoc('kh-list', LOC_RONG));
   protected readonly phanBo = computed(() => this.store.canEdit('phanBoKH'));
+  /** Có cột tích chọn: để phân bổ Sale hoặc để xoá nhiều (cần quyền gửi yêu cầu xoá). */
+  protected readonly xoaNhieuDuoc = computed(() => this.store.level('duyetXoa') !== 'none');
+  protected readonly coChon = computed(() => this.phanBo() || this.xoaNhieuDuoc());
   protected readonly chon = signal<Set<string>>(new Set());
   protected readonly giaoCho = signal('');
   /** Popup thêm / sửa: '' = thêm mới, mã KH = sửa, null = đóng. Mở sẵn khi vào ?them=1 (đường dẫn cũ /khach-hang/moi). */
@@ -273,6 +288,17 @@ export class KhList {
       viDate(csCuoi), soHD, k.ghiChu,
     ]);
     void xuatCsv('khach-hang', [head, ...body]);
+  }
+  /** Xoá nhiều: chỉ khách mình sửa được và chưa chờ xoá; khách bị ràng buộc bị bỏ qua kèm lý do. */
+  protected async xoaNhieu(): Promise<void> {
+    const ds = this.all()
+      .filter((r) => this.chon().has(r.k.id) && !r.xoa && this.store.canEditKH(r.k))
+      .map((r) => ({ id: r.k.id, ten: r.k.ten || r.k.id, moTa: `Khách hàng ${r.k.id} — ${r.k.ten}` }));
+    if (!ds.length) return this.store.say('Không có khách nào xoá được trong số đã chọn (đang chờ xoá hoặc không có quyền sửa)', 'bad');
+    if (await guiXoaNhieu(this.confirm, this.store, 'DM_KhachHang', ds, 'khách hàng')) this.boChon();
+  }
+  protected async xoa(k: KhachHang): Promise<void> {
+    await guiXoa(this.confirm, this.store, 'DM_KhachHang', k.id, `Khách hàng ${k.id} — ${k.ten}`);
   }
   protected boChon(): void {
     this.chon.set(new Set());

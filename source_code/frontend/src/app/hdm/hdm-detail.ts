@@ -72,7 +72,7 @@ interface TraForm {
           }
           @if (canSave() && !isNew()) {
             @if (dirty() && !isNew()) { <button type="button" class="btn quiet" (click)="boThayDoi()">Bỏ thay đổi</button> }
-            <button type="button" class="btn" [disabled]="!dirty() && !isNew()" (click)="save()"><app-icon name="check" [size]="16" /> Lưu</button>
+            <button type="button" class="btn" [disabled]="!dirty() && !isNew()" [attr.title]="dirty() || isNew() ? null : 'Chưa có thay đổi nào để lưu'" (click)="save()"><app-icon name="check" [size]="16" /> Lưu</button>
           }
           @if (!isNew() && !choXoa() && trangThai() !== TT.DA_TAT_TOAN && store.canEdit('hdm') && store.level('duyetXoa') !== 'none') {
             <button type="button" class="btn danger" (click)="xoa()"><app-icon name="trash" [size]="16" /> Xoá</button>
@@ -98,7 +98,7 @@ interface TraForm {
               @if (trangThai() === TT.DA_TAT_TOAN) {
                 @if (!choXoa() && store.canEdit('moLaiHdm')) { <button type="button" class="btn sm quiet" (click)="moLai()">Mở lại</button> }
               } @else if (!locked() && store.canEdit('hdm') && keTiep(); as k) {
-                <button type="button" class="btn sm" [disabled]="thieuKeTiep().length > 0" (click)="chuyen(k)">Chuyển → {{ ttNhan(k) }}</button>
+                <button type="button" class="btn sm" [disabled]="thieuKeTiep().length > 0" [attr.title]="thieuKeTiep().length ? 'Chưa chuyển được — còn thiếu: ' + thieuKeTiep().join(' · ') : null" (click)="chuyen(k)">Chuyển → {{ ttNhan(k) }}</button>
               }
               @if (!locked() && store.canEdit('hdm')) { <button type="button" class="btn sm danger quiet" (click)="chuyen(TT.HUY)">Huỷ HĐ</button> }
             </div>

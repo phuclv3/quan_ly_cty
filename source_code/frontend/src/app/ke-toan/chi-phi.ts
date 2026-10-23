@@ -8,6 +8,10 @@ import { TrangThai } from '../shared/ui-kit';
 import { Facet, FilterBar, LOC_RONG, Loc, khopQ, khopSel, khopThoiGian } from '../shared/filter-bar';
 import { Pager, paginate } from '../shared/pager';
 import { xuatCsv } from '../shared/export';
+import { ChonNhieu } from '../shared/chon-nhieu';
+import { ChonBar } from '../shared/chon-bar';
+import { Confirm } from '../shared/confirm';
+import { xoaNhieuCoNhap } from '../shared/ho-so';
 import { ChiPhiForm } from './chi-phi-form';
 import { SortTh, Sorter } from '../shared/sort';
 import { TT, ttNhan } from '../core/trang-thai';
@@ -18,7 +22,7 @@ const TRANG_THAI = [TT.NHAP, TT.CHO_DUYET, TT.DA_DUYET, TT.TU_CHOI];
 @Component({
   selector: 'app-kt-chi-phi',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TrangThai, FilterBar, Pager, ChiPhiForm, RouterLink, SortTh],
+  imports: [ChonBar, TrangThai, FilterBar, Pager, ChiPhiForm, RouterLink, SortTh],
   template: `
     <div class="between" style="margin-bottom:8px">
       <p class="sub muted">Chi phí gắn từng HĐ bán; duyệt xong trừ vào Nguồn tiền chi ra và cộng vào chi phí của HĐ.</p>
@@ -28,11 +32,12 @@ const TRANG_THAI = [TT.NHAP, TT.CHO_DUYET, TT.DA_DUYET, TT.TU_CHOI];
       </div>
     </div>
     <app-filter [(loc)]="loc" memo="kt-chi-phi" [facets]="facets()" placeholder="Tìm mã CP, số HĐ, khách hàng, nội dung…" />
+    <app-chon-bar [cn]="cn" ten="chi phí" (xoa)="xoaNhieu()" />
     <div class="tbl-wrap">
       <table class="tbl freeze">
         <thead>
           <tr>
-            <th app-sort-th [sx]="sx" k="ma">Mã CP</th><th app-sort-th [sx]="sx" k="hd">Số HĐ</th><th app-sort-th [sx]="sx" k="kh">Khách hàng</th><th app-sort-th [sx]="sx" k="ngay">Ngày</th><th app-sort-th [sx]="sx" k="lcp">Loại chi phí</th><th>Nội dung</th>
+            @if (chonDuoc()) { <th style="width:36px"><input type="checkbox" aria-label="Chọn cả trang" [checked]="cn.du(idTrang())" (change)="cn.chonTat(idTrang(), $any($event.target).checked)" /></th> }<th app-sort-th [sx]="sx" k="ma">Mã CP</th><th app-sort-th [sx]="sx" k="hd">Số HĐ</th><th app-sort-th [sx]="sx" k="kh">Khách hàng</th><th app-sort-th [sx]="sx" k="ngay">Ngày</th><th app-sort-th [sx]="sx" k="lcp">Loại chi phí</th><th>Nội dung</th>
             <th app-sort-th [sx]="sx" k="tien" class="num">Số tiền</th><th>Nguồn tiền</th><th app-sort-th [sx]="sx" k="nguoi">Người thực hiện</th><th app-sort-th [sx]="sx" k="tt">Trạng thái</th>
           </tr>
         </thead>
@@ -40,6 +45,9 @@ const TRANG_THAI = [TT.NHAP, TT.CHO_DUYET, TT.DA_DUYET, TT.TU_CHOI];
           @for (c of pg.items(); track c.id) {
             @let h = store.hdbById(c.hdbId);
             <tr class="click" (click)="cp.set(c)">
+              @if (chonDuoc()) {
+                <td (click)="$event.stopPropagation()">@if (xoaDuoc(c)) { <input type="checkbox" [attr.aria-label]="'Chọn ' + c.maCP" [checked]="cn.co(c.id)" (change)="cn.flip(c.id)" /> }</td>
+              }
               <td><b>{{ c.maCP }}</b></td>
               <td>@if (h) { <a class="linkish" [routerLink]="['/hop-dong-ban', h.id]" (click)="$event.stopPropagation()">{{ h.soHD }}</a> } @else { — }</td>
               <td>{{ h?.tenKH || '—' }}</td>
@@ -52,7 +60,7 @@ const TRANG_THAI = [TT.NHAP, TT.CHO_DUYET, TT.DA_DUYET, TT.TU_CHOI];
               <td>@if (store.dangChoXoa('ChiPhiThucHienHD', c.id)) { <app-tt v="Chờ xoá" /> } @else { <app-tt [v]="c.trangThai" /> }</td>
             </tr>
           } @empty {
-            <tr><td colspan="10" class="empty">{{ source().length ? 'Không có chi phí khớp bộ lọc' : 'Chưa có chi phí thực hiện HĐ nào' }}</td></tr>
+            <tr><td [attr.colspan]="chonDuoc() ? 11 : 10" class="empty">{{ source().length ? 'Không có chi phí khớp bộ lọc' : 'Chưa có chi phí thực hiện HĐ nào' }}</td></tr>
           }
         </tbody>
         <tfoot>
@@ -73,6 +81,19 @@ export class ChiPhiTab {
 
   protected readonly loc = signal<Loc>(nhoLoc('kt-chi-phi', LOC_RONG));
   protected readonly cp = signal<ChiPhiHD | null>(null);
+  private readonly confirm = inject(Confirm);
+
+  /** Xoá nhiều: nháp xoá thẳng, còn lại gửi yêu cầu xoá. Quyền và ràng buộc từng bản ghi do Store kiểm. */
+  protected readonly cn = new ChonNhieu();
+  protected readonly chonDuoc = computed(() => this.store.canEdit('cpHD') || this.store.level('duyetXoa') !== 'none');
+  protected xoaDuoc(c: ChiPhiHD): boolean {
+    return !this.store.dangChoXoa('ChiPhiThucHienHD', c.id);
+  }
+  protected readonly idTrang = computed(() => this.pg.items().filter((c) => this.xoaDuoc(c)).map((c) => c.id));
+  protected async xoaNhieu(): Promise<void> {
+    const ds = this.rows().filter((c) => this.cn.co(c.id) && this.xoaDuoc(c)).map((c) => ({ id: c.id, ten: c.maCP, moTa: `Chi phí ${c.maCP}`, nhap: c.trangThai === TT.NHAP }));
+    if (await xoaNhieuCoNhap(this.confirm, this.store, 'ChiPhiThucHienHD', ds, 'chi phí', (id) => this.store.xoaNhapChiPhi(id))) this.cn.xoa();
+  }
 
   protected readonly source = computed(() => {
     const all = this.store.chiPhiHD();

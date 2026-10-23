@@ -9,9 +9,11 @@ import { TT, ttNhan } from '../core/trang-thai';
 import { nhoLoc } from '../core/ui';
 import { money, sum, viDate, viMoment } from '../core/util';
 import { Confirm } from '../shared/confirm';
-import { xuatCsv } from '../shared/export';
+import { xemPhieuKhoPdf, xuatCsv } from '../shared/export';
 import { Facet, FilterBar, LOC_RONG, Loc, khopQ, khopSel, khopThoiGian } from '../shared/filter-bar';
-import { guiXoa } from '../shared/ho-so';
+import { guiXoa, guiXoaNhieu } from '../shared/ho-so';
+import { ChonNhieu } from '../shared/chon-nhieu';
+import { ChonBar } from '../shared/chon-bar';
 import { Pager, paginate } from '../shared/pager';
 import { Modal, TrangThai } from '../shared/ui-kit';
 import { NGUON_GOC_OPTS, hdCuaPhieu, khoOpts } from './kho-util';
@@ -32,7 +34,7 @@ const quyenSua = (p: PhieuKho): Perm =>
 @Component({
   selector: 'app-kho-phieu',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FilterBar, Pager, Modal, TrangThai, RouterLink, PhieuTayForm, NgTemplateOutlet],
+  imports: [ChonBar, FilterBar, Pager, Modal, TrangThai, RouterLink, PhieuTayForm, NgTemplateOutlet],
   template: `
     <div [class.no-print]="!!sel()">
       <div class="section-title">
@@ -45,14 +47,18 @@ const quyenSua = (p: PhieuKho): Perm =>
         </div>
       </div>
       <app-filter [(loc)]="loc" [memo]="memo()" [facets]="facets()" placeholder="Tìm số phiếu, số HĐ, số hoá đơn, mã lô, mã hàng…" />
-      <div class="tbl-wrap">
+      <app-chon-bar [cn]="cn" ten="phiếu" (xoa)="xoaNhieu()" />
+        <div class="tbl-wrap">
         <table class="tbl freeze">
           <thead>
-            <tr><th>Số phiếu</th><th>Ngày</th><th>Nguồn gốc</th><th>{{ loai() === 'Nhập' ? 'HĐ mua / Số hoá đơn' : 'HĐ bán' }}</th><th>Vị trí kho</th><th class="num">Số dòng</th><th class="num">Tổng SL</th><th class="num">{{ loai() === 'Nhập' ? 'Giá trị nhập' : 'Giá vốn' }}</th><th>Người thực hiện</th><th>Trạng thái</th></tr>
+            <tr>@if (chonDuoc()) { <th style="width:36px"><input type="checkbox" aria-label="Chọn cả trang" [checked]="cn.du(idTrang())" (change)="cn.chonTat(idTrang(), $any($event.target).checked)" /></th> }<th>Số phiếu</th><th>Ngày</th><th>Nguồn gốc</th><th>{{ loai() === 'Nhập' ? 'HĐ mua / Số hoá đơn' : 'HĐ bán' }}</th><th>Vị trí kho</th><th class="num">Số dòng</th><th class="num">Tổng SL</th><th class="num">{{ loai() === 'Nhập' ? 'Giá trị nhập' : 'Giá vốn' }}</th><th>Người thực hiện</th><th>Trạng thái</th></tr>
           </thead>
           <tbody>
             @for (p of pg.items(); track p.id) {
               <tr class="click" (click)="mo(p)">
+              @if (chonDuoc()) {
+                <td (click)="$event.stopPropagation()">@if (xoaDuoc(p)) { <input type="checkbox" [attr.aria-label]="'Chọn ' + p.soPhieu" [checked]="cn.co(p.id)" (change)="cn.flip(p.id)" /> }</td>
+              }
                 <td><b>{{ p.soPhieu }}</b></td>
                 <td>{{ viDate(p.ngay) }}</td>
                 <td>{{ p.nguonGoc }}</td>
@@ -71,7 +77,7 @@ const quyenSua = (p: PhieuKho): Perm =>
                 </td>
               </tr>
             } @empty {
-              <tr><td colspan="10" class="empty">{{ coPhieu() ? 'Không có phiếu nào khớp bộ lọc' : 'Chưa có phiếu ' + (loai() === 'Nhập' ? 'nhập' : 'xuất') + ' kho nào' }}</td></tr>
+              <tr><td [attr.colspan]="chonDuoc() ? 11 : 10" class="empty">{{ coPhieu() ? 'Không có phiếu nào khớp bộ lọc' : 'Chưa có phiếu ' + (loai() === 'Nhập' ? 'nhập' : 'xuất') + ' kho nào' }}</td></tr>
             }
           </tbody>
         </table>
@@ -207,7 +213,7 @@ const quyenSua = (p: PhieuKho): Perm =>
       <div foot class="btn-row">
         @if (sel(); as p) {
           @if (huyDuoc(p)) { <button type="button" class="btn danger quiet" (click)="huy(p)">Huỷ phiếu</button> }
-          <button type="button" class="btn quiet" (click)="inPhieu()">In phiếu</button>
+          <button type="button" class="btn quiet" (click)="inPhieu(p)">In phiếu</button>
           @if (suaDuoc(p)) { <button type="button" class="btn" (click)="luu(p)">Lưu Ngày / Ghi chú</button> }
         }
         <button type="button" class="btn quiet" (click)="dong()">Đóng</button>
@@ -265,6 +271,18 @@ export class PhieuKhoTab {
       .sort((a, b) => (a.ngay === b.ngay ? b.soPhieu.localeCompare(a.soPhieu) : a.ngay < b.ngay ? 1 : -1));
   });
   protected readonly pg = paginate(this.rows);
+
+  /** Xoá nhiều: phiếu Hiệu lực, chưa chờ xoá, người dùng có quyền sửa loại phiếu đó và gửi được yêu cầu xoá. */
+  protected readonly cn = new ChonNhieu();
+  protected readonly chonDuoc = computed(() => this.store.level('duyetXoa') !== 'none');
+  protected xoaDuoc(p: PhieuKho): boolean {
+    return this.huyDuoc(p);
+  }
+  protected readonly idTrang = computed(() => this.pg.items().filter((p) => this.xoaDuoc(p)).map((p) => p.id));
+  protected async xoaNhieu(): Promise<void> {
+    const ds = this.rows().filter((p) => this.cn.co(p.id) && this.xoaDuoc(p)).map((p) => ({ id: p.id, ten: p.soPhieu, moTa: `Phiếu ${p.soPhieu}` }));
+    if (await guiXoaNhieu(this.confirm, this.store, 'PhieuKho', ds, 'phiếu')) this.cn.xoa();
+  }
   protected readonly tongAll = computed(() => sum(this.rows().filter((p) => p.trangThai === TT.HIEU_LUC), tongSL));
   protected readonly giaTriAll = computed(() => sum(this.rows().filter((p) => p.trangThai === TT.HIEU_LUC), giaTriPhieu));
 
@@ -357,8 +375,18 @@ export class PhieuKhoTab {
   protected async huy(p: PhieuKho): Promise<void> {
     await guiXoa(this.confirm, this.store, 'PhieuKho', p.id, `Phiếu ${p.soPhieu}`);
   }
-  protected inPhieu(): void {
-    window.print();
+  /** Mở PDF do backend dựng ở tab mới (mở tab trước khi gọi API để trình duyệt không chặn cửa sổ bật lên). */
+  protected async inPhieu(p: PhieuKho): Promise<void> {
+    const w = window.open('', '_blank');
+    const { blob, loi } = await xemPhieuKhoPdf(p.id);
+    if (!blob) {
+      w?.close();
+      return this.store.say(loi, 'bad');
+    }
+    const url = URL.createObjectURL(blob);
+    if (w) w.location.href = url;
+    else this.store.say('Trình duyệt đang chặn cửa sổ bật lên — cho phép rồi bấm lại', 'bad');
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
   }
 
   protected xuatCsv(): void {

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Store } from '../core/store';
@@ -91,75 +91,61 @@ export const LEVEL_TONE: Record<Level, string> = {
             @if (!moi()) { <p class="sub" style="margin-top:6px">Cập nhật {{ viMoment(n.capNhat ?? n.taoLuc) }} @if (n.nguoiCapNhat) { · {{ store.userName(n.nguoiCapNhat) }} }</p> }
           </div>
 
-          <!-- Phân quyền theo mã chức năng -->
+          <!-- Phân quyền theo chức năng: mỗi module một khối gập được, mỗi chức năng chọn mức bằng nút bấm -->
           <div class="section-title">
             <h2>Phân quyền theo chức năng</h2>
-            <label class="search" style="max-width:300px">
-              <app-icon name="search" [size]="16" />
-              <input type="search" placeholder="Tìm mã / tên chức năng…" [value]="q()" (input)="q.set($any($event.target).value)" aria-label="Tìm chức năng" />
-            </label>
+            <span class="row" style="gap:10px">
+              <button type="button" class="btn sm quiet" (click)="moHet(true)">Mở hết</button>
+              <button type="button" class="btn sm quiet" (click)="moHet(false)">Thu gọn hết</button>
+              <label class="check-row" style="margin:0"><input type="checkbox" [checked]="chiCap()" (change)="chiCap.set($any($event.target).checked)" /> Chỉ hiện chức năng đã cấp</label>
+              <label class="search" style="max-width:280px">
+                <app-icon name="search" [size]="16" />
+                <input type="search" placeholder="Tìm chức năng…" [value]="q()" (input)="q.set($any($event.target).value)" aria-label="Tìm chức năng" />
+              </label>
+            </span>
           </div>
           @if (n.toanQuyen) {
             <div class="note info">Nhóm toàn quyền: mọi chức năng ở mức cao nhất — bảng dưới chỉ để tham khảo.</div>
+          } @else if (sua()) {
+            <p class="sub" style="margin-bottom:8px">Bấm vào mức quyền muốn cấp cho từng chức năng. Dùng các nút ở đầu mỗi khối để cấp nhanh cả module.</p>
           }
           @for (m of modules; track m) {
             @if (cnCua(m).length) {
-              <div class="tbl-wrap" style="margin-bottom:12px">
-                <table class="tbl compact">
-                  <thead>
-                    <tr>
-                      <th style="width:120px">{{ m }}</th>
-                      <th>Chức năng</th>
-                      <th style="width:220px">
+              <details class="pq-mod" [open]="q().trim().length > 0">
+                <summary>
+                  <span class="pq-ten">{{ m }}</span>
+                  <span class="pq-dem" [class.co]="demCap(n, m) > 0">{{ demCap(n, m) }}/{{ tongCN(m) }} chức năng được cấp</span>
+                  @if (sua() && !n.toanQuyen) {
+                    <span class="row pq-nhanh" style="gap:4px" (click)="$event.stopPropagation()">
+                      <button type="button" class="btn sm quiet" (click)="datModule(m, 'max')">Cấp tối đa</button>
+                      <button type="button" class="btn sm quiet" (click)="datModule(m, 'view')">Chỉ xem</button>
+                      <button type="button" class="btn sm quiet" (click)="datModule(m, 'none')">Bỏ hết</button>
+                    </span>
+                  }
+                </summary>
+                <div class="pq-ds">
+                  @for (c of cnCua(m); track c.ma) {
+                    @let hien = n.toanQuyen ? max(c) : muc(n, c);
+                    <div class="pq-dong" [class.co]="hien !== 'none'">
+                      <div class="pq-cn">
+                        <b>{{ c.ten }}</b>
+                        @if (c.moTa) { <span class="sub">{{ c.moTa }}</span> }
+                        <span class="mono muted pq-ma">{{ c.ma }}</span>
+                      </div>
+                      <div class="pq-lv" role="group" [attr.aria-label]="'Mức quyền ' + c.ten">
                         @if (sua() && !n.toanQuyen) {
-                          <span class="row" style="gap:4px;font-weight:400">
-                            <button type="button" class="btn sm quiet" (click)="datModule(m, 'max')">Cao nhất</button>
-                            <button type="button" class="btn sm quiet" (click)="datModule(m, 'view')">Xem</button>
-                            <button type="button" class="btn sm quiet" (click)="datModule(m, 'none')">Bỏ</button>
-                          </span>
-                        } @else { Mức quyền }
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @for (c of cnCua(m); track c.ma) {
-                      <tr [class.sel]="muc(n, c) !== 'none'">
-                        <td class="mono">{{ c.ma }}</td>
-                        <td>{{ c.ten }} @if (c.moTa) { <span class="sub">{{ c.moTa }}</span> }</td>
-                        <td>
-                          @if (sua() && !n.toanQuyen) {
-                            <select [value]="muc(n, c)" (change)="datMuc(c.ma, $any($event.target).value)" [attr.aria-label]="'Mức quyền ' + c.ma">
-                              @for (l of c.mucDo; track l) { <option [value]="l" [selected]="l === muc(n, c)">{{ l === 'none' ? '— Không có quyền' : levelLabel[l] }}</option> }
-                            </select>
-                          } @else {
-                            @let l = n.toanQuyen ? max(c) : muc(n, c);
-                            @if (l === 'none') { <span class="muted">—</span> } @else { <app-tt [v]="levelLabel[l]" [t]="tone[l]" /> }
+                          @for (l of c.mucDo; track l) {
+                            <button type="button" class="lv" [class.on]="l === hien" [attr.data-l]="l" [attr.aria-pressed]="l === hien" (click)="datMuc(c.ma, l)">{{ l === 'none' ? 'Không' : levelLabel[l] }}</button>
                           }
-                        </td>
-                      </tr>
-                    }
-                  </tbody>
-                </table>
-              </div>
+                        } @else {
+                          @if (hien === 'none') { <span class="muted">Không có quyền</span> } @else { <app-tt [v]="levelLabel[hien]" [t]="tone[hien]" /> }
+                        }
+                      </div>
+                    </div>
+                  }
+                </div>
+              </details>
             }
-          }
-
-          <!-- Thành viên -->
-          <div class="section-title">
-            <h2>Thành viên nhóm <span class="count soft">{{ tv().length }}</span></h2>
-            @if (moi()) { <span class="sub">Lưu nhóm trước rồi gán tài khoản</span> }
-          </div>
-          @if (!moi()) {
-            <div class="card">
-              <div class="tv-grid">
-                @for (t of store.taiKhoan(); track t.id) {
-                  <label class="tv" [class.on]="tv().includes(t.id)" [class.off]="t.trangThai === TT.KHOA">
-                    <input type="checkbox" [disabled]="!sua()" [checked]="tv().includes(t.id)" (change)="flipTV(t.id)" />
-                    <span><b>{{ t.hoTen }}</b><small class="muted">{{ t.email }}@if (t.trangThai === TT.KHOA) { · Khoá }</small></span>
-                  </label>
-                }
-              </div>
-            </div>
           }
 
           @if (loi()) { <div class="note bad" style="margin-top:12px">{{ loi() }}</div> }
@@ -197,6 +183,24 @@ export const LEVEL_TONE: Record<Level, string> = {
       .tv input { margin-top: 4px; }
       .tv span { display: grid; min-width: 0; }
       .tv small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .pq-mod { border: 1px solid var(--line); border-radius: 10px; background: var(--surf); margin-bottom: 10px; overflow: hidden; }
+      .pq-mod > summary { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; padding: 11px 14px; cursor: pointer; background: var(--surf-2); list-style: none; }
+      .pq-mod > summary::-webkit-details-marker { display: none; }
+      .pq-mod > summary::before { content: '▸'; color: var(--ink-3); transition: transform 0.12s; }
+      .pq-mod[open] > summary::before { transform: rotate(90deg); }
+      .pq-ten { font-weight: 700; font-size: 16px; }
+      .pq-dem { color: var(--ink-3); font-size: 14px; flex: 1; }
+      .pq-dem.co { color: var(--brand); font-weight: 600; }
+      .pq-dong { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 16px; align-items: center; padding: 10px 14px; border-top: 1px solid var(--line); }
+      .pq-dong.co { background: color-mix(in srgb, var(--brand-tint) 55%, transparent); }
+      .pq-cn { display: grid; gap: 1px; min-width: 0; }
+      .pq-ma { font-size: 12.5px; }
+      .pq-lv { display: flex; flex-wrap: wrap; gap: 4px; justify-content: flex-end; }
+      .lv { font: inherit; font-size: 14px; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--line-2); background: var(--surf); color: var(--ink-2); cursor: pointer; }
+      .lv:hover { border-color: var(--brand); }
+      .lv.on { background: var(--brand); border-color: var(--brand); color: #fff; font-weight: 600; }
+      .lv.on[data-l='none'] { background: var(--surf-3); border-color: var(--line-2); color: var(--ink-2); }
+      @media (max-width: 700px) { .pq-dong { grid-template-columns: minmax(0, 1fr); } .pq-lv { justify-content: flex-start; } }
       .nq-actions { position: sticky; bottom: 0; margin-top: 14px; padding: 12px 0; background: var(--bg); border-top: 1px solid var(--line); z-index: 5; }
       @media (max-width: 900px) {
         .nq { grid-template-columns: minmax(0, 1fr); }
@@ -216,6 +220,7 @@ export class NhomQuyenTab {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
 
+  private readonly host = inject(ElementRef<HTMLElement>);
   protected readonly modules = MODULES;
   protected readonly levelLabel = LEVEL_LABEL;
   protected readonly tone = LEVEL_TONE;
@@ -227,9 +232,10 @@ export class NhomQuyenTab {
 
   protected readonly moi = signal(false);
   protected readonly q = signal('');
-  /** Bản nháp đang sửa + danh sách thành viên nháp. */
+  /** Chỉ hiện chức năng nhóm đã được cấp quyền. */
+  protected readonly chiCap = signal(false);
+  /** Bản nháp đang sửa (thành viên gán ở tab "Phân người vào nhóm"). */
   protected readonly f = signal<NhomQuyen | null>(null);
-  protected readonly tv = signal<string[]>([]);
   protected readonly loi = signal<string | null>(null);
 
   protected readonly chon = computed<NhomQuyen | null>(() => {
@@ -237,11 +243,6 @@ export class NhomQuyenTab {
     const all = this.store.nhomQuyen();
     return all.find((g) => g.id === id) ?? all[0] ?? null;
   });
-  private readonly tvGoc = computed(() => {
-    const g = this.chon();
-    return g ? this.store.taiKhoan().filter((t) => t.nhom.includes(g.id)).map((t) => t.id) : [];
-  });
-
   protected readonly dirty = computed(() => {
     const n = this.f();
     if (!n) return false;
@@ -250,18 +251,16 @@ export class NhomQuyenTab {
     if (!g) return false;
     const a = JSON.stringify({ ...n, quyen: sach(n.quyen) });
     const b = JSON.stringify({ ...g, quyen: sach(g.quyen) });
-    return a !== b || [...this.tv()].sort().join() !== [...this.tvGoc()].sort().join();
+    return a !== b;
   });
 
   constructor() {
     // Đổi nhóm được chọn (hoặc dữ liệu nhóm đổi sau khi lưu) → nạp lại bản nháp.
     effect(() => {
       const g = this.chon();
-      const tv = this.tvGoc();
       untracked(() => {
         if (this.moi()) return;
         this.f.set(g ? structuredClone(g) : null);
-        this.tv.set([...tv]);
         this.loi.set(null);
       });
     });
@@ -275,7 +274,20 @@ export class NhomQuyenTab {
   }
   protected cnCua(m: string): ChucNang[] {
     const q = fold(this.q().trim());
-    return CHUC_NANG.filter((c) => c.module === m && (!q || fold(`${c.ma} ${c.ten} ${c.moTa}`).includes(q)));
+    const n = this.f();
+    return CHUC_NANG.filter(
+      (c) => c.module === m && (!q || fold(`${c.ma} ${c.ten} ${c.moTa}`).includes(q)) && (!this.chiCap() || !n || n.toanQuyen || this.muc(n, c) !== 'none'),
+    );
+  }
+  /** Mở / thu gọn mọi module (cây mặc định thu gọn). */
+  protected moHet(mo: boolean): void {
+    (this.host.nativeElement as HTMLElement).querySelectorAll<HTMLDetailsElement>('details.pq-mod').forEach((d) => (d.open = mo));
+  }
+  protected tongCN(m: string): number {
+    return CHUC_NANG.filter((c) => c.module === m).length;
+  }
+  protected demCap(n: NhomQuyen, m: string): number {
+    return CHUC_NANG.filter((c) => c.module === m && (n.toanQuyen || this.muc(n, c) !== 'none')).length;
   }
   protected muc(n: NhomQuyen, c: ChucNang): Level {
     return n.quyen[c.ma] ?? 'none';
@@ -288,14 +300,12 @@ export class NhomQuyenTab {
     const g = this.store.nhomQuyen().find((x) => x.id === id);
     if (g && g.id === this.chon()?.id) {
       this.f.set(structuredClone(g));
-      this.tv.set([...this.tvGoc()]);
     }
   }
 
   protected moMoi(): void {
     this.moi.set(true);
     this.f.set(this.store.newNhom());
-    this.tv.set([]);
     this.loi.set(null);
   }
 
@@ -315,21 +325,15 @@ export class NhomQuyenTab {
       return { ...n, quyen };
     });
   }
-  protected flipTV(id: string): void {
-    this.tv.update((a) => (a.includes(id) ? a.filter((x) => x !== id) : [...a, id]));
-  }
-
   protected hoanTac(): void {
     if (this.moi()) {
       this.moi.set(false);
       const g = this.chon();
       this.f.set(g ? structuredClone(g) : null);
-      this.tv.set([...this.tvGoc()]);
       return;
     }
     const g = this.chon();
     this.f.set(g ? structuredClone(g) : null);
-    this.tv.set([...this.tvGoc()]);
     this.loi.set(null);
   }
 
@@ -337,15 +341,15 @@ export class NhomQuyenTab {
     if (this.ktNq()?.hopLe() === false) return;
     const n = this.f();
     if (!n) return;
-    const dsTV = this.store.taiKhoan().filter((t) => this.tv().includes(t.id)).length;
+    const dsTV = this.soTV(n.id);
     const ok = await this.confirm.ask({
       title: `Lưu nhóm quyền "${n.ten || n.ma}"?`,
-      message: `${n.toanQuyen ? 'Toàn quyền' : this.demQuyen(n) + ' chức năng được cấp quyền'} · ${dsTV} thành viên. Quyền mới áp dụng ngay cho các thành viên.`,
+      message: `${n.toanQuyen ? 'Toàn quyền' : this.demQuyen(n) + ' chức năng được cấp quyền'} · ${dsTV} thành viên. Quyền mới áp dụng ngay cho các thành viên (gán người ở tab "Phân người vào nhóm").`,
       ok: 'Lưu nhóm',
     });
     if (!ok) return;
     const draft = { ...n };
-    const e = this.store.saveNhom(draft, this.tv());
+    const e = this.store.saveNhom(draft);
     if (e) return this.loi.set(e);
     const laMoi = this.moi();
     this.moi.set(false);
@@ -358,7 +362,6 @@ export class NhomQuyenTab {
     if (!n) return;
     this.moi.set(true);
     this.f.set({ ...this.store.newNhom(), ma: `${n.ma}_2`.slice(0, 30), ten: `${n.ten} (bản sao)`, moTa: n.moTa, toanQuyen: n.toanQuyen, quyen: { ...n.quyen } });
-    this.tv.set([]);
   }
 
   protected async xoa(): Promise<void> {

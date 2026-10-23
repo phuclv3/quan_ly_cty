@@ -205,6 +205,11 @@ export class HoSoPanel {
 
 /** Nút Xoá ở mọi bản ghi tạo Yêu cầu xoá (NT-11) — hỏi lý do bắt buộc. */
 export async function guiXoa(confirm: Confirm, store: Store, loai: DoiTuong, id: string, moTa: string): Promise<boolean> {
+  const vuong = store.lyDoKhongXoa(loai, id);
+  if (vuong) {
+    store.say(`Không xoá được ${moTa}: ${vuong}`, 'bad');
+    return false;
+  }
   const lyDo = await confirm.prompt({
     title: `Gửi yêu cầu xoá ${moTa}?`,
     message: 'Không xoá thẳng — yêu cầu chuyển sang màn Duyệt xoá. Trong lúc chờ, bản ghi bị khoá sửa.',
@@ -217,4 +222,77 @@ export async function guiXoa(confirm: Confirm, store: Store, loai: DoiTuong, id:
   const err = store.guiYeuCauXoa(loai, id, moTa, lyDo);
   store.say(err ?? 'Đã gửi yêu cầu xoá — chờ duyệt');
   return !err;
+}
+
+/** Xoá nhiều bản ghi: một lý do chung, mỗi bản ghi một yêu cầu xoá. Bản ghi bị ràng buộc được bỏ qua và báo lý do. Trả số yêu cầu đã gửi. */
+export async function guiXoaNhieu(
+  confirm: Confirm,
+  store: Store,
+  loai: DoiTuong,
+  ds: { id: string; ten: string; moTa: string }[],
+  tenDoiTuong: string,
+): Promise<number> {
+  const rutGon = (xs: string[]) => xs.slice(0, 3).join('; ') + (xs.length > 3 ? '…' : '');
+  const bo = ds.map((d) => ({ d, vuong: store.lyDoKhongXoa(loai, d.id) })).filter((x) => x.vuong);
+  const duoc = ds.filter((d) => !bo.some((x) => x.d.id === d.id));
+  const lyDoBo = rutGon(bo.map((x) => `${x.d.ten} — ${x.vuong}`));
+  if (!duoc.length) {
+    store.say(`Không xoá được ${tenDoiTuong} nào đã chọn: ${lyDoBo}`, 'bad');
+    return 0;
+  }
+  const lyDo = await confirm.prompt({
+    title: `Gửi yêu cầu xoá ${duoc.length} ${tenDoiTuong}?`,
+    message: `${duoc.slice(0, 8).map((d) => d.ten).join(', ')}${duoc.length > 8 ? '…' : ''}. Không xoá thẳng — yêu cầu chuyển sang màn Duyệt xoá, trong lúc chờ bản ghi bị khoá sửa.`,
+    warn: bo.length ? `Bỏ qua ${bo.length} ${tenDoiTuong} không xoá được: ${lyDoBo}` : undefined,
+    label: 'Lý do xoá (bắt buộc)',
+    minLength: 3,
+    multiline: true,
+    ok: `Gửi ${duoc.length} yêu cầu`,
+  });
+  if (lyDo === null) return 0;
+  let ok = 0;
+  const loi: string[] = [];
+  for (const d of duoc) {
+    const err = store.guiYeuCauXoa(loai, d.id, d.moTa, lyDo);
+    if (err) loi.push(`${d.ten}: ${err}`);
+    else ok++;
+  }
+  if (loi.length) store.say(`Đã gửi ${ok}/${duoc.length} yêu cầu xoá. Lỗi: ${rutGon(loi)}`, 'bad');
+  else store.say(`Đã gửi ${ok} yêu cầu xoá — chờ duyệt`);
+  return ok;
+}
+
+/**
+ * Xoá nhiều bản ghi có bản Nháp: nháp xoá thẳng (hỏi 1 lần), phần còn lại gửi yêu cầu xoá (1 lý do chung).
+ * Lỗi từng bản ghi do Store báo (quyền, ràng buộc). Trả tổng số bản ghi đã xử lý.
+ */
+export async function xoaNhieuCoNhap(
+  confirm: Confirm,
+  store: Store,
+  loai: DoiTuong,
+  ds: { id: string; ten: string; moTa: string; nhap: boolean }[],
+  tenDoiTuong: string,
+  xoaNhap: (id: string) => string | null,
+): Promise<number> {
+  let xong = 0;
+  const nhap = ds.filter((d) => d.nhap);
+  if (nhap.length) {
+    const ok = await confirm.ask({
+      title: `Xoá ${nhap.length} ${tenDoiTuong} nháp?`,
+      message: `${nhap.slice(0, 8).map((d) => d.ten).join(', ')}${nhap.length > 8 ? '…' : ''}. Bản nháp chưa gửi duyệt nên xoá thẳng, không qua Duyệt xoá. Không hoàn tác được.`,
+      ok: 'Xoá nháp',
+    });
+    if (ok) {
+      const loi: string[] = [];
+      for (const d of nhap) {
+        const e = xoaNhap(d.id);
+        if (e) loi.push(`${d.ten}: ${e}`);
+        else xong++;
+      }
+      store.say(loi.length ? `Đã xoá ${xong}/${nhap.length} bản nháp. Lỗi: ${loi.slice(0, 3).join('; ')}` : `Đã xoá ${xong} bản nháp`, loi.length ? 'bad' : undefined);
+    }
+  }
+  const khac = ds.filter((d) => !d.nhap);
+  if (khac.length) xong += await guiXoaNhieu(confirm, store, loai, khac, tenDoiTuong);
+  return xong;
 }

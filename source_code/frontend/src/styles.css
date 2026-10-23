@@ -1050,3 +1050,25 @@ input.ngay {
 }
 input.ngay-lich { position: fixed; width: 1px; height: 1px; padding: 0; border: 0; opacity: 0; pointer-events: none; }
 input.ngay:not(:disabled):not([readonly]) { cursor: text; }
+
+/* Tooltip chung (shared/tooltip.ts): to, rõ, nền đậm chữ sáng ở cả giao diện sáng và tối */
+.tip {
+  position: fixed; z-index: 10000; left: 0; top: 0; max-width: min(380px, calc(100vw - 16px));
+  padding: 10px 14px; border-radius: var(--radius-sm); background: var(--ink); color: var(--surf);
+  font-size: 15px; line-height: 1.5; font-weight: 500; white-space: pre-line; overflow-wrap: anywhere;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35); pointer-events: none;
+  opacity: 0; visibility: hidden; transition: opacity 0.12s ease;
+}
+.tip.on { opacity: 1; visibility: visible; }
+
+/* Danh sách điều kiện còn thiếu, mỗi mục bấm được để sang chỗ xử lý (hdb-detail) */
+.note.thieu-ds { flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.thieu-lk { font: inherit; font-weight: 600; color: inherit; background: color-mix(in srgb, currentColor 10%, transparent); border: 1px solid color-mix(in srgb, currentColor 40%, transparent); border-radius: 999px; padding: 3px 12px; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.thieu-lk:hover { background: color-mix(in srgb, currentColor 20%, transparent); }
+.thieu-lk.khong { cursor: default; text-decoration: none; }
+
+/* Nhãn trạng thái cạnh tên trong ô bảng: không đè lên dòng phụ bên dưới */
+.tbl td .tag, .tbl td app-tt { vertical-align: middle; }
+.tbl td app-tt { display: inline-block; margin-left: 6px; line-height: 1.5; }
+.tbl td app-tt:first-child { margin-left: 0; }
+.tbl td .sub { margin-top: 3px; line-height: 1.5; position: relative; }

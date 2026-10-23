@@ -130,3 +130,12 @@ export const xemThuToTrinhHdb = (hd: unknown) => tai('POST', '/hop-dong-ban/to-t
 
 /** Tờ trình chi phí kinh doanh của HĐ bán đã lưu (Word, theo mẫu). */
 export const xuatToTrinhHdb = (id: string) => tai('GET', `/hop-dong-ban/${encodeURIComponent(id)}/to-trinh`, undefined, 'to-trinh.docx');
+
+/** PDF phiếu nhập / xuất kho — backend dựng từ phiếu đã lưu. Lỗi trả về trong `loi`. */
+export async function xemPhieuKhoPdf(id: string): Promise<{ blob: Blob | null; loi: string }> {
+  try {
+    return { blob: (await layTep('GET', `/phieu-kho/${encodeURIComponent(id)}/pdf`, undefined, 'phieu-kho.pdf')).blob, loi: '' };
+  } catch (e) {
+    return { blob: null, loi: loiKetNoi(e) };
+  }
+}

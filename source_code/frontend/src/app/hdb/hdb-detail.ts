@@ -65,7 +65,7 @@ const TABS = [
             <button type="button" class="btn quiet" (click)="huyNhap()">Huỷ thay đổi</button>
           }
           @if (saved() && (edit1() || edit3())) {
-            <button type="button" class="btn" [disabled]="!dirty()" (click)="luu()"><app-icon name="check" [size]="16" /> Lưu</button>
+            <button type="button" class="btn" [disabled]="!dirty()" [attr.title]="dirty() ? null : 'Chưa có thay đổi nào để lưu'" (click)="luu()"><app-icon name="check" [size]="16" /> Lưu</button>
           }
           @if (saved() && !choXoa() && saved()!.trangThai !== TT.DA_TAT_TOAN && store.level('duyetXoa') !== 'none' && store.canEdit('hdb', saved()!.sale)) {
             <button type="button" class="btn danger quiet" (click)="xoa()"><app-icon name="trash" [size]="16" /> Xoá</button>
@@ -95,14 +95,23 @@ const TABS = [
                 @if (keTiep() === TT.DANG_GIAO_HANG) {
                   <span class="sub">Tự chuyển "Đang giao hàng" khi ghi nhận lần giao đầu tiên. HĐ không giao hàng (không có HĐ mua liên quan) chuyển thẳng "Hoàn thành".</span>
                 } @else {
-                  <button type="button" class="btn sm" [disabled]="thieu().length > 0" (click)="chuyen()">Chuyển → {{ ttNhan(keTiep()) }}</button>
+                  <button type="button" class="btn sm" [disabled]="thieu().length > 0" [attr.title]="thieu().length ? 'Chưa chuyển được — còn thiếu: ' + thieu().join(' · ') : null" (click)="chuyen()">Chuyển → {{ ttNhan(keTiep()) }}</button>
                 }
               }
               @if (huyDuoc()) { <button type="button" class="btn sm danger quiet" (click)="huyHd()">Huỷ HĐ</button> }
             </div>
           </div>
           @if (s.trangThai !== TT.DA_TAT_TOAN && s.trangThai !== TT.HUY && keTiep() !== TT.DANG_GIAO_HANG && thieu().length) {
-            <p class="note warn">Còn thiếu để chuyển "{{ ttNhan(keTiep()) }}": {{ thieu().join(' · ') }}</p>
+            <div class="note warn thieu-ds" role="alert">
+              <span>Còn thiếu để chuyển "{{ ttNhan(keTiep()) }}":</span>
+              @for (x of thieuLink(); track x.text) {
+                @if (x.tab) {
+                  <button type="button" class="thieu-lk" [attr.title]="'Bấm để sang tab ' + x.tenTab + ' và xử lý'" (click)="setTab(x.tab)">{{ x.text }} ›</button>
+                } @else {
+                  <span class="thieu-lk khong">{{ x.text }}</span>
+                }
+              }
+            </div>
           }
           @if (keTiep() === TT.HOAN_THANH && c().hoSoThieu.length) {
             <p class="note warn">Lưu ý: thiếu hồ sơ {{ c().hoSoThieu.join(', ') }} — sẽ chặn bước "Đã tất toán".</p>
@@ -324,6 +333,16 @@ export class HdbDetail {
   protected readonly keTiep = computed<TrangThaiHDB | null>(() => {
     const s = this.saved();
     return s ? this.store.hdbKeTiep(s) : null;
+  });
+  /** Mỗi điều kiện còn thiếu kèm tab để người dùng bấm sang xử lý ngay. */
+  protected readonly thieuLink = computed(() => {
+    const co = new Set(this.tabs().map((t) => t.k));
+    const tab = (k: string) => (co.has(k) ? k : undefined);
+    return this.thieu().map((text) => {
+      const k = /^Còn phải thu|phiếu Thu chờ duyệt|Giá trị HĐ/i.test(text) ? '3' : /^Thiếu hồ sơ/.test(text) ? '2' : /chi phí thực hiện/i.test(text) ? '4' : /^Chưa có/.test(text) ? '1' : '';
+      const t = k ? tab(k) : undefined;
+      return { text, tab: t, tenTab: TABS.find((x) => x.k === t)?.t ?? '' };
+    });
   });
   protected readonly thieu = computed(() => {
     const s = this.saved();

@@ -13,6 +13,9 @@ import { SortTh, Sorter } from '../shared/sort';
 import { xuatCsv } from '../shared/export';
 import { Icon } from '../shared/icon';
 import { ImportHd } from '../shared/import-hd';
+import { ChonNhieu } from '../shared/chon-nhieu';
+import { Confirm } from '../shared/confirm';
+import { guiXoaNhieu } from '../shared/ho-so';
 
 interface Row {
   h: HopDongBan;
@@ -25,6 +28,7 @@ interface Row {
   selector: 'app-hdb-list',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'page' },
+  styles: `.bulk { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 12px; }`,
   imports: [RouterLink, FilterBar, Kpi, TrangThai, Pager, Icon, SortTh, ImportHd],
   template: `
     <div class="page-head">
@@ -55,21 +59,35 @@ interface Row {
 
     <app-filter [(loc)]="loc" memo="hdb-list" [facets]="facets()" placeholder="Tìm số HĐ, khách hàng, MST, ghi chú…" />
 
+    @if (chonDuoc() && cn.chon().size) {
+      <div class="note info bulk">
+        <b>Đã chọn {{ cn.chon().size }} hợp đồng</b>
+        <button type="button" class="btn sm danger" (click)="xoaNhieu()"><app-icon name="trash" [size]="15" /> Xoá {{ cn.chon().size }} đã chọn</button>
+        <button type="button" class="btn sm quiet" (click)="cn.xoa()">Bỏ chọn</button>
+      </div>
+    }
+
     <div class="tbl-wrap">
       <table class="tbl freeze">
         <thead>
           <tr>
+            @if (chonDuoc()) { <th style="width:36px"><input type="checkbox" aria-label="Chọn cả trang" [checked]="cn.du(idTrang())" (change)="cn.chonTat(idTrang(), $any($event.target).checked)" /></th> }
             <th app-sort-th [sx]="sx" k="soHD">Số HĐ</th><th app-sort-th [sx]="sx" k="kh">Khách hàng</th><th app-sort-th [sx]="sx" k="ngay">Ngày ký</th>
             @if (xemTien()) {
               <th app-sort-th [sx]="sx" k="sau" class="num">Giá trị sau VAT</th><th app-sort-th [sx]="sx" k="pct">Đã thu</th>
               <th app-sort-th [sx]="sx" k="con" class="num">Còn phải thu</th>
             }
-            <th>Giao hàng</th><th>Hồ sơ</th><th app-sort-th [sx]="sx" k="sale">Sale</th><th app-sort-th [sx]="sx" k="tt">Trạng thái</th>
+            <th>Giao hàng</th><th>Hồ sơ</th><th app-sort-th [sx]="sx" k="sale">Sale</th><th app-sort-th [sx]="sx" k="tt">Trạng thái</th><th></th>
           </tr>
         </thead>
         <tbody>
           @for (r of pg.items(); track r.h.id) {
             <tr class="click" [class.overdue]="r.c.quaHan > 0" (click)="mo(r.h.id)">
+              @if (chonDuoc()) {
+                <td (click)="$event.stopPropagation()">
+                  @if (xoaDuoc(r)) { <input type="checkbox" [attr.aria-label]="'Chọn ' + r.h.soHD" [checked]="cn.co(r.h.id)" (change)="cn.flip(r.h.id)" /> }
+                </td>
+              }
               <td>
                 <a [routerLink]="['/hop-dong-ban', r.h.id]" (click)="$event.stopPropagation()"><b>{{ r.h.soHD || '(chưa có số)' }}</b></a>
                 @if (r.h.import) { <span class="tag mute" title="HĐ thật — chuyển từ file Excel cũ">Import</span> } @else if (r.h.soHD.startsWith('DEMO-')) { <span class="tag warn" title="Dữ liệu giả lập để xem đủ trạng thái">Demo</span> }
@@ -93,10 +111,13 @@ interface Row {
               </td>
               <td>{{ store.userName(r.h.sale) }}</td>
               <td><app-tt [v]="r.h.trangThai" /></td>
+              <td (click)="$event.stopPropagation()">
+                @if (!r.xoa && !store.hdbKhoa(r.h) && store.canEdit('hdb', r.h.sale)) { <a class="btn sm quiet" [routerLink]="['/hop-dong-ban', r.h.id]">Sửa</a> }
+              </td>
             </tr>
           } @empty {
             <tr>
-              <td [attr.colspan]="xemTien() ? 10 : 7" class="empty">
+              <td [attr.colspan]="(xemTien() ? 11 : 8) + (chonDuoc() ? 1 : 0)" class="empty">
                 @if (all().length) { Không có hợp đồng phù hợp bộ lọc. }
                 @else { Chưa có hợp đồng bán nào. @if (store.canEdit('hdb')) { <a routerLink="/hop-dong-ban/moi">Tạo HĐ bán đầu tiên</a> } }
               </td>
@@ -106,7 +127,7 @@ interface Row {
         @if (rows().length && xemTien()) {
           <tfoot>
             <tr>
-              <th colspan="3">Tổng {{ rows().length }} HĐ</th>
+              <th [attr.colspan]="3 + (chonDuoc() ? 1 : 0)">Tổng {{ rows().length }} HĐ</th>
               <td class="num">{{ money(tongSau()) }}</td><td></td>
               <td class="num">{{ money(tongCon()) }}</td><td colspan="4"></td>
             </tr>
@@ -122,6 +143,8 @@ export class HdbList {
   protected readonly TT = TT;
   protected readonly ttNhan = ttNhan;
   private readonly router = inject(Router);
+  private readonly confirm = inject(Confirm);
+  protected readonly cn = new ChonNhieu();
   protected readonly money = money;
   protected readonly pct = pct;
   protected readonly viDate = viDate;
@@ -189,6 +212,19 @@ export class HdbList {
       thieu: rs.filter((r) => r.c.hoSoThieu.length > 0).length,
     };
   });
+
+  /** Xoá hàng loạt: chỉ người gửi được yêu cầu xoá, và chỉ HĐ mình sửa được, chưa chờ xoá. */
+  protected readonly chonDuoc = computed(() => this.store.level('duyetXoa') !== 'none');
+  protected xoaDuoc(r: Row): boolean {
+    return !r.xoa && this.store.canEdit('hdb', r.h.sale);
+  }
+  protected readonly idTrang = computed(() => this.pg.items().filter((r) => this.xoaDuoc(r)).map((r) => r.h.id));
+  protected async xoaNhieu(): Promise<void> {
+    const ds = this.all()
+      .filter((r) => this.cn.co(r.h.id) && this.xoaDuoc(r))
+      .map((r) => ({ id: r.h.id, ten: r.h.soHD || r.h.id, moTa: 'HĐ bán ' + (r.h.soHD || r.h.id) }));
+    if (await guiXoaNhieu(this.confirm, this.store, 'HopDongBan', ds, 'HĐ bán')) this.cn.xoa();
+  }
 
   protected mo(id: string): void {
     void this.router.navigate(['/hop-dong-ban', id]);

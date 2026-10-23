@@ -9,6 +9,10 @@ import { TrangThai } from '../shared/ui-kit';
 import { Facet, FilterBar, LOC_RONG, Loc, khopQ, khopSel, khopThoiGian } from '../shared/filter-bar';
 import { Pager, paginate } from '../shared/pager';
 import { xuatCsv } from '../shared/export';
+import { ChonNhieu } from '../shared/chon-nhieu';
+import { ChonBar } from '../shared/chon-bar';
+import { Confirm } from '../shared/confirm';
+import { xoaNhieuCoNhap } from '../shared/ho-so';
 import { PhieuForm } from './phieu-form';
 import { ChiPhiForm } from './chi-phi-form';
 import { SortTh, Sorter } from '../shared/sort';
@@ -41,7 +45,7 @@ export interface SqRow {
 @Component({
   selector: 'app-kt-so-quy',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TrangThai, FilterBar, Pager, PhieuForm, ChiPhiForm, RouterLink, SortTh],
+  imports: [ChonBar, TrangThai, FilterBar, Pager, PhieuForm, ChiPhiForm, RouterLink, SortTh],
   template: `
     <div class="between" style="margin-bottom:8px">
       <p class="sub muted">
@@ -57,17 +61,21 @@ export interface SqRow {
         <label class="check-row"><input type="checkbox" [checked]="gop()" (change)="gop.set($any($event.target).checked)" /> Xem gộp CP HĐ</label>
       }
     </app-filter>
+    <app-chon-bar [cn]="cn" ten="phiếu" (xoa)="xoaNhieu()" />
     <div class="tbl-wrap">
       <table class="tbl freeze">
         <thead>
           <tr>
-            <th app-sort-th [sx]="sx" k="so">Số phiếu</th><th app-sort-th [sx]="sx" k="ngay">Ngày lập</th><th app-sort-th [sx]="sx" k="loai">Loại phiếu</th><th app-sort-th [sx]="sx" k="nguon">Nguồn tiền</th><th>Loại chi phí</th><th>Nội dung</th>
+            @if (chonDuoc()) { <th style="width:36px"><input type="checkbox" aria-label="Chọn cả trang" [checked]="cn.du(idTrang())" (change)="cn.chonTat(idTrang(), $any($event.target).checked)" /></th> }<th app-sort-th [sx]="sx" k="so">Số phiếu</th><th app-sort-th [sx]="sx" k="ngay">Ngày lập</th><th app-sort-th [sx]="sx" k="loai">Loại phiếu</th><th app-sort-th [sx]="sx" k="nguon">Nguồn tiền</th><th>Loại chi phí</th><th>Nội dung</th>
             <th app-sort-th [sx]="sx" k="thu" class="num">Thu</th><th app-sort-th [sx]="sx" k="chi" class="num">Chi</th><th app-sort-th [sx]="sx" k="nguoi">Người đề nghị</th><th app-sort-th [sx]="sx" k="tt">Trạng thái</th>
           </tr>
         </thead>
         <tbody>
           @for (r of pg.items(); track r.key) {
             <tr class="click" (click)="moRow(r)">
+              @if (chonDuoc()) {
+                <td (click)="$event.stopPropagation()">@if (xoaDuoc(r)) { <input type="checkbox" [attr.aria-label]="'Chọn ' + r.so" [checked]="cn.co(r.key)" (change)="cn.flip(r.key)" /> }</td>
+              }
               <td><b>{{ r.so }}</b></td>
               <td>{{ viDate(r.ngay) }}</td>
               <td>@if (r.c) { <span class="tag info">CP HĐ</span> } @else { {{ r.loai }} }</td>
@@ -84,12 +92,12 @@ export interface SqRow {
               <td>@if (r.p && store.dangChoXoa('PhieuThuChi', r.p.id)) { <app-tt v="Chờ xoá" /> } @else { <app-tt [v]="r.trangThai" /> }</td>
             </tr>
           } @empty {
-            <tr><td colspan="10" class="empty">{{ all().length ? 'Không có phiếu khớp bộ lọc' : 'Chưa có phiếu thu chi nào' }}</td></tr>
+            <tr><td [attr.colspan]="chonDuoc() ? 11 : 10" class="empty">{{ all().length ? 'Không có phiếu khớp bộ lọc' : 'Chưa có phiếu thu chi nào' }}</td></tr>
           }
         </tbody>
         <tfoot>
           <tr>
-            <th colspan="6">Tổng theo bộ lọc ({{ rows().length }} dòng; không gồm Luân chuyển)</th>
+            <th [attr.colspan]="chonDuoc() ? 7 : 6">Tổng theo bộ lọc ({{ rows().length }} dòng; không gồm Luân chuyển)</th>
             <td class="num">{{ money(tongThu()) }}</td>
             <td class="num">{{ money(tongChi()) }}</td>
             <td colspan="2" class="num" [class.neg]="tongThu() - tongChi() < 0">Chênh {{ money(tongThu() - tongChi()) }}</td>
@@ -212,6 +220,22 @@ export class SoQuyTab {
     ));
   });
   protected readonly pg = paginate(this.rows);
+
+  /** Xoá nhiều: nháp xoá thẳng, còn lại gửi yêu cầu xoá; dòng Chi phí HĐ xoá ở màn Chi phí. Quyền / ràng buộc do Store kiểm. */
+  private readonly confirm = inject(Confirm);
+  protected readonly cn = new ChonNhieu();
+  protected readonly chonDuoc = computed(() => this.store.level('duyetXoa') !== 'none' || this.coTheLap());
+  protected xoaDuoc(r: SqRow): boolean {
+    return !!r.p && !this.store.dangChoXoa('PhieuThuChi', r.p.id);
+  }
+  protected readonly idTrang = computed(() => this.pg.items().filter((r) => this.xoaDuoc(r)).map((r) => r.key));
+  protected async xoaNhieu(): Promise<void> {
+    const ds = this.rows()
+      .filter((r) => this.cn.co(r.key) && this.xoaDuoc(r))
+      .map((r) => ({ id: r.p!.id, ten: r.so, moTa: `Phiếu ${r.so}`, nhap: r.p!.trangThai === TT.NHAP }));
+    const lamXong = await xoaNhieuCoNhap(this.confirm, this.store, 'PhieuThuChi', ds, 'phiếu', (id) => this.store.xoaNhapPhieu(id));
+    if (lamXong) this.cn.xoa();
+  }
   protected readonly tongThu = computed(() => sum(this.rows().filter((r) => !r.lc), (r) => r.thu));
   protected readonly tongChi = computed(() => sum(this.rows().filter((r) => !r.lc), (r) => r.chi));
 

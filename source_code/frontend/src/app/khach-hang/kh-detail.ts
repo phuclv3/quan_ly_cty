@@ -40,7 +40,7 @@ import { TT, ttNhan } from '../core/trang-thai';
           @if (edit()) {
             <button type="button" class="btn" (click)="sua.set(k.id)"><app-icon name="edit" [size]="16" /> Sửa</button>
             @let vuong = store.lyDoKhongXoa('DM_KhachHang', k.id);
-            <button type="button" class="btn quiet danger" [disabled]="!!vuong" [attr.title]="vuong ? vuong + ' — không xoá được' : null" (click)="xoa()"><app-icon name="trash" [size]="16" /> Xoá</button>
+            <button type="button" class="btn quiet danger" [attr.title]="vuong ? vuong + ' — không xoá được' : null" (click)="xoa()"><app-icon name="trash" [size]="16" /> Xoá</button>
           }
         </div>
       </div>

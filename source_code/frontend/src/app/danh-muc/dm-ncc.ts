@@ -10,7 +10,8 @@ import { Modal, TrangThai } from '../shared/ui-kit';
 import { FilterBar, LOC_RONG, Loc, khopQ } from '../shared/filter-bar';
 import { Pager, paginate } from '../shared/pager';
 import { Confirm } from '../shared/confirm';
-import { guiXoa } from '../shared/ho-so';
+import { guiXoa, guiXoaNhieu } from '../shared/ho-so';
+import { ChonNhieu } from '../shared/chon-nhieu';
 import { xuatCsv } from '../shared/export';
 
 const BLANK: NhaCungCap = { id: '', ten: '', mst: '', diaChi: '', quocGia: 'Việt Nam', nguoiLienHe: '', dienThoai: '', email: '', ghiChu: '' };
@@ -21,6 +22,7 @@ import { ImportDm } from '../shared/import-dm';
 @Component({
   selector: 'app-dm-ncc',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  styles: `.bulk { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 12px; }`,
   imports: [RouterLink, Modal, TrangThai, FilterBar, Pager, ImportDm],
   template: `
     <div class="between">
@@ -30,14 +32,26 @@ import { ImportDm } from '../shared/import-dm';
         @if (store.canEdit('ncc')) { <app-import-dm loai="ncc" /> <button type="button" class="btn" (click)="mo(null)">+ Thêm nhà cung cấp</button> }
       </div>
     </div>
+    @if (chonDuoc() && cn.chon().size) {
+      <div class="note info bulk">
+        <b>Đã chọn {{ cn.chon().size }} nhà cung cấp</b>
+        <button type="button" class="btn sm danger" (click)="xoaNhieu()">Xoá {{ cn.chon().size }} đã chọn</button>
+        <button type="button" class="btn sm quiet" (click)="cn.xoa()">Bỏ chọn</button>
+      </div>
+    }
     <div class="tbl-wrap">
       <table class="tbl freeze">
         <thead>
-          <tr><th>Mã NCC</th><th>Tên nhà cung cấp</th><th>MST</th><th>Địa chỉ</th><th>Quốc gia</th><th>Người liên hệ</th><th>Điện thoại</th><th>Email</th><th class="num">Số HĐ mua</th><th></th></tr>
+          <tr>@if (chonDuoc()) { <th style="width:36px"><input type="checkbox" aria-label="Chọn cả trang" [checked]="cn.du(idTrang())" (change)="cn.chonTat(idTrang(), $any($event.target).checked)" /></th> }<th>Mã NCC</th><th>Tên nhà cung cấp</th><th>MST</th><th>Địa chỉ</th><th>Quốc gia</th><th>Người liên hệ</th><th>Điện thoại</th><th>Email</th><th class="num">Số HĐ mua</th><th></th></tr>
         </thead>
         <tbody>
           @for (n of pg.items(); track n.id) {
             <tr class="click" [class.sel]="mo1() === n.id" (click)="mo1.set(mo1() === n.id ? null : n.id)">
+              @if (chonDuoc()) {
+                <td (click)="$event.stopPropagation()">
+                  @if (xoaDuoc(n)) { <input type="checkbox" [attr.aria-label]="'Chọn ' + n.ten" [checked]="cn.co(n.id)" (change)="cn.flip(n.id)" /> }
+                </td>
+              }
               <td class="mono"><button type="button" class="linkish" [attr.aria-expanded]="mo1() === n.id">{{ n.id }}</button></td>
               <td><b>{{ n.ten }}</b>@if (n.trangThai === TT.NGUNG) { <app-tt [v]="TT.NGUNG" /> }@if (store.dangChoXoa('DM_NCC', n.id)) { <app-tt v="Chờ xoá" /> }</td>
               <td class="mono">{{ n.mst || '—' }}</td>
@@ -52,14 +66,14 @@ import { ImportDm } from '../shared/import-dm';
                   <div class="row" style="flex-wrap:nowrap">
                     <button type="button" class="btn sm quiet" (click)="mo(n)">Sửa</button>
                     @let vuong = store.lyDoKhongXoa('DM_NCC', n.id);
-                    <button type="button" class="btn sm danger" [disabled]="!!vuong" [attr.title]="vuong ? vuong + ' — không xoá được' : null" (click)="xoa(n)">Xoá</button>
+                    <button type="button" class="btn sm danger" [attr.title]="vuong ? vuong + ' — không xoá được' : null" (click)="xoa(n)">Xoá</button>
                   </div>
                 }
               </td>
             </tr>
             @if (mo1() === n.id) {
               <tr>
-                <td colspan="10" style="background:var(--surf-2)">
+                <td [attr.colspan]="chonDuoc() ? 11 : 10" style="background:var(--surf-2)">
                   @if (n.ghiChu) { <div class="sub">Ghi chú: {{ n.ghiChu }}</div> }
                   <b>Hợp đồng mua với NCC</b>
                   @for (m of hdCua(n.id); track m.id) {
@@ -75,7 +89,7 @@ import { ImportDm } from '../shared/import-dm';
               </tr>
             }
           } @empty {
-            <tr><td colspan="10" class="empty">Không có nhà cung cấp phù hợp.</td></tr>
+            <tr><td [attr.colspan]="chonDuoc() ? 11 : 10" class="empty">Không có nhà cung cấp phù hợp.</td></tr>
           }
         </tbody>
       </table>
@@ -129,6 +143,7 @@ export class DmNcc {
   protected readonly ttNhan = ttNhan;
   protected readonly viDate = viDate;
   protected readonly loc = signal<Loc>(nhoLoc('dm-ncc', LOC_RONG));
+  protected readonly cn = new ChonNhieu();
   protected readonly mo1 = signal<string | null>(null);
   protected readonly f = signal<NhaCungCap | null>(null);
   protected readonly trung = signal<NhaCungCap | null>(null);
@@ -202,6 +217,16 @@ export class DmNcc {
     }
     this.store.say(d.id ? 'Đã lưu nhà cung cấp' : 'Đã thêm nhà cung cấp');
     this.dong();
+  }
+  /** Xoá hàng loạt: người sửa được NCC và gửi được yêu cầu xoá; bỏ NCC đang chờ xoá. */
+  protected readonly chonDuoc = computed(() => this.store.canEdit('ncc') && this.store.level('duyetXoa') !== 'none');
+  protected xoaDuoc(n: NhaCungCap): boolean {
+    return !this.store.dangChoXoa('DM_NCC', n.id);
+  }
+  protected readonly idTrang = computed(() => this.pg.items().filter((n) => this.xoaDuoc(n)).map((n) => n.id));
+  protected async xoaNhieu(): Promise<void> {
+    const ds = this.store.ncc().filter((n) => this.cn.co(n.id) && this.xoaDuoc(n)).map((n) => ({ id: n.id, ten: n.ten, moTa: `Nhà cung cấp ${n.id} — ${n.ten}` }));
+    if (await guiXoaNhieu(this.confirm, this.store, 'DM_NCC', ds, 'nhà cung cấp')) this.cn.xoa();
   }
   protected async xoa(n: NhaCungCap): Promise<void> {
     await guiXoa(this.confirm, this.store, 'DM_NCC', n.id, `Nhà cung cấp ${n.id} — ${n.ten}`);

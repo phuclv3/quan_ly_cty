@@ -4,7 +4,9 @@ import { TT } from '../core/trang-thai';
 import { LoaiChiPhi, NhomChiPhi } from '../core/models';
 import { Modal, TrangThai } from '../shared/ui-kit';
 import { Confirm } from '../shared/confirm';
-import { guiXoa } from '../shared/ho-so';
+import { guiXoa, guiXoaNhieu } from '../shared/ho-so';
+import { ChonNhieu } from '../shared/chon-nhieu';
+import { ChonBar } from '../shared/chon-bar';
 
 const NHOM: NhomChiPhi[] = ['Vận hành', 'Thực hiện HĐ'];
 
@@ -12,12 +14,13 @@ const NHOM: NhomChiPhi[] = ['Vận hành', 'Thực hiện HĐ'];
 @Component({
   selector: 'app-dm-lcp',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Modal, TrangThai],
+  imports: [ChonBar, Modal, TrangThai],
   template: `
     <div class="note info" style="margin-bottom:12px">
       <span>Sổ quỹ chung chỉ chọn nhóm <b>Vận hành</b>; Chi phí thực hiện HĐ chỉ chọn nhóm <b>Thực hiện HĐ</b>; không xoá loại đã dùng — chỉ ngưng.</span>
     </div>
     @if (store.canEdit('nguonTien')) {
+      <app-chon-bar [cn]="cn" ten="loại chi phí" (xoa)="xoaNhieu()" />
       <div class="btn-row" style="margin-bottom:12px"><button type="button" class="btn" (click)="mo(null)">+ Thêm loại chi phí</button></div>
     }
     <div class="grid c2">
@@ -26,10 +29,13 @@ const NHOM: NhomChiPhi[] = ['Vận hành', 'Thực hiện HĐ'];
           <div class="section-title" style="margin-top:0"><h3>Nhóm {{ g }}</h3><span class="sub">{{ g === 'Vận hành' ? 'Dùng ở Sổ quỹ chung' : 'Dùng ở Chi phí thực hiện HĐ' }}</span></div>
           <div class="tbl-wrap">
             <table class="tbl compact">
-              <thead><tr><th>Mã loại</th><th>Tên loại</th><th>Trạng thái</th><th class="num">Đã dùng</th><th></th></tr></thead>
+              <thead><tr>@if (chonDuoc()) { <th style="width:36px"><input type="checkbox" aria-label="Chọn cả trang" [checked]="cn.du(idTrang())" (change)="cn.chonTat(idTrang(), $any($event.target).checked)" /></th> }<th>Mã loại</th><th>Tên loại</th><th>Trạng thái</th><th class="num">Đã dùng</th><th></th></tr></thead>
               <tbody>
                 @for (l of theoNhom(g); track l.id) {
                   <tr>
+                    @if (chonDuoc()) {
+                      <td>@if (xoaDuoc(l)) { <input type="checkbox" [attr.aria-label]="'Chọn ' + l.ten" [checked]="cn.co(l.id)" (change)="cn.flip(l.id)" /> }</td>
+                    }
                     <td class="mono">{{ l.id }}</td>
                     <td>{{ l.ten }}</td>
                     <td>
@@ -47,7 +53,7 @@ const NHOM: NhomChiPhi[] = ['Vận hành', 'Thực hiện HĐ'];
                     </td>
                   </tr>
                 } @empty {
-                  <tr><td colspan="5" class="empty">Chưa có loại chi phí.</td></tr>
+                  <tr><td [attr.colspan]="chonDuoc() ? 6 : 5" class="empty">Chưa có loại chi phí.</td></tr>
                 }
               </tbody>
             </table>
@@ -83,6 +89,17 @@ export class DmLoaiChiPhi {
   protected readonly TT = TT;
   private readonly confirm = inject(Confirm);
   protected readonly nhom = NHOM;
+  protected readonly cn = new ChonNhieu();
+  /** Xoá nhiều: loại chưa chờ xoá; loại đã dùng bị bỏ qua kèm lý do. */
+  protected readonly chonDuoc = computed(() => this.store.canEdit('nguonTien') && this.store.level('duyetXoa') !== 'none');
+  protected xoaDuoc(l: LoaiChiPhi): boolean {
+    return !this.store.dangChoXoa('DM_LoaiChiPhi', l.id);
+  }
+  protected readonly idTrang = computed(() => this.store.loaiChiPhi().filter((l) => this.xoaDuoc(l)).map((l) => l.id));
+  protected async xoaNhieu(): Promise<void> {
+    const ds = this.store.loaiChiPhi().filter((l) => this.cn.co(l.id) && this.xoaDuoc(l)).map((l) => ({ id: l.id, ten: l.ten, moTa: `Loại chi phí ${l.id} — ${l.ten}` }));
+    if (await guiXoaNhieu(this.confirm, this.store, 'DM_LoaiChiPhi', ds, 'loại chi phí')) this.cn.xoa();
+  }
   protected readonly f = signal<LoaiChiPhi | null>(null);
   protected readonly err = signal('');
   private readonly goc = signal('');

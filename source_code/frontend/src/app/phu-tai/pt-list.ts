@@ -13,7 +13,9 @@ import { FilterBar, Facet, LOC_RONG, Loc, khopQ, khopSel, khopThoiGian } from '.
 import { Kpi, Modal, MoneyInput, Pick, PickOption, TrangThai } from '../shared/ui-kit';
 import { Pager, paginate } from '../shared/pager';
 import { Confirm } from '../shared/confirm';
-import { guiXoa } from '../shared/ho-so';
+import { guiXoa, guiXoaNhieu } from '../shared/ho-so';
+import { ChonNhieu } from '../shared/chon-nhieu';
+import { ChonBar } from '../shared/chon-bar';
 import { SortTh, Sorter } from '../shared/sort';
 
 type TabL = 'hd' | 'dong-tien';
@@ -37,7 +39,7 @@ const formRong = (): FormDT => ({ ngay: todayIso(), chieu: 'Thu về PT', hdptId
   selector: 'app-pt-list',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'page' },
-  imports: [RouterLink, FilterBar, Kpi, Modal, MoneyInput, Pick, TrangThai, Pager, SortTh],
+  imports: [ChonBar, RouterLink, FilterBar, Kpi, Modal, MoneyInput, Pick, TrangThai, Pager, SortTh],
   template: `
     <div class="page-head">
       <div>
@@ -72,10 +74,12 @@ const formRong = (): FormDT => ({ ngay: todayIso(), chieu: 'Thu về PT', hdptId
         <app-kpi label="Số dư quỹ ảo Phú Tài" [value]="vndShort(quy().soDu)" [sub]="'Thu ' + money(quy().thu) + ' · Chi ' + money(quy().chi)" />
       </div>
       <app-filter [(loc)]="loc" memo="pt-list" [facets]="facets()" />
-      <div class="tbl-wrap">
+      <app-chon-bar [cn]="cn" ten="HĐ Phú Tài" (xoa)="xoaNhieu()" />
+        <div class="tbl-wrap">
         <table class="tbl freeze">
           <thead>
             <tr>
+              @if (chonDuoc()) { <th style="width:36px"><input type="checkbox" aria-label="Chọn cả trang" [checked]="cn.du(idTrang())" (change)="cn.chonTat(idTrang(), $any($event.target).checked)" /></th> }
               <th app-sort-th [sx]="sx" k="soHD">Số HĐ</th><th app-sort-th [sx]="sx" k="kh">Khách hàng cuối</th><th app-sort-th [sx]="sx" k="ngay">Ngày ký</th>
               <th app-sort-th [sx]="sx" k="giaBan" class="num">Giá bán trước VAT</th><th app-sort-th [sx]="sx" k="dauVao" class="num">Giá đầu vào</th>
               <th app-sort-th [sx]="sx" k="lnTruoc" class="num">LN trước thuế</th><th app-sort-th [sx]="sx" k="lnThuc" class="num" title="Oxy được hưởng (gộp) − Hoa hồng">LN thực Oxy (sau hoa hồng)</th>
@@ -85,6 +89,9 @@ const formRong = (): FormDT => ({ ngay: todayIso(), chieu: 'Thu về PT', hdptId
           <tbody>
             @for (r of pg.items(); track r.p.id) {
               <tr class="click" (click)="mo(r.p.id)">
+              @if (chonDuoc()) {
+                <td (click)="$event.stopPropagation()">@if (xoaDuoc(r.p)) { <input type="checkbox" [attr.aria-label]="'Chọn ' + r.p.soHD" [checked]="cn.co(r.p.id)" (change)="cn.flip(r.p.id)" /> }</td>
+              }
                 <td>
                   <a [routerLink]="['/phu-tai', r.p.id]" (click)="$event.stopPropagation()"><b>{{ r.p.soHD }}</b></a>
                   @if (r.p.import) { <app-tt v="Import" /> }
@@ -101,7 +108,7 @@ const formRong = (): FormDT => ({ ngay: todayIso(), chieu: 'Thu về PT', hdptId
                 </td>
               </tr>
             } @empty {
-              <tr><td colspan="9" class="empty muted">Chưa có HĐ Phú Tài nào khớp bộ lọc</td></tr>
+              <tr><td [attr.colspan]="chonDuoc() ? 10 : 9" class="empty muted">Chưa có HĐ Phú Tài nào khớp bộ lọc</td></tr>
             }
           </tbody>
           @if (rows().length) {
@@ -271,6 +278,18 @@ export class PtList {
     return this.sx.apply(list);
   });
   protected readonly pg = paginate(this.rows);
+
+  /** Xoá nhiều HĐ Phú Tài: quyền sửa Phú Tài + gửi được yêu cầu xoá; bỏ HĐ đang chờ xoá. */
+  protected readonly cn = new ChonNhieu();
+  protected readonly chonDuoc = computed(() => this.store.canEdit('phuTai') && this.store.level('duyetXoa') !== 'none');
+  protected xoaDuoc(p: { id: string }): boolean {
+    return !this.store.dangChoXoa('HopDongPhuTai', p.id);
+  }
+  protected readonly idTrang = computed(() => this.pg.items().filter((r) => this.xoaDuoc(r.p)).map((r) => r.p.id));
+  protected async xoaNhieu(): Promise<void> {
+    const ds = this.rows().filter((r) => this.cn.co(r.p.id) && this.xoaDuoc(r.p)).map((r) => ({ id: r.p.id, ten: r.p.soHD, moTa: `HĐ Phú Tài ${r.p.soHD}` }));
+    if (await guiXoaNhieu(this.confirm, this.store, 'HopDongPhuTai', ds, 'HĐ Phú Tài')) this.cn.xoa();
+  }
   protected readonly kpi = computed(() => {
     const hl = this.rows().filter((r) => r.p.trangThai !== TT.HUY);
     let giaBan = 0;

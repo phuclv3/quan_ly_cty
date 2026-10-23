@@ -8,7 +8,8 @@ import { nhoLoc } from '../core/ui';
 import { money } from '../core/util';
 import { Confirm } from '../shared/confirm';
 import { Facet, FilterBar, LOC_RONG, Loc, khopQ, khopSel } from '../shared/filter-bar';
-import { guiXoa } from '../shared/ho-so';
+import { guiXoa, guiXoaNhieu } from '../shared/ho-so';
+import { ChonNhieu } from '../shared/chon-nhieu';
 import { Pager, paginate } from '../shared/pager';
 import { Modal, TrangThai } from '../shared/ui-kit';
 import { nhomOpts } from './kho-util';
@@ -49,6 +50,7 @@ import { ImportDm } from '../shared/import-dm';
 @Component({
   selector: 'app-kho-loai-hang',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  styles: `.bulk { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 12px; }`,
   imports: [Modal, TrangThai, FilterBar, Pager, ImportDm],
   template: `
     <div class="note info">
@@ -60,12 +62,22 @@ import { ImportDm } from '../shared/import-dm';
       @if (edit()) { <span class="btn-row"><app-import-dm loai="mh" /><button type="button" class="btn" (click)="moi()">+ Thêm mã hàng</button></span> }
     </div>
     <app-filter [(loc)]="loc" memo="kho-loai-hang" [time]="false" [facets]="facets()" placeholder="Tìm mã, tên, loại khí, tên tham chiếu…" />
+    @if (chonDuoc() && cn.chon().size) {
+      <div class="note info bulk">
+        <b>Đã chọn {{ cn.chon().size }} mã hàng</b>
+        <button type="button" class="btn sm danger" (click)="xoaNhieu()">Xoá {{ cn.chon().size }} đã chọn</button>
+        <button type="button" class="btn sm quiet" (click)="cn.xoa()">Bỏ chọn</button>
+      </div>
+    }
     <div class="tbl-wrap">
       <table class="tbl freeze">
-        <thead><tr><th>Mã hàng</th><th>Nhóm</th><th>Loại khí / vật liệu</th><th>Thể tích</th><th>ĐVT</th><th>Tên</th><th>Mô tả</th><th class="num">Tồn</th><th>Tên tham chiếu</th><th>Đang dùng</th>@if (edit()) { <th></th> }</tr></thead>
+        <thead><tr>@if (chonDuoc()) { <th style="width:36px"><input type="checkbox" aria-label="Chọn cả trang" [checked]="cn.du(idTrang())" (change)="cn.chonTat(idTrang(), $any($event.target).checked)" /></th> }<th>Mã hàng</th><th>Nhóm</th><th>Loại khí / vật liệu</th><th>Thể tích</th><th>ĐVT</th><th>Tên</th><th>Mô tả</th><th class="num">Tồn</th><th>Tên tham chiếu</th><th>Đang dùng</th>@if (edit()) { <th></th> }</tr></thead>
         <tbody>
           @for (l of pg.items(); track l.id) {
             <tr>
+              @if (chonDuoc()) {
+                <td>@if (xoaDuoc(l)) { <input type="checkbox" [attr.aria-label]="'Chọn ' + l.id" [checked]="cn.co(l.id)" (change)="cn.flip(l.id)" /> }</td>
+              }
               <td><b>{{ l.id }}</b></td>
               <td>{{ l.nhom }}</td>
               <td>{{ l.loaiKhi || '—' }}</td>
@@ -97,7 +109,7 @@ import { ImportDm } from '../shared/import-dm';
               }
             </tr>
           } @empty {
-            <tr><td colspan="11" class="empty">Không có mã hàng nào khớp bộ lọc</td></tr>
+            <tr><td [attr.colspan]="chonDuoc() ? 12 : 11" class="empty">Không có mã hàng nào khớp bộ lọc</td></tr>
           }
         </tbody>
       </table>
@@ -190,6 +202,7 @@ export class DmLoaiHangTab {
       .sort((a, b) => (thu.get(a.nhom) ?? 9) - (thu.get(b.nhom) ?? 9) || a.id.localeCompare(b.id, 'en', { numeric: true }));
   });
   protected readonly pg = paginate(this.rows);
+  protected readonly cn = new ChonNhieu();
   /** Mã đã có trên phiếu kho hoặc dòng HĐ Mua → chỉ ngưng. */
   protected readonly daDung = computed(() => {
     const db = this.store.db();
@@ -268,6 +281,16 @@ export class DmLoaiHangTab {
     if (!moi) return;
     const e = this.store.doiMaHang(l.id, moi);
     this.store.say(e ?? `Đã đổi ${l.id} → ${moi.trim().toUpperCase()}`);
+  }
+  /** Xoá hàng loạt: bỏ mã đang chờ xoá; mã đã dùng trên phiếu / HĐ bị bỏ qua kèm lý do. */
+  protected readonly chonDuoc = computed(() => this.edit() && this.store.level('duyetXoa') !== 'none');
+  protected xoaDuoc(l: LoaiHang): boolean {
+    return !this.choXoa(l);
+  }
+  protected readonly idTrang = computed(() => this.pg.items().filter((l) => this.xoaDuoc(l)).map((l) => l.id));
+  protected async xoaNhieu(): Promise<void> {
+    const ds = this.store.loaiHang().filter((l) => this.cn.co(l.id) && this.xoaDuoc(l)).map((l) => ({ id: l.id, ten: l.id, moTa: `Mã hàng ${l.id} – ${l.ten}` }));
+    if (await guiXoaNhieu(this.confirm, this.store, 'DM_LoaiHang', ds, 'mã hàng')) this.cn.xoa();
   }
   protected async xoa(l: LoaiHang): Promise<void> {
     await guiXoa(this.confirm, this.store, 'DM_LoaiHang', l.id, `Mã hàng ${l.id} – ${l.ten}`);
