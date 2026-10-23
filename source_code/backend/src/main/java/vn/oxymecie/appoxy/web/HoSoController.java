@@ -85,7 +85,7 @@ public class HoSoController {
     TepTinEntity e = new TepTinEntity();
     e.setId(id);
     e.setTen(name.length() > 255 ? name.substring(name.length() - 255) : name);
-    e.setMime(mime.length() > 100 ? mime.substring(0, 100) : mime);
+    e.setMime(MIME.contains(mime) ? mime : mimeTheoDuoi(name));
     e.setKichThuoc(file.getSize());
     e.setThumb(thumb);
     e.setDuongDan(key);
@@ -104,13 +104,23 @@ public class HoSoController {
     var res = new FileSystemResource(storage.path(e.getDuongDan()));
     MediaType type;
     try {
-      type = MediaType.parseMediaType(e.getMime().isEmpty() ? "application/octet-stream" : e.getMime());
+      type = MediaType.parseMediaType(MIME.contains(e.getMime()) ? e.getMime() : mimeTheoDuoi(e.getTen()));
     } catch (RuntimeException ex) {
       type = MediaType.APPLICATION_OCTET_STREAM;
     }
     ContentDisposition cd = (taiVe ? ContentDisposition.attachment() : ContentDisposition.inline()).filename(e.getTen(), StandardCharsets.UTF_8).build();
     return ResponseEntity.ok().contentType(type).header(HttpHeaders.CONTENT_DISPOSITION, cd.toString())
         .header("X-Content-Type-Options", "nosniff").body(res);
+  }
+
+  /** Tệp có mime lạ / rỗng (octet-stream, x-download…): đoán theo đuôi tên để trình duyệt xem được PDF / ảnh. */
+  private static String mimeTheoDuoi(String ten) {
+    String l = ten == null ? "" : ten.toLowerCase();
+    if (l.endsWith(".pdf")) return "application/pdf";
+    if (l.endsWith(".png")) return "image/png";
+    if (l.endsWith(".jpg") || l.endsWith(".jpeg")) return "image/jpeg";
+    if (l.endsWith(".webp")) return "image/webp";
+    return "application/octet-stream";
   }
 
   static boolean duocXem(Db d, String id) {

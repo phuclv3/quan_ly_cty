@@ -79,6 +79,20 @@ public class HopDongController {
   public ResponseEntity<byte[]> toTrinhHdb(@PathVariable String id) throws Exception {
     HopDongBan h = cmd.snapshot().getHopDongBan().stream().filter(x -> x.getId().equals(id)).findFirst()
         .orElseThrow(() -> ApiException.notFound("Không tìm thấy HĐ"));
+    return tepToTrinh(h);
+  }
+
+  @Operation(summary = "Xem thử Tờ trình (.docx) từ dữ liệu HĐ đang nhập — không lưu, không kiểm tra gì",
+      description = "Dùng khi tạo HĐ mới hoặc đang sửa chưa lưu: gửi nguyên HĐ nháp, trả tờ trình theo số liệu đó.")
+  @PostMapping("/hop-dong-ban/to-trinh")
+  public ResponseEntity<byte[]> xemThuToTrinh(@RequestBody HopDongBan h) throws Exception {
+    Cmd.user();
+    if (h.getDotTT() == null) h.setDotTT(new java.util.ArrayList<>());
+    if (h.getThamSoThue() == null) h.setThamSoThue(new vn.oxymecie.appoxy.domain.model.ThamSoThue());
+    return tepToTrinh(h);
+  }
+
+  private ResponseEntity<byte[]> tepToTrinh(HopDongBan h) throws Exception {
     byte[] b = ToTrinhDocx.tao(h, Calc.hdbCalc(h, cmd.raw()), LocalDate.now(Dates.VN));
     String so = h.getSoHD() == null || h.getSoHD().isBlank() ? "bao-gia" : h.getSoHD().replaceAll("[\\\\/:*?\"<>|]", "-");
     return ResponseEntity.ok()
