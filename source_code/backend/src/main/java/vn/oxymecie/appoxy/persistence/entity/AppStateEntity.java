@@ -10,7 +10,7 @@ import lombok.Setter;
 
 /** Một dòng duy nhất giữ phiên bản dữ liệu (tăng sau mỗi lệnh ghi). */
 @Entity
-@Table(name = "app_state")
+@Table(name = "ht_trang_thai")
 @Getter
 @Setter
 public class AppStateEntity {

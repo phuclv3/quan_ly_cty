@@ -12,7 +12,7 @@ import lombok.Setter;
 
 /** Lịch sử sửa tham số cấu hình (chỉ thêm). */
 @Entity
-@Table(name = "cau_hinh_log")
+@Table(name = "ht_cau_hinh_log")
 @Getter
 @Setter
 public class CauHinhLogEntity {

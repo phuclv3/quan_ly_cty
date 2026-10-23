@@ -12,7 +12,7 @@ import lombok.Setter;
 
 /** Dòng hàng HĐ bán / báo giá. */
 @Entity
-@Table(name = "hdb_dong_hang")
+@Table(name = "kd_hdb_dong_hang")
 @Getter
 @Setter
 public class HdbDongHangEntity {

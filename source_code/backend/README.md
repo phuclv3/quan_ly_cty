@@ -1,7 +1,7 @@
 # App Oxy — Backend
 
 REST API cho frontend `../frontend` (Angular 21): Java 21 · Spring Boot 3.5 · Spring Data JPA / Hibernate · MySQL 8 · Flyway ·
-Spring Security (token phiên + BCrypt) · Bean Validation · springdoc OpenAPI · JUnit 5 / Mockito / Testcontainers.
+Spring Security (token phiên + BCrypt) · Bean Validation · springdoc OpenAPI · JUnit 5 / Mockito.
 
 Tài liệu: `../../docs/` — phân tích nghiệp vụ, mapping frontend ↔ API, thiết kế DB (ERD), đặc tả API, kế hoạch & kết quả kiểm thử.
 
@@ -20,7 +20,8 @@ GRANT ALL PRIVILEGES ON app_oxy.* TO 'app_oxy'@'%';
 ```
 
 Migration chạy **tự động khi khởi động** (Flyway): `V1` schema, `V2` dữ liệu mặc định (chức năng, nhóm quyền, tham số, loại chi phí,
-kho "Chuyển thẳng"). Hồ sơ `dev` nạp thêm `db/dev/V2_1__dev_seed.sql` (dữ liệu mẫu). Hibernate không tạo / xoá bảng.
+kho "Chuyển thẳng", 6 tài khoản demo — mục 5), `V3` tài khoản quản trị ẩn. Hồ sơ `dev` nạp thêm `db/dev/V2_1__dev_seed.sql`
+(dữ liệu mẫu). Hibernate không tạo / xoá bảng.
 
 ## 3. Cấu hình
 
@@ -55,9 +56,10 @@ Bỏ `SPRING_PROFILES_ACTIVE`, đặt `DB_*` riêng, `APP_BOOTSTRAP_ADMIN_EMAIL`
 (tài khoản nhóm Giám đốc, đăng nhập lần đầu bắt đổi mật khẩu), sau đó xoá hai biến này. Đặt sau reverse proxy HTTPS;
 sao lưu cả database và thư mục `APP_STORAGE_DIR`.
 
-## 5. Tài khoản thử nghiệm (CHỈ hồ sơ dev)
+## 5. Tài khoản thử nghiệm
 
-Mật khẩu phát triển chung: **`Oxy@2026`** (lưu dạng BCrypt trong `V2_1__dev_seed.sql`; không dùng ở môi trường thật).
+Mật khẩu dùng chung: **`Oxy@2026`** (lưu dạng BCrypt). 6 tài khoản đầu nạp ở `V2__default_data.sql` —
+**MỌI môi trường, kể cả máy chủ thật** — đổi mật khẩu các tài khoản này trước khi dùng thật.
 
 | Email | Nhóm |
 |---|---|
@@ -67,7 +69,9 @@ Mật khẩu phát triển chung: **`Oxy@2026`** (lưu dạng BCrypt trong `V2_1
 | admin@oxymecie.vn | Admin kinh doanh |
 | kho@oxymecie.vn | Kho |
 | chixem@oxymecie.vn | Chỉ xem |
-| hongha@ / linhchi@ / sales3@oxymecie.vn | Sale — bắt đổi mật khẩu lần đầu |
+
+Riêng `hongha@ / linhchi@ / sales3@oxymecie.vn` (Sale — bắt đổi mật khẩu lần đầu) chỉ nạp ở **hồ sơ dev**
+(`V2_1__dev_seed.sql`, cùng dữ liệu mẫu trích từ Excel thực tế).
 
 ## 6. Kết nối frontend
 
@@ -84,9 +88,7 @@ hoặc khác domain thì thêm domain đó vào `APP_CORS_ORIGINS`.
 ```bash
 mvn test
 ```
-- `CalcTest`, `NghiepVuTest` — công thức và quy tắc nghiệp vụ (không cần DB).
-- `ApiIntegrationTest` — Spring Boot + MockMvc trên **MySQL 8 thật (Testcontainers)**: migration, JPA, khoá ngoại, xác thực,
-  phân quyền, luồng HĐ / kho / tệp / duyệt xoá. Cần Docker đang chạy; không có Docker thì bộ này được **bỏ qua** (báo Skipped).
+- `CalcTest`, `NghiepVuTest` — công thức và quy tắc nghiệp vụ (không cần DB, không cần Docker).
 
 ## 8. Sinh lại SQL dữ liệu mặc định / mẫu
 
@@ -123,5 +125,4 @@ vn.oxymecie.appoxy
 | Flyway `Validate failed: Migration checksum mismatch` | Đã sửa tệp migration đã áp — hoàn tác, tạo migration mới; DB dev có thể xoá schema rồi chạy lại |
 | Frontend báo "Không kết nối được máy chủ" | Backend chưa chạy ở 8080, hoặc chạy frontend không qua `npm start` (proxy) |
 | Lỗi CORS trên trình duyệt | Thêm origin frontend vào `APP_CORS_ORIGINS` |
-| `ApiIntegrationTest` bị Skipped | Docker chưa chạy |
 | Chữ tiếng Việt lỗi trong MySQL CLI | Dùng `mysql --default-character-set=utf8mb4`; dữ liệu lưu utf8mb4 |

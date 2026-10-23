@@ -12,8 +12,10 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class TaiKhoan {
   /**
-   * Tài khoản quản trị ẩn (V2__default_data.sql): toàn quyền, không gửi cho tài khoản khác, không hiện trong nhật ký,
-   * không ai khác sửa / khoá / đặt lại mật khẩu được, không tính vào điều kiện "còn người quản trị".
+   * Tài khoản quản trị ẩn (V3__tai_khoan_an.sql, thuộc nhóm NQ-GD — toàn quyền như Giám đốc).
+   * Ẩn khỏi màn Quản lý tài khoản / mọi danh sách chọn người phụ trách cho tài khoản khác; không ai khác
+   * sửa / khoá / đặt lại mật khẩu / gỡ khỏi nhóm được; không tính vào điều kiện "còn người quản trị".
+   * VẪN ghi đầy đủ vào Nhật ký thao tác (ht_nhat_ky) như tài khoản bình thường — không được ẩn khỏi đó.
    */
   public static final String QUAN_TRI_AN = "TK-ROOT";
 

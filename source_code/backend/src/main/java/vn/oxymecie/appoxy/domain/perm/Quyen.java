@@ -14,10 +14,6 @@ public final class Quyen {
   /** Loại đối tượng mà quyền "Duyệt xoá chứng từ kế toán" (NT-11-KT) được duyệt. */
   public static final Set<String> KE_TOAN_DUYET_XOA = Set.of("PhieuThuChi", "ChiPhiThucHienHD", "DM_NguonTien", "DM_LoaiChiPhi");
 
-  /** Nhóm ảo của tài khoản quản trị ẩn — toàn quyền kể cả khi nhóm Giám đốc bị "Ngưng". Không lưu, không gửi client. */
-  public static final NhomQuyen TOAN_QUYEN_AN =
-      new NhomQuyen("NQ-AN", "AN", "Toàn quyền", "", true, "Hoạt động", new java.util.LinkedHashMap<>(), true, null, null, null);
-
   private Quyen() {}
 
   public static Level levelOf(Collection<NhomQuyen> groups, Perm p) {

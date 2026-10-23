@@ -19,7 +19,7 @@ import lombok.Setter;
 
 /** Hợp đồng Phú Tài (PT-01…11). */
 @Entity
-@Table(name = "hop_dong_phu_tai")
+@Table(name = "pt_hop_dong")
 @Getter
 @Setter
 public class HopDongPhuTaiEntity extends Audited {
@@ -89,33 +89,33 @@ public class HopDongPhuTaiEntity extends Audited {
   @Column(name = "la_import", nullable = false)
   private boolean laImport;
   @ElementCollection
-  @CollectionTable(name = "hdpt_hop_dong_mua", joinColumns = @JoinColumn(name = "hdpt_id"))
+  @CollectionTable(name = "pt_hop_dong_mua", joinColumns = @JoinColumn(name = "hdpt_id"))
   @OrderColumn(name = "thu_tu")
   @Column(name = "hdm_id")
   private List<String> hdMua = new ArrayList<>();
 
   @ElementCollection
-  @CollectionTable(name = "hdpt_chi_phi", joinColumns = @JoinColumn(name = "hdpt_id"))
+  @CollectionTable(name = "pt_chi_phi", joinColumns = @JoinColumn(name = "hdpt_id"))
   @OrderColumn(name = "thu_tu")
   private List<ChiPhi> chiPhi = new ArrayList<>();
 
   @ElementCollection
-  @CollectionTable(name = "hdpt_dot_kh", joinColumns = @JoinColumn(name = "hdpt_id"))
+  @CollectionTable(name = "pt_dot_kh", joinColumns = @JoinColumn(name = "hdpt_id"))
   @OrderColumn(name = "thu_tu")
   private List<DotKH> dotKH = new ArrayList<>();
 
   @ElementCollection
-  @CollectionTable(name = "hdpt_dot_tra_ncc", joinColumns = @JoinColumn(name = "hdpt_id"))
+  @CollectionTable(name = "pt_dot_tra_ncc", joinColumns = @JoinColumn(name = "hdpt_id"))
   @OrderColumn(name = "thu_tu")
   private List<TraNCC> dotTraNCC = new ArrayList<>();
 
   @ElementCollection
-  @CollectionTable(name = "hdpt_doi_chieu", joinColumns = @JoinColumn(name = "hdpt_id"))
+  @CollectionTable(name = "pt_doi_chieu", joinColumns = @JoinColumn(name = "hdpt_id"))
   @OrderColumn(name = "thu_tu")
   private List<DoiChieu> doiChieu = new ArrayList<>();
 
   @ElementCollection
-  @CollectionTable(name = "hdpt_ty_le_log", joinColumns = @JoinColumn(name = "hdpt_id"))
+  @CollectionTable(name = "pt_ty_le_log", joinColumns = @JoinColumn(name = "hdpt_id"))
   @OrderColumn(name = "thu_tu")
   private List<TyLeLog> tyLeLog = new ArrayList<>();
   @Embeddable

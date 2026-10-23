@@ -10,7 +10,7 @@ import lombok.Setter;
 
 /** Tệp đã tải lên kho tệp (nội dung nằm ở thư mục app.storage.dir, khoá = duongDan). */
 @Entity
-@Table(name = "tep_tin")
+@Table(name = "ht_tep_tin")
 @Getter
 @Setter
 public class TepTinEntity {

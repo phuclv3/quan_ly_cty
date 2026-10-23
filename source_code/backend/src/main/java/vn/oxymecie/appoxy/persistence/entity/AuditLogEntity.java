@@ -14,7 +14,7 @@ import org.hibernate.type.SqlTypes;
 
 /** Nhật ký thao tác (ai, lúc nào, lệnh gì, bản ghi nào). Không chứa mật khẩu / token. */
 @Entity
-@Table(name = "audit_log")
+@Table(name = "ht_nhat_ky")
 @Getter
 @Setter
 public class AuditLogEntity {

@@ -22,7 +22,7 @@ import lombok.Setter;
 
 /** Hợp đồng mua (HDM-01…10). */
 @Entity
-@Table(name = "hop_dong_mua")
+@Table(name = "kd_hop_dong_mua")
 @Getter
 @Setter
 public class HopDongMuaEntity extends Audited {
@@ -84,12 +84,12 @@ public class HopDongMuaEntity extends Audited {
   private List<HdmDongHangEntity> chiTiet = new ArrayList<>();
 
   @ElementCollection
-  @CollectionTable(name = "hdm_dot_tt", joinColumns = @JoinColumn(name = "hdm_id"))
+  @CollectionTable(name = "kd_hdm_dot_tt", joinColumns = @JoinColumn(name = "hdm_id"))
   @OrderColumn(name = "thu_tu")
   private List<DotTT> dotTT = new ArrayList<>();
 
   @ElementCollection
-  @CollectionTable(name = "hdm_checklist", joinColumns = @JoinColumn(name = "hdm_id"))
+  @CollectionTable(name = "kd_hdm_checklist", joinColumns = @JoinColumn(name = "hdm_id"))
   @OrderColumn(name = "thu_tu")
   private List<Checklist> checklist = new ArrayList<>();
   @Embeddable

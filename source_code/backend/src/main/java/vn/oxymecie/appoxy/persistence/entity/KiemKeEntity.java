@@ -18,7 +18,7 @@ import lombok.Setter;
 
 /** Đợt kiểm kê thực tế tại kho. */
 @Entity
-@Table(name = "kiem_ke")
+@Table(name = "kho_kiem_ke")
 @Getter
 @Setter
 public class KiemKeEntity {
@@ -40,12 +40,12 @@ public class KiemKeEntity {
   @Column(name = "ghi_chu")
   private String ghiChu;
   @ElementCollection
-  @CollectionTable(name = "kiem_ke_dong", joinColumns = @JoinColumn(name = "kiem_ke_id"))
+  @CollectionTable(name = "kho_kiem_ke_dong", joinColumns = @JoinColumn(name = "kiem_ke_id"))
   @OrderColumn(name = "thu_tu")
   private List<Dong> dong = new ArrayList<>();
 
   @ElementCollection
-  @CollectionTable(name = "kiem_ke_phieu_dc", joinColumns = @JoinColumn(name = "kiem_ke_id"))
+  @CollectionTable(name = "kho_kiem_ke_phieu_dc", joinColumns = @JoinColumn(name = "kiem_ke_id"))
   @OrderColumn(name = "thu_tu")
   @Column(name = "phieu_kho_id")
   private List<String> phieuDieuChinh = new ArrayList<>();

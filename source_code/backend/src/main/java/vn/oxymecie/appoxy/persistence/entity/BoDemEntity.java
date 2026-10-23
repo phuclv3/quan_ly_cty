@@ -10,7 +10,7 @@ import lombok.Setter;
 
 /** Bộ đếm số chứng từ theo tiền tố + năm (KT-06 / D-31). */
 @Entity
-@Table(name = "bo_dem")
+@Table(name = "ht_bo_dem")
 @Getter
 @Setter
 @NoArgsConstructor

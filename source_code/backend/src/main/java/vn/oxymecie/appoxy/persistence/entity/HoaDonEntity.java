@@ -10,7 +10,7 @@ import lombok.Setter;
 
 /** Hoá đơn của hợp đồng (HDB-06). */
 @Entity
-@Table(name = "hoa_don")
+@Table(name = "ht_hoa_don")
 @Getter
 @Setter
 public class HoaDonEntity {

@@ -10,7 +10,7 @@ import lombok.Setter;
 
 /** Danh mục nguồn tiền (KT-01). */
 @Entity
-@Table(name = "nguon_tien")
+@Table(name = "kt_nguon_tien")
 @Getter
 @Setter
 public class NguonTienEntity {

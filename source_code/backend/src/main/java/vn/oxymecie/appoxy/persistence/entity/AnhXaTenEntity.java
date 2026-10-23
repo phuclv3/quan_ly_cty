@@ -9,7 +9,7 @@ import lombok.Setter;
 
 /** Ánh xạ tên hàng ghi trong HĐ bán → mã hàng / lô. */
 @Entity
-@Table(name = "anh_xa_ten")
+@Table(name = "kho_anh_xa_ten")
 @Getter
 @Setter
 public class AnhXaTenEntity {

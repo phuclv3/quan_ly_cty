@@ -9,7 +9,7 @@ import lombok.Setter;
 
 /** Vị trí kho (KHO-01). */
 @Entity
-@Table(name = "kho")
+@Table(name = "kho_vi_tri")
 @Getter
 @Setter
 public class KhoEntity {

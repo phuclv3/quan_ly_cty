@@ -10,7 +10,7 @@ import lombok.Setter;
 
 /** Phiên đăng nhập — chỉ lưu SHA-256 của token, hết hạn trượt 12 giờ theo hoạt động. */
 @Entity
-@Table(name = "phien_dang_nhap")
+@Table(name = "ht_phien")
 @Getter
 @Setter
 public class PhienDangNhapEntity {

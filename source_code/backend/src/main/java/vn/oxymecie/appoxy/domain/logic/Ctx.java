@@ -49,7 +49,7 @@ public final class Ctx {
   private List<NhomQuyen> groups;
 
   /**
-   * @param tepLookup tra siêu dữ liệu tệp đã tải lên (bảng tep_tin) theo id; null khi không cần
+   * @param tepLookup tra siêu dữ liệu tệp đã tải lên (bảng ht_tep_tin) theo id; null khi không cần
    */
   public Ctx(Db db, String meId, Clock clock, ObjectMapper mapper, Function<String, FileRef> tepLookup) {
     this.db = db;

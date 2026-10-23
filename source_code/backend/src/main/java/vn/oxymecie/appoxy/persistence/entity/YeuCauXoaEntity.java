@@ -10,7 +10,7 @@ import lombok.Setter;
 
 /** Yêu cầu xoá chờ duyệt (NT-11). */
 @Entity
-@Table(name = "yeu_cau_xoa")
+@Table(name = "ht_yeu_cau_xoa")
 @Getter
 @Setter
 public class YeuCauXoaEntity {

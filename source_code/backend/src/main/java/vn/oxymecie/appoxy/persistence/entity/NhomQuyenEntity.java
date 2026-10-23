@@ -16,7 +16,7 @@ import lombok.Setter;
 
 /** Nhóm quyền + mức quyền theo mã chức năng (bảng con nhom_quyen_chuc_nang). */
 @Entity
-@Table(name = "nhom_quyen")
+@Table(name = "ht_nhom")
 @Getter
 @Setter
 public class NhomQuyenEntity {
@@ -51,7 +51,7 @@ public class NhomQuyenEntity {
   private String nguoiCapNhat;
 
   @ElementCollection
-  @CollectionTable(name = "nhom_quyen_chuc_nang", joinColumns = @JoinColumn(name = "nhom_id"))
+  @CollectionTable(name = "ht_nhom_chuc_nang", joinColumns = @JoinColumn(name = "nhom_id"))
   @MapKeyColumn(name = "chuc_nang_ma")
   @Column(name = "muc_quyen")
   private Map<String, String> quyen = new HashMap<>();

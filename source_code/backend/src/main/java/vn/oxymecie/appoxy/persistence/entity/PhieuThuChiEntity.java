@@ -21,7 +21,7 @@ import lombok.Setter;
 
 /** Phiếu thu chi — Sổ quỹ (KT-04…KT-10). */
 @Entity
-@Table(name = "phieu_thu_chi")
+@Table(name = "kt_phieu_thu_chi")
 @Getter
 @Setter
 public class PhieuThuChiEntity extends Audited {
@@ -94,12 +94,12 @@ public class PhieuThuChiEntity extends Audited {
   @Column(name = "la_import", nullable = false)
   private boolean laImport;
   @ElementCollection
-  @CollectionTable(name = "phieu_thu_chi_lich_su", joinColumns = @JoinColumn(name = "phieu_id"))
+  @CollectionTable(name = "kt_phieu_thu_chi_lich_su", joinColumns = @JoinColumn(name = "phieu_id"))
   @OrderColumn(name = "thu_tu")
   private List<LichSu> lichSu = new ArrayList<>();
 
   @ManyToMany
-  @JoinTable(name = "phieu_thu_chi_tep", joinColumns = @JoinColumn(name = "phieu_id"), inverseJoinColumns = @JoinColumn(name = "tep_id"))
+  @JoinTable(name = "kt_phieu_thu_chi_tep", joinColumns = @JoinColumn(name = "phieu_id"), inverseJoinColumns = @JoinColumn(name = "tep_id"))
   @OrderColumn(name = "thu_tu")
   private List<TepTinEntity> files = new ArrayList<>();
   @Embeddable

@@ -15,7 +15,7 @@ import lombok.Setter;
 
 /** Phiếu đề nghị cấp vật tư. */
 @Entity
-@Table(name = "de_nghi_vat_tu")
+@Table(name = "kd_de_nghi_vat_tu")
 @Getter
 @Setter
 public class DeNghiVatTuEntity {

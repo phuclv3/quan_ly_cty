@@ -15,7 +15,7 @@ import lombok.Setter;
 
 /** Tài khoản đăng nhập (mật khẩu BCrypt) + nhóm quyền (bảng tai_khoan_nhom). */
 @Entity
-@Table(name = "tai_khoan")
+@Table(name = "ht_nhanvien")
 @Getter
 @Setter
 public class TaiKhoanEntity extends Audited {
@@ -47,7 +47,7 @@ public class TaiKhoanEntity extends Audited {
   private Instant lanDangNhapCuoi;
 
   @ElementCollection
-  @CollectionTable(name = "tai_khoan_nhom", joinColumns = @JoinColumn(name = "tai_khoan_id"))
+  @CollectionTable(name = "ht_nhanvien_nhom", joinColumns = @JoinColumn(name = "tai_khoan_id"))
   @Column(name = "nhom_id")
   private Set<String> nhom = new LinkedHashSet<>();
 }

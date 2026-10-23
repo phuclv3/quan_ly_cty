@@ -10,7 +10,7 @@ import lombok.Setter;
 
 /** Tham số cấu hình dạng khoá / giá trị. */
 @Entity
-@Table(name = "cau_hinh")
+@Table(name = "ht_cau_hinh")
 @Getter
 @Setter
 public class CauHinhEntity {

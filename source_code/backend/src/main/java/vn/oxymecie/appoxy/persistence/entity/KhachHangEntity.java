@@ -15,7 +15,7 @@ import lombok.Setter;
 
 /** Khách hàng & theo dõi kinh doanh (HDB-13); nhật ký chăm sóc ở cham_soc_kh. */
 @Entity
-@Table(name = "khach_hang")
+@Table(name = "kd_khach_hang")
 @Getter
 @Setter
 public class KhachHangEntity extends Audited {

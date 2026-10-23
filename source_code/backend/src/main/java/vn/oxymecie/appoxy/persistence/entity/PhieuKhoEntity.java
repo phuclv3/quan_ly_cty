@@ -18,7 +18,7 @@ import lombok.Setter;
 
 /** Phiếu nhập / xuất kho (KHO-03…08); dòng phiếu ở phieu_kho_dong. */
 @Entity
-@Table(name = "phieu_kho")
+@Table(name = "kho_phieu")
 @Getter
 @Setter
 public class PhieuKhoEntity extends Audited {
@@ -63,7 +63,7 @@ public class PhieuKhoEntity extends Audited {
   @Column(name = "kiem_ke_id")
   private String kiemKeId;
   @ElementCollection
-  @CollectionTable(name = "phieu_kho_dong", joinColumns = @JoinColumn(name = "phieu_id"))
+  @CollectionTable(name = "kho_phieu_dong", joinColumns = @JoinColumn(name = "phieu_id"))
   @OrderColumn(name = "thu_tu")
   private List<Dong> dong = new ArrayList<>();
   @Embeddable

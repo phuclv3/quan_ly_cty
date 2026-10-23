@@ -15,7 +15,7 @@ import lombok.Setter;
 
 /** Hồ sơ một loại của một hợp đồng; tệp đính kèm qua bảng ho_so_tep (giữ thứ tự). */
 @Entity
-@Table(name = "ho_so")
+@Table(name = "ht_ho_so")
 @Getter
 @Setter
 public class HoSoEntity {
@@ -41,7 +41,7 @@ public class HoSoEntity {
   private String ghiChu;
 
   @ManyToMany
-  @JoinTable(name = "ho_so_tep", joinColumns = @JoinColumn(name = "ho_so_id"), inverseJoinColumns = @JoinColumn(name = "tep_id"))
+  @JoinTable(name = "ht_ho_so_tep", joinColumns = @JoinColumn(name = "ho_so_id"), inverseJoinColumns = @JoinColumn(name = "tep_id"))
   @OrderColumn(name = "thu_tu")
   private List<TepTinEntity> files = new ArrayList<>();
 }

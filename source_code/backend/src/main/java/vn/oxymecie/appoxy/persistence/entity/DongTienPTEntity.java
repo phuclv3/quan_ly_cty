@@ -10,7 +10,7 @@ import lombok.Setter;
 
 /** Dòng tiền quỹ ảo Phú Tài (PT-09). */
 @Entity
-@Table(name = "dong_tien_pt")
+@Table(name = "pt_dong_tien")
 @Getter
 @Setter
 public class DongTienPTEntity {

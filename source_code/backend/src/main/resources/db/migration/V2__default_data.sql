@@ -1,13 +1,13 @@
 -- ════════════════════════════════════════════════════════════════════
 -- App Oxy — dữ liệu khởi tạo cần cho hệ thống chạy (mọi môi trường).
 -- TỆP SINH TỰ ĐỘNG bởi backend/scripts/gen-seed-sql.ts từ frontend/src/app/core/perm.ts + seed.ts.
--- Không có tài khoản / mật khẩu: tài khoản quản trị đầu tiên tạo bằng APP_BOOTSTRAP_ADMIN_* (xem README).
+-- Kèm 6 tài khoản demo (mật khẩu dùng chung, xem README) — đổi mật khẩu trước khi dùng thật.
 -- ════════════════════════════════════════════════════════════════════
 
-INSERT INTO app_state (id, phien_ban, cap_nhat) VALUES (1, 0, NULL);
+INSERT INTO ht_trang_thai (id, phien_ban, cap_nhat) VALUES (1, 0, NULL);
 
 -- Danh mục chức năng phân quyền (mã spec) và mức được phép chọn
-INSERT INTO chuc_nang (ma, module, ten, mo_ta, muc_cho_phep) VALUES
+INSERT INTO ht_chuc_nang (ma, module, ten, mo_ta, muc_cho_phep) VALUES
   ('NT-03', 'Hệ thống', 'Tài khoản, nhóm quyền & phân quyền', 'Tạo tài khoản, nhóm quyền, gán quyền và gán tài khoản vào nhóm', 'view,edit'),
   ('NT-14', 'Hệ thống', 'Tham số cấu hình', 'Bậc thuế TNDN, tỷ lệ Phú Tài, tiền tố số phiếu, số đợt tối đa', 'view,edit'),
   ('NT-11', 'Hệ thống', 'Duyệt xoá', 'Gửi yêu cầu xoá; Duyệt = duyệt mọi loại đối tượng', 'request,approve'),
@@ -40,15 +40,15 @@ INSERT INTO chuc_nang (ma, module, ten, mo_ta, muc_cho_phep) VALUES
   ('BC-01', 'Báo cáo', 'Báo cáo doanh thu, lợi nhuận, thanh toán', 'Theo nghiep_vu/06_BaoCao', 'ownView,view');
 
 -- Nhóm quyền mặc định (sheet "Ma trận quyền", D-25)
-INSERT INTO nhom_quyen (id, ma, ten, mo_ta, toan_quyen, trang_thai, he_thong, tao_luc) VALUES
-  ('NQ-GD', 'GIAM_DOC', 'Giám đốc', 'Toàn quyền mọi chức năng', TRUE, 'Hoạt động', TRUE, '2026-10-23 03:54:11.008'),
-  ('NQ-KT', 'KE_TOAN', 'Kế toán', 'Sổ quỹ, duyệt phiếu, công nợ, Phú Tài', FALSE, 'Hoạt động', TRUE, '2026-10-23 03:54:11.008'),
-  ('NQ-SALE', 'SALE', 'Sale', 'Chỉ HĐ bán mình phụ trách; danh mục khách hàng', FALSE, 'Hoạt động', TRUE, '2026-10-23 03:54:11.008'),
-  ('NQ-ADMIN', 'ADMIN_KD', 'Admin kinh doanh', 'HĐ bán / mua, hồ sơ, giao nhận', FALSE, 'Hoạt động', TRUE, '2026-10-23 03:54:11.008'),
-  ('NQ-KHO', 'KHO', 'Kho', 'Tồn kho, nhập / xuất, phiếu điều chỉnh', FALSE, 'Hoạt động', TRUE, '2026-10-23 03:54:11.008'),
-  ('NQ-XEM', 'CHI_XEM', 'Chỉ xem', 'Xem mọi số liệu, không có nút hành động', FALSE, 'Hoạt động', TRUE, '2026-10-23 03:54:11.008');
+INSERT INTO ht_nhom (id, ma, ten, mo_ta, toan_quyen, trang_thai, he_thong, tao_luc) VALUES
+  ('NQ-GD', 'GIAM_DOC', 'Giám đốc', 'Toàn quyền mọi chức năng', TRUE, 'Hoạt động', TRUE, '2026-10-23 05:26:12.889'),
+  ('NQ-KT', 'KE_TOAN', 'Kế toán', 'Sổ quỹ, duyệt phiếu, công nợ, Phú Tài', FALSE, 'Hoạt động', TRUE, '2026-10-23 05:26:12.889'),
+  ('NQ-SALE', 'SALE', 'Sale', 'Chỉ HĐ bán mình phụ trách; danh mục khách hàng', FALSE, 'Hoạt động', TRUE, '2026-10-23 05:26:12.889'),
+  ('NQ-ADMIN', 'ADMIN_KD', 'Admin kinh doanh', 'HĐ bán / mua, hồ sơ, giao nhận', FALSE, 'Hoạt động', TRUE, '2026-10-23 05:26:12.889'),
+  ('NQ-KHO', 'KHO', 'Kho', 'Tồn kho, nhập / xuất, phiếu điều chỉnh', FALSE, 'Hoạt động', TRUE, '2026-10-23 05:26:12.889'),
+  ('NQ-XEM', 'CHI_XEM', 'Chỉ xem', 'Xem mọi số liệu, không có nút hành động', FALSE, 'Hoạt động', TRUE, '2026-10-23 05:26:12.889');
 
-INSERT INTO nhom_quyen_chuc_nang (nhom_id, chuc_nang_ma, muc_quyen) VALUES
+INSERT INTO ht_nhom_chuc_nang (nhom_id, chuc_nang_ma, muc_quyen) VALUES
   ('NQ-KT', 'NT-14', 'view'),
   ('NQ-KT', 'NT-11', 'request'),
   ('NQ-KT', 'NT-11-KT', 'approve'),
@@ -133,7 +133,7 @@ INSERT INTO nhom_quyen_chuc_nang (nhom_id, chuc_nang_ma, muc_quyen) VALUES
   ('NQ-XEM', 'TD-01', 'own');
 
 -- Tham số cấu hình mặc định (NT-14)
-INSERT INTO cau_hinh (khoa, gia_tri) VALUES
+INSERT INTO ht_cau_hinh (khoa, gia_tri) VALUES
   ('TNDN_NGUONG', '0.2'),
   ('TNDN_MUC1', '0.25'),
   ('TNDN_MUC2', '0.5'),
@@ -146,12 +146,29 @@ INSERT INTO cau_hinh (khoa, gia_tri) VALUES
   ('TIEN_TO_NK', 'NK'),
   ('TIEN_TO_XK', 'XK');
 
+-- Tài khoản demo — 1 mỗi nhóm quyền mặc định (mật khẩu dùng chung, xem README backend)
+INSERT INTO ht_nhanvien (id, email, ho_ten, mat_khau_bam, trang_thai, bat_doi_mk, so_lan_sai, created_at, updated_at) VALUES
+  ('TKmvkj1l7i1v68feo1v7pw6d', 'giamdoc@oxymecie.vn', 'Giám đốc (demo)', '$2a$10$KihdWR8o9Z4KRZzpSiH93.N3YgsRgzlNHsqSb9mWMm7rf8jKRkvOm', 'Hoạt động', FALSE, 0, '2026-10-23 05:26:12.889', '2026-10-23 05:26:12.889'),
+  ('TKmvkj1l7j5ldagv1vxnlkt', 'ketoan@oxymecie.vn', 'Kế toán (demo)', '$2a$10$KihdWR8o9Z4KRZzpSiH93.N3YgsRgzlNHsqSb9mWMm7rf8jKRkvOm', 'Hoạt động', FALSE, 0, '2026-10-23 05:26:12.889', '2026-10-23 05:26:12.889'),
+  ('TKmvkj1l7j1paxxz81f0385h', 'sale@oxymecie.vn', 'Sale (demo)', '$2a$10$KihdWR8o9Z4KRZzpSiH93.N3YgsRgzlNHsqSb9mWMm7rf8jKRkvOm', 'Hoạt động', FALSE, 0, '2026-10-23 05:26:12.889', '2026-10-23 05:26:12.889'),
+  ('TKmvkj1l7j1okhp1s1ghrw17', 'admin@oxymecie.vn', 'Admin kinh doanh (demo)', '$2a$10$KihdWR8o9Z4KRZzpSiH93.N3YgsRgzlNHsqSb9mWMm7rf8jKRkvOm', 'Hoạt động', FALSE, 0, '2026-10-23 05:26:12.889', '2026-10-23 05:26:12.889'),
+  ('TKmvkj1l7jdyy1h9jpw0hm', 'kho@oxymecie.vn', 'Thủ kho (demo)', '$2a$10$KihdWR8o9Z4KRZzpSiH93.N3YgsRgzlNHsqSb9mWMm7rf8jKRkvOm', 'Hoạt động', FALSE, 0, '2026-10-23 05:26:12.889', '2026-10-23 05:26:12.889'),
+  ('TKmvkj1l7j1lvnmcc175weth', 'chixem@oxymecie.vn', 'Chỉ xem (demo)', '$2a$10$KihdWR8o9Z4KRZzpSiH93.N3YgsRgzlNHsqSb9mWMm7rf8jKRkvOm', 'Hoạt động', FALSE, 0, '2026-10-23 05:26:12.889', '2026-10-23 05:26:12.889');
+
+INSERT INTO ht_nhanvien_nhom (tai_khoan_id, nhom_id) VALUES
+  ('TKmvkj1l7i1v68feo1v7pw6d', 'NQ-GD'),
+  ('TKmvkj1l7j5ldagv1vxnlkt', 'NQ-KT'),
+  ('TKmvkj1l7j1paxxz81f0385h', 'NQ-SALE'),
+  ('TKmvkj1l7j1okhp1s1ghrw17', 'NQ-ADMIN'),
+  ('TKmvkj1l7jdyy1h9jpw0hm', 'NQ-KHO'),
+  ('TKmvkj1l7j1lvnmcc175weth', 'NQ-XEM');
+
 -- Vị trí kho hệ thống "Chuyển thẳng — không qua kho" (KHO-01, không sửa / xoá)
-INSERT INTO kho (id, ten, loai, dang_dung) VALUES
+INSERT INTO kho_vi_tri (id, ten, loai, dang_dung) VALUES
   ('KHO-CT', 'Chuyển thẳng — không qua kho', 'Chuyển thẳng', TRUE);
 
 -- Loại chi phí (KT-03): CPTH-HH (hoa hồng) và CPTH-VC (vận chuyển) có quy tắc riêng trong mã
-INSERT INTO loai_chi_phi (id, ten, nhom, dang_dung) VALUES
+INSERT INTO kt_loai_chi_phi (id, ten, nhom, dang_dung) VALUES
   ('VH-VP', 'Văn phòng', 'Vận hành', TRUE),
   ('VH-MKT', 'Marketing', 'Vận hành', TRUE),
   ('VH-LUONG', 'Lương/Thưởng', 'Vận hành', TRUE),

@@ -218,8 +218,7 @@ public class HeThongController {
     if (size < 1 || size > 200) throw ApiException.invalid("size phải từ 1 đến 200");
     Instant t = tu == null ? null : Dates.parseInstant(tu);
     Instant d = den == null ? null : Dates.parseInstant(den);
-    String an = TaiKhoan.laAn(c.me()) ? null : TaiKhoan.QUAN_TRI_AN;
-    var p = repos.auditLog().tim(an, taiKhoanId, doiTuong, maDoiTuong, t, d, PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id")));
+    var p = repos.auditLog().tim(taiKhoanId, doiTuong, maDoiTuong, t, d, PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id")));
     var items = p.getContent().stream().map(a -> new NhatKyDong(a.getId(), Dates.iso(a.getLuc()), a.getTaiKhoanId(), a.getHanhDong(),
         a.getDoiTuong(), a.getMaDoiTuong(), a.getMoTa(), a.getDuLieu(), a.getDiaChiIp())).toList();
     return new PageResult<>(items, page, size, p.getTotalElements(), p.getTotalPages());

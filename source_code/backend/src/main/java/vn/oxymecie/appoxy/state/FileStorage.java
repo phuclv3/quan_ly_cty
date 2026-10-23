@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 import vn.oxymecie.appoxy.common.ApiException;
 
 /**
- * Kho nội dung tệp trên đĩa (app.storage.dir). Siêu dữ liệu nằm ở bảng tep_tin.
+ * Kho nội dung tệp trên đĩa (app.storage.dir). Siêu dữ liệu nằm ở bảng ht_tep_tin.
  * Khoá lưu = "yyyy/MM/<id>" — không lấy từ tên tệp người dùng để tránh path traversal.
  */
 @Component

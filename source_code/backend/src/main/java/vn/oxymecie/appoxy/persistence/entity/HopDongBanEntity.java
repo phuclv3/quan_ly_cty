@@ -22,7 +22,7 @@ import lombok.Setter;
 
 /** Hợp đồng bán (HDB-01…13): đợt thanh toán ở hdb_dot_tt, dòng hàng ở hdb_dong_hang. */
 @Entity
-@Table(name = "hop_dong_ban")
+@Table(name = "kd_hop_dong_ban")
 @Getter
 @Setter
 public class HopDongBanEntity extends Audited {
@@ -97,7 +97,7 @@ public class HopDongBanEntity extends Audited {
   @Column(name = "la_import", nullable = false)
   private boolean laImport;
   @ElementCollection
-  @CollectionTable(name = "hdb_dot_tt", joinColumns = @JoinColumn(name = "hdb_id"))
+  @CollectionTable(name = "kd_hdb_dot_tt", joinColumns = @JoinColumn(name = "hdb_id"))
   @OrderColumn(name = "thu_tu")
   private List<DotTT> dotTT = new ArrayList<>();
 

@@ -13,7 +13,7 @@ import lombok.Setter;
 
 /** Một lần chăm sóc khách hàng (chỉ thêm). */
 @Entity
-@Table(name = "cham_soc_kh")
+@Table(name = "kd_cham_soc_kh")
 @Getter
 @Setter
 public class ChamSocKHEntity {

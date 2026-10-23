@@ -12,7 +12,7 @@ import lombok.Setter;
 
 /** Một dòng đề nghị cấp vật tư. */
 @Entity
-@Table(name = "de_nghi_vat_tu_dong")
+@Table(name = "kd_de_nghi_vat_tu_dong")
 @Getter
 @Setter
 public class DeNghiVatTuDongEntity {

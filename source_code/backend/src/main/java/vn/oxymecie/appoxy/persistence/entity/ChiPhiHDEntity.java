@@ -21,7 +21,7 @@ import lombok.Setter;
 
 /** Chi phí thực hiện hợp đồng (KT-12…KT-15). */
 @Entity
-@Table(name = "chi_phi_hd")
+@Table(name = "kt_chi_phi_hd")
 @Getter
 @Setter
 public class ChiPhiHDEntity extends Audited {
@@ -73,12 +73,12 @@ public class ChiPhiHDEntity extends Audited {
   @Column(name = "ghi_chu")
   private String ghiChu;
   @ElementCollection
-  @CollectionTable(name = "chi_phi_hd_lich_su", joinColumns = @JoinColumn(name = "chi_phi_id"))
+  @CollectionTable(name = "kt_chi_phi_hd_lich_su", joinColumns = @JoinColumn(name = "chi_phi_id"))
   @OrderColumn(name = "thu_tu")
   private List<LichSu> lichSu = new ArrayList<>();
 
   @ManyToMany
-  @JoinTable(name = "chi_phi_hd_tep", joinColumns = @JoinColumn(name = "chi_phi_id"), inverseJoinColumns = @JoinColumn(name = "tep_id"))
+  @JoinTable(name = "kt_chi_phi_hd_tep", joinColumns = @JoinColumn(name = "chi_phi_id"), inverseJoinColumns = @JoinColumn(name = "tep_id"))
   @OrderColumn(name = "thu_tu")
   private List<TepTinEntity> files = new ArrayList<>();
   @Embeddable

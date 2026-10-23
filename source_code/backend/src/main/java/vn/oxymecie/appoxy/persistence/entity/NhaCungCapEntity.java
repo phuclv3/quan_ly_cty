@@ -9,7 +9,7 @@ import lombok.Setter;
 
 /** Nhà cung cấp (HDM-10). */
 @Entity
-@Table(name = "nha_cung_cap")
+@Table(name = "kd_nha_cung_cap")
 @Getter
 @Setter
 public class NhaCungCapEntity extends Audited {

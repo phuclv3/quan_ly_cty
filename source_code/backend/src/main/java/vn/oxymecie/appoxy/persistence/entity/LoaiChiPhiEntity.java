@@ -9,7 +9,7 @@ import lombok.Setter;
 
 /** Loại chi phí (KT-03). */
 @Entity
-@Table(name = "loai_chi_phi")
+@Table(name = "kt_loai_chi_phi")
 @Getter
 @Setter
 public class LoaiChiPhiEntity {

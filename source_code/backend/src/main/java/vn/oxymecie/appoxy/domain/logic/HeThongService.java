@@ -146,7 +146,8 @@ public class HeThongService {
     for (TaiKhoan t : c.db().getTaiKhoan()) {
       boolean co = t.getNhom().contains(nhomId);
       boolean can = tkIds.contains(t.getId());
-      if (co == can) {
+      // Tài khoản ẩn: client không bao giờ thấy nó nên danh sách gửi lên luôn thiếu nó — giữ nguyên nhóm, không coi là "bỏ khỏi nhóm".
+      if (co == can || TaiKhoan.laAn(t.getId())) {
         out.add(t);
         continue;
       }

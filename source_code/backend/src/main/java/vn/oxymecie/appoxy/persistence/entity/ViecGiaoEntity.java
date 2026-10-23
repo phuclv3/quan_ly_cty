@@ -19,7 +19,7 @@ import lombok.Setter;
 
 /** Việc được giao / lịch hẹn (TD-01). */
 @Entity
-@Table(name = "viec_giao")
+@Table(name = "cv_viec")
 @Getter
 @Setter
 public class ViecGiaoEntity {
@@ -51,13 +51,13 @@ public class ViecGiaoEntity {
   @Column(name = "nguoi_xong")
   private String nguoiXong;
   @ElementCollection
-  @CollectionTable(name = "viec_giao_nguoi_nhan", joinColumns = @JoinColumn(name = "viec_id"))
+  @CollectionTable(name = "cv_viec_nguoi_nhan", joinColumns = @JoinColumn(name = "viec_id"))
   @OrderColumn(name = "thu_tu")
   @Column(name = "tai_khoan_id")
   private List<String> nguoiNhan = new ArrayList<>();
 
   @ElementCollection
-  @CollectionTable(name = "viec_giao_phan_hoi", joinColumns = @JoinColumn(name = "viec_id"))
+  @CollectionTable(name = "cv_viec_phan_hoi", joinColumns = @JoinColumn(name = "viec_id"))
   @OrderColumn(name = "thu_tu")
   private List<PhanHoi> phanHoi = new ArrayList<>();
   @Embeddable

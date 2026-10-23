@@ -40,9 +40,9 @@ import vn.oxymecie.appoxy.persistence.entity.TepTinEntity;
  *
  * <ul>
  *   <li>Giữ một bản Db trong bộ nhớ (cache đọc) — không bao giờ sửa trực tiếp sau khi công bố.</li>
- *   <li>Lệnh ghi: khoá app_state (SELECT … FOR UPDATE, tuần tự hoá mọi lệnh ghi kể cả nhiều instance) → nếu phiên bản
+ *   <li>Lệnh ghi: khoá ht_trang_thai (SELECT … FOR UPDATE, tuần tự hoá mọi lệnh ghi kể cả nhiều instance) → nếu phiên bản
  *       DB khác cache thì nạp lại → chạy nghiệp vụ trên BẢN SAO → so sánh với bản cũ để biết bản ghi thêm / sửa / xoá →
- *       ghi xuống MySQL theo thứ tự khoá ngoại trong cùng transaction → tăng phiên bản, ghi audit_log → commit rồi mới
+ *       ghi xuống MySQL theo thứ tự khoá ngoại trong cùng transaction → tăng phiên bản, ghi ht_nhat_ky → commit rồi mới
  *       công bố bản mới. Lệnh lỗi thì bản sao bị bỏ, DB rollback, cache giữ nguyên.</li>
  * </ul>
  */
@@ -122,7 +122,7 @@ public class DataStore {
    *
    * @param hanhDong tên lệnh cho nhật ký (VD "HDB.luu")
    * @param me id tài khoản thực hiện (null với tác vụ hệ thống)
-   * @param ip địa chỉ IP client (ghi audit_log)
+   * @param ip địa chỉ IP client (ghi ht_nhat_ky)
    */
   public <R> Result<R> execute(String hanhDong, String me, String ip, Command<R> cmd) {
     return execute(hanhDong, me, ip, true, cmd);
@@ -152,7 +152,7 @@ public class DataStore {
   private final ThreadLocal<List<String>> xoaSauCommit = ThreadLocal.withInitial(ArrayList::new);
 
   private <R> Result<R> run(String hanhDong, String me, String ip, boolean tangPhienBan, Command<R> cmd) {
-    AppStateEntity st = repos.appState().lockState().orElseThrow(() -> new IllegalStateException("Thiếu dòng app_state"));
+    AppStateEntity st = repos.appState().lockState().orElseThrow(() -> new IllegalStateException("Thiếu dòng ht_trang_thai"));
     Db base = cache;
     if (base == null || base.getVersion() != st.getPhienBan()) {
       base = mapper.loadAll();
@@ -173,7 +173,7 @@ public class DataStore {
       // Đổi khoá chính bằng SQL (khoá ngoại ON UPDATE CASCADE đổi theo ở mọi bảng con), rồi bỏ entity cũ khỏi bộ nhớ Hibernate.
       em.flush();
       em.clear();
-      for (String[] dm : c.doiMaHang()) jdbc.update("UPDATE loai_hang SET id = ? WHERE id = ?", dm[1], dm[0]);
+      for (String[] dm : c.doiMaHang()) jdbc.update("UPDATE kho_loai_hang SET id = ? WHERE id = ?", dm[1], dm[0]);
       st = repos.appState().lockState().orElseThrow();
     }
     persist(base, work, c, me, now);
@@ -300,8 +300,8 @@ public class DataStore {
   private void xoaTep(Ctx c) {
     for (String id : c.tepCanXoa()) {
       Integer dung = jdbc.queryForObject("""
-          SELECT (SELECT COUNT(*) FROM ho_so_tep WHERE tep_id = ?) + (SELECT COUNT(*) FROM phieu_thu_chi_tep WHERE tep_id = ?)
-               + (SELECT COUNT(*) FROM chi_phi_hd_tep WHERE tep_id = ?) + (SELECT COUNT(*) FROM hoa_don WHERE tep_id = ?)
+          SELECT (SELECT COUNT(*) FROM ht_ho_so_tep WHERE tep_id = ?) + (SELECT COUNT(*) FROM kt_phieu_thu_chi_tep WHERE tep_id = ?)
+               + (SELECT COUNT(*) FROM kt_chi_phi_hd_tep WHERE tep_id = ?) + (SELECT COUNT(*) FROM ht_hoa_don WHERE tep_id = ?)
           """, Integer.class, id, id, id, id);
       if (dung != null && dung > 0) continue;
       TepTinEntity t = repos.tepTin().findById(id).orElse(null);
