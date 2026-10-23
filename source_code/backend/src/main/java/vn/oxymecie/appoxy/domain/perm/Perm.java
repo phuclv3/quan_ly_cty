@@ -33,6 +33,7 @@ public enum Perm {
   khoDanhMuc("KHO-01", "Kho", "Danh mục kho & loại hàng", "", Level.view, Level.edit),
   khoPhieuTay("KHO-06", "Kho", "Phiếu nhập / xuất điều chỉnh", "Phiếu nhập tay — điều chỉnh", Level.view, Level.edit),
   khoTon("KHO-09", "Kho", "Tồn kho & giá trị theo HĐ", "", Level.view),
+  inTem("KHO-10", "Kho", "In tem bình khí", "Nhập thông tin và xuất PDF tem dán bình khí (không lưu dữ liệu)", Level.view),
   phuTai("PT-01", "Phú Tài", "HĐ Phú Tài & quỹ ảo", "", Level.view, Level.edit),
   phuTaiTyLe("PT-06", "Phú Tài", "Sửa tỷ lệ chia lợi nhuận", "Tỷ lệ thuế / Phú Tài giữ theo từng HĐ", Level.edit),
   viec("TD-01", "Việc được giao", "Giao việc / Đặt lịch", "Sửa của mình: chỉ việc mình giao hoặc được giao; Sửa: thấy mọi việc", Level.own, Level.edit),

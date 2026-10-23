@@ -68,7 +68,7 @@ public class PhuTaiService {
     Set<String> seen = new HashSet<>();
     for (ChiPhiPT x : p.getChiPhi()) {
       if (x.getSoTien() < 0) throw ApiException.invalid("Chi phí phải ≥ 0");
-      if (!List.of("Vận chuyển", "Hải quan", "Khác").contains(x.getLoai())) throw ApiException.invalid("Loại chi phí Phú Tài không hợp lệ");
+      if (x.getLoai() == null || !List.of("Vận chuyển", "Hải quan", "Khác").contains(x.getLoai())) throw ApiException.invalid("Loại chi phí Phú Tài không hợp lệ");
       if (!Ids.safe(x.getId()) || !seen.add(x.getId())) x.setId(c.uid("CPPT"));
     }
     for (DotKHTraPT x : p.getDotKH()) if (x.getSoTien() < 0 || Texts.blank(x.getNgay())) throw ApiException.invalid("Mỗi đợt khách hàng trả cần Ngày và Số tiền ≥ 0");
@@ -80,13 +80,13 @@ public class PhuTaiService {
     for (DotPTTraNCC x : p.getDotTraNCC()) {
       if (Texts.blank(x.getHdmId())) throw ApiException.invalid("Dòng \"Phú Tài trả NCC\" chưa chọn HĐ mua");
       if (x.getSoTien() < 0 || Texts.blank(x.getNgay())) throw ApiException.invalid("Dòng \"Phú Tài trả NCC\" cần Ngày và Số tiền ≥ 0");
-      if (!LOAI_TIEN.contains(x.getLoaiTien())) throw ApiException.invalid("Loại tiền không hợp lệ");
+      if (x.getLoaiTien() == null || !LOAI_TIEN.contains(x.getLoaiTien())) throw ApiException.invalid("Loại tiền không hợp lệ");
       if (!"VNĐ".equals(x.getLoaiTien()) && !(x.getTyGia() > 0)) throw ApiException.invalid("Dòng \"Phú Tài trả NCC\" bằng ngoại tệ cần Tỷ giá > 0");
       if (!Ids.safe(x.getId()) || !seen.add(x.getId())) x.setId(c.uid("TN"));
     }
     seen.clear();
     for (DoiChieuPT x : p.getDoiChieu()) {
-      if (!LOAI_TIEN.contains(x.getLoaiTien())) throw ApiException.invalid("Loại tiền không hợp lệ");
+      if (x.getLoaiTien() == null || !LOAI_TIEN.contains(x.getLoaiTien())) throw ApiException.invalid("Loại tiền không hợp lệ");
       if (!"VNĐ".equals(x.getLoaiTien()) && x.getSoTienNguyenTe() > 0 && !(x.getTyGia() > 0))
         throw ApiException.invalid("Dòng đối chiếu bằng ngoại tệ cần Tỷ giá > 0");
       if (x.getSoTienVND() < 0 || x.getSoTienNguyenTe() < 0) throw ApiException.invalid("Số tiền đối chiếu không âm");

@@ -489,7 +489,7 @@ public final class Calc {
     for (HopDongMua m : db.getHopDongMua())
       if (p.getHdMua().contains(m.getId()) && !TrangThai.HUY.equals(m.getTrangThai())) giaMua += hdmTong(m);
     double cp = 0;
-    for (ChiPhiPT c : p.getChiPhi()) if (List.of("Vận chuyển", "Hải quan", "Khác").contains(c.getLoai())) cp += c.getSoTien();
+    for (ChiPhiPT c : p.getChiPhi()) if (c.getLoai() != null && List.of("Vận chuyển", "Hải quan", "Khác").contains(c.getLoai())) cp += c.getSoTien();
     double giaDauVao = giaMua + cp;
     double lnTruoc = p.getTruocVAT() - giaDauVao;
     boolean loi = lnTruoc > 0;

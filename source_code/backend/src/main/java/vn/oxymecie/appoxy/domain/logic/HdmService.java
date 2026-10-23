@@ -91,7 +91,7 @@ public class HdmService {
       if (Texts.blank(d.getLoaiHang())) throw ApiException.invalid("Có dòng hàng chưa chọn Loại hàng");
       if (c.loaiHang(d.getLoaiHang()) == null) throw ApiException.invalid("Không có mã " + d.getLoaiHang());
       if (!(d.getSoLuong() > 0)) throw ApiException.invalid("Số lượng mỗi dòng phải > 0");
-      if (!LOAI_TIEN.contains(d.getLoaiTien())) throw ApiException.invalid("Loại tiền không hợp lệ");
+      if (d.getLoaiTien() == null || !LOAI_TIEN.contains(d.getLoaiTien())) throw ApiException.invalid("Loại tiền không hợp lệ");
       if (!"VNĐ".equals(d.getLoaiTien()) && !(d.getTyGia() > 0)) throw ApiException.invalid("Dòng ngoại tệ cần Tỷ giá");
       if ("VNĐ".equals(d.getLoaiTien())) d.setTyGia(1);
       if (d.getDonGia() < 0) throw ApiException.invalid("Đơn giá không âm");
@@ -158,7 +158,7 @@ public class HdmService {
     HopDongMua m = c.hdm(id);
     if (m == null) throw ApiException.notFound("Không tìm thấy HĐ");
     c.require(Perm.hdm);
-    if (!TRANG_THAI.contains(toi)) throw ApiException.invalid("Trạng thái không hợp lệ");
+    if (toi == null || !TRANG_THAI.contains(toi)) throw ApiException.invalid("Trạng thái không hợp lệ");
     if (hdmKhoa(c, m)) throw ApiException.conflict("HĐ đã khoá (Đã tất toán, Huỷ hoặc đang chờ xoá)");
     // Trạng thái nhận hàng do phiếu nhập tự chuyển — tay chỉ chuyển Đã ký / Đã tất toán / Huỷ.
     if (!List.of(TrangThai.DA_KY, TrangThai.DA_TAT_TOAN, TrangThai.HUY).contains(toi)) throw ApiException.conflict("Trạng thái \"" + TrangThai.nhan(toi) + "\" do nhập kho tự chuyển");

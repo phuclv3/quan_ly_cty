@@ -103,7 +103,7 @@ public final class Visibility {
   public Object view(String key, Object row) {
     return switch (key) {
       case "taiKhoan" -> taiKhoan((TaiKhoan) row);
-      case "hopDongBan" -> hdb.contains(((HopDongBan) row).getId()) ? row : null;
+      case "hopDongBan" -> hdb.contains(((HopDongBan) row).getId()) ? hdbTheoQuyenTien((HopDongBan) row) : null;
       case "hopDongMua" -> hdm.contains(((HopDongMua) row).getId()) ? row : null;
       case "hopDongPhuTai" -> pt.contains(((HopDongPhuTai) row).getId()) ? row : null;
       case "dongTienPT" -> c.canView(Perm.phuTai) ? row : null;
@@ -146,6 +146,30 @@ public final class Visibility {
       case "HDM" -> hdm.contains(id);
       default -> pt.contains(id);
     };
+  }
+
+  /** Không có quyền xem giá trị HĐ bán (HDB-07, vd. Thủ kho) → bản sao đã xoá mọi số tiền; số lượng hàng giữ nguyên để giao hàng. */
+  private HopDongBan hdbTheoQuyenTien(HopDongBan h) {
+    if (c.canView(Perm.hdbTab3)) return h;
+    HopDongBan x = new HopDongBan();
+    x.setId(h.getId());
+    x.setSoHD(h.getSoHD());
+    x.setMaKH(h.getMaKH());
+    x.setTenKH(h.getTenKH());
+    x.setMst(h.getMst());
+    x.setDiaChi(h.getDiaChi());
+    x.setNgayKy(h.getNgayKy());
+    x.setNgayHieuLuc(h.getNgayHieuLuc());
+    x.setTrangThai(h.getTrangThai());
+    x.setSale(h.getSale());
+    x.setGhiChu(h.getGhiChu());
+    x.setCoTamUng(h.getCoTamUng());
+    x.setLyDoHuy(h.getLyDoHuy());
+    x.setTaoLuc(h.getTaoLuc());
+    x.setLaImport(h.getLaImport());
+    if (h.getDongHang() != null)
+      x.setDongHang(h.getDongHang().stream().map(d -> new DongHangBan(d.getId(), d.getLoaiHang(), d.getTenHang(), d.getSoLuong(), 0, 0, d.getGhiChu())).toList());
+    return x;
   }
 
   private TaiKhoan taiKhoan(TaiKhoan t) {

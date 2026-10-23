@@ -46,7 +46,7 @@ public class DuyetXoaService {
 
   public YeuCauXoa guiYeuCauXoa(Ctx c, String loai, String maDoiTuong, String moTa, String lyDo) {
     if (c.level(Perm.duyetXoa) == Level.none) throw ApiException.forbidden("Tài khoản của bạn không gửi được yêu cầu xoá");
-    if (!LOAI.contains(loai)) throw ApiException.invalid("Loại đối tượng không hợp lệ");
+    if (loai == null || !LOAI.contains(loai)) throw ApiException.invalid("Loại đối tượng không hợp lệ");
     if (Texts.blank(lyDo)) throw ApiException.invalid("Cần nhập lý do xoá");
     if (!tonTai(c, loai, maDoiTuong)) throw ApiException.notFound("Không tìm thấy bản ghi cần xoá");
     if (c.dangChoXoa(loai, maDoiTuong)) throw ApiException.conflict("Bản ghi này đang có yêu cầu xoá chờ duyệt");
@@ -299,10 +299,10 @@ public class DuyetXoaService {
         if (p == null) return;
         p.setTrangThai(TrangThai.DA_HUY);
         if ("Tự động HĐ Mua".equals(p.getNguonGoc()) && p.getHdId() != null) hdm.capNhatTrangThaiNhan(c, p.getHdId());
-        if ("Tự động HĐ Bán".equals(p.getNguonGoc()) && p.getHdId() != null) {
+        if ("Xuất".equals(p.getLoai()) && p.getHdId() != null && c.hdb(p.getHdId()) != null) {
           HopDongBan h = c.hdb(p.getHdId());
           boolean conGiao = d.getPhieuKho().stream().anyMatch(x -> p.getHdId().equals(x.getHdId())
-              && "Tự động HĐ Bán".equals(x.getNguonGoc()) && TrangThai.HIEU_LUC.equals(x.getTrangThai()));
+              && "Xuất".equals(x.getLoai()) && TrangThai.HIEU_LUC.equals(x.getTrangThai()));
           if (h != null && TrangThai.DANG_GIAO_HANG.equals(h.getTrangThai()) && !conGiao) h.setTrangThai(TrangThai.HIEU_LUC);
         }
       }

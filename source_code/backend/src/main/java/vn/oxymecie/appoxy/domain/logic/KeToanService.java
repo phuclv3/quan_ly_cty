@@ -98,7 +98,7 @@ public class KeToanService {
     if (!isNew && cu == null) throw ApiException.notFound("Không tìm thấy phiếu");
     if (!phieuSuaDuoc(c, cu != null ? cu : p, isNew))
       throw ApiException.conflict("Phiếu này không sửa được (đã gửi duyệt, đã duyệt hoặc đang chờ xoá)");
-    if (!LOAI_PHIEU.contains(p.getLoai())) throw ApiException.invalid("Loại phiếu không hợp lệ");
+    if (p.getLoai() == null || !LOAI_PHIEU.contains(p.getLoai())) throw ApiException.invalid("Loại phiếu không hợp lệ");
     if (Texts.blank(p.getNgayLap())) throw ApiException.invalid("Chưa có Ngày lập");
     if (p.getSoTienThu() < 0 || p.getSoTienChi() < 0 || (p.getSoTienThucChi() != null && p.getSoTienThucChi() < 0))
       throw ApiException.invalid("Số tiền không âm");

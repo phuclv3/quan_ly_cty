@@ -16,6 +16,7 @@ import vn.oxymecie.appoxy.domain.calc.Calc;
 import vn.oxymecie.appoxy.domain.calc.Calc.DongLo;
 import vn.oxymecie.appoxy.domain.model.DongKiemKe;
 import vn.oxymecie.appoxy.domain.model.DongPhieuKho;
+import vn.oxymecie.appoxy.domain.model.HopDongBan;
 import vn.oxymecie.appoxy.domain.model.HopDongMua;
 import vn.oxymecie.appoxy.domain.model.KiemKe;
 import vn.oxymecie.appoxy.domain.model.PhieuKho;
@@ -153,6 +154,11 @@ public class KhoService {
         c.me(), TrangThai.HIEU_LUC, Texts.trimToNull(p.ghiChu()), dong, nhap ? Texts.trimToNull(p.soHoaDon()) : null, nhap ? ncc : null,
         Texts.emptyToNull(p.kiemKeId()));
     Ctx.upsert(c.db().getPhieuKho(), out, PhieuKho::getId);
+    // Thủ kho xuất hàng cho HĐ bán ở màn Kho → HĐ bán tự sang "Đang giao hàng" (như ghi nhận giao hàng ở HĐ bán).
+    if (!nhap && hdId != null) {
+      HopDongBan h = c.hdb(hdId);
+      if (h != null && TrangThai.HIEU_LUC.equals(h.getTrangThai())) h.setTrangThai(TrangThai.DANG_GIAO_HANG);
+    }
     return out;
   }
 

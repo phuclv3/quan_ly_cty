@@ -18,7 +18,7 @@ import vn.oxymecie.appoxy.domain.logic.TemBinhKhiPdf;
 import vn.oxymecie.appoxy.domain.perm.Perm;
 import vn.oxymecie.appoxy.web.dto.TemBinhKhiReq;
 
-/** In tem dán bình khí: nhập thông tin → PDF. Không lưu gì vào dữ liệu; cần quyền xem tồn kho (KHO-09). */
+/** In tem dán bình khí: nhập thông tin → PDF. Không lưu gì vào dữ liệu; cần quyền In tem bình khí (KHO-10). */
 @Tag(name = "Tem bình khí", description = "Tạo PDF tem dán bình khí từ thông tin nhập")
 @RestController
 @RequestMapping("/api/xuat")
@@ -35,7 +35,7 @@ public class TemBinhKhiController {
   @PostMapping("/tem-binh-khi")
   public ResponseEntity<byte[]> tem(@RequestBody TemBinhKhiReq r) {
     Ctx c = new Ctx(cmd.raw(), Cmd.user().id(), Clock.systemUTC(), null, null);
-    if (!c.canView(Perm.khoTon)) throw ApiException.forbidden("Cần quyền xem tồn kho (KHO-09) để in tem");
+    if (!c.canView(Perm.inTem)) throw ApiException.forbidden("Cần quyền In tem bình khí (KHO-10) để in tem");
     byte[] b = pdf.render(r);
     String ten = "tem-" + java.util.Objects.toString(r.soSeri(), "").trim().replaceAll("[\\\\/:*?\"<>|\\s]+", "-") + ".pdf";
     return ResponseEntity.ok().contentType(MediaType.APPLICATION_PDF)

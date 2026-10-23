@@ -25,7 +25,7 @@ public class HoSoService {
 
   /** Kiểm tra chủ hồ sơ tồn tại và quyền sửa (Sale "của mình" chỉ HĐ bán mình phụ trách). */
   private void quyen(Ctx c, String chu, String chuId) {
-    if (!CHU.contains(chu)) throw ApiException.invalid("Loại hợp đồng không hợp lệ");
+    if (chu == null || !CHU.contains(chu)) throw ApiException.invalid("Loại hợp đồng không hợp lệ");
     String owner = null;
     switch (chu) {
       case "HDB" -> {
@@ -51,7 +51,7 @@ public class HoSoService {
   /** Gắn các tệp đã tải lên (POST /api/tep) vào hồ sơ theo loại; hồ sơ tự tích "Đã lưu". */
   public HoSo uploadHoSo(Ctx c, String chu, String chuId, String loai, List<String> fileIds) {
     quyen(c, chu, chuId);
-    if (!LOAI.contains(loai)) throw ApiException.invalid("Loại hồ sơ không hợp lệ");
+    if (loai == null || !LOAI.contains(loai)) throw ApiException.invalid("Loại hồ sơ không hợp lệ");
     if (fileIds == null || fileIds.isEmpty()) throw ApiException.invalid("Chưa chọn tệp");
     List<FileRef> refs = new ArrayList<>();
     for (String id : fileIds) {
@@ -73,7 +73,7 @@ public class HoSoService {
   /** Tích tay Đã lưu (bản giấy — bắt buộc ghi chú) / Đã scan. */
   public HoSo setHoSoCo(Ctx c, String chu, String chuId, String loai, Boolean daLuu, Boolean daScan, String ghiChu) {
     quyen(c, chu, chuId);
-    if (!LOAI.contains(loai)) throw ApiException.invalid("Loại hồ sơ không hợp lệ");
+    if (loai == null || !LOAI.contains(loai)) throw ApiException.invalid("Loại hồ sơ không hợp lệ");
     HoSo cu = hoSoCua(c, chu, chuId, loai);
     HoSo h = cu != null ? cu : new HoSo(c.uid("HS"), chu, chuId, loai, new ArrayList<>(), false, false, null);
     if (daLuu != null) h.setDaLuu(daLuu);

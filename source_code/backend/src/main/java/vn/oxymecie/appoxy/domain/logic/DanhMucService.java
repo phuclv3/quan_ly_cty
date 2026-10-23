@@ -158,8 +158,8 @@ public class DanhMucService {
     NguonTien cu = c.nguon(n.getId());
     if (isNew && cu != null) throw ApiException.conflict("Mã nguồn " + n.getId() + " đã có");
     if (!isNew && cu == null) throw ApiException.notFound("Không tìm thấy nguồn tiền");
-    if (!List.of("Tiền mặt", "Ngân hàng").contains(n.getLoai())) throw ApiException.invalid("Loại nguồn tiền không hợp lệ");
-    if (!List.of(TrangThai.DANG_DUNG, TrangThai.NGUNG).contains(n.getTrangThai())) throw ApiException.invalid("Trạng thái không hợp lệ");
+    if (n.getLoai() == null || !List.of("Tiền mặt", "Ngân hàng").contains(n.getLoai())) throw ApiException.invalid("Loại nguồn tiền không hợp lệ");
+    if (n.getTrangThai() == null || !List.of(TrangThai.DANG_DUNG, TrangThai.NGUNG).contains(n.getTrangThai())) throw ApiException.invalid("Trạng thái không hợp lệ");
     if (cu != null && nguonDaPhatSinh(c, n.getId())
         && (cu.getSoDuDauKy() != n.getSoDuDauKy() || !Objects.equals(cu.getNgayDauKy(), n.getNgayDauKy())))
       throw ApiException.invalid("Nguồn đã có phiếu được duyệt — không sửa Số dư đầu kỳ / Ngày đầu kỳ");
@@ -169,7 +169,7 @@ public class DanhMucService {
   public void saveLoaiChiPhi(Ctx c, LoaiChiPhi l, boolean isNew) {
     c.require(Perm.nguonTien);
     if (Texts.blank(l.getTen())) throw ApiException.invalid("Chưa nhập tên loại chi phí");
-    if (!List.of("Vận hành", "Thực hiện HĐ").contains(l.getNhom())) throw ApiException.invalid("Nhóm chi phí không hợp lệ");
+    if (l.getNhom() == null || !List.of("Vận hành", "Thực hiện HĐ").contains(l.getNhom())) throw ApiException.invalid("Nhóm chi phí không hợp lệ");
     LoaiChiPhi cu = isNew ? null : c.lcp(l.getId());
     if (!isNew && cu == null) throw ApiException.notFound("Không tìm thấy loại chi phí");
     if (isNew) {
@@ -205,7 +205,7 @@ public class DanhMucService {
     if (!Ids.safe(l.getId())) throw ApiException.invalid("Mã hàng chỉ gồm chữ, số, gạch, chấm (tối đa 40 ký tự)");
     if (isNew && c.loaiHang(l.getId()) != null) throw ApiException.conflict("Mã " + l.getId() + " đã có");
     if (!isNew && c.loaiHang(l.getId()) == null) throw ApiException.notFound("Không có mã " + l.getId());
-    if (!NHOM_HANG.contains(l.getNhom())) throw ApiException.invalid("Nhóm hàng không hợp lệ");
+    if (l.getNhom() == null || !NHOM_HANG.contains(l.getNhom())) throw ApiException.invalid("Nhóm hàng không hợp lệ");
     if (l.getThuocTinh() == null) l.setThuocTinh(new ArrayList<>());
     Ctx.upsert(c.db().getLoaiHang(), l, LoaiHang::getId);
   }

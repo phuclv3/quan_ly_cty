@@ -6,6 +6,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -86,7 +87,18 @@ public class XuatController {
   }
 
   private static String text(Object v) {
-    return v == null ? "" : v instanceof Number n ? Money.num(n.doubleValue()) : String.valueOf(v);
+    if (v == null) return "";
+    if (v instanceof Number n) return Money.num(n.doubleValue());
+    String t = String.valueOf(v);
+    // Chống CSV injection: ô chữ bắt đầu bằng = + - @ (hoặc tab/CR) bị Excel hiểu là công thức → thêm ' phía trước. Số dạng chữ (vd "-1.234,5") giữ nguyên.
+    return t.matches("(?s)[=+\\-@\\t\\r].*") && !t.matches("[+-]?[0-9][0-9.,]*%?") ? "'" + t : t;
+  }
+
+  /** Chuẩn hoá đường dẫn trong ZIP: đổi '\\' thành '/', bỏ phần tử rỗng, "." và ".." (chặn zip-slip). */
+  static String chuanHoaDuongDan(String s) {
+    List<String> ph = new ArrayList<>();
+    for (String x : s.replace('\\', '/').split("/")) if (!x.isEmpty() && !x.equals(".") && !x.equals("..")) ph.add(x);
+    return String.join("/", ph);
   }
 
   @Operation(summary = "Xuất CSV từ bảng đang xem")
@@ -195,7 +207,8 @@ public class XuatController {
         if (e == null || (!u.id().equals(e.getNguoiUpload()) && !HoSoController.duocXem(db, m.fileId()))) continue;
         var p = storage.path(e.getDuongDan());
         if (!Files.isRegularFile(p)) continue;
-        String path = m.path() == null || m.path().isBlank() ? e.getTen() : m.path().replace('\\', '/').replaceAll("^/+|\\.\\./", "");
+        String path = chuanHoaDuongDan(m.path() == null || m.path().isBlank() ? e.getTen() : m.path());
+        if (path.isEmpty()) path = "tep";
         while (!ten.add(path)) path = "_" + path;
         put(zo, path, Files.readAllBytes(p));
         n++;

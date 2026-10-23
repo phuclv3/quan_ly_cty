@@ -48,8 +48,8 @@ mvn spring-boot:run
 # PowerShell
 $env:SPRING_PROFILES_ACTIVE='dev'; $env:DB_PASSWORD='dev_local_pw'; mvn spring-boot:run
 ```
-- API: `http://localhost:8080/api` · Health: `/actuator/health`
-- **Swagger UI: `http://localhost:8080/swagger-ui.html`** — gọi `POST /api/auth/login`, chép `token`, bấm **Authorize**.
+- API: `http://localhost:1997/api` · Health: `/actuator/health`
+- **Swagger UI: `http://localhost:1997/swagger-ui.html`** — gọi `POST /api/auth/login`, chép `token`, bấm **Authorize**.
 
 ### Môi trường thật (không dữ liệu mẫu)
 Bỏ `SPRING_PROFILES_ACTIVE`, đặt `DB_*` riêng, `APP_BOOTSTRAP_ADMIN_EMAIL` + `APP_BOOTSTRAP_ADMIN_PASSWORD` cho lần chạy đầu
@@ -78,7 +78,7 @@ Riêng `hongha@ / linhchi@ / sales3@oxymecie.vn` (Sale — bắt đổi mật kh
 ```bash
 cd source_code/frontend
 npm install
-npm start            # http://localhost:4200 — proxy.conf.json chuyển /api → http://localhost:8080
+npm start            # http://localhost:4200 — gọi thẳng backend `http://localhost:1997/api` theo `src/environments/environment.ts` (không dùng proxy)
 ```
 Triển khai: build `npm run build`, phục vụ `dist/frontend/browser` cùng domain với API (reverse proxy `/api` → backend),
 hoặc khác domain thì thêm domain đó vào `APP_CORS_ORIGINS`.
@@ -123,6 +123,6 @@ vn.oxymecie.appoxy
 | `Communications link failure` khi khởi động | MySQL chưa chạy / sai `DB_URL` |
 | `Access denied for user` | Sai `DB_USERNAME` / `DB_PASSWORD` |
 | Flyway `Validate failed: Migration checksum mismatch` | Đã sửa tệp migration đã áp — hoàn tác, tạo migration mới; DB dev có thể xoá schema rồi chạy lại |
-| Frontend báo "Không kết nối được máy chủ" | Backend chưa chạy ở 8080, hoặc chạy frontend không qua `npm start` (proxy) |
+| Frontend báo "Không kết nối được máy chủ" | Backend chưa chạy ở 1997 (hoặc `SERVER_PORT` đã đổi), hoặc `apiUrl` trong `environment.ts` trỏ sai |
 | Lỗi CORS trên trình duyệt | Thêm origin frontend vào `APP_CORS_ORIGINS` |
 | Chữ tiếng Việt lỗi trong MySQL CLI | Dùng `mysql --default-character-set=utf8mb4`; dữ liệu lưu utf8mb4 |
