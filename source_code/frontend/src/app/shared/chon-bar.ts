@@ -7,14 +7,14 @@ import { ChonNhieu } from './chon-nhieu';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (cn().chon().size) {
-      <div class="note info bar">
+      <div class="note info chon-hang">
         <b>Đã chọn {{ cn().chon().size }} {{ ten() }}</b>
         <button type="button" class="btn sm danger" (click)="xoa.emit()">Xoá {{ cn().chon().size }} đã chọn</button>
         <button type="button" class="btn sm quiet" (click)="cn().xoa()">Bỏ chọn</button>
       </div>
     }
   `,
-  styles: `.bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 12px; }`,
+  styles: `.chon-hang { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 12px; }`,
 })
 export class ChonBar {
   readonly cn = input.required<ChonNhieu>();
