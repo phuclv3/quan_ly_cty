@@ -263,6 +263,9 @@ interface TraForm {
           @if (!m.thuocPhuTai && store.canEdit('hdmNhapKho') && !isNew() && !nhapDuoc() && trangThai() === 'Nháp') {
             <div class="note info">Chuyển HĐ sang “Đã ký” để nhập kho.</div>
           }
+          @if (choHoaDon()) {
+            <div class="note warn">Bắt buộc có hoá đơn mới nhập kho — chọn <b>NCC đã xuất hoá đơn: Đã</b> ở <a class="linkish" (click)="setTab('4')">Tab 4</a> rồi Lưu.</div>
+          }
           <div class="tbl-wrap">
             <table class="tbl freeze compact">
               <thead>
@@ -480,7 +483,7 @@ interface TraForm {
                   <option value="Đã" [selected]="m.xuatHoaDon === 'Đã'">Đã</option>
                 </select>
                 @if (m.xuatHoaDon === 'Đã') { <span class="hint">Nhập Số + Ngày hoá đơn ở <a class="linkish" (click)="setTab('2')">Tab 2</a>.</span> }
-                @else if (!m.thuocPhuTai) { <span class="hint">Bắt buộc có hoá đơn mới <b>Nhập kho</b> — nhập kho kèm Số hoá đơn NCC sẽ tự chuyển "Đã".</span> }
+                @else if (!m.thuocPhuTai) { <span class="hint">Bắt buộc chọn "Đã" (và Lưu) mới <b>Nhập kho</b> được.</span> }
               </div>
             </div>
             <table class="tbl compact">
@@ -492,7 +495,7 @@ interface TraForm {
                     <td>
                       <label class="check-row" [attr.title]="tuDong ? 'Tự tích khi nhập đủ hàng (Tab 3)' : null">
                         <input type="checkbox" [checked]="x.xong" [disabled]="!edit4() || tuDong" (change)="tichCL(i, $any($event.target).checked)" /> {{ x.ten }}
-                        @if (tuDong) { <span class="sub muted">(tự động theo phiếu nhập · cần hoá đơn NCC)</span> }
+                        @if (tuDong) { <span class="sub muted">(tự động theo phiếu nhập · cần "NCC đã xuất hoá đơn: Đã")</span> }
                       </label>
                     </td>
                     <td><input type="date" [value]="x.ngay ?? ''" [disabled]="!edit4() || !x.xong || tuDong" (input)="setCL(i, $any($event.target).value || undefined)" [attr.aria-label]="'Ngày ' + x.ten" /></td>
@@ -725,7 +728,10 @@ export class HdmDetail {
   protected readonly canSave = computed(() => this.edit() || this.edit4());
   protected readonly soDotToiDa = computed(() => this.store.cauHinh().SO_DOT_TOI_DA);
 
-  protected readonly nhapDuoc = computed(() => {
+  protected readonly nhapDuoc = computed(() => this.nhapDuocTruHD() && this.saved()?.xuatHoaDon === 'Đã');
+  /** Đủ điều kiện nhập kho, chỉ còn thiếu "NCC đã xuất hoá đơn: Đã". */
+  protected readonly choHoaDon = computed(() => this.nhapDuocTruHD() && this.saved()?.xuatHoaDon !== 'Đã');
+  private readonly nhapDuocTruHD = computed(() => {
     const s = this.saved();
     return (
       !!s &&

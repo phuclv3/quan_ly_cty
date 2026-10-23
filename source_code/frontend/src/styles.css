@@ -641,7 +641,7 @@ app-money input { width: 100%; }
  */
 .tbl td > input:not([type='checkbox']):not([type='radio']), .tbl td > textarea { min-width: 120px; }
 .tbl td > input[type='number'] { min-width: 90px; }
-.tbl td > input[type='date'] { min-width: 150px; }
+.tbl td > input.ngay { min-width: 130px; }
 .tbl td > select { min-width: 100px; }
 /* Ô chữ kéo giãn được trong bảng (VD Tên hàng trên HĐ): 1 dòng, tự xuống dòng khi dài, kéo góc để giãn cả 2 chiều. */
 .tbl td > textarea.keo-gian { display: block; resize: both; height: 40px; min-height: 40px; padding: 7px 12px; line-height: 1.5; vertical-align: middle; }
@@ -1036,8 +1036,17 @@ tr.hilite > td { background: var(--warn-bg) !important; }
 .th-han { min-width: 420px; }
 .han-tt { display: flex; align-items: center; gap: 6px; min-width: 420px; }
 .han-tt select { flex: 0 1 150px; min-width: 120px; width: auto; }
-.han-tt input[type='date'] { flex: 0 0 auto; min-width: 160px; }
+.han-tt input.ngay { flex: 0 0 auto; width: 130px; min-width: 130px; }
 .han-tt .cong { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; color: var(--ink-3); flex: 0 0 auto; }
 .han-tt .cong input { width: 84px; min-width: 84px; }
 .han-tt .kq { font-size: 13px; color: var(--ink-3); white-space: nowrap; }
 .han-tt .kq.co { color: var(--ink); font-weight: 600; }
+
+/* Ô ngày dd/mm/yyyy (shared/ngay-vi.ts): ô chữ + nút lịch là ô date thật trong suốt đè lên icon. */
+input.ngay {
+  padding-right: 34px; font-variant-numeric: tabular-nums;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3.5' y='5' width='17' height='15.5' rx='2'/%3E%3Cpath d='M3.5 10h17M8 3v4M16 3v4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 10px center; background-size: 18px;
+}
+input.ngay-lich { position: fixed; width: 1px; height: 1px; padding: 0; border: 0; opacity: 0; pointer-events: none; }
+input.ngay:not(:disabled):not([readonly]) { cursor: text; }

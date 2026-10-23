@@ -5,6 +5,7 @@ import { ConfirmHost } from './shared/confirm';
 import { Modal } from './shared/ui-kit';
 import { Unsaved } from './shared/unsaved';
 import { applyLabels } from './shared/stack-table';
+import { batNgayVi } from './shared/ngay-vi';
 import { Auth } from './core/auth';
 import { Store } from './core/store';
 import { Ui } from './core/ui';
@@ -105,6 +106,7 @@ export class App {
     // MutationObserver; gom lần chạy theo khung hình để không chạy lại liên tục.
     const destroy = inject(DestroyRef);
     afterNextRender(() => {
+      destroy.onDestroy(batNgayVi());
       let queued = false;
       const run = () => {
         queued = false;

@@ -241,7 +241,7 @@ export class PhieuTayForm {
       : this.store
           .hdmVisible()
           .filter((m) => !m.thuocPhuTai)
-          .map((m) => ({ value: m.id, label: m.soHD || '(chưa có số)', hint: m.tenNCC })),
+          .map((m) => ({ value: m.id, label: m.soHD || '(chưa có số)', hint: m.xuatHoaDon === 'Đã' ? m.tenNCC : `${m.tenNCC} · NCC chưa xuất hoá đơn` })),
   );
   protected readonly coChungTu = computed(() => (this.f().loai === 'Nhập' ? !!this.f().soHoaDon.trim() : !!this.f().hdId));
   protected readonly tongNhap = computed(() => sum(this.f().nhap, (d) => d.soLuong * d.donGia));

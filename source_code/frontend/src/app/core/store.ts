@@ -1425,7 +1425,8 @@ export class Store {
     if (m.thuocPhuTai) return 'HĐ thuộc Phú Tài không nhập kho Oxy';
     if (m.trangThai === 'Nháp' || m.trangThai === 'Huỷ') return 'HĐ chưa ký hoặc đã huỷ';
     if (!o.kho) return 'Chưa chọn Vị trí kho';
-    if (!o.soHoaDon?.trim()) return 'Cần Số hoá đơn NCC — chưa có hoá đơn thì chưa nhập kho';
+    if (m.xuatHoaDon !== 'Đã') return 'NCC chưa xuất hoá đơn — chọn "NCC đã xuất hoá đơn: Đã" ở Tab 4 trước khi nhập kho';
+    if (!o.soHoaDon?.trim()) return 'Cần Số hoá đơn NCC';
     const db = this.db();
     const dong: DongPhieuKho[] = [];
     for (const x of o.dong) {
@@ -1456,8 +1457,6 @@ export class Store {
       dong,
     };
     this.upsert('phieuKho', p);
-    // Nhập kho kèm số hoá đơn → HĐ mua chuyển "Xuất hoá đơn: Đã".
-    if (m.xuatHoaDon !== 'Đã') this.upsert('hopDongMua', { ...m, xuatHoaDon: 'Đã' });
     this.capNhatTrangThaiNhan(hdmId);
     return null;
   }
@@ -1535,7 +1534,11 @@ export class Store {
     if (e) return e;
     if (!p.ngay) return 'Chưa chọn Ngày';
     if (!p.kho) return 'Chưa chọn Vị trí kho';
-    if (p.loai === 'Nhập' && p.hdId && !p.soHoaDon?.trim()) return 'Cần Số hoá đơn NCC — chưa có hoá đơn thì chưa nhập kho';
+    if (p.loai === 'Nhập' && p.hdId) {
+      const m = this.hdmById(p.hdId);
+      if (m && m.xuatHoaDon !== 'Đã') return `HĐ mua ${m.soHD || ''}: NCC chưa xuất hoá đơn — chọn "NCC đã xuất hoá đơn: Đã" ở HĐ mua trước khi nhập kho`;
+      if (!p.soHoaDon?.trim()) return 'Cần Số hoá đơn NCC';
+    }
     const coChungTu = p.loai === 'Nhập' ? !!p.soHoaDon?.trim() : !!p.hdId;
     if (!coChungTu && !p.lyDo?.trim()) return p.loai === 'Nhập' ? 'Cần Số hoá đơn NCC hoặc Lý do nhập' : 'Cần chọn HĐ bán hoặc ghi Lý do xuất';
     // Cấp số phiếu chỉ khi dữ liệu hợp lệ — lưu lỗi không làm nhảy số.

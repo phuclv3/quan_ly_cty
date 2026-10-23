@@ -81,7 +81,7 @@ function trong(f: HTMLElement): 'nhập' | 'chọn' | null {
     ':scope > input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), :scope > select, :scope > textarea, :scope > app-money > input, :scope > .pw > input',
   );
   if (!c || c.disabled || c.value.trim()) return null;
-  return c instanceof HTMLSelectElement || c.type === 'date' ? 'chọn' : 'nhập';
+  return c instanceof HTMLSelectElement || c.type === 'date' || c.classList.contains('ngay') ? 'chọn' : 'nhập';
 }
 
 /** "Số HĐ bán *" → "số HĐ bán"; bỏ phần trong ngoặc, giữ hoa chữ viết tắt (MST, HĐ…). */
