@@ -134,8 +134,8 @@ public class KeToanService {
       List<String> loi = loiPhieu(c, clean);
       if (!loi.isEmpty()) throw ApiException.invalid(String.join(" · ", loi));
     }
-    if (isNew) clean.setSoPhieu(c.nextSo(c.cauHinh().getTienToTC(), clean.getNgayLap()));
-    else clean.setSoPhieu(cu.getSoPhieu());
+    if (isNew) clean.setSoPhieu(c.nextSoThang(c.cauHinh().getTienToTC(), clean.getNgayLap()));
+    else clean.setSoPhieu(soPhieuTheoThang(c, cu.getSoPhieu(), clean.getNgayLap()));
     String truoc = cu == null ? TrangThai.NHAP : cu.getTrangThai();
     clean.setTrangThai(gui ? TrangThai.CHO_DUYET : TrangThai.NHAP);
     clean.setLyDoTuChoi(gui ? null : cu == null ? null : cu.getLyDoTuChoi());
@@ -143,6 +143,12 @@ public class KeToanService {
       clean.setLichSu(ghiLichSu(c, clean.getLichSu(), gui ? "Gửi duyệt" : "Lưu nháp", null));
     Ctx.upsert(c.db().getPhieuThuChi(), clean, PhieuThuChi::getId);
     return clean;
+  }
+
+  /** Số phiếu mang yyMM của Ngày lập: phiếu chưa duyệt đổi sang tháng khác thì cấp số mới của tháng đó (số cũ không tái dùng). */
+  private static String soPhieuTheoThang(Ctx c, String soCu, String ngayLap) {
+    String tienTo = c.cauHinh().getTienToTC() + vn.oxymecie.appoxy.common.Dates.yy(ngayLap) + ngayLap.substring(5, 7) + "-";
+    return soCu.startsWith(tienTo) ? soCu : c.nextSoThang(c.cauHinh().getTienToTC(), ngayLap);
   }
 
   static void kiemThamChieu(Ctx c, String nguon, String nguonDen, String lcp) {
@@ -182,6 +188,7 @@ public class KeToanService {
   public String duyetPhieu(Ctx c, List<String> ids) {
     c.require(Perm.soQuyDuyet, Level.approve);
     List<String> bo = new ArrayList<>();
+    java.util.Set<String> nguonChi = new java.util.LinkedHashSet<>();
     for (PhieuThuChi p : c.db().getPhieuThuChi()) {
       if (!ids.contains(p.getId()) || !TrangThai.CHO_DUYET.equals(p.getTrangThai())) continue;
       if (tuDuyet(c, p.getNguoiDeNghi())) {
@@ -192,8 +199,16 @@ public class KeToanService {
       p.setNguoiDuyet(c.me());
       p.setNgayDuyet(c.now());
       p.setLichSu(ghiLichSu(c, p.getLichSu(), "Duyệt", null));
+      if (!"Thu".equals(p.getLoai()) && p.getNguonTien() != null) nguonChi.add(p.getNguonTien());
     }
-    return bo.isEmpty() ? null : "Không tự duyệt phiếu của mình: " + String.join(", ", bo);
+    List<String> canhBao = new ArrayList<>();
+    if (!bo.isEmpty()) canhBao.add("Không tự duyệt phiếu của mình: " + String.join(", ", bo));
+    // Cảnh báo không chặn: phiếu chi / luân chuyển đã duyệt làm số dư nguồn tiền âm.
+    for (String id : nguonChi) {
+      var n = c.nguon(id);
+      if (n != null && Calc.soDuNguon(id, c.db(), "9999-12-31").soDu() < 0) canhBao.add("Nguồn tiền " + n.getTen() + " bị âm quỹ sau khi duyệt");
+    }
+    return canhBao.isEmpty() ? null : String.join(" · ", canhBao);
   }
 
   public void tuChoiPhieu(Ctx c, List<String> ids, String lyDo) {

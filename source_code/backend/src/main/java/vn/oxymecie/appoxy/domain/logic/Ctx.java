@@ -280,6 +280,15 @@ public final class Ctx {
     return k + "-" + String.format("%04d", n);
   }
 
+  /** Số phiếu thu chi: {tiền tố}{yyMM}-{nnn}, đánh số lại từ 001 mỗi tháng của ngày chứng từ. */
+  public String nextSoThang(String prefix, String ngay) {
+    String iso = ngay == null || ngay.isEmpty() ? today() : ngay;
+    String k = prefix + Dates.yy(iso) + iso.substring(5, 7);
+    int n = db.getBoDem().getOrDefault(k, 0) + 1;
+    db.getBoDem().put(k, n);
+    return k + "-" + String.format("%03d", n);
+  }
+
   /** Mã danh mục kế tiếp: tiền tố + 4 chữ số (store.nextMa). */
   public static String nextMa(String prefix, List<String> ids) {
     int max = 0;

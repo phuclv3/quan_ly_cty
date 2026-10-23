@@ -107,7 +107,7 @@ public class AuthService {
 	private DangNhap taoPhien(Ctx c, TaiKhoan t, Instant now, String ip, String userAgent) {
 		t.setSoLanSai(0);
 		t.setKhoaDen(null);
-		t.setLanDangNhapCuoi(Dates.iso(now));
+		// Đăng nhập thành công không ghi lan_dang_nhap_cuoi: ht_nhanvien không bị cập nhật mỗi lần đăng nhập.
 		String token = Tokens.moi();
 		PhienDangNhapEntity p = new PhienDangNhapEntity();
 		p.setTokenHash(Tokens.bam(token));
