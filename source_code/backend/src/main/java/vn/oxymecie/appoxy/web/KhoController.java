@@ -3,8 +3,13 @@ package vn.oxymecie.appoxy.web;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -19,6 +24,7 @@ import vn.oxymecie.appoxy.common.ApiException;
 import vn.oxymecie.appoxy.domain.calc.Calc;
 import vn.oxymecie.appoxy.domain.logic.Ctx;
 import vn.oxymecie.appoxy.domain.logic.KhoService;
+import vn.oxymecie.appoxy.domain.logic.PhieuKhoPdf;
 import vn.oxymecie.appoxy.domain.model.KiemKe;
 import vn.oxymecie.appoxy.domain.model.PhieuKho;
 import vn.oxymecie.appoxy.domain.perm.Perm;
@@ -30,10 +36,25 @@ import vn.oxymecie.appoxy.web.dto.Req;
 public class KhoController {
   private final Cmd cmd;
   private final KhoService svc;
+  private final PhieuKhoPdf pdf;
 
-  public KhoController(Cmd cmd, KhoService svc) {
+  public KhoController(Cmd cmd, KhoService svc, PhieuKhoPdf pdf) {
     this.cmd = cmd;
     this.svc = svc;
+    this.pdf = pdf;
+  }
+
+  @Operation(summary = "In phiếu nhập / xuất kho (PDF)", description = "Chỉ phiếu người dùng được thấy (theo phạm vi dữ liệu); số liệu lấy từ phiếu đã lưu.")
+  @GetMapping("/phieu-kho/{id}/pdf")
+  public ResponseEntity<byte[]> inPhieu(@PathVariable String id) {
+    PhieuKho p = cmd.snapshot().getPhieuKho().stream().filter(x -> x.getId().equals(id)).findFirst()
+        .orElseThrow(() -> ApiException.notFound("Không tìm thấy phiếu kho"));
+    Ctx c = new Ctx(cmd.raw(), Cmd.user().id(), java.time.Clock.systemUTC(), null, null);
+    byte[] b = pdf.render(c, p);
+    String ten = p.getSoPhieu().replaceAll("[\\\\/:*?\"<>|\\s]+", "-") + ".pdf";
+    return ResponseEntity.ok().contentType(MediaType.APPLICATION_PDF)
+        .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.inline().filename(ten, StandardCharsets.UTF_8).build().toString())
+        .header("X-Content-Type-Options", "nosniff").body(b);
   }
 
   @GetMapping("/phieu-kho")
