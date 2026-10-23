@@ -1031,3 +1031,13 @@ tr.hilite > td { background: var(--warn-bg) !important; }
 .tbl tr.click > td:first-child > b { color: var(--brand); }
 .tbl tr.click:hover > td:first-child > b { text-decoration: underline; text-underline-offset: 3px; }
 .hint a, .note a, .sub a { color: var(--brand); font-weight: 600; }
+
+/* HĐ mua – đợt TT NCC: ô Hạn trả = [mốc ▾] + [N] ngày, dòng dưới là hạn tính ra. */
+.th-han { min-width: 420px; }
+.han-tt { display: flex; align-items: center; gap: 6px; min-width: 420px; }
+.han-tt select { flex: 0 1 150px; min-width: 120px; width: auto; }
+.han-tt input[type='date'] { flex: 0 0 auto; min-width: 160px; }
+.han-tt .cong { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; color: var(--ink-3); flex: 0 0 auto; }
+.han-tt .cong input { width: 84px; min-width: 84px; }
+.han-tt .kq { font-size: 13px; color: var(--ink-3); white-space: nowrap; }
+.han-tt .kq.co { color: var(--ink); font-weight: 600; }

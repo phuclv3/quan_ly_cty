@@ -552,7 +552,12 @@ export interface DongHangMua {
 
 export interface DotTTMua {
   dot: number;
+  /** Tỷ lệ % trên Tổng giá trị HĐ mua — có thì Số tiền tự tính lại khi tổng đổi. */
+  tyLe?: number;
   soTien: number;
+  /** Hạn theo tiến độ: mốc ('Ngày ký' hoặc một mục checklist HĐ mua) + hanNgay ngày. Không có = nhập ngày tay. */
+  hanMoc?: string;
+  hanNgay?: number;
   han?: string;
   ngayTra?: string;
   soTienTra?: number;
@@ -568,7 +573,17 @@ export interface ChecklistItem {
   ngay?: string;
 }
 
-export const CHECKLIST_HDM = ['Đã đặt hàng', 'Đã thanh toán đợt 1', 'Hàng đã về', 'Đã kiểm định', 'Đã nhập kho'];
+export const CHECKLIST_HDM = ['Đặt hàng', 'Thanh toán Đợt 1', 'Hàng về', 'Kiểm định', 'Nhập kho'];
+/** Mục checklist tự tích theo phiếu nhập — chỉ nhập kho khi đã có hoá đơn NCC. */
+export const CL_NHAP_KHO = 'Nhập kho';
+/** Tên checklist cũ (trước v13) → tên mới. */
+export const CHECKLIST_HDM_CU: Record<string, string> = {
+  'Đã đặt hàng': 'Đặt hàng',
+  'Đã thanh toán đợt 1': 'Thanh toán Đợt 1',
+  'Hàng đã về': 'Hàng về',
+  'Đã kiểm định': 'Kiểm định',
+  'Đã nhập kho': 'Nhập kho',
+};
 
 export interface HopDongMua {
   id: string;

@@ -51,9 +51,10 @@ import {
   TrangThaiPT,
   YeuCauXoa,
   CHECKLIST_HDM,
+  CL_NHAP_KHO,
 } from './models';
 import { CHUC_NANG, KE_TOAN_DUYET_XOA, Level, Perm, atLeast, levelOf } from './perm';
-import { CAU_HINH_MAC_DINH, DB_VERSION, buildSeed, ghepDataKH, nangCapKhoV5, nangCapKhoV6, nangCapV7, nangCapV8, nangCapV12, themHdDemo, themTaiKhoanSale } from './seed';
+import { CAU_HINH_MAC_DINH, DB_VERSION, buildSeed, ghepDataKH, nangCapKhoV5, nangCapKhoV6, nangCapV7, nangCapV8, nangCapV12, nangCapV13, themHdDemo, themTaiKhoanSale } from './seed';
 import {
   apDungTuDongHdb,
   hdmChoHdb,
@@ -197,6 +198,12 @@ export class Store {
         d = structuredClone(d);
         nangCapV12(d);
         d.version = 12;
+      }
+      // v12 → v13: đổi tên checklist HĐ mua.
+      if (d && d.version === 12) {
+        d = structuredClone(d);
+        nangCapV13(d);
+        d.version = 13;
       }
       if (!d || d.version !== DB_VERSION) d = await buildSeed();
       // Tham số mới thêm sau (VD PT_CACH_CHIA) — dữ liệu cũ trên máy lấy giá trị mặc định.
@@ -1418,6 +1425,7 @@ export class Store {
     if (m.thuocPhuTai) return 'HĐ thuộc Phú Tài không nhập kho Oxy';
     if (m.trangThai === 'Nháp' || m.trangThai === 'Huỷ') return 'HĐ chưa ký hoặc đã huỷ';
     if (!o.kho) return 'Chưa chọn Vị trí kho';
+    if (!o.soHoaDon?.trim()) return 'Cần Số hoá đơn NCC — chưa có hoá đơn thì chưa nhập kho';
     const db = this.db();
     const dong: DongPhieuKho[] = [];
     for (const x of o.dong) {
@@ -1448,6 +1456,8 @@ export class Store {
       dong,
     };
     this.upsert('phieuKho', p);
+    // Nhập kho kèm số hoá đơn → HĐ mua chuyển "Xuất hoá đơn: Đã".
+    if (m.xuatHoaDon !== 'Đã') this.upsert('hopDongMua', { ...m, xuatHoaDon: 'Đã' });
     this.capNhatTrangThaiNhan(hdmId);
     return null;
   }
@@ -1459,7 +1469,7 @@ export class Store {
     const c = hdmCalc(m, this.db());
     const toi: TrangThaiHDM = c.slNhap <= 0 ? 'Đã ký' : c.slNhap >= c.slMua ? 'Đã nhận đủ' : 'Đang nhận hàng';
     const checklist = m.checklist.map((x) =>
-      x.ten === 'Đã nhập kho' ? { ...x, xong: toi === 'Đã nhận đủ', ngay: toi === 'Đã nhận đủ' ? todayIso() : undefined } : x,
+      x.ten === CL_NHAP_KHO ? { ...x, xong: toi === 'Đã nhận đủ', ngay: toi === 'Đã nhận đủ' ? todayIso() : undefined } : x,
     );
     this.upsert('hopDongMua', { ...m, trangThai: toi, checklist });
   }
@@ -1525,6 +1535,7 @@ export class Store {
     if (e) return e;
     if (!p.ngay) return 'Chưa chọn Ngày';
     if (!p.kho) return 'Chưa chọn Vị trí kho';
+    if (p.loai === 'Nhập' && p.hdId && !p.soHoaDon?.trim()) return 'Cần Số hoá đơn NCC — chưa có hoá đơn thì chưa nhập kho';
     const coChungTu = p.loai === 'Nhập' ? !!p.soHoaDon?.trim() : !!p.hdId;
     if (!coChungTu && !p.lyDo?.trim()) return p.loai === 'Nhập' ? 'Cần Số hoá đơn NCC hoặc Lý do nhập' : 'Cần chọn HĐ bán hoặc ghi Lý do xuất';
     // Cấp số phiếu chỉ khi dữ liệu hợp lệ — lưu lỗi không làm nhảy số.

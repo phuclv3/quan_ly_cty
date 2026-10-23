@@ -1,10 +1,10 @@
-import { ChangeDetectionStrategy, Component, computed, inject, linkedSignal, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, linkedSignal, signal, untracked, viewChild } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { map } from 'rxjs';
 import { Store } from '../core/store';
-import { dnvtTinhTrang, donGiaVND, dotMuaDaTra, dotQuaHan, hdmCalc, hoSoThieu, slDaNhap, thanhTienVND, tongSL } from '../core/calc';
-import { DongHangMua, DotTTMua, HopDongMua, LOAI_TIEN, LoaiTien, TrangThaiHDM, LOAI_HO_SO } from '../core/models';
+import { MOC_HAN_MUA, apDungTuDongHdm, dnvtTinhTrang, donGiaVND, dotMuaDaTra, dotQuaHan, hdmCalc, hoSoThieu, slDaNhap, thanhTienVND, tongSL } from '../core/calc';
+import { CL_NHAP_KHO, DongHangMua, DotTTMua, HopDongMua, LOAI_TIEN, LoaiTien, TrangThaiHDM, LOAI_HO_SO } from '../core/models';
 import { fold, money, num, pct, todayIso, uid, viDate, vnd } from '../core/util';
 import { Kpi, Modal, MoneyInput, Pick, PickOption, TrangThai, PickGo } from '../shared/ui-kit';
 import { HoSoPanel, guiXoa } from '../shared/ho-so';
@@ -403,7 +403,7 @@ interface TraForm {
             <table class="tbl compact">
               <thead>
                 <tr>
-                  <th>Đợt</th><th class="w-md num">Số tiền</th><th class="w-md">Hạn trả</th><th>Ngày trả</th><th class="num">Số tiền trả</th>
+                  <th>Đợt</th><th class="num">Tỷ lệ %</th><th class="w-md num">Số tiền</th><th class="th-han">Hạn trả (theo tiến độ)</th><th>Ngày trả</th><th class="num">Số tiền trả</th>
                   @if (!m.thuocPhuTai) { <th>Nguồn tiền</th><th>Phiếu chi</th> }
                   <th class="num">Đã trả (tính)</th><th class="w-md">Ghi chú</th><th></th>
                 </tr>
@@ -415,8 +415,22 @@ interface TraForm {
                   @let khoaDot = store.dotMuaKhoa(d);
                   <tr [class.overdue]="quaHan(d)">
                     <td>Đợt {{ d.dot }} @if (quaHan(d)) { <app-tt v="Quá hạn" /> }</td>
-                    <td><app-money [value]="d.soTien" [disabled]="!edit4() || khoaDot" (valueChange)="setDot(i, { soTien: $event })" /></td>
-                    <td><input type="date" [value]="d.han ?? ''" [disabled]="!edit4() || khoaDot" [attr.title]="khoaDot ? 'Đợt đã có phiếu chi — khoá số tiền và hạn' : null" (input)="setDot(i, { han: $any($event.target).value || undefined })" aria-label="Hạn trả" /></td>
+                    <td><input class="num" type="number" min="0" max="100" step="0.1" style="width:80px" [value]="d.tyLe ?? ''" [disabled]="!edit4() || khoaDot" (input)="setTyLe(i, $any($event.target).value)" aria-label="Tỷ lệ %" /></td>
+                    <td><app-money [value]="d.soTien" [disabled]="!edit4() || khoaDot" (valueChange)="setSoTien(i, $event)" /></td>
+                    <td [attr.title]="khoaDot ? 'Đợt đã có phiếu chi — khoá số tiền và hạn' : null">
+                      <div class="han-tt">
+                        <select [disabled]="!edit4() || khoaDot" (change)="setMoc(i, $any($event.target).value)" aria-label="Mốc tính hạn">
+                          @for (mc of mocHan; track mc) { <option [value]="mc" [selected]="d.hanMoc === mc">{{ mc }}</option> }
+                          <option value="" [selected]="!d.hanMoc">Ngày cụ thể…</option>
+                        </select>
+                        @if (d.hanMoc) {
+                          <span class="cong">+ <input class="num" type="number" min="0" step="1" [value]="d.hanNgay ?? 0" [disabled]="!edit4() || khoaDot" (input)="setDot(i, { hanNgay: soNgay($any($event.target).value) })" aria-label="Số ngày sau mốc" /> ngày</span>
+                          @if (d.han) { <span class="kq co">→ {{ viDate(d.han) }}</span> } @else { <span class="kq" [title]="'Hạn tính khi mốc ' + d.hanMoc + ' có ngày'">chờ mốc</span> }
+                        } @else {
+                          <input type="date" [value]="d.han ?? ''" [disabled]="!edit4() || khoaDot" (input)="setDot(i, { han: $any($event.target).value || undefined })" aria-label="Hạn trả" />
+                        }
+                      </div>
+                    </td>
                     <td>{{ viDate(d.ngayTra) }}</td>
                     <td class="num">{{ d.soTienTra ? money(d.soTienTra) : '—' }}</td>
                     @if (!m.thuocPhuTai) {
@@ -443,12 +457,12 @@ interface TraForm {
                     </td>
                   </tr>
                 } @empty {
-                  <tr><td colspan="10" class="muted">Chưa có đợt thanh toán (tối đa {{ soDotToiDa() }} đợt)</td></tr>
+                  <tr><td colspan="11" class="muted">Chưa có đợt thanh toán (tối đa {{ soDotToiDa() }} đợt)</td></tr>
                 }
               </tbody>
               <tfoot>
                 <tr>
-                  <th>Công nợ phải trả</th><td class="num">{{ money(tongDot()) }}</td><td colspan="2" class="muted">Đã trả (đã duyệt): {{ money(c.daTra) }}</td>
+                  <th colspan="2">Công nợ phải trả</th><td class="num">{{ money(tongDot()) }}</td><td colspan="2" class="muted">Đã trả (đã duyệt): {{ money(c.daTra) }}</td>
                   <td class="num" [attr.colspan]="m.thuocPhuTai ? 2 : 4"><b [class.neg]="c.conPhaiTra < 0">Còn phải trả: {{ money(c.conPhaiTra) }}</b></td><td colspan="2"></td>
                 </tr>
               </tfoot>
@@ -466,6 +480,7 @@ interface TraForm {
                   <option value="Đã" [selected]="m.xuatHoaDon === 'Đã'">Đã</option>
                 </select>
                 @if (m.xuatHoaDon === 'Đã') { <span class="hint">Nhập Số + Ngày hoá đơn ở <a class="linkish" (click)="setTab('2')">Tab 2</a>.</span> }
+                @else if (!m.thuocPhuTai) { <span class="hint">Bắt buộc có hoá đơn mới <b>Nhập kho</b> — nhập kho kèm Số hoá đơn NCC sẽ tự chuyển "Đã".</span> }
               </div>
             </div>
             <table class="tbl compact">
@@ -473,11 +488,11 @@ interface TraForm {
               <tbody>
                 @for (x of m.checklist; track x.ten; let i = $index) {
                   <tr>
-                    @let tuDong = x.ten === 'Đã nhập kho' && !m.thuocPhuTai;
+                    @let tuDong = x.ten === clNhapKho && !m.thuocPhuTai;
                     <td>
                       <label class="check-row" [attr.title]="tuDong ? 'Tự tích khi nhập đủ hàng (Tab 3)' : null">
                         <input type="checkbox" [checked]="x.xong" [disabled]="!edit4() || tuDong" (change)="tichCL(i, $any($event.target).checked)" /> {{ x.ten }}
-                        @if (tuDong) { <span class="sub muted">(tự động theo phiếu nhập)</span> }
+                        @if (tuDong) { <span class="sub muted">(tự động theo phiếu nhập · cần hoá đơn NCC)</span> }
                       </label>
                     </td>
                     <td><input type="date" [value]="x.ngay ?? ''" [disabled]="!edit4() || !x.xong || tuDong" (input)="setCL(i, $any($event.target).value || undefined)" [attr.aria-label]="'Ngày ' + x.ten" /></td>
@@ -568,7 +583,7 @@ interface TraForm {
               <app-pick inputId="nkKho" [options]="khoOpts()" [value]="n.kho" (valueChange)="nhap.set({ ...n, kho: $event })" />
             </div>
             <div class="field">
-              <label for="nkHD">Số hoá đơn NCC</label>
+              <label for="nkHD">Số hoá đơn NCC <span class="req">*</span></label>
               <input id="nkHD" placeholder="VD HĐ 259" [value]="n.soHoaDon" (input)="nhap.set({ ...n, soHoaDon: $any($event.target).value })" />
               <span class="hint">Mã lô sinh theo số hoá đơn: L259-01…</span>
             </div>
@@ -647,6 +662,8 @@ export class HdmDetail {
   private readonly router = inject(Router);
   private readonly confirm = inject(Confirm);
   protected readonly money = money;
+  protected readonly mocHan = MOC_HAN_MUA;
+  protected readonly clNhapKho = CL_NHAP_KHO;
   protected readonly num = num;
   protected readonly pct = pct;
   protected readonly viDate = viDate;
@@ -871,6 +888,12 @@ export class HdmDetail {
   private readonly unsaved = inject(Unsaved);
 
   constructor() {
+    // Đợt TT NCC: % → số tiền theo tổng HĐ, hạn theo mốc tiến độ (Ngày ký / checklist) — tính lại mỗi khi HĐ đổi.
+    effect(() => {
+      const m = this.f();
+      const n = apDungTuDongHdm(m);
+      if (JSON.stringify(n.dotTT) !== JSON.stringify(m.dotTT)) untracked(() => this.f.set(n));
+    });
     canhBaoChuaLuu(() => {
       if (this.isNew()) {
         const m = this.f();
@@ -982,11 +1005,31 @@ export class HdmDetail {
   protected setDot(i: number, p: Partial<DotTTMua>): void {
     this.f.update((m) => ({ ...m, dotTT: m.dotTT.map((d, j) => (j === i ? { ...d, ...p } : d)) }));
   }
+  /** Nhập % → Số tiền = % × Tổng giá trị HĐ (tự tính lại khi tổng đổi). Xoá trống % = nhập số tiền tay. */
+  protected setTyLe(i: number, raw: string): void {
+    if (raw === '') return this.setDot(i, { tyLe: undefined });
+    const tyLe = Math.min(100, Math.max(0, Number(raw) || 0));
+    this.setDot(i, { tyLe, soTien: Math.round((tyLe / 100) * this.calc().tong) });
+  }
+  protected setSoTien(i: number, soTien: number): void {
+    const tong = this.calc().tong;
+    this.setDot(i, { soTien, tyLe: tong > 0 ? Math.round((soTien / tong) * 1000) / 10 : undefined });
+  }
+  protected soNgay(raw: string): number {
+    return Math.max(0, Math.round(Number(raw) || 0));
+  }
+  /** Chọn mốc tiến độ → Hạn = ngày mốc + N ngày; "Ngày cụ thể" = nhập tay. */
+  protected setMoc(i: number, moc: string): void {
+    const d = this.f().dotTT[i];
+    this.setDot(i, moc ? { hanMoc: moc, hanNgay: d.hanNgay ?? 0 } : { hanMoc: undefined, hanNgay: undefined });
+  }
   protected themDot(): void {
     const m = this.f();
     if (m.dotTT.length >= this.soDotToiDa()) return;
-    const conLai = Math.max(0, this.calc().tong - this.tongDot());
-    this.f.update((x) => ({ ...x, dotTT: [...x.dotTT, { dot: x.dotTT.length + 1, soTien: conLai }] }));
+    const tong = this.calc().tong;
+    const conLai = Math.max(0, tong - this.tongDot());
+    const tyLe = tong > 0 ? Math.round((conLai / tong) * 1000) / 10 : undefined;
+    this.f.update((x) => ({ ...x, dotTT: [...x.dotTT, { dot: x.dotTT.length + 1, tyLe, soTien: conLai, hanMoc: 'Ngày ký', hanNgay: 30 }] }));
   }
   protected xoaDot(): void {
     this.f.update((m) => ({ ...m, dotTT: m.dotTT.slice(0, -1) }));

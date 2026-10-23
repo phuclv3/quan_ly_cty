@@ -68,7 +68,7 @@ const xuatRong = (): DongXuatF => ({ loaiHang: '', lo: '', soLuong: 0, tenTrenHD
             <app-pick [options]="nccOpts()" [value]="f().ncc" [allowEmpty]="true" placeholder="— Chọn NCC —" (valueChange)="set('ncc', $event)" />
           </div>
           <div class="field">
-            <label for="pt-shd">Số hoá đơn NCC</label>
+            <label for="pt-shd">Số hoá đơn NCC <span class="req">*</span></label>
             <input id="pt-shd" placeholder="VD HĐ 259" [value]="f().soHoaDon" (input)="set('soHoaDon', $any($event.target).value)" />
             <span class="hint">Mã lô sinh theo số hoá đơn: L259-01, L259-02…</span>
           </div>

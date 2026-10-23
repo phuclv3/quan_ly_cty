@@ -30,6 +30,7 @@ import {
   PhieuThuChi,
   TaiKhoan,
   CHECKLIST_HDM,
+  CHECKLIST_HDM_CU,
   TRANG_THAI_HDB,
   TRANG_THAI_HDM,
   CO_HOI,
@@ -53,7 +54,7 @@ import { fold, nextCode, nowIso, todayIso, uid, yy } from './util';
  * v7: đề nghị cấp vật tư; HĐ bán có dòng hàng, cờ tạm ứng, phạt HĐ (nangCapV7).
  * v8: việc được giao (ToDoList) + quyền TD-01 cho các nhóm hệ thống (nangCapV8).
  */
-export const DB_VERSION = 12;
+export const DB_VERSION = 13;
 
 export const CAU_HINH_MAC_DINH: CauHinh = {
   TNDN_NGUONG: 0.2,
@@ -457,7 +458,7 @@ export async function buildSeed(): Promise<Db> {
       xuatHoaDon: 'Đã',
       import: true,
     });
-    m.checklist = m.checklist.map((c) => (c.ten === 'Đã nhập kho' || c.ten === 'Hàng đã về' ? { ...c, xong: true, ngay: r0.ngay } : c));
+    m.checklist = m.checklist.map((c) => (c.ten === 'Nhập kho' || c.ten === 'Hàng về' ? { ...c, xong: true, ngay: r0.ngay } : c));
     const pk: PhieuKho = {
       id: uid('PK'),
       soPhieu: so(db.cauHinh.TIEN_TO_NK, r0.ngay),
@@ -786,6 +787,11 @@ export function moTaMau(l: LoaiHang): string {
     default:
       return `${l.ten} (${dvt})`;
   }
+}
+
+/** v12 → v13: đổi tên checklist HĐ mua (Đã đặt hàng → Đặt hàng…). */
+export function nangCapV13(d: Db): void {
+  d.hopDongMua = d.hopDongMua.map((m) => ({ ...m, checklist: m.checklist.map((c) => ({ ...c, ten: CHECKLIST_HDM_CU[c.ten] ?? c.ten })) }));
 }
 
 /** v11 → v12: mã hàng chưa có mô tả ngắn → điền mô tả mẫu. */

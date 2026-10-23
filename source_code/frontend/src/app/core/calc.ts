@@ -11,6 +11,7 @@ import {
   DongPhieuKho,
   DotTTBan,
   HO_SO_BAT_BUOC,
+  CHECKLIST_HDM,
   HopDongBan,
   HopDongMua,
   HopDongPhuTai,
@@ -416,6 +417,34 @@ export interface HdmCalc {
   slNhap: number;
   pctNhap: number;
   quaHan: number;
+}
+
+/** Mốc tính hạn trả NCC: Ngày ký + các mục checklist tiến độ HĐ mua. */
+export const MOC_HAN_MUA = ['Ngày ký', ...CHECKLIST_HDM.filter((x) => x !== 'Thanh toán Đợt 1')];
+
+/** Ngày của mốc tiến độ HĐ mua (Ngày ký hoặc ngày tích checklist), chưa đạt = undefined. */
+export function ngayMocMua(m: HopDongMua, moc: string): string | undefined {
+  if (moc === 'Ngày ký') return m.ngayKy;
+  const x = m.checklist.find((c) => c.ten === moc);
+  return x?.xong ? x.ngay : undefined;
+}
+
+/** Đợt TT NCC: đợt theo % tính lại Số tiền theo tổng HĐ; đợt theo mốc tính Hạn = ngày mốc + N ngày. */
+export function apDungTuDongHdm(m: HopDongMua): HopDongMua {
+  const tong = hdmTong(m);
+  return {
+    ...m,
+    dotTT: m.dotTT.map((d) => {
+      if (d.phieuChiId) return d;
+      const x = { ...d };
+      if (x.tyLe !== undefined) x.soTien = Math.round((x.tyLe / 100) * tong);
+      if (x.hanMoc) {
+        const n = ngayMocMua(m, x.hanMoc);
+        x.han = n ? congNgay(n, x.hanNgay ?? 0) : undefined;
+      }
+      return x;
+    }),
+  };
 }
 
 export function hdmCalc(m: HopDongMua, db: Db): HdmCalc {
