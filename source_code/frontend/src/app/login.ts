@@ -15,9 +15,11 @@ import { KiemTra } from './shared/kiem-tra';
       <form class="card login-card" appKiemTra #ktLg="kiemTra" (submit)="$event.preventDefault(); go()">
         <div class="brand-big">
           <span class="brand-logo wide"><img src="brand/logo-oxymecie.png" alt="Logo Oxy Mecie" width="399" height="160" /></span>
-          <div>
-            <span class="sub">Phần mềm quản lý nội bộ</span>
-          </div>
+          <span class="sub">Phần mềm quản lý nội bộ</span>
+        </div>
+        <div class="login-head">
+          <h1>Đăng nhập</h1>
+          <p class="muted">Dùng email và mật khẩu được cấp để vào hệ thống.</p>
         </div>
         <div class="field">
           <label for="lg-email">Email <span class="req">*</span></label>
@@ -32,7 +34,6 @@ import { KiemTra } from './shared/kiem-tra';
         </div>
         @if (err()) { <div class="note bad" role="alert">{{ err() }}</div> }
         <button class="btn" type="submit" [disabled]="busy()">{{ busy() ? 'Đang đăng nhập…' : 'Đăng nhập' }}</button>
-
       </form>
       <footer class="login-ct">
         <b>{{ congTy.ten }}</b>
