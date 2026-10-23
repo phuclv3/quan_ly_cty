@@ -60,7 +60,7 @@ function goiYTen(l: LoaiHang): string {
     <app-filter [(loc)]="loc" memo="kho-loai-hang" [time]="false" [facets]="facets()" placeholder="Tìm mã, tên, loại khí, tên tham chiếu…" />
     <div class="tbl-wrap">
       <table class="tbl freeze">
-        <thead><tr><th>Mã hàng</th><th>Nhóm</th><th>Loại khí / vật liệu</th><th>Thể tích</th><th>ĐVT</th><th>Tên</th><th class="num">Tồn</th><th>Tên tham chiếu</th><th>Đang dùng</th>@if (edit()) { <th></th> }</tr></thead>
+        <thead><tr><th>Mã hàng</th><th>Nhóm</th><th>Loại khí / vật liệu</th><th>Thể tích</th><th>ĐVT</th><th>Tên</th><th>Mô tả</th><th class="num">Tồn</th><th>Tên tham chiếu</th><th>Đang dùng</th>@if (edit()) { <th></th> }</tr></thead>
         <tbody>
           @for (l of pg.items(); track l.id) {
             <tr>
@@ -70,6 +70,7 @@ function goiYTen(l: LoaiHang): string {
               <td>{{ l.theTich || '—' }}</td>
               <td>{{ l.dvt }}</td>
               <td>{{ l.ten }}</td>
+              <td class="sub" style="max-width:280px">{{ l.moTa || '—' }}</td>
               <td class="num" [class.neg]="(ton().get(l.id) ?? 0) < 0">{{ money(ton().get(l.id) ?? 0) }}</td>
               <td class="sub" [title]="(l.bietDanh ?? []).join('\\n')">
                 @if (l.bietDanh?.length) { {{ l.bietDanh![0] }}@if (l.bietDanh!.length > 1) { <span class="tag mute">+{{ l.bietDanh!.length - 1 }}</span> } } @else { — }
@@ -94,7 +95,7 @@ function goiYTen(l: LoaiHang): string {
               }
             </tr>
           } @empty {
-            <tr><td colspan="10" class="empty">Không có mã hàng nào khớp bộ lọc</td></tr>
+            <tr><td colspan="11" class="empty">Không có mã hàng nào khớp bộ lọc</td></tr>
           }
         </tbody>
       </table>
@@ -127,6 +128,10 @@ function goiYTen(l: LoaiHang): string {
             <span class="hint">{{ x.isNew ? 'Tự gợi ý theo nhóm · loại khí · thể tích — sửa được' : 'Mã cố định, không đổi sau khi tạo' }}</span>
           </div>
           <div class="field"><label for="lh-ten">Tên <span class="req">*</span></label><input id="lh-ten" [value]="x.l.ten" (input)="setTen($any($event.target).value)" /></div>
+          <div class="field full">
+            <label for="lh-mota">Mô tả ngắn</label>
+            <input id="lh-mota" placeholder="VD Khí chuẩn NO trong N2, bình nhôm 8L" [value]="x.l.moTa ?? ''" (input)="set({ moTa: $any($event.target).value })" />
+          </div>
         </div>
         <h3 class="section-title">Tên tham chiếu</h3>
         <div class="form-grid">
@@ -177,7 +182,7 @@ export class DmLoaiHangTab {
         (x) =>
           khopSel(l, 'nhom', x.nhom) &&
           khopSel(l, 'dd', x.dangDung ? 'Đang dùng' : 'Ngưng') &&
-          khopQ(l, x.id, x.ten, x.dvt, x.nhom, x.loaiKhi, x.theTich, ...(x.bietDanh ?? [])),
+          khopQ(l, x.id, x.ten, x.moTa, x.dvt, x.nhom, x.loaiKhi, x.theTich, ...(x.bietDanh ?? [])),
       )
       .sort((a, b) => (thu.get(a.nhom) ?? 9) - (thu.get(b.nhom) ?? 9) || a.id.localeCompare(b.id, 'en', { numeric: true }));
   });
@@ -232,6 +237,7 @@ export class DmLoaiHangTab {
       ...x.l,
       id: x.l.id.trim(),
       ten: x.l.ten.trim(),
+      moTa: x.l.moTa?.trim() || undefined,
       dvt: x.l.dvt.trim(),
       thuocTinh: x.isNew ? thuocTinhTheoNhom(x.l.nhom) : x.l.thuocTinh,
       bietDanh: bd.length ? bd : undefined,

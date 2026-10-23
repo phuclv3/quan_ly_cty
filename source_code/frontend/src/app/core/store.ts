@@ -53,7 +53,7 @@ import {
   CHECKLIST_HDM,
 } from './models';
 import { CHUC_NANG, KE_TOAN_DUYET_XOA, Level, Perm, atLeast, levelOf } from './perm';
-import { CAU_HINH_MAC_DINH, DB_VERSION, buildSeed, ghepDataKH, nangCapKhoV5, nangCapKhoV6, nangCapV7, nangCapV8, themHdDemo, themTaiKhoanSale } from './seed';
+import { CAU_HINH_MAC_DINH, DB_VERSION, buildSeed, ghepDataKH, nangCapKhoV5, nangCapKhoV6, nangCapV7, nangCapV8, nangCapV12, themHdDemo, themTaiKhoanSale } from './seed';
 import {
   apDungTuDongHdb,
   hdmChoHdb,
@@ -190,7 +190,13 @@ export class Store {
       if (d && (d.version === 9 || d.version === 10)) {
         d = structuredClone(d);
         themHdDemo(d);
-        d.version = DB_VERSION;
+        d.version = 11;
+      }
+      // v11 → v12: giả lập mô tả ngắn cho mã hàng.
+      if (d && d.version === 11) {
+        d = structuredClone(d);
+        nangCapV12(d);
+        d.version = 12;
       }
       if (!d || d.version !== DB_VERSION) d = await buildSeed();
       // Tham số mới thêm sau (VD PT_CACH_CHIA) — dữ liệu cũ trên máy lấy giá trị mặc định.

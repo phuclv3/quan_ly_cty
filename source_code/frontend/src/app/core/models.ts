@@ -312,6 +312,8 @@ export const NHOM_HANG: NhomHang[] = ['Khí chuẩn', 'Dung dịch chuẩn', 'V�
 export interface LoaiHang {
   id: string;
   ten: string;
+  /** Mô tả hàng hoá ngắn gọn (hiện ở Tồn kho). */
+  moTa?: string;
   nhom: NhomHang;
   dvt: string;
   /** Thuộc tính ghi khi nhập lô, VD ['Nồng độ']. */

@@ -53,7 +53,7 @@ import { fold, nextCode, nowIso, todayIso, uid, yy } from './util';
  * v7: đề nghị cấp vật tư; HĐ bán có dòng hàng, cờ tạm ứng, phạt HĐ (nangCapV7).
  * v8: việc được giao (ToDoList) + quyền TD-01 cho các nhóm hệ thống (nangCapV8).
  */
-export const DB_VERSION = 11;
+export const DB_VERSION = 12;
 
 export const CAU_HINH_MAC_DINH: CauHinh = {
   TNDN_NGUONG: 0.2,
@@ -243,7 +243,7 @@ export async function buildSeed(): Promise<Db> {
 
   // ── Mã hàng cố định (sheet "DM. Mã hàng") ──
   for (const r of RAW_MA_HANG) db.loaiHang.push(maHangTuRaw(r));
-  db.loaiHang.push({ id: 'HH-KHAC', ten: 'Hàng khác (import)', nhom: 'Phụ kiện', dvt: 'Cái', thuocTinh: [], dangDung: true });
+  db.loaiHang.push({ id: 'HH-KHAC', ten: 'Hàng khác (import)', nhom: 'Phụ kiện', dvt: 'Cái', thuocTinh: [], dangDung: true, moTa: 'Hàng chưa xếp mã, gom khi import' });
   const timLoaiHang = (ma: string): LoaiHang => {
     let l = db.loaiHang.find((x) => x.id === ma);
     if (!l) {
@@ -622,6 +622,7 @@ export async function buildSeed(): Promise<Db> {
   void KT;
   ghepDataKH(db);
   themHdDemo(db);
+  nangCapV12(db);
   return db;
 }
 
@@ -765,6 +766,31 @@ function tenMaHang(r: RawMaHang): string {
   if (r.nhom === 'Vỏ bình') return `Vỏ bình${r.loaiKhi ? ' ' + (VAT_LIEU[r.loaiKhi] ?? r.loaiKhi) : ''}${tt}`;
   if (!r.loaiKhi) return r.bietDanh?.[0] ?? r.ma;
   return `${r.nhom} ${r.loaiKhi}${tt}`;
+}
+
+/** Mô tả ngắn giả lập theo nhóm · loại khí / vật liệu · thể tích · ĐVT (dữ liệu mẫu, sửa được ở DM mã hàng). */
+export function moTaMau(l: LoaiHang): string {
+  const tt = l.theTich ? ` ${l.theTich}` : '';
+  const dvt = l.dvt.toLowerCase();
+  switch (l.nhom) {
+    case 'Khí chuẩn':
+      return l.loaiKhi
+        ? `Khí chuẩn ${l.loaiKhi.includes('/') ? 'hỗn hợp ' : ''}${l.loaiKhi}, ${dvt}${tt} — nồng độ theo từng lô`
+        : `Khí chuẩn, ${dvt}${tt}`;
+    case 'Dung dịch chuẩn':
+      return `Dung dịch chuẩn ${l.loaiKhi ?? ''}${l.loaiKhi ? ', ' : ''}${dvt}${tt} — nồng độ theo từng lô`;
+    case 'Vỏ bình':
+      return `Vỏ bình rỗng${l.loaiKhi ? ' ' + (VAT_LIEU[l.loaiKhi.toUpperCase()] ?? l.loaiKhi) : ''}${tt}, thu hồi / nạp lại`;
+    case 'Thiết bị tái sử dụng':
+      return `Thiết bị tái sử dụng${l.loaiKhi ? ' ' + l.loaiKhi : ''}${tt}, luân chuyển theo HĐ`;
+    default:
+      return `${l.ten} (${dvt})`;
+  }
+}
+
+/** v11 → v12: mã hàng chưa có mô tả ngắn → điền mô tả mẫu. */
+export function nangCapV12(d: Db): void {
+  d.loaiHang = d.loaiHang.map((l) => (l.moTa ? l : { ...l, moTa: moTaMau(l) }));
 }
 
 function maHangTuRaw(r: RawMaHang): LoaiHang {

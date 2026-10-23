@@ -60,12 +60,16 @@ const tinhTrang = (ton: number) => (ton > 0 ? 'con' : ton < 0 ? 'am' : 'het');
       <div class="tbl-wrap">
         <table class="tbl freeze">
           <thead>
-            <tr><th>Mã hàng</th><th>Nhóm</th><th>Thể tích</th><th>ĐVT</th><th>Vị trí kho</th><th class="num">Tổng nhập</th><th class="num">Tổng xuất</th><th class="num">Tồn</th><th class="num">Số lô còn</th><th class="num">Giá trị tồn</th><th class="num" title="Số đếm của đợt kiểm kê gần nhất tại kho">Kiểm kê{{ ngayKK() ? ' ' + ngayKK() : '' }}</th><th class="num" title="Thực tế − tồn sổ tại ngày kiểm kê">Lệch</th></tr>
+            <tr><th>Mã hàng</th><th>Mô tả</th><th>Tên trên hoá đơn</th><th>Nhóm</th><th>Thể tích</th><th>ĐVT</th><th>Vị trí kho</th><th class="num">Tổng nhập</th><th class="num">Tổng xuất</th><th class="num">Tồn</th><th class="num">Số lô còn</th><th class="num">Giá trị tồn</th><th class="num" title="Số đếm của đợt kiểm kê gần nhất tại kho">Kiểm kê{{ ngayKK() ? ' ' + ngayKK() : '' }}</th><th class="num" title="Thực tế − tồn sổ tại ngày kiểm kê">Lệch</th></tr>
           </thead>
           <tbody>
             @for (r of pgMa.items(); track r.loaiHang + r.kho) {
               <tr class="click" (click)="moMa(r)">
                 <td><b>{{ r.loaiHang }}</b> <span class="sub">{{ store.loaiHangTen(r.loaiHang) }}</span></td>
+                <td class="sub" style="max-width:240px">{{ store.loaiHangById(r.loaiHang)?.moTa || '—' }}</td>
+                @let tm = tenHD(r.loaiHang);
+                <td class="sub" style="max-width:260px" [title]="tm.join('
+')">@if (tm.length) { {{ tm[0] }}@if (tm.length > 1) { <span class="tag mute">+{{ tm.length - 1 }}</span> } } @else { — }</td>
                 <td>{{ store.loaiHangById(r.loaiHang)?.nhom ?? '—' }}</td>
                 <td>{{ store.loaiHangById(r.loaiHang)?.theTich || '—' }}</td>
                 <td>{{ store.loaiHangById(r.loaiHang)?.dvt ?? '' }}</td>
@@ -83,12 +87,12 @@ const tinhTrang = (ton: number) => (ton > 0 ? 'con' : ton < 0 ? 'am' : 'het');
                 }
               </tr>
             } @empty {
-              <tr><td colspan="12" class="empty">Không có mã hàng nào khớp bộ lọc</td></tr>
+              <tr><td colspan="14" class="empty">Không có mã hàng nào khớp bộ lọc</td></tr>
             }
           </tbody>
           @if (rowsMa().length) {
             <tfoot>
-              <tr><td colspan="5">Tổng ({{ rowsMa().length }} dòng)</td><td class="num">{{ money(tongMa().nhap) }}</td><td class="num">{{ money(tongMa().xuat) }}</td><td class="num" [class.neg]="tongMa().ton < 0">{{ money(tongMa().ton) }}</td><td></td><td class="num">{{ money(tongMa().giaTri) }}</td><td colspan="2"></td></tr>
+              <tr><td colspan="7">Tổng ({{ rowsMa().length }} dòng)</td><td class="num">{{ money(tongMa().nhap) }}</td><td class="num">{{ money(tongMa().xuat) }}</td><td class="num" [class.neg]="tongMa().ton < 0">{{ money(tongMa().ton) }}</td><td></td><td class="num">{{ money(tongMa().giaTri) }}</td><td colspan="2"></td></tr>
             </tfoot>
           }
         </table>
@@ -98,7 +102,7 @@ const tinhTrang = (ton: number) => (ton > 0 ? 'con' : ton < 0 ? 'am' : 'het');
       <div class="tbl-wrap">
         <table class="tbl freeze">
           <thead>
-            <tr><th>Mã lô</th><th>Ngày nhập</th><th>Số hoá đơn</th><th>NCC</th><th>Mã hàng</th><th>Quy cách / nồng độ</th><th class="num">SL nhập</th><th class="num">Đã xuất</th><th class="num">Tồn</th><th class="num">Đơn giá</th><th class="num">Giá trị tồn</th><th>Cảnh báo</th></tr>
+            <tr><th>Mã lô</th><th>Ngày nhập</th><th>Số hoá đơn</th><th>NCC</th><th>Mã hàng</th><th>Mô tả</th><th>Tên trên hoá đơn</th><th>Quy cách / nồng độ</th><th class="num">SL nhập</th><th class="num">Đã xuất</th><th class="num">Tồn</th><th class="num">Đơn giá</th><th class="num">Giá trị tồn</th><th>Cảnh báo</th></tr>
           </thead>
           <tbody>
             @for (l of pgLo.items(); track l.lo) {
@@ -108,6 +112,10 @@ const tinhTrang = (ton: number) => (ton > 0 ? 'con' : ton < 0 ? 'am' : 'het');
                 <td>{{ l.soHoaDon || '—' }}</td>
                 <td>{{ l.ncc ? store.nccById(l.ncc)?.ten ?? l.ncc : '—' }}</td>
                 <td><b>{{ l.loaiHang }}</b></td>
+                <td class="sub" style="max-width:240px">{{ store.loaiHangById(l.loaiHang)?.moTa || '—' }}</td>
+                @let tl = tenHD(l.loaiHang, l.lo);
+                <td class="sub" style="max-width:260px" [title]="tl.join('
+')">@if (tl.length) { {{ tl[0] }}@if (tl.length > 1) { <span class="tag mute">+{{ tl.length - 1 }}</span> } } @else { — }</td>
                 <td class="sub" style="max-width:320px">{{ l.quyCach || '—' }}</td>
                 <td class="num">{{ money(l.nhap) }}</td>
                 <td class="num">{{ money(l.xuat) }}</td>
@@ -117,12 +125,12 @@ const tinhTrang = (ton: number) => (ton > 0 ? 'con' : ton < 0 ? 'am' : 'het');
                 <td>@if (l.ton < 0) { <span class="tag bad">Xuất quá tồn {{ -l.ton }}</span> } @else if (!l.donGia) { <span class="tag warn">Chưa có đơn giá</span> }</td>
               </tr>
             } @empty {
-              <tr><td colspan="12" class="empty">Không có lô nào khớp bộ lọc</td></tr>
+              <tr><td colspan="14" class="empty">Không có lô nào khớp bộ lọc</td></tr>
             }
           </tbody>
           @if (rowsLo().length) {
             <tfoot>
-              <tr><td colspan="6">Tổng ({{ rowsLo().length }} lô)</td><td class="num">{{ money(tongLo().nhap) }}</td><td class="num">{{ money(tongLo().xuat) }}</td><td class="num">{{ money(tongLo().ton) }}</td><td></td><td class="num">{{ money(tongLo().giaTri) }}</td><td></td></tr>
+              <tr><td colspan="8">Tổng ({{ rowsLo().length }} lô)</td><td class="num">{{ money(tongLo().nhap) }}</td><td class="num">{{ money(tongLo().xuat) }}</td><td class="num">{{ money(tongLo().ton) }}</td><td></td><td class="num">{{ money(tongLo().giaTri) }}</td><td></td></tr>
             </tfoot>
           }
         </table>
@@ -217,6 +225,23 @@ export class TonKhoTab {
     const x = k.theoMa.get(r.loaiHang) ?? { thucTe: 0, lech: 0 };
     return { ngay: k.ngay, ...x };
   }
+  /** Tên hàng trên hoá đơn theo tab Ánh xạ tên bán: mã hàng → các tên đã gán (kèm lô hay dùng). */
+  private readonly anhXa = computed(() => {
+    const m = new Map<string, { ten: string; lo?: string }[]>();
+    for (const a of this.store.anhXaTen()) {
+      if (!a.loaiHang) continue;
+      const ds = m.get(a.loaiHang) ?? [];
+      ds.push({ ten: a.nongDo ? `${a.ten} (${a.nongDo})` : a.ten, lo: a.lo });
+      m.set(a.loaiHang, ds);
+    }
+    return m;
+  });
+  /** Tên trên hoá đơn của mã hàng; xem theo lô thì ưu tiên tên gán đúng lô đó. */
+  protected tenHD(loaiHang: string, lo?: string): string[] {
+    const ds = this.anhXa().get(loaiHang) ?? [];
+    const dungLo = lo ? ds.filter((x) => x.lo === lo) : [];
+    return [...new Set((dungLo.length ? dungLo : ds).map((x) => x.ten))];
+  }
   /** Thứ tự theo danh mục mã hàng (nhóm → loại khí → thể tích), như file kho. */
   private readonly thuTu = computed(() => new Map(this.store.loaiHang().map((l, i) => [l.id, i])));
 
@@ -250,7 +275,7 @@ export class TonKhoTab {
       .filter((r) => {
         const lh = this.store.loaiHangById(r.loaiHang);
         return (
-          khopQ(l, r.loaiHang, lh?.ten, lh?.loaiKhi, ...(lh?.bietDanh ?? [])) &&
+          khopQ(l, r.loaiHang, lh?.ten, lh?.moTa, ...this.tenHD(r.loaiHang), lh?.loaiKhi, ...(lh?.bietDanh ?? [])) &&
           khopSel(l, 'nhom', lh?.nhom) &&
           khopSel(l, 'kho', r.kho) &&
           khopSel(l, 'tt', tinhTrang(r.ton))
@@ -270,7 +295,7 @@ export class TonKhoTab {
     const l = this.loc();
     return this.allLo().filter(
       (r) =>
-        khopQ(l, r.lo, r.loaiHang, this.store.loaiHangTen(r.loaiHang), r.quyCach, r.soHoaDon) &&
+        khopQ(l, r.lo, r.loaiHang, this.store.loaiHangTen(r.loaiHang), this.store.loaiHangById(r.loaiHang)?.moTa, ...this.tenHD(r.loaiHang, r.lo), r.quyCach, r.soHoaDon) &&
         khopSel(l, 'nhom', this.store.loaiHangById(r.loaiHang)?.nhom) &&
         khopSel(l, 'kho', r.kho) &&
         khopSel(l, 'tt', tinhTrang(r.ton)),
@@ -321,18 +346,18 @@ export class TonKhoTab {
 
   protected xuatCsv(): void {
     if (this.che() === 'ma') {
-      const rows: (string | number)[][] = [['Mã hàng', 'Tên', 'Nhóm', 'Thể tích', 'ĐVT', 'Vị trí kho', 'Tổng nhập', 'Tổng xuất', 'Tồn', 'Số lô còn', 'Giá trị tồn', 'Ngày kiểm kê', 'Kiểm kê', 'Lệch']];
+      const rows: (string | number)[][] = [['Mã hàng', 'Tên', 'Mô tả', 'Tên trên hoá đơn', 'Nhóm', 'Thể tích', 'ĐVT', 'Vị trí kho', 'Tổng nhập', 'Tổng xuất', 'Tồn', 'Số lô còn', 'Giá trị tồn', 'Ngày kiểm kê', 'Kiểm kê', 'Lệch']];
       for (const r of this.rowsMa()) {
         const lh = this.store.loaiHangById(r.loaiHang);
         const k = this.kk(r);
-        rows.push([r.loaiHang, lh?.ten ?? '', lh?.nhom ?? '', lh?.theTich ?? '', lh?.dvt ?? '', this.store.khoTen(r.kho), r.nhap, r.xuat, r.ton, r.soLo, Math.round(r.giaTri), k ? viDate(k.ngay) : '', k?.thucTe ?? '', k?.lech ?? '']);
+        rows.push([r.loaiHang, lh?.ten ?? '', lh?.moTa ?? '', this.tenHD(r.loaiHang).join('; '), lh?.nhom ?? '', lh?.theTich ?? '', lh?.dvt ?? '', this.store.khoTen(r.kho), r.nhap, r.xuat, r.ton, r.soLo, Math.round(r.giaTri), k ? viDate(k.ngay) : '', k?.thucTe ?? '', k?.lech ?? '']);
       }
       downloadFile(fileName('ton-kho-theo-ma', 'csv'), 'text/csv', csv(rows));
       return;
     }
-    const rows: (string | number)[][] = [['Mã lô', 'Ngày nhập', 'Số hoá đơn', 'NCC', 'Mã hàng', 'Quy cách / nồng độ', 'Vị trí kho', 'SL nhập', 'Đã xuất', 'Tồn', 'Đơn giá', 'VAT %', 'Giá trị tồn']];
+    const rows: (string | number)[][] = [['Mã lô', 'Ngày nhập', 'Số hoá đơn', 'NCC', 'Mã hàng', 'Mô tả', 'Tên trên hoá đơn', 'Quy cách / nồng độ', 'Vị trí kho', 'SL nhập', 'Đã xuất', 'Tồn', 'Đơn giá', 'VAT %', 'Giá trị tồn']];
     for (const l of this.rowsLo())
-      rows.push([l.lo, viDate(l.ngay), l.soHoaDon ?? '', this.store.nccById(l.ncc)?.ten ?? '', l.loaiHang, l.quyCach, this.store.khoTen(l.kho), l.nhap, l.xuat, l.ton, l.donGia, l.vat, Math.round(l.giaTriTon)]);
+      rows.push([l.lo, viDate(l.ngay), l.soHoaDon ?? '', this.store.nccById(l.ncc)?.ten ?? '', l.loaiHang, this.store.loaiHangById(l.loaiHang)?.moTa ?? '', this.tenHD(l.loaiHang, l.lo).join('; '), l.quyCach, this.store.khoTen(l.kho), l.nhap, l.xuat, l.ton, l.donGia, l.vat, Math.round(l.giaTriTon)]);
     downloadFile(fileName('ton-kho-theo-lo', 'csv'), 'text/csv', csv(rows));
   }
 }
