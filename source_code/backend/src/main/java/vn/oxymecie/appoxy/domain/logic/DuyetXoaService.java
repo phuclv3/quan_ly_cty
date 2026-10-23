@@ -1,5 +1,6 @@
 package vn.oxymecie.appoxy.domain.logic;
 
+import vn.oxymecie.appoxy.domain.model.TrangThai;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -54,7 +55,7 @@ public class DuyetXoaService {
     String vuong = thamChieu(c, loai, maDoiTuong);
     if (vuong != null) throw ApiException.conflict(vuong);
     YeuCauXoa y = new YeuCauXoa(Ctx.nextMa("YC", c.db().getYeuCauXoa().stream().map(YeuCauXoa::getId).toList()), loai, maDoiTuong,
-        Texts.nz(moTa), lyDo.trim(), c.me(), c.now(), "Chờ duyệt", null, null, null);
+        Texts.nz(moTa), lyDo.trim(), c.me(), c.now(), TrangThai.CHO_DUYET, null, null, null);
     Ctx.upsert(c.db().getYeuCauXoa(), y, YeuCauXoa::getId);
     return y;
   }
@@ -70,14 +71,14 @@ public class DuyetXoaService {
 
   private YeuCauXoa choDuyet(Ctx c, String id) {
     YeuCauXoa y = c.db().getYeuCauXoa().stream().filter(x -> x.getId().equals(id)).findFirst().orElse(null);
-    if (y == null || !"Chờ duyệt".equals(y.getTrangThai())) throw ApiException.conflict("Yêu cầu không còn chờ duyệt");
+    if (y == null || !TrangThai.CHO_DUYET.equals(y.getTrangThai())) throw ApiException.conflict("Yêu cầu không còn chờ duyệt");
     return y;
   }
 
   public void rutYeuCau(Ctx c, String id) {
     YeuCauXoa y = choDuyet(c, id);
     if (!Objects.equals(y.getNguoiGui(), c.me())) throw ApiException.forbidden("Chỉ người gửi được rút yêu cầu");
-    y.setTrangThai("Đã rút");
+    y.setTrangThai(TrangThai.DA_RUT);
     y.setNgayDuyet(c.now());
   }
 
@@ -86,7 +87,7 @@ public class DuyetXoaService {
     if (!canDuyetXoa(c, y)) throw ApiException.forbidden("Bạn không có quyền duyệt yêu cầu này");
     if (!duyetXoaDuoc(c, y)) throw ApiException.forbidden("Không tự duyệt yêu cầu xoá do chính mình gửi — người khác duyệt, hoặc bấm \"Rút yêu cầu\"");
     if (Texts.blank(lyDo)) throw ApiException.invalid("Cần nhập lý do từ chối");
-    y.setTrangThai("Từ chối");
+    y.setTrangThai(TrangThai.TU_CHOI);
     y.setLyDoTuChoi(lyDo);
     y.setNguoiDuyet(c.me());
     y.setNgayDuyet(c.now());
@@ -99,7 +100,7 @@ public class DuyetXoaService {
     String vuong = thamChieu(c, y.getLoai(), y.getMaDoiTuong());
     if (vuong != null) throw ApiException.conflict(vuong);
     thucHienXoa(c, y.getLoai(), y.getMaDoiTuong());
-    y.setTrangThai("Đã duyệt");
+    y.setTrangThai(TrangThai.DA_DUYET);
     y.setNguoiDuyet(c.me());
     y.setNgayDuyet(c.now());
   }
@@ -137,9 +138,9 @@ public class DuyetXoaService {
 
   /** HĐ đã tất toán không xoá được — mở lại trước; phiếu sinh từ đợt TT của HĐ đã tất toán cũng vậy. */
   private String khoaXoa(Ctx c, String loai, String id) {
-    if ("HopDongBan".equals(loai) && c.hdb(id) != null && "Đã tất toán".equals(c.hdb(id).getTrangThai())) return "HĐ đã tất toán — mở lại HĐ trước khi xoá";
-    if ("HopDongMua".equals(loai) && c.hdm(id) != null && "Đã tất toán".equals(c.hdm(id).getTrangThai())) return "HĐ đã tất toán — mở lại HĐ trước khi xoá";
-    if ("HopDongPhuTai".equals(loai) && c.pt(id) != null && "Đã tất toán".equals(c.pt(id).getTrangThai())) return "HĐ đã tất toán — không xoá được";
+    if ("HopDongBan".equals(loai) && c.hdb(id) != null && TrangThai.DA_TAT_TOAN.equals(c.hdb(id).getTrangThai())) return "HĐ đã tất toán — mở lại HĐ trước khi xoá";
+    if ("HopDongMua".equals(loai) && c.hdm(id) != null && TrangThai.DA_TAT_TOAN.equals(c.hdm(id).getTrangThai())) return "HĐ đã tất toán — mở lại HĐ trước khi xoá";
+    if ("HopDongPhuTai".equals(loai) && c.pt(id) != null && TrangThai.DA_TAT_TOAN.equals(c.pt(id).getTrangThai())) return "HĐ đã tất toán — không xoá được";
     if ("PhieuThuChi".equals(loai)) {
       PhieuThuChi p = c.phieu(id);
       var ps = p == null ? null : p.getPhatSinh();
@@ -148,7 +149,7 @@ public class DuyetXoaService {
         String tt = ban ? (c.hdb(ps.getHdId()) == null ? null : c.hdb(ps.getHdId()).getTrangThai())
             : (c.hdm(ps.getHdId()) == null ? null : c.hdm(ps.getHdId()).getTrangThai());
         String so = ban ? (c.hdb(ps.getHdId()) == null ? "" : c.hdb(ps.getHdId()).getSoHD()) : (c.hdm(ps.getHdId()) == null ? "" : c.hdm(ps.getHdId()).getSoHD());
-        if ("Đã tất toán".equals(tt)) return (ban ? "HĐ bán " : "HĐ mua ") + so + " đã tất toán — mở lại HĐ trước khi xoá phiếu";
+        if (TrangThai.DA_TAT_TOAN.equals(tt)) return (ban ? "HĐ bán " : "HĐ mua ") + so + " đã tất toán — mở lại HĐ trước khi xoá phiếu";
       }
     }
     return null;
@@ -161,7 +162,7 @@ public class DuyetXoaService {
       case "HopDongBan" -> {
         if (coKho(c, id)) return "HĐ đã có phiếu kho — huỷ phiếu kho trước";
         if (d.getPhieuThuChi().stream().anyMatch(p -> p.getPhatSinh() != null && "HDB-DotTT".equals(p.getPhatSinh().getLoai())
-            && id.equals(p.getPhatSinh().getHdId()) && !"Từ chối".equals(p.getTrangThai())))
+            && id.equals(p.getPhatSinh().getHdId()) && !TrangThai.TU_CHOI.equals(p.getTrangThai())))
           return "HĐ đã có phiếu thu từ đợt thanh toán — xoá phiếu thu trước";
         if (d.getChiPhiHD().stream().anyMatch(x -> id.equals(x.getHdbId()))) return "HĐ đã có chi phí thực hiện — xoá chi phí trước";
         if (d.getHopDongMua().stream().anyMatch(m -> Calc.hdmChoHdb(m, id))) return "Có HĐ mua đang trỏ tới HĐ này — bỏ liên kết trước";
@@ -176,7 +177,7 @@ public class DuyetXoaService {
         return null;
       }
       case "PhieuThuChi" -> {
-        if (d.getPhieuThuChi().stream().anyMatch(p -> id.equals(p.getPhieuTamUngGoc()) && !"Từ chối".equals(p.getTrangThai())))
+        if (d.getPhieuThuChi().stream().anyMatch(p -> id.equals(p.getPhieuTamUngGoc()) && !TrangThai.TU_CHOI.equals(p.getTrangThai())))
           return "Phiếu tạm ứng đã có quyết toán";
         return null;
       }
@@ -185,7 +186,7 @@ public class DuyetXoaService {
         if (p == null || !"Nhập".equals(p.getLoai())) return null;
         Set<String> los = new HashSet<>();
         for (int i = 0; i < p.getDong().size(); i++) los.add(Calc.maLo(p, i));
-        PhieuKho x = d.getPhieuKho().stream().filter(q -> "Xuất".equals(q.getLoai()) && "Hiệu lực".equals(q.getTrangThai())
+        PhieuKho x = d.getPhieuKho().stream().filter(q -> "Xuất".equals(q.getLoai()) && TrangThai.HIEU_LUC.equals(q.getTrangThai())
             && q.getDong().stream().anyMatch(r -> r.getLo() != null && los.contains(r.getLo()))).findFirst().orElse(null);
         return x != null ? "Lô của phiếu này đã xuất ở phiếu " + x.getSoPhieu() + " — huỷ phiếu xuất trước" : null;
       }
@@ -230,7 +231,7 @@ public class DuyetXoaService {
   }
 
   private static boolean coKho(Ctx c, String hdId) {
-    return c.db().getPhieuKho().stream().anyMatch(p -> hdId.equals(p.getHdId()) && "Hiệu lực".equals(p.getTrangThai()));
+    return c.db().getPhieuKho().stream().anyMatch(p -> hdId.equals(p.getHdId()) && TrangThai.HIEU_LUC.equals(p.getTrangThai()));
   }
 
   private void xoaHoSo(Ctx c, String chu, String id) {
@@ -296,13 +297,13 @@ public class DuyetXoaService {
         // KHO-08: phiếu chuyển "Đã huỷ", tồn tính lại; cập nhật trạng thái nhận của HĐ Mua.
         PhieuKho p = c.phieuKho(id);
         if (p == null) return;
-        p.setTrangThai("Đã huỷ");
+        p.setTrangThai(TrangThai.DA_HUY);
         if ("Tự động HĐ Mua".equals(p.getNguonGoc()) && p.getHdId() != null) hdm.capNhatTrangThaiNhan(c, p.getHdId());
         if ("Tự động HĐ Bán".equals(p.getNguonGoc()) && p.getHdId() != null) {
           HopDongBan h = c.hdb(p.getHdId());
           boolean conGiao = d.getPhieuKho().stream().anyMatch(x -> p.getHdId().equals(x.getHdId())
-              && "Tự động HĐ Bán".equals(x.getNguonGoc()) && "Hiệu lực".equals(x.getTrangThai()));
-          if (h != null && "Đang giao hàng".equals(h.getTrangThai()) && !conGiao) h.setTrangThai("Hiệu lực");
+              && "Tự động HĐ Bán".equals(x.getNguonGoc()) && TrangThai.HIEU_LUC.equals(x.getTrangThai()));
+          if (h != null && TrangThai.DANG_GIAO_HANG.equals(h.getTrangThai()) && !conGiao) h.setTrangThai(TrangThai.HIEU_LUC);
         }
       }
       case "HoaDon" -> {

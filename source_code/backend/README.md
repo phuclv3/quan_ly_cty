@@ -31,7 +31,7 @@ Biến môi trường (đặt trực tiếp trong shell hoặc hệ thống — 
 |---|---|---|
 | `SPRING_PROFILES_ACTIVE` | (trống) | `dev` = dữ liệu mẫu + cho phép nạp lại dữ liệu mẫu |
 | `DB_URL` / `DB_USERNAME` / `DB_PASSWORD` | `jdbc:mysql://localhost:3306/app_oxy…` / `app_oxy` / (trống) | Kết nối MySQL |
-| `APP_CORS_ORIGINS` | `http://localhost:4200` | Origin frontend |
+| `APP_CORS_ORIGINS` | `http://localhost:4200,http://pms-oxymecie.vn,https://pms-oxymecie.vn` | Origin frontend |
 | `APP_STORAGE_DIR` | `./data/files` | Kho nội dung tệp hồ sơ |
 | `APP_SWAGGER_PUBLIC` | `true` | Mở Swagger không cần đăng nhập |
 | `APP_BOOTSTRAP_ADMIN_EMAIL` / `_PASSWORD` | (trống) | Tạo tài khoản quản trị đầu tiên khi chưa có tài khoản nào |

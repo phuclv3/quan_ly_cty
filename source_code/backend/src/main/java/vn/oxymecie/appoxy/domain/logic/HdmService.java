@@ -1,5 +1,6 @@
 package vn.oxymecie.appoxy.domain.logic;
 
+import vn.oxymecie.appoxy.domain.model.TrangThai;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -25,7 +26,7 @@ import vn.oxymecie.appoxy.domain.perm.Perm;
 /** Hợp đồng mua (HDM-01…10). */
 @Service
 public class HdmService {
-  public static final List<String> TRANG_THAI = List.of("Nháp", "Đã ký", "Đang nhận hàng", "Đã nhận đủ", "Đã tất toán", "Huỷ");
+  public static final List<String> TRANG_THAI = List.of(TrangThai.NHAP, TrangThai.DA_KY, TrangThai.DANG_NHAN_HANG, TrangThai.DA_NHAN_DU, TrangThai.DA_TAT_TOAN, TrangThai.HUY);
   private static final Set<String> LOAI_TIEN = Set.of("VNĐ", "USD", "RMB");
 
   private final KhoService kho;
@@ -35,13 +36,13 @@ public class HdmService {
   }
 
   public boolean hdmKhoa(Ctx c, HopDongMua m) {
-    return "Đã tất toán".equals(m.getTrangThai()) || "Huỷ".equals(m.getTrangThai()) || c.dangChoXoa("HopDongMua", m.getId());
+    return TrangThai.DA_TAT_TOAN.equals(m.getTrangThai()) || TrangThai.HUY.equals(m.getTrangThai()) || c.dangChoXoa("HopDongMua", m.getId());
   }
 
   /** Đợt trả NCC đã có phiếu chi còn hiệu lực (chưa bị từ chối) → khoá số tiền / hạn. */
   public boolean dotMuaKhoa(Ctx c, DotTTMua d) {
     PhieuThuChi p = d.getPhieuChiId() == null ? null : c.phieu(d.getPhieuChiId());
-    return p != null && !"Từ chối".equals(p.getTrangThai());
+    return p != null && !TrangThai.TU_CHOI.equals(p.getTrangThai());
   }
 
   public HopDongMua saveHdm(Ctx c, HopDongMua input, boolean isNew) {
@@ -64,7 +65,7 @@ public class HdmService {
       m = t4;
     }
     // Trạng thái chỉ đổi qua lệnh chuyển trạng thái / nhập kho.
-    m.setTrangThai(cu == null ? "Nháp" : cu.getTrangThai());
+    m.setTrangThai(cu == null ? TrangThai.NHAP : cu.getTrangThai());
     m.setTaoLuc(cu == null ? c.now() : cu.getTaoLuc());
     if (cu != null) m.setLaImport(cu.getLaImport());
     if (Texts.blank(m.getSoHD())) throw ApiException.invalid("Số HĐ mua là bắt buộc");
@@ -148,7 +149,7 @@ public class HdmService {
     final String hdmId = m.getId();
     // Đổi SL mua có thể làm đổi Đang nhận hàng ↔ Đã nhận đủ — chỉ tính lại khi HĐ đã có phiếu nhập tự động.
     if (cu != null && c.db().getPhieuKho().stream()
-        .anyMatch(p -> hdmId.equals(p.getHdId()) && "Tự động HĐ Mua".equals(p.getNguonGoc()) && "Hiệu lực".equals(p.getTrangThai())))
+        .anyMatch(p -> hdmId.equals(p.getHdId()) && "Tự động HĐ Mua".equals(p.getNguonGoc()) && TrangThai.HIEU_LUC.equals(p.getTrangThai())))
       capNhatTrangThaiNhan(c, hdmId);
     return m;
   }
@@ -160,23 +161,23 @@ public class HdmService {
     if (!TRANG_THAI.contains(toi)) throw ApiException.invalid("Trạng thái không hợp lệ");
     if (hdmKhoa(c, m)) throw ApiException.conflict("HĐ đã khoá (Đã tất toán, Huỷ hoặc đang chờ xoá)");
     // Trạng thái nhận hàng do phiếu nhập tự chuyển — tay chỉ chuyển Đã ký / Đã tất toán / Huỷ.
-    if (!List.of("Đã ký", "Đã tất toán", "Huỷ").contains(toi)) throw ApiException.conflict("Trạng thái \"" + toi + "\" do nhập kho tự chuyển");
-    if ("Đã ký".equals(toi) && !"Nháp".equals(m.getTrangThai())) throw ApiException.conflict("Chỉ HĐ Nháp mới chuyển \"Đã ký\"");
+    if (!List.of(TrangThai.DA_KY, TrangThai.DA_TAT_TOAN, TrangThai.HUY).contains(toi)) throw ApiException.conflict("Trạng thái \"" + TrangThai.nhan(toi) + "\" do nhập kho tự chuyển");
+    if (TrangThai.DA_KY.equals(toi) && !TrangThai.NHAP.equals(m.getTrangThai())) throw ApiException.conflict("Chỉ HĐ Nháp mới chuyển \"Đã ký\"");
     Calc.HdmCalc c2 = Calc.hdmCalc(m, c.db());
-    if ("Đã ký".equals(toi)) {
+    if (TrangThai.DA_KY.equals(toi)) {
       if (Texts.blank(m.getSoHD()) || Texts.blank(m.getMaNCC()) || Texts.blank(m.getNgayKy())) throw ApiException.invalid("Cần Số HĐ, NCC và Ngày ký");
       if (m.getChiTiet().isEmpty() && c2.tong() <= 0) throw ApiException.invalid("Cần ít nhất 1 dòng hàng hoặc tổng giá trị");
     }
-    if ("Đã tất toán".equals(toi)) {
-      if ("Nháp".equals(m.getTrangThai())) throw ApiException.conflict("HĐ chưa ký");
-      if (!m.isThuocPhuTai() && c2.slMua() > 0 && !"Đã nhận đủ".equals(m.getTrangThai()) && c2.slNhap() < c2.slMua())
+    if (TrangThai.DA_TAT_TOAN.equals(toi)) {
+      if (TrangThai.NHAP.equals(m.getTrangThai())) throw ApiException.conflict("HĐ chưa ký");
+      if (!m.isThuocPhuTai() && c2.slMua() > 0 && !TrangThai.DA_NHAN_DU.equals(m.getTrangThai()) && c2.slNhap() < c2.slMua())
         throw ApiException.invalid("Chưa nhận đủ hàng (đã nhập " + Money.num(c2.slNhap()) + " / " + Money.num(c2.slMua()) + ")");
       if (c2.conPhaiTra() > 0) throw ApiException.invalid("Còn phải trả NCC " + Money.vnd(c2.conPhaiTra()));
       if (!"Đã".equals(m.getXuatHoaDon())) throw ApiException.invalid("NCC chưa xuất hoá đơn");
       List<String> thieu = Calc.hoSoThieu(c.db(), "HDM", m.getId());
       if (!thieu.isEmpty()) throw ApiException.invalid("Thiếu hồ sơ: " + String.join(", ", thieu));
     }
-    if ("Huỷ".equals(toi)) {
+    if (TrangThai.HUY.equals(toi)) {
       if (c2.slNhap() > 0 || c2.daTra() > 0) throw ApiException.conflict("Chỉ huỷ khi chưa có phiếu nhập và chưa trả tiền");
       if (m.getDotTT().stream().anyMatch(d -> dotMuaKhoa(c, d)))
         throw ApiException.conflict("Còn phiếu chi trả NCC đang chờ duyệt — từ chối hoặc xoá phiếu chi trước");
@@ -189,13 +190,13 @@ public class HdmService {
     if (!c.canEdit(Perm.moLaiHdm)) throw ApiException.forbidden("Cần quyền \"Mở lại HĐ mua đã tất toán\" (HDM-03-ML)");
     HopDongMua m = c.hdm(id);
     if (m == null) throw ApiException.notFound("Không tìm thấy HĐ");
-    if (!"Đã tất toán".equals(m.getTrangThai())) throw ApiException.conflict("Chỉ mở lại HĐ đã tất toán");
+    if (!TrangThai.DA_TAT_TOAN.equals(m.getTrangThai())) throw ApiException.conflict("Chỉ mở lại HĐ đã tất toán");
     if (c.dangChoXoa("HopDongMua", id)) throw ApiException.conflict("HĐ đang chờ xoá");
     Calc.HdmCalc x = Calc.hdmCalc(m, c.db());
     boolean imp = Boolean.TRUE.equals(m.getLaImport());
-    String toi = m.isThuocPhuTai() || x.slMua() == 0 ? "Đã ký"
-        : x.slNhap() >= x.slMua() || (imp && x.slNhap() == 0) ? "Đã nhận đủ"
-        : x.slNhap() > 0 ? "Đang nhận hàng" : "Đã ký";
+    String toi = m.isThuocPhuTai() || x.slMua() == 0 ? TrangThai.DA_KY
+        : x.slNhap() >= x.slMua() || (imp && x.slNhap() == 0) ? TrangThai.DA_NHAN_DU
+        : x.slNhap() > 0 ? TrangThai.DANG_NHAN_HANG : TrangThai.DA_KY;
     m.setTrangThai(toi);
   }
 
@@ -207,7 +208,7 @@ public class HdmService {
     HopDongMua m = c.hdm(hdmId);
     if (m == null) throw ApiException.notFound("Không tìm thấy HĐ");
     if (m.isThuocPhuTai()) throw ApiException.conflict("HĐ thuộc Phú Tài không nhập kho Oxy");
-    if ("Nháp".equals(m.getTrangThai()) || "Huỷ".equals(m.getTrangThai())) throw ApiException.conflict("HĐ chưa ký hoặc đã huỷ");
+    if (TrangThai.NHAP.equals(m.getTrangThai()) || TrangThai.HUY.equals(m.getTrangThai())) throw ApiException.conflict("HĐ chưa ký hoặc đã huỷ");
     if (hdmKhoa(c, m)) throw ApiException.conflict("HĐ đã khoá");
     if (Texts.blank(khoId)) throw ApiException.invalid("Chưa chọn Vị trí kho");
     if (c.kho(khoId) == null) throw ApiException.invalid("Vị trí kho không tồn tại");
@@ -229,7 +230,7 @@ public class HdmService {
     String soPhieu = c.nextSo(c.cauHinh().getTienToNK(), ngay);
     Set<String> daCo = kho.loDaCo(c);
     for (int i = 0; i < dong.size(); i++) dong.get(i).setLo(kho.maLoMoi(soPhieu, soHoaDon, i, daCo));
-    PhieuKho p = new PhieuKho(c.uid("PK"), soPhieu, ngay, "Nhập", "Tự động HĐ Mua", hdmId, khoId, null, c.me(), "Hiệu lực", ghiChu,
+    PhieuKho p = new PhieuKho(c.uid("PK"), soPhieu, ngay, "Nhập", "Tự động HĐ Mua", hdmId, khoId, null, c.me(), TrangThai.HIEU_LUC, ghiChu,
         dong, Texts.trimToNull(soHoaDon), m.getMaNCC(), null);
     Ctx.upsert(c.db().getPhieuKho(), p, PhieuKho::getId);
     capNhatTrangThaiNhan(c, hdmId);
@@ -239,13 +240,13 @@ public class HdmService {
   /** Đang nhận hàng / Đã nhận đủ tự chuyển theo phiếu nhập (HDM-03); tích checklist "Nhập kho". */
   public void capNhatTrangThaiNhan(Ctx c, String hdmId) {
     HopDongMua m = c.hdm(hdmId);
-    if (m == null || "Đã tất toán".equals(m.getTrangThai()) || "Huỷ".equals(m.getTrangThai()) || "Nháp".equals(m.getTrangThai())) return;
+    if (m == null || TrangThai.DA_TAT_TOAN.equals(m.getTrangThai()) || TrangThai.HUY.equals(m.getTrangThai()) || TrangThai.NHAP.equals(m.getTrangThai())) return;
     Calc.HdmCalc x = Calc.hdmCalc(m, c.db());
-    String toi = x.slNhap() <= 0 ? "Đã ký" : x.slNhap() >= x.slMua() ? "Đã nhận đủ" : "Đang nhận hàng";
+    String toi = x.slNhap() <= 0 ? TrangThai.DA_KY : x.slNhap() >= x.slMua() ? TrangThai.DA_NHAN_DU : TrangThai.DANG_NHAN_HANG;
     for (ChecklistItem it : m.getChecklist()) {
       if (!Calc.CL_NHAP_KHO.equals(it.getTen())) continue;
-      it.setXong("Đã nhận đủ".equals(toi));
-      it.setNgay("Đã nhận đủ".equals(toi) ? c.today() : null);
+      it.setXong(TrangThai.DA_NHAN_DU.equals(toi));
+      it.setNgay(TrangThai.DA_NHAN_DU.equals(toi) ? c.today() : null);
     }
     m.setTrangThai(toi);
   }
@@ -267,7 +268,7 @@ public class HdmService {
     if (Texts.blank(nguonTien)) throw ApiException.invalid("Chưa chọn Nguồn tiền");
     if (c.nguon(nguonTien) == null) throw ApiException.invalid("Nguồn tiền không tồn tại");
     PhieuThuChi cu = d.getPhieuChiId() == null ? null : c.phieu(d.getPhieuChiId());
-    if (cu != null && "Đã duyệt".equals(cu.getTrangThai()))
+    if (cu != null && TrangThai.DA_DUYET.equals(cu.getTrangThai()))
       throw ApiException.conflict("Phiếu chi của đợt này đã duyệt — muốn sửa thì bấm \"Yêu cầu xoá phiếu\" ở dòng đợt, duyệt xong ghi lại");
     PhieuThuChi p = cu != null ? cu : HdbService.phieuMoi(c, "Chi");
     p.setLoai("Chi");
@@ -276,7 +277,7 @@ public class HdmService {
     p.setNoiDung("Trả NCC đợt " + dot + " — HĐ mua " + m.getSoHD() + " (" + m.getTenNCC() + ")");
     p.setSoTienChi(soTienTra);
     p.setSoTienThu(0);
-    p.setTrangThai("Chờ duyệt");
+    p.setTrangThai(TrangThai.CHO_DUYET);
     p.setLyDoTuChoi(null);
     p.setPhatSinh(new NguonPhatSinh("HDM-DotTT", m.getId(), dot));
     p.setLichSu(KeToanService.ghiLichSu(c, cu == null ? null : cu.getLichSu(), "Gửi duyệt", cu != null ? "Sửa ghi nhận trả NCC" : "Sinh từ ghi nhận trả NCC"));

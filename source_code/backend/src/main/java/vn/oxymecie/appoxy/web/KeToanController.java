@@ -1,5 +1,6 @@
 package vn.oxymecie.appoxy.web;
 
+import vn.oxymecie.appoxy.domain.model.TrangThai;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -217,14 +218,14 @@ public class KeToanController {
     Db d = cmd.snapshot();
     List<CongNoDong> thu = new ArrayList<>();
     for (HopDongBan h : d.getHopDongBan()) {
-      if ("Huỷ".equals(h.getTrangThai()) || "Báo giá".equals(h.getTrangThai())) continue;
+      if (TrangThai.HUY.equals(h.getTrangThai()) || TrangThai.BAO_GIA.equals(h.getTrangThai())) continue;
       if (rieng && !u.id().equals(h.getSale())) continue;
       Calc.HdbCalc c = Calc.hdbCalc(h, raw);
       if (c.conPhaiThu() != 0) thu.add(new CongNoDong(h.getId(), h.getSoHD(), h.getTenKH(), c.giaTriQT(), c.daThu(), c.conPhaiThu()));
     }
     List<CongNoDong> tra = new ArrayList<>();
     if (!rieng) for (HopDongMua m : d.getHopDongMua()) {
-      if ("Huỷ".equals(m.getTrangThai()) || "Nháp".equals(m.getTrangThai())) continue;
+      if (TrangThai.HUY.equals(m.getTrangThai()) || TrangThai.NHAP.equals(m.getTrangThai())) continue;
       Calc.HdmCalc c = Calc.hdmCalc(m, raw);
       if (c.conPhaiTra() != 0) tra.add(new CongNoDong(m.getId(), m.getSoHD(), m.getTenNCC(), c.tong(), c.daTra(), c.conPhaiTra()));
     }

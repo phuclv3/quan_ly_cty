@@ -12,6 +12,6 @@ INSERT INTO ht_nhanvien (id, email, ho_ten, mat_khau_bam, trang_thai, bat_doi_mk
   created_at, updated_at, created_by, updated_by) VALUES
   ('TK-ROOT', 'administrator', 'Quản trị hệ thống',
    '$2a$10$U/rSQ22ryBpoEFmjXR7r1eMwt054EVGxAW/FO0bKfGr6eX6FRWFza',
-   'Hoạt động', FALSE, 0, NULL, NULL, NOW(3), NOW(3), NULL, NULL);
+   'HOAT_DONG', FALSE, 0, NULL, NULL, NOW(3), NOW(3), NULL, NULL);
 
 INSERT INTO ht_nhanvien_nhom (tai_khoan_id, nhom_id) VALUES ('TK-ROOT', 'NQ-GD');

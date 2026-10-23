@@ -1,5 +1,6 @@
 package vn.oxymecie.appoxy.domain.calc;
 
+import vn.oxymecie.appoxy.domain.model.TrangThai;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -75,13 +76,13 @@ public final class Calc {
   public static long dotBanDaThu(DotTTBan d, Db db) {
     if (d.getPhieuThuId() == null) return d.getSoTienThu() == null ? 0 : d.getSoTienThu();
     PhieuThuChi p = phieu(db, d.getPhieuThuId());
-    return p != null && "Đã duyệt".equals(p.getTrangThai()) ? p.getSoTienThu() : 0;
+    return p != null && TrangThai.DA_DUYET.equals(p.getTrangThai()) ? p.getSoTienThu() : 0;
   }
 
   public static long dotBanChoDuyet(DotTTBan d, Db db) {
     if (d.getPhieuThuId() == null) return 0;
     PhieuThuChi p = phieu(db, d.getPhieuThuId());
-    return p != null && "Chờ duyệt".equals(p.getTrangThai()) ? p.getSoTienThu() : 0;
+    return p != null && TrangThai.CHO_DUYET.equals(p.getTrangThai()) ? p.getSoTienThu() : 0;
   }
 
   private static PhieuThuChi phieu(Db db, String id) {
@@ -104,17 +105,17 @@ public final class Calc {
     long cpDuyet = 0, cpCho = 0;
     for (ChiPhiHD c : db.getChiPhiHD()) {
       if (!Objects.equals(c.getHdbId(), h.getId())) continue;
-      if ("Đã duyệt".equals(c.getTrangThai())) cpDuyet += c.getSoTien();
-      if ("Chờ duyệt".equals(c.getTrangThai())) cpCho += c.getSoTien();
+      if (TrangThai.DA_DUYET.equals(c.getTrangThai())) cpDuyet += c.getSoTien();
+      if (TrangThai.CHO_DUYET.equals(c.getTrangThai())) cpCho += c.getSoTien();
     }
     long phat = Math.max(h.getPhatHD() == null ? 0 : h.getPhatHD(), 0);
     double giaVonXK = 0;
     for (PhieuKho p : db.getPhieuKho())
-      if ("Xuất".equals(p.getLoai()) && Objects.equals(p.getHdId(), h.getId()) && "Hiệu lực".equals(p.getTrangThai()))
+      if ("Xuất".equals(p.getLoai()) && Objects.equals(p.getHdId(), h.getId()) && TrangThai.HIEU_LUC.equals(p.getTrangThai()))
         giaVonXK += sum(p.getDong(), d -> (d.getDonGiaGoc() == null ? 0 : d.getDonGiaGoc()) * d.getSoLuong());
     double giaVonHDM = 0;
     for (HopDongMua m : db.getHopDongMua()) {
-      if ("Huỷ".equals(m.getTrangThai()) || !hdmChoHdb(m, h.getId())) continue;
+      if (TrangThai.HUY.equals(m.getTrangThai()) || !hdmChoHdb(m, h.getId())) continue;
       giaVonHDM += Objects.equals(m.getHdbId(), h.getId()) ? hdmTong(m) : sum(dongMuaChoHdb(m, h.getId()), Calc::thanhTienVND);
     }
     double giaVon = giaVonXK > 0 ? giaVonXK : giaVonHDM;
@@ -178,22 +179,22 @@ public final class Calc {
   /** HĐ bán không giao hàng (dịch vụ) — F-07: Hiệu lực → Hoàn thành thẳng. */
   public static boolean hdbKhongGiaoHang(HopDongBan h, Db db) {
     if (h.getDongHang() != null && !h.getDongHang().isEmpty()) return false;
-    for (HopDongMua m : db.getHopDongMua()) if (!"Huỷ".equals(m.getTrangThai()) && hdmChoHdb(m, h.getId())) return false;
+    for (HopDongMua m : db.getHopDongMua()) if (!TrangThai.HUY.equals(m.getTrangThai()) && hdmChoHdb(m, h.getId())) return false;
     for (PhieuKho p : db.getPhieuKho())
-      if ("Xuất".equals(p.getLoai()) && Objects.equals(p.getHdId(), h.getId()) && "Hiệu lực".equals(p.getTrangThai())) return false;
+      if ("Xuất".equals(p.getLoai()) && Objects.equals(p.getHdId(), h.getId()) && TrangThai.HIEU_LUC.equals(p.getTrangThai())) return false;
     return true;
   }
 
   /** Điều kiện chuyển trạng thái HĐ Bán (HDB-03). */
   public static List<String> hdbThieuDeChuyen(HopDongBan h, String toi, Db db) {
     List<String> out = new ArrayList<>();
-    if ("Hiệu lực".equals(toi)) {
+    if (TrangThai.HIEU_LUC.equals(toi)) {
       if (h.getSoHD() == null || h.getSoHD().trim().isEmpty()) out.add("Chưa có Số HĐ");
       if (h.getMst() == null || h.getMst().trim().isEmpty()) out.add("Chưa có MST khách hàng");
       if (h.getNgayKy() == null || h.getNgayKy().isEmpty()) out.add("Chưa có Ngày ký");
       if (h.getTruocVAT() <= 0) out.add("Chưa có Giá trị HĐ");
     }
-    if ("Đã tất toán".equals(toi)) {
+    if (TrangThai.DA_TAT_TOAN.equals(toi)) {
       HdbCalc c = hdbCalc(h, db);
       if (c.conPhaiThu() > 0) out.add("Còn phải thu " + Money.vnd(c.conPhaiThu()));
       if (!c.hoSoThieu().isEmpty()) out.add("Thiếu hồ sơ: " + String.join(", ", c.hoSoThieu()));
@@ -222,7 +223,7 @@ public final class Calc {
   public static double slDaNhap(String dongId, Db db) {
     double s = 0;
     for (PhieuKho p : db.getPhieuKho()) {
-      if (!"Nhập".equals(p.getLoai()) || !"Hiệu lực".equals(p.getTrangThai())) continue;
+      if (!"Nhập".equals(p.getLoai()) || !TrangThai.HIEU_LUC.equals(p.getTrangThai())) continue;
       for (DongPhieuKho d : p.getDong()) if (Objects.equals(d.getDongHDMua(), dongId)) s += d.getSoLuong();
     }
     return s;
@@ -233,7 +234,7 @@ public final class Calc {
     if (m.isThuocPhuTai()) return dot.getSoTienTra() == null ? 0 : dot.getSoTienTra();
     if (dot.getPhieuChiId() == null) return 0;
     PhieuThuChi p = phieu(db, dot.getPhieuChiId());
-    return p != null && "Đã duyệt".equals(p.getTrangThai()) ? p.getSoTienChi() : 0;
+    return p != null && TrangThai.DA_DUYET.equals(p.getTrangThai()) ? p.getSoTienChi() : 0;
   }
 
   /** Mốc tính hạn trả NCC: Ngày ký + các mục checklist tiến độ HĐ mua (trừ "Thanh toán Đợt 1"). */
@@ -283,10 +284,10 @@ public final class Calc {
   public static List<PhieuThuChi> tamUngChoQuyetToan(Db db, String truPhieu) {
     java.util.Set<String> dangQT = new java.util.HashSet<>();
     for (PhieuThuChi p : db.getPhieuThuChi())
-      if ("Quyết toán tạm ứng".equals(p.getLoai()) && !"Từ chối".equals(p.getTrangThai()) && !Objects.equals(p.getId(), truPhieu))
+      if ("Quyết toán tạm ứng".equals(p.getLoai()) && !TrangThai.TU_CHOI.equals(p.getTrangThai()) && !Objects.equals(p.getId(), truPhieu))
         dangQT.add(p.getPhieuTamUngGoc());
     return db.getPhieuThuChi().stream()
-        .filter(p -> "Tạm ứng".equals(p.getLoai()) && "Đã duyệt".equals(p.getTrangThai()) && !dangQT.contains(p.getId()))
+        .filter(p -> "Tạm ứng".equals(p.getLoai()) && TrangThai.DA_DUYET.equals(p.getTrangThai()) && !dangQT.contains(p.getId()))
         .toList();
   }
 
@@ -299,7 +300,7 @@ public final class Calc {
     String tu = n == null || n.getNgayDauKy() == null ? "" : n.getNgayDauKy();
     long thu = 0, chi = 0, lcVao = 0, lcRa = 0, qtThu = 0, qtChi = 0, cpHD = 0;
     for (PhieuThuChi p : db.getPhieuThuChi()) {
-      if (!"Đã duyệt".equals(p.getTrangThai()) || !inRange(p.getNgayLap(), tu, denNgay)) continue;
+      if (!TrangThai.DA_DUYET.equals(p.getTrangThai()) || !inRange(p.getNgayLap(), tu, denNgay)) continue;
       if ("Luân chuyển".equals(p.getLoai())) {
         if (nguonId.equals(p.getNguonTien())) lcRa += p.getSoTienChi();
         if (nguonId.equals(p.getNguonTienDen())) lcVao += p.getSoTienChi();
@@ -318,7 +319,7 @@ public final class Calc {
       }
     }
     for (ChiPhiHD c : db.getChiPhiHD())
-      if ("Đã duyệt".equals(c.getTrangThai()) && nguonId.equals(c.getNguonTien()) && inRange(c.getNgay(), tu, denNgay)) cpHD += c.getSoTien();
+      if (TrangThai.DA_DUYET.equals(c.getTrangThai()) && nguonId.equals(c.getNguonTien()) && inRange(c.getNgay(), tu, denNgay)) cpHD += c.getSoTien();
     long soDu = dauKy + thu - chi + qtThu - qtChi + lcVao - lcRa - cpHD;
     return new SoDu(dauKy, thu, chi, lcVao, lcRa, qtThu, qtChi, cpHD, soDu);
   }
@@ -366,7 +367,7 @@ public final class Calc {
     Map<String, DongHangMua> dongMua = new HashMap<>();
     for (HopDongMua m : db.getHopDongMua()) for (DongHangMua d : m.getChiTiet()) dongMua.put(d.getId(), d);
     List<PhieuKho> hl = db.getPhieuKho().stream()
-        .filter(p -> "Hiệu lực".equals(p.getTrangThai()) && (denNgay == null || p.getNgay().compareTo(denNgay) <= 0))
+        .filter(p -> TrangThai.HIEU_LUC.equals(p.getTrangThai()) && (denNgay == null || p.getNgay().compareTo(denNgay) <= 0))
         .toList();
     Map<String, DongLo> map = new LinkedHashMap<>();
     for (PhieuKho p : hl) {
@@ -416,7 +417,7 @@ public final class Calc {
   public static List<DongTon> tonKho(Db db, String denNgay) {
     Map<String, double[]> map = new LinkedHashMap<>();
     for (PhieuKho p : db.getPhieuKho()) {
-      if (!"Hiệu lực".equals(p.getTrangThai()) || (denNgay != null && p.getNgay().compareTo(denNgay) > 0)) continue;
+      if (!TrangThai.HIEU_LUC.equals(p.getTrangThai()) || (denNgay != null && p.getNgay().compareTo(denNgay) > 0)) continue;
       for (DongPhieuKho d : p.getDong()) {
         double[] r = map.computeIfAbsent(d.getLoaiHang() + "\u0001" + p.getKho(), k -> new double[2]);
         if ("Nhập".equals(p.getLoai())) r[0] += d.getSoLuong();
@@ -444,7 +445,7 @@ public final class Calc {
   public static double donGiaChuyenThang(Db db, String hdbId, String loaiHang) {
     if (hdbId == null) return 0;
     for (HopDongMua m : db.getHopDongMua()) {
-      if ("Huỷ".equals(m.getTrangThai()) || !hdmChoHdb(m, hdbId)) continue;
+      if (TrangThai.HUY.equals(m.getTrangThai()) || !hdmChoHdb(m, hdbId)) continue;
       for (DongHangMua d : dongMuaChoHdb(m, hdbId)) if (loaiHang.equals(d.getLoaiHang())) return Math.round(donGiaVND(d));
     }
     return 0;
@@ -486,7 +487,7 @@ public final class Calc {
   public static PtCalc ptCalc(HopDongPhuTai p, Db db) {
     double giaMua = 0;
     for (HopDongMua m : db.getHopDongMua())
-      if (p.getHdMua().contains(m.getId()) && !"Huỷ".equals(m.getTrangThai())) giaMua += hdmTong(m);
+      if (p.getHdMua().contains(m.getId()) && !TrangThai.HUY.equals(m.getTrangThai())) giaMua += hdmTong(m);
     double cp = 0;
     for (ChiPhiPT c : p.getChiPhi()) if (List.of("Vận chuyển", "Hải quan", "Khác").contains(c.getLoai())) cp += c.getSoTien();
     double giaDauVao = giaMua + cp;

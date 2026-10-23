@@ -1,5 +1,6 @@
 package vn.oxymecie.appoxy.domain.logic;
 
+import vn.oxymecie.appoxy.domain.model.TrangThai;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -24,12 +25,12 @@ import vn.oxymecie.appoxy.domain.perm.Perm;
 /** HĐ Phú Tài & quỹ ảo (PT-01…11). */
 @Service
 public class PhuTaiService {
-  public static final List<String> TRANG_THAI = List.of("Báo giá", "Hiệu lực", "Đang thực hiện", "Hoàn thành", "Đã tất toán", "Huỷ");
-  private static final List<String> THU_TU = List.of("Báo giá", "Hiệu lực", "Đang thực hiện", "Hoàn thành", "Đã tất toán");
+  public static final List<String> TRANG_THAI = List.of(TrangThai.BAO_GIA, TrangThai.HIEU_LUC, TrangThai.DANG_THUC_HIEN, TrangThai.HOAN_THANH, TrangThai.DA_TAT_TOAN, TrangThai.HUY);
+  private static final List<String> THU_TU = List.of(TrangThai.BAO_GIA, TrangThai.HIEU_LUC, TrangThai.DANG_THUC_HIEN, TrangThai.HOAN_THANH, TrangThai.DA_TAT_TOAN);
   private static final Set<String> LOAI_TIEN = Set.of("VNĐ", "USD", "RMB");
 
   public boolean ptKhoa(Ctx c, HopDongPhuTai p) {
-    return "Đã tất toán".equals(p.getTrangThai()) || "Huỷ".equals(p.getTrangThai()) || c.dangChoXoa("HopDongPhuTai", p.getId());
+    return TrangThai.DA_TAT_TOAN.equals(p.getTrangThai()) || TrangThai.HUY.equals(p.getTrangThai()) || c.dangChoXoa("HopDongPhuTai", p.getId());
   }
 
   private static String cachChia(HopDongPhuTai p) {
@@ -43,7 +44,7 @@ public class PhuTaiService {
     HopDongPhuTai cu = isNew ? null : c.pt(p.getId());
     if (!isNew && cu == null) throw ApiException.notFound("Không tìm thấy HĐ");
     if (cu != null && ptKhoa(c, cu)) throw ApiException.conflict("HĐ đã khoá");
-    p.setTrangThai(cu == null ? "Báo giá" : cu.getTrangThai());
+    p.setTrangThai(cu == null ? TrangThai.BAO_GIA : cu.getTrangThai());
     p.setLyDoHuy(cu == null ? null : cu.getLyDoHuy());
     p.setTyLeLog(cu == null ? new ArrayList<>() : new ArrayList<>(cu.getTyLeLog()));
     p.setTaoLuc(cu == null ? c.now() : cu.getTaoLuc());
@@ -123,11 +124,11 @@ public class PhuTaiService {
     if (p == null) throw ApiException.notFound("Không tìm thấy HĐ");
     c.require(Perm.phuTai);
     if (ptKhoa(c, p)) throw ApiException.conflict("HĐ đã khoá (Đã tất toán, Huỷ hoặc đang chờ xoá)");
-    if (!"Huỷ".equals(toi) && THU_TU.indexOf(toi) != THU_TU.indexOf(p.getTrangThai()) + 1)
-      throw ApiException.conflict("Không chuyển được từ \"" + p.getTrangThai() + "\" sang \"" + toi + "\"");
-    if ("Hiệu lực".equals(toi) && (Texts.blank(p.getSoHD()) || Texts.blank(p.getNgayKy()) || p.getTruocVAT() <= 0))
+    if (!TrangThai.HUY.equals(toi) && THU_TU.indexOf(toi) != THU_TU.indexOf(p.getTrangThai()) + 1)
+      throw ApiException.conflict("Không chuyển được từ \"" + TrangThai.nhan(p.getTrangThai()) + "\" sang \"" + TrangThai.nhan(toi) + "\"");
+    if (TrangThai.HIEU_LUC.equals(toi) && (Texts.blank(p.getSoHD()) || Texts.blank(p.getNgayKy()) || p.getTruocVAT() <= 0))
       throw ApiException.invalid("Cần Số HĐ, Ngày ký và Giá bán");
-    if ("Đã tất toán".equals(toi)) {
+    if (TrangThai.DA_TAT_TOAN.equals(toi)) {
       // PT-03 (F-04): KH đã trả Phú Tài đủ VÀ Σ "Chi từ PT" của HĐ ≥ Oxy được hưởng (gộp).
       Calc.PtCalc x = Calc.ptCalc(p, c.db());
       if (x.khDaTra() < x.sauVAT()) throw ApiException.invalid("Khách hàng chưa trả Phú Tài đủ (còn " + Money.vnd(x.sauVAT() - x.khDaTra()) + ")");
@@ -136,9 +137,9 @@ public class PhuTaiService {
         throw ApiException.invalid("Phú Tài chưa chuyển đủ phần Oxy được hưởng (đã ghi " + Money.money(daChuyen) + " / "
             + Money.vnd(x.oxyGop()) + " ở sổ dòng tiền, chiều \"Chi từ PT\")");
     }
-    if ("Huỷ".equals(toi) && Texts.blank(lyDoHuy)) throw ApiException.invalid("Huỷ HĐ cần ghi lý do");
+    if (TrangThai.HUY.equals(toi) && Texts.blank(lyDoHuy)) throw ApiException.invalid("Huỷ HĐ cần ghi lý do");
     p.setTrangThai(toi);
-    if ("Huỷ".equals(toi)) p.setLyDoHuy(lyDoHuy.trim());
+    if (TrangThai.HUY.equals(toi)) p.setLyDoHuy(lyDoHuy.trim());
   }
 
   /** PT-08 → PT-09: mỗi dòng "Oxy chuyển PT" sinh 1 dòng "Thu về PT" tự động trong quỹ ảo. */

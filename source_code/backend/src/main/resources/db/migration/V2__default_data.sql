@@ -41,12 +41,12 @@ INSERT INTO ht_chuc_nang (ma, module, ten, mo_ta, muc_cho_phep) VALUES
 
 -- Nhóm quyền mặc định (sheet "Ma trận quyền", D-25)
 INSERT INTO ht_nhom (id, ma, ten, mo_ta, toan_quyen, trang_thai, he_thong, tao_luc) VALUES
-  ('NQ-GD', 'GIAM_DOC', 'Giám đốc', 'Toàn quyền mọi chức năng', TRUE, 'Hoạt động', TRUE, '2026-10-23 05:26:12.889'),
-  ('NQ-KT', 'KE_TOAN', 'Kế toán', 'Sổ quỹ, duyệt phiếu, công nợ, Phú Tài', FALSE, 'Hoạt động', TRUE, '2026-10-23 05:26:12.889'),
-  ('NQ-SALE', 'SALE', 'Sale', 'Chỉ HĐ bán mình phụ trách; danh mục khách hàng', FALSE, 'Hoạt động', TRUE, '2026-10-23 05:26:12.889'),
-  ('NQ-ADMIN', 'ADMIN_KD', 'Admin kinh doanh', 'HĐ bán / mua, hồ sơ, giao nhận', FALSE, 'Hoạt động', TRUE, '2026-10-23 05:26:12.889'),
-  ('NQ-KHO', 'KHO', 'Kho', 'Tồn kho, nhập / xuất, phiếu điều chỉnh', FALSE, 'Hoạt động', TRUE, '2026-10-23 05:26:12.889'),
-  ('NQ-XEM', 'CHI_XEM', 'Chỉ xem', 'Xem mọi số liệu, không có nút hành động', FALSE, 'Hoạt động', TRUE, '2026-10-23 05:26:12.889');
+  ('NQ-GD', 'GIAM_DOC', 'Giám đốc', 'Toàn quyền mọi chức năng', TRUE, 'HOAT_DONG', TRUE, '2026-10-23 06:51:32.346'),
+  ('NQ-KT', 'KE_TOAN', 'Kế toán', 'Sổ quỹ, duyệt phiếu, công nợ, Phú Tài', FALSE, 'HOAT_DONG', TRUE, '2026-10-23 06:51:32.346'),
+  ('NQ-SALE', 'SALE', 'Sale', 'Chỉ HĐ bán mình phụ trách; danh mục khách hàng', FALSE, 'HOAT_DONG', TRUE, '2026-10-23 06:51:32.346'),
+  ('NQ-ADMIN', 'ADMIN_KD', 'Admin kinh doanh', 'HĐ bán / mua, hồ sơ, giao nhận', FALSE, 'HOAT_DONG', TRUE, '2026-10-23 06:51:32.346'),
+  ('NQ-KHO', 'KHO', 'Kho', 'Tồn kho, nhập / xuất, phiếu điều chỉnh', FALSE, 'HOAT_DONG', TRUE, '2026-10-23 06:51:32.346'),
+  ('NQ-XEM', 'CHI_XEM', 'Chỉ xem', 'Xem mọi số liệu, không có nút hành động', FALSE, 'HOAT_DONG', TRUE, '2026-10-23 06:51:32.346');
 
 INSERT INTO ht_nhom_chuc_nang (nhom_id, chuc_nang_ma, muc_quyen) VALUES
   ('NQ-KT', 'NT-14', 'view'),
@@ -148,20 +148,20 @@ INSERT INTO ht_cau_hinh (khoa, gia_tri) VALUES
 
 -- Tài khoản demo — 1 mỗi nhóm quyền mặc định (mật khẩu dùng chung, xem README backend)
 INSERT INTO ht_nhanvien (id, email, ho_ten, mat_khau_bam, trang_thai, bat_doi_mk, so_lan_sai, created_at, updated_at) VALUES
-  ('TKmvkj1l7i1v68feo1v7pw6d', 'giamdoc@oxymecie.vn', 'Giám đốc (demo)', '$2a$10$KihdWR8o9Z4KRZzpSiH93.N3YgsRgzlNHsqSb9mWMm7rf8jKRkvOm', 'Hoạt động', FALSE, 0, '2026-10-23 05:26:12.889', '2026-10-23 05:26:12.889'),
-  ('TKmvkj1l7j5ldagv1vxnlkt', 'ketoan@oxymecie.vn', 'Kế toán (demo)', '$2a$10$KihdWR8o9Z4KRZzpSiH93.N3YgsRgzlNHsqSb9mWMm7rf8jKRkvOm', 'Hoạt động', FALSE, 0, '2026-10-23 05:26:12.889', '2026-10-23 05:26:12.889'),
-  ('TKmvkj1l7j1paxxz81f0385h', 'sale@oxymecie.vn', 'Sale (demo)', '$2a$10$KihdWR8o9Z4KRZzpSiH93.N3YgsRgzlNHsqSb9mWMm7rf8jKRkvOm', 'Hoạt động', FALSE, 0, '2026-10-23 05:26:12.889', '2026-10-23 05:26:12.889'),
-  ('TKmvkj1l7j1okhp1s1ghrw17', 'admin@oxymecie.vn', 'Admin kinh doanh (demo)', '$2a$10$KihdWR8o9Z4KRZzpSiH93.N3YgsRgzlNHsqSb9mWMm7rf8jKRkvOm', 'Hoạt động', FALSE, 0, '2026-10-23 05:26:12.889', '2026-10-23 05:26:12.889'),
-  ('TKmvkj1l7jdyy1h9jpw0hm', 'kho@oxymecie.vn', 'Thủ kho (demo)', '$2a$10$KihdWR8o9Z4KRZzpSiH93.N3YgsRgzlNHsqSb9mWMm7rf8jKRkvOm', 'Hoạt động', FALSE, 0, '2026-10-23 05:26:12.889', '2026-10-23 05:26:12.889'),
-  ('TKmvkj1l7j1lvnmcc175weth', 'chixem@oxymecie.vn', 'Chỉ xem (demo)', '$2a$10$KihdWR8o9Z4KRZzpSiH93.N3YgsRgzlNHsqSb9mWMm7rf8jKRkvOm', 'Hoạt động', FALSE, 0, '2026-10-23 05:26:12.889', '2026-10-23 05:26:12.889');
+  ('TKmvkm3beo1xrnu1xxx22ow', 'giamdoc@oxymecie.vn', 'Giám đốc (demo)', '$2a$10$KihdWR8o9Z4KRZzpSiH93.N3YgsRgzlNHsqSb9mWMm7rf8jKRkvOm', 'HOAT_DONG', FALSE, 0, '2026-10-23 06:51:32.346', '2026-10-23 06:51:32.346'),
+  ('TKmvkm3beo1636jcvgvt4rk', 'ketoan@oxymecie.vn', 'Kế toán (demo)', '$2a$10$KihdWR8o9Z4KRZzpSiH93.N3YgsRgzlNHsqSb9mWMm7rf8jKRkvOm', 'HOAT_DONG', FALSE, 0, '2026-10-23 06:51:32.346', '2026-10-23 06:51:32.346'),
+  ('TKmvkm3beo11o7nzsqi82wc', 'sale@oxymecie.vn', 'Sale (demo)', '$2a$10$KihdWR8o9Z4KRZzpSiH93.N3YgsRgzlNHsqSb9mWMm7rf8jKRkvOm', 'HOAT_DONG', FALSE, 0, '2026-10-23 06:51:32.346', '2026-10-23 06:51:32.346'),
+  ('TKmvkm3beo1hd21ahan4o38', 'admin@oxymecie.vn', 'Admin kinh doanh (demo)', '$2a$10$KihdWR8o9Z4KRZzpSiH93.N3YgsRgzlNHsqSb9mWMm7rf8jKRkvOm', 'HOAT_DONG', FALSE, 0, '2026-10-23 06:51:32.346', '2026-10-23 06:51:32.346'),
+  ('TKmvkm3beo1p2y0iu1cu6nen', 'kho@oxymecie.vn', 'Thủ kho (demo)', '$2a$10$KihdWR8o9Z4KRZzpSiH93.N3YgsRgzlNHsqSb9mWMm7rf8jKRkvOm', 'HOAT_DONG', FALSE, 0, '2026-10-23 06:51:32.346', '2026-10-23 06:51:32.346'),
+  ('TKmvkm3beo1nlu4vz1hktkdp', 'chixem@oxymecie.vn', 'Chỉ xem (demo)', '$2a$10$KihdWR8o9Z4KRZzpSiH93.N3YgsRgzlNHsqSb9mWMm7rf8jKRkvOm', 'HOAT_DONG', FALSE, 0, '2026-10-23 06:51:32.346', '2026-10-23 06:51:32.346');
 
 INSERT INTO ht_nhanvien_nhom (tai_khoan_id, nhom_id) VALUES
-  ('TKmvkj1l7i1v68feo1v7pw6d', 'NQ-GD'),
-  ('TKmvkj1l7j5ldagv1vxnlkt', 'NQ-KT'),
-  ('TKmvkj1l7j1paxxz81f0385h', 'NQ-SALE'),
-  ('TKmvkj1l7j1okhp1s1ghrw17', 'NQ-ADMIN'),
-  ('TKmvkj1l7jdyy1h9jpw0hm', 'NQ-KHO'),
-  ('TKmvkj1l7j1lvnmcc175weth', 'NQ-XEM');
+  ('TKmvkm3beo1xrnu1xxx22ow', 'NQ-GD'),
+  ('TKmvkm3beo1636jcvgvt4rk', 'NQ-KT'),
+  ('TKmvkm3beo11o7nzsqi82wc', 'NQ-SALE'),
+  ('TKmvkm3beo1hd21ahan4o38', 'NQ-ADMIN'),
+  ('TKmvkm3beo1p2y0iu1cu6nen', 'NQ-KHO'),
+  ('TKmvkm3beo1nlu4vz1hktkdp', 'NQ-XEM');
 
 -- Vị trí kho hệ thống "Chuyển thẳng — không qua kho" (KHO-01, không sửa / xoá)
 INSERT INTO kho_vi_tri (id, ten, loai, dang_dung) VALUES

@@ -1,5 +1,6 @@
 package vn.oxymecie.appoxy.domain.logic;
 
+import vn.oxymecie.appoxy.domain.model.TrangThai;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Clock;
 import java.util.List;
@@ -297,6 +298,6 @@ public final class Ctx {
   public boolean dangChoXoa(String loai, String id) {
     if (id == null || id.isEmpty()) return false;
     return db.getYeuCauXoa().stream()
-        .anyMatch(y -> loai.equals(y.getLoai()) && id.equals(y.getMaDoiTuong()) && "Chờ duyệt".equals(y.getTrangThai()));
+        .anyMatch(y -> loai.equals(y.getLoai()) && id.equals(y.getMaDoiTuong()) && TrangThai.CHO_DUYET.equals(y.getTrangThai()));
   }
 }

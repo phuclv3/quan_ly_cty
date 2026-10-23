@@ -1,5 +1,6 @@
 package vn.oxymecie.appoxy.domain.logic;
 
+import vn.oxymecie.appoxy.domain.model.TrangThai;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -29,8 +30,8 @@ import vn.oxymecie.appoxy.domain.perm.Perm;
 /** Hợp đồng bán (HDB-01…13), đề nghị cấp vật tư. */
 @Service
 public class HdbService {
-  public static final List<String> TRANG_THAI = List.of("Báo giá", "Hiệu lực", "Đang giao hàng", "Hoàn thành", "Đã tất toán", "Huỷ");
-  private static final List<String> THU_TU = List.of("Báo giá", "Hiệu lực", "Đang giao hàng", "Hoàn thành", "Đã tất toán");
+  public static final List<String> TRANG_THAI = List.of(TrangThai.BAO_GIA, TrangThai.HIEU_LUC, TrangThai.DANG_GIAO_HANG, TrangThai.HOAN_THANH, TrangThai.DA_TAT_TOAN, TrangThai.HUY);
+  private static final List<String> THU_TU = List.of(TrangThai.BAO_GIA, TrangThai.HIEU_LUC, TrangThai.DANG_GIAO_HANG, TrangThai.HOAN_THANH, TrangThai.DA_TAT_TOAN);
 
   private final KhoService kho;
   private final KeToanService keToan;
@@ -41,14 +42,14 @@ public class HdbService {
   }
 
   public boolean hdbKhoa(Ctx c, HopDongBan h) {
-    return "Đã tất toán".equals(h.getTrangThai()) || "Huỷ".equals(h.getTrangThai()) || c.dangChoXoa("HopDongBan", h.getId());
+    return TrangThai.DA_TAT_TOAN.equals(h.getTrangThai()) || TrangThai.HUY.equals(h.getTrangThai()) || c.dangChoXoa("HopDongBan", h.getId());
   }
 
   /** HĐ đã có phiếu Thu sinh từ đợt TT (chưa bị từ chối) — khoá Giá trị / VAT (F-08). */
   public boolean hdbCoPhieuThu(Ctx c, HopDongBan h) {
     for (DotTTBan d : h.getDotTT()) {
       PhieuThuChi p = d.getPhieuThuId() == null ? null : c.phieu(d.getPhieuThuId());
-      if (p != null && !"Từ chối".equals(p.getTrangThai())) return true;
+      if (p != null && !TrangThai.TU_CHOI.equals(p.getTrangThai())) return true;
     }
     return false;
   }
@@ -65,7 +66,7 @@ public class HdbService {
     c.require(Perm.hdb, Level.edit, cu != null ? sale(cu) : sale(h));
     if (cu != null && hdbKhoa(c, cu)) throw ApiException.conflict("HĐ đã khoá (Đã tất toán hoặc đang chờ xoá)");
     // Trạng thái, lý do huỷ, tham số thuế và cờ import không đổi qua lưu thông tin.
-    h.setTrangThai(cu == null ? "Báo giá" : cu.getTrangThai());
+    h.setTrangThai(cu == null ? TrangThai.BAO_GIA : cu.getTrangThai());
     h.setLyDoHuy(cu == null ? null : cu.getLyDoHuy());
     if (cu == null) {
       h.setThamSoThue(new ThamSoThue(c.cauHinh().getTndnNguong(), c.cauHinh().getTndnMuc1(), c.cauHinh().getTndnMuc2()));
@@ -84,7 +85,7 @@ public class HdbService {
     chuanHoaDong(c, h);
     chuanHoaDot(c, h, cu);
     Calc.apDungTuDongHdb(h);
-    boolean baoGia = cu == null || "Báo giá".equals(cu.getTrangThai());
+    boolean baoGia = cu == null || TrangThai.BAO_GIA.equals(cu.getTrangThai());
     String soHD = Texts.trim(h.getSoHD());
     if (soHD.isEmpty() && !baoGia) throw ApiException.invalid("Số HĐ bán là bắt buộc");
     if (!soHD.isEmpty() && c.db().getHopDongBan().stream()
@@ -105,8 +106,8 @@ public class HdbService {
       throw ApiException.invalid("Ngày hiệu lực (ngày thu tạm ứng) phải ≥ Ngày ký");
     if (h.getDotTT().size() > c.cauHinh().getSoDotToiDa())
       throw ApiException.invalid("Tối đa " + c.cauHinh().getSoDotToiDa() + " đợt thanh toán");
-    if (cu != null && !"Báo giá".equals(cu.getTrangThai())) {
-      List<String> thieu = Calc.hdbThieuDeChuyen(h, "Hiệu lực", c.db());
+    if (cu != null && !TrangThai.BAO_GIA.equals(cu.getTrangThai())) {
+      List<String> thieu = Calc.hdbThieuDeChuyen(h, TrangThai.HIEU_LUC, c.db());
       if (!thieu.isEmpty()) throw ApiException.invalid(String.join(" · ", thieu));
     }
     h.setSoHD(soHD.isEmpty() ? "" : h.getSoHD());
@@ -163,7 +164,7 @@ public class HdbService {
 
   /** Trạng thái kế tiếp hợp lệ (HDB-03). */
   public String hdbKeTiep(Ctx c, HopDongBan h) {
-    if ("Hiệu lực".equals(h.getTrangThai()) && Calc.hdbKhongGiaoHang(h, c.db())) return "Hoàn thành";
+    if (TrangThai.HIEU_LUC.equals(h.getTrangThai()) && Calc.hdbKhongGiaoHang(h, c.db())) return TrangThai.HOAN_THANH;
     int i = THU_TU.indexOf(h.getTrangThai());
     return i >= 0 && i < THU_TU.size() - 1 ? THU_TU.get(i + 1) : null;
   }
@@ -173,11 +174,11 @@ public class HdbService {
     if (h == null) throw ApiException.notFound("Không tìm thấy HĐ");
     c.require(Perm.hdb, Level.edit, sale(h));
     if (c.dangChoXoa("HopDongBan", id)) throw ApiException.conflict("HĐ đang chờ xoá");
-    if ("Đã tất toán".equals(h.getTrangThai())) throw ApiException.conflict("HĐ đã tất toán — dùng \"Mở lại\" (HDB-03-ML)");
-    if ("Huỷ".equals(h.getTrangThai())) throw ApiException.conflict("HĐ đã huỷ");
+    if (TrangThai.DA_TAT_TOAN.equals(h.getTrangThai())) throw ApiException.conflict("HĐ đã tất toán — dùng \"Mở lại\" (HDB-03-ML)");
+    if (TrangThai.HUY.equals(h.getTrangThai())) throw ApiException.conflict("HĐ đã huỷ");
     // Chỉ đi đúng bước kế tiếp; "Đang giao hàng" do ghi nhận giao hàng tự chuyển.
-    if (!Objects.equals(toi, hdbKeTiep(c, h)) || "Đang giao hàng".equals(toi))
-      throw ApiException.conflict("Không chuyển được từ \"" + h.getTrangThai() + "\" sang \"" + toi + "\"");
+    if (!Objects.equals(toi, hdbKeTiep(c, h)) || TrangThai.DANG_GIAO_HANG.equals(toi))
+      throw ApiException.conflict("Không chuyển được từ \"" + TrangThai.nhan(h.getTrangThai()) + "\" sang \"" + TrangThai.nhan(toi) + "\"");
     List<String> thieu = Calc.hdbThieuDeChuyen(h, toi, c.db());
     if (!thieu.isEmpty()) throw ApiException.invalid(String.join(" · ", thieu));
     h.setTrangThai(toi);
@@ -188,16 +189,16 @@ public class HdbService {
     HopDongBan h = c.hdb(id);
     if (h == null) throw ApiException.notFound("Không tìm thấy HĐ");
     c.require(Perm.hdb, Level.edit, sale(h));
-    if (hdbKhoa(c, h)) throw ApiException.conflict("Huỷ".equals(h.getTrangThai()) ? "HĐ đã huỷ" : "HĐ đã khoá (Đã tất toán hoặc đang chờ xoá)");
+    if (hdbKhoa(c, h)) throw ApiException.conflict(TrangThai.HUY.equals(h.getTrangThai()) ? "HĐ đã huỷ" : "HĐ đã khoá (Đã tất toán hoặc đang chờ xoá)");
     if (Texts.blank(lyDo)) throw ApiException.invalid("Cần lý do huỷ");
     if (hdbCoPhieuThu(c, h)) throw ApiException.conflict("Chỉ huỷ khi chưa thu tiền — xoá / từ chối phiếu Thu trước");
-    if (c.db().getPhieuKho().stream().anyMatch(p -> "Xuất".equals(p.getLoai()) && id.equals(p.getHdId()) && "Hiệu lực".equals(p.getTrangThai())))
+    if (c.db().getPhieuKho().stream().anyMatch(p -> "Xuất".equals(p.getLoai()) && id.equals(p.getHdId()) && TrangThai.HIEU_LUC.equals(p.getTrangThai())))
       throw ApiException.conflict("Chỉ huỷ khi chưa xuất kho giao hàng");
-    if (c.db().getChiPhiHD().stream().anyMatch(x -> id.equals(x.getHdbId()) && !"Từ chối".equals(x.getTrangThai())))
+    if (c.db().getChiPhiHD().stream().anyMatch(x -> id.equals(x.getHdbId()) && !TrangThai.TU_CHOI.equals(x.getTrangThai())))
       throw ApiException.conflict("HĐ còn chi phí thực hiện — xoá / từ chối chi phí trước");
     if (c.db().getDeNghiVatTu().stream().anyMatch(x -> id.equals(x.getHdbId()) && x.getLyDoHuy() == null))
       throw ApiException.conflict("HĐ có đề nghị cấp vật tư — huỷ đề nghị trước");
-    h.setTrangThai("Huỷ");
+    h.setTrangThai(TrangThai.HUY);
     h.setLyDoHuy(lyDo.trim());
   }
 
@@ -206,9 +207,9 @@ public class HdbService {
     if (!c.canEdit(Perm.moLaiHdb)) throw ApiException.forbidden("Cần quyền \"Mở lại HĐ đã tất toán\" (HDB-03-ML)");
     HopDongBan h = c.hdb(id);
     if (h == null) throw ApiException.notFound("Không tìm thấy HĐ");
-    if (!"Đã tất toán".equals(h.getTrangThai())) throw ApiException.conflict("Chỉ mở lại HĐ đã tất toán");
+    if (!TrangThai.DA_TAT_TOAN.equals(h.getTrangThai())) throw ApiException.conflict("Chỉ mở lại HĐ đã tất toán");
     if (c.dangChoXoa("HopDongBan", id)) throw ApiException.conflict("HĐ đang chờ xoá");
-    h.setTrangThai("Hoàn thành");
+    h.setTrangThai(TrangThai.HOAN_THANH);
   }
 
   /** HDB-04: ghi nhận một lần giao → sinh 1 phiếu Xuất kho trừ theo lô (giá vốn = đơn giá lô). */
@@ -216,8 +217,8 @@ public class HdbService {
     HopDongBan h = c.hdb(hdbId);
     if (h == null) throw ApiException.notFound("Không tìm thấy HĐ");
     c.require(Perm.hdbGiaoHang, Level.edit, sale(h));
-    if ("Báo giá".equals(h.getTrangThai())) throw ApiException.conflict("HĐ chưa Hiệu lực");
-    if ("Hoàn thành".equals(h.getTrangThai())) throw ApiException.conflict("HĐ đã Hoàn thành — không ghi nhận giao thêm");
+    if (TrangThai.BAO_GIA.equals(h.getTrangThai())) throw ApiException.conflict("HĐ chưa Hiệu lực");
+    if (TrangThai.HOAN_THANH.equals(h.getTrangThai())) throw ApiException.conflict("HĐ đã Hoàn thành — không ghi nhận giao thêm");
     if (hdbKhoa(c, h)) throw ApiException.conflict("HĐ đã khoá");
     if (Texts.blank(khoId)) throw ApiException.invalid("Chưa chọn Vị trí kho");
     if (c.kho(khoId) == null) throw ApiException.invalid("Vị trí kho không tồn tại");
@@ -225,9 +226,9 @@ public class HdbService {
     List<DongPhieuKho> ds = kho.dongXuatTheoLo(c, khoId, hdbId, dong, ngay);
     if (ds.isEmpty()) throw ApiException.invalid("Cần ít nhất 1 dòng hàng có số lượng > 0");
     PhieuKho p = new PhieuKho(c.uid("PK"), c.nextSo(c.cauHinh().getTienToXK(), ngay), ngay, "Xuất", "Tự động HĐ Bán", hdbId, khoId,
-        null, c.me(), "Hiệu lực", ghiChu, ds, null, null, null);
+        null, c.me(), TrangThai.HIEU_LUC, ghiChu, ds, null, null, null);
     Ctx.upsert(c.db().getPhieuKho(), p, PhieuKho::getId);
-    if ("Hiệu lực".equals(h.getTrangThai())) h.setTrangThai("Đang giao hàng");
+    if (TrangThai.HIEU_LUC.equals(h.getTrangThai())) h.setTrangThai(TrangThai.DANG_GIAO_HANG);
     return p;
   }
 
@@ -248,7 +249,7 @@ public class HdbService {
     HopDongBan h = c.hdb(hdbId);
     if (h == null) throw ApiException.notFound("Không tìm thấy HĐ");
     if (hdbKhoa(c, h)) throw ApiException.conflict("HĐ đã khoá");
-    if ("Báo giá".equals(h.getTrangThai()) && !(Boolean.TRUE.equals(h.getCoTamUng()) && dot == 1))
+    if (TrangThai.BAO_GIA.equals(h.getTrangThai()) && !(Boolean.TRUE.equals(h.getCoTamUng()) && dot == 1))
       throw ApiException.conflict("HĐ đang ở Báo giá — chỉ ghi thực thu từ Hiệu lực trở đi (trừ đợt tạm ứng)");
     DotTTBan d = h.getDotTT().stream().filter(x -> x.getDot() == dot).findFirst().orElse(null);
     if (d == null) throw ApiException.notFound("Không có đợt này");
@@ -258,7 +259,7 @@ public class HdbService {
     long conLai = hdbConThuDuoc(h, dot);
     if (soTienThu > conLai) throw ApiException.invalid("Số thu vượt phần còn phải thu của HĐ (tối đa " + Money.vnd(conLai) + ")");
     PhieuThuChi cu = d.getPhieuThuId() == null ? null : c.phieu(d.getPhieuThuId());
-    if (cu != null && "Đã duyệt".equals(cu.getTrangThai()))
+    if (cu != null && TrangThai.DA_DUYET.equals(cu.getTrangThai()))
       throw ApiException.conflict("Phiếu thu của đợt này đã duyệt — muốn sửa thì bấm \"Yêu cầu xoá phiếu\" ở dòng đợt, duyệt xong ghi lại");
     PhieuThuChi p = cu != null ? cu : phieuMoi(c, "Thu");
     p.setLoai("Thu");
@@ -267,7 +268,7 @@ public class HdbService {
     p.setNoiDung("Thu đợt " + dot + " — HĐ bán " + h.getSoHD() + " (" + h.getTenKH() + ")");
     p.setSoTienThu(soTienThu);
     p.setSoTienChi(0);
-    p.setTrangThai("Chờ duyệt");
+    p.setTrangThai(TrangThai.CHO_DUYET);
     p.setLyDoTuChoi(null);
     p.setPhatSinh(new NguonPhatSinh("HDB-DotTT", h.getId(), dot));
     p.setLichSu(KeToanService.ghiLichSu(c, cu == null ? null : cu.getLichSu(), "Gửi duyệt", cu != null ? "Sửa ghi nhận thực thu" : "Sinh từ ghi nhận thực thu"));
@@ -289,10 +290,10 @@ public class HdbService {
     PhieuThuChi p = new PhieuThuChi();
     p.setNgayLap(c.today());
     p.setLoai(loai);
-    p.setNguonTien(c.db().getNguonTien().stream().filter(n -> "Đang dùng".equals(n.getTrangThai())).map(n -> n.getId()).findFirst().orElse(null));
+    p.setNguonTien(c.db().getNguonTien().stream().filter(n -> TrangThai.DANG_DUNG.equals(n.getTrangThai())).map(n -> n.getId()).findFirst().orElse(null));
     p.setNoiDung("");
     p.setNguoiDeNghi(c.me());
-    p.setTrangThai("Nháp");
+    p.setTrangThai(TrangThai.NHAP);
     p.setFiles(new ArrayList<>());
     return p;
   }
@@ -308,7 +309,7 @@ public class HdbService {
     x.setNguonTien(nguonTien);
     x.setNguoiThucHien(c.me());
     x.setNguoiNhan(nguoiNhan);
-    x.setTrangThai("Nháp");
+    x.setTrangThai(TrangThai.NHAP);
     x.setFiles(new ArrayList<>());
     return keToan.saveChiPhi(c, x, true, true);
   }
@@ -343,7 +344,7 @@ public class HdbService {
     if (dn == null) throw ApiException.notFound("Không tìm thấy đề nghị");
     c.require(Perm.hdb, Level.edit, sale(c.hdb(dn.getHdbId())));
     if (Texts.blank(lyDo)) throw ApiException.invalid("Cần lý do huỷ");
-    if (c.db().getHopDongMua().stream().anyMatch(m -> !"Huỷ".equals(m.getTrangThai())
+    if (c.db().getHopDongMua().stream().anyMatch(m -> !TrangThai.HUY.equals(m.getTrangThai())
         && m.getChiTiet().stream().anyMatch(d -> id.equals(d.getDnvtId()))))
       throw ApiException.conflict("Đề nghị đã lên HĐ mua — bỏ dòng ở HĐ mua trước khi huỷ");
     dn.setLyDoHuy(lyDo.trim());

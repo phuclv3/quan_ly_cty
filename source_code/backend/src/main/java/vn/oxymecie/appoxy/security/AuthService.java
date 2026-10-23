@@ -15,6 +15,7 @@ import vn.oxymecie.appoxy.common.Ids;
 import vn.oxymecie.appoxy.common.Texts;
 import vn.oxymecie.appoxy.domain.logic.Ctx;
 import vn.oxymecie.appoxy.domain.model.TaiKhoan;
+import vn.oxymecie.appoxy.domain.model.TrangThai;
 import vn.oxymecie.appoxy.domain.perm.Perm;
 import vn.oxymecie.appoxy.domain.perm.Quyen;
 import vn.oxymecie.appoxy.persistence.Repos;
@@ -205,7 +206,7 @@ public class AuthService {
 				throw ApiException.conflict("Email đã có tài khoản");
 			kiemNhom(c, nhom);
 			String id = Ids.safe(idDeXuat) && c.taiKhoan(idDeXuat) == null ? idDeXuat : c.uid("TK");
-			TaiKhoan t = new TaiKhoan(id, email, hoTen.trim(), new ArrayList<>(nhom), TaiKhoan.HOAT_DONG, true, 0, null, null);
+			TaiKhoan t = new TaiKhoan(id, email, hoTen.trim(), new ArrayList<>(nhom), TrangThai.HOAT_DONG, true, 0, null, null);
 			c.db().getTaiKhoan().add(t);
 			c.datMatKhau(id, bam);
 			c.nhatKy("TaiKhoan", id, "Tạo tài khoản " + email);
@@ -242,7 +243,7 @@ public class AuthService {
 				throw ApiException.notFound("Không tìm thấy tài khoản");
 			if (t.getId().equals(c.me()))
 				throw ApiException.conflict("Không tự khoá tài khoản đang dùng");
-			String moi = TaiKhoan.biKhoa(t.getTrangThai()) ? TaiKhoan.HOAT_DONG : TaiKhoan.KHOA;
+			String moi = TaiKhoan.biKhoa(t.getTrangThai()) ? TrangThai.HOAT_DONG : TrangThai.KHOA;
 			t.setTrangThai(moi);
 			t.setSoLanSai(0);
 			t.setKhoaDen(null);

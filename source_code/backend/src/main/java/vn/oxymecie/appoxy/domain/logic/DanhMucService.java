@@ -1,5 +1,6 @@
 package vn.oxymecie.appoxy.domain.logic;
 
+import vn.oxymecie.appoxy.domain.model.TrangThai;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -30,8 +31,8 @@ import vn.oxymecie.appoxy.domain.perm.Perm;
 @Service
 public class DanhMucService {
   private static final Pattern MST = Pattern.compile("^\\d{10}(-\\d{3})?$");
-  private static final Set<String> TIEP_CAN = Set.of("Chưa liên hệ", "Đang liên hệ", "Hợp đồng", "Huỷ");
-  private static final Set<String> CO_HOI = Set.of("Chưa tiếp cận", "Đã báo giá", "Đang đàm phán", "Ký hợp đồng", "Đã giao hàng", "Hoàn thành", "Huỷ");
+  private static final Set<String> TIEP_CAN = Set.of(TrangThai.CHUA_LIEN_HE, TrangThai.DANG_LIEN_HE, TrangThai.HOP_DONG, TrangThai.HUY);
+  private static final Set<String> CO_HOI = Set.of(TrangThai.CHUA_TIEP_CAN, TrangThai.DA_BAO_GIA, TrangThai.DANG_DAM_PHAN, TrangThai.KY_HOP_DONG, TrangThai.DA_GIAO_HANG, TrangThai.HOAN_THANH, TrangThai.HUY);
   private static final Set<String> NHOM_HANG = Set.of("Khí chuẩn", "Dung dịch chuẩn", "Vỏ bình", "Thiết bị tái sử dụng", "Phụ kiện");
 
   /** MST Việt Nam: 10 số, hoặc 10 số + "-" + 3 số. Trống → bắt buộc nhập. */
@@ -57,7 +58,7 @@ public class DanhMucService {
     if (loiMst != null) throw ApiException.invalid(loiMst);
     if (k.getTiepCan() != null && !TIEP_CAN.contains(k.getTiepCan())) throw ApiException.invalid("Trạng thái tiếp cận không hợp lệ");
     if (k.getCoHoi() != null && !CO_HOI.contains(k.getCoHoi())) throw ApiException.invalid("Trạng thái cơ hội không hợp lệ");
-    if (k.getTrangThai() != null && !List.of("Đang dùng", "Ngưng").contains(k.getTrangThai())) throw ApiException.invalid("Trạng thái không hợp lệ");
+    if (k.getTrangThai() != null && !List.of(TrangThai.DANG_DUNG, TrangThai.NGUNG).contains(k.getTrangThai())) throw ApiException.invalid("Trạng thái không hợp lệ");
     if (k.getPhuTrach() != null && !k.getPhuTrach().isEmpty() && c.taiKhoan(k.getPhuTrach()) == null)
       throw ApiException.invalid("Sale phụ trách không tồn tại");
     if (!c.canEdit(Perm.phanBoKH)) {
@@ -68,10 +69,10 @@ public class DanhMucService {
     k.setPhuTrach(phuTrach);
     if (!Objects.equals(phuTrach, cu == null ? null : Texts.emptyToNull(cu.getPhuTrach())))
       k.setNgayPhanBo(phuTrach != null ? c.today() : null);
-    k.setTrangThaiData(phuTrach != null ? "Đã phân bổ" : "Chưa phân bổ");
+    k.setTrangThaiData(phuTrach != null ? TrangThai.DA_PHAN_BO : TrangThai.CHUA_PHAN_BO);
     if (cu == null && Texts.blank(k.getNgayTiepNhan())) k.setNgayTiepNhan(c.today());
-    if (k.getTiepCan() == null) k.setTiepCan("Chưa liên hệ");
-    if (k.getCoHoi() == null) k.setCoHoi("Chưa tiếp cận");
+    if (k.getTiepCan() == null) k.setTiepCan(TrangThai.CHUA_LIEN_HE);
+    if (k.getCoHoi() == null) k.setCoHoi(TrangThai.CHUA_TIEP_CAN);
     if (cu != null) {
       // Nhật ký chăm sóc chỉ thêm qua ghiChamSoc — không cho sửa / xoá qua lưu thông tin.
       k.setChamSoc(cu.getChamSoc());
@@ -98,7 +99,7 @@ public class DanhMucService {
       if (!set.contains(k.getId()) || Texts.nz(k.getPhuTrach()).equals(s)) continue;
       k.setPhuTrach(s.isEmpty() ? null : s);
       k.setNgayPhanBo(s.isEmpty() ? null : ngay);
-      k.setTrangThaiData(s.isEmpty() ? "Chưa phân bổ" : "Đã phân bổ");
+      k.setTrangThaiData(s.isEmpty() ? TrangThai.CHUA_PHAN_BO : TrangThai.DA_PHAN_BO);
     }
   }
 
@@ -132,7 +133,7 @@ public class DanhMucService {
     NhaCungCap cu = isNew ? null : c.ncc(n.getId());
     if (!isNew && cu == null) throw ApiException.notFound("Không tìm thấy nhà cung cấp");
     if (Texts.blank(n.getTen())) throw ApiException.invalid("Chưa nhập tên nhà cung cấp");
-    if (n.getTrangThai() != null && !List.of("Đang dùng", "Ngưng").contains(n.getTrangThai())) throw ApiException.invalid("Trạng thái không hợp lệ");
+    if (n.getTrangThai() != null && !List.of(TrangThai.DANG_DUNG, TrangThai.NGUNG).contains(n.getTrangThai())) throw ApiException.invalid("Trạng thái không hợp lệ");
     if (isNew) {
       List<String> ids = c.db().getNcc().stream().map(NhaCungCap::getId).toList();
       n.setId(idMoi(n.getId(), c.ncc(n.getId()) != null, Ctx.nextMa("NCC", ids)));
@@ -145,9 +146,9 @@ public class DanhMucService {
 
   /** Nguồn đã có phiếu Đã duyệt thì khoá Số dư đầu kỳ, Ngày đầu kỳ. */
   public static boolean nguonDaPhatSinh(Ctx c, String id) {
-    return c.db().getPhieuThuChi().stream().anyMatch(p -> "Đã duyệt".equals(p.getTrangThai())
+    return c.db().getPhieuThuChi().stream().anyMatch(p -> TrangThai.DA_DUYET.equals(p.getTrangThai())
             && (id.equals(p.getNguonTien()) || id.equals(p.getNguonTienDen())))
-        || c.db().getChiPhiHD().stream().anyMatch(x -> "Đã duyệt".equals(x.getTrangThai()) && id.equals(x.getNguonTien()));
+        || c.db().getChiPhiHD().stream().anyMatch(x -> TrangThai.DA_DUYET.equals(x.getTrangThai()) && id.equals(x.getNguonTien()));
   }
 
   public void saveNguonTien(Ctx c, NguonTien n, boolean isNew) {
@@ -158,7 +159,7 @@ public class DanhMucService {
     if (isNew && cu != null) throw ApiException.conflict("Mã nguồn " + n.getId() + " đã có");
     if (!isNew && cu == null) throw ApiException.notFound("Không tìm thấy nguồn tiền");
     if (!List.of("Tiền mặt", "Ngân hàng").contains(n.getLoai())) throw ApiException.invalid("Loại nguồn tiền không hợp lệ");
-    if (!List.of("Đang dùng", "Ngưng").contains(n.getTrangThai())) throw ApiException.invalid("Trạng thái không hợp lệ");
+    if (!List.of(TrangThai.DANG_DUNG, TrangThai.NGUNG).contains(n.getTrangThai())) throw ApiException.invalid("Trạng thái không hợp lệ");
     if (cu != null && nguonDaPhatSinh(c, n.getId())
         && (cu.getSoDuDauKy() != n.getSoDuDauKy() || !Objects.equals(cu.getNgayDauKy(), n.getNgayDauKy())))
       throw ApiException.invalid("Nguồn đã có phiếu được duyệt — không sửa Số dư đầu kỳ / Ngày đầu kỳ");

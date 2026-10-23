@@ -1,5 +1,6 @@
 package vn.oxymecie.appoxy.config;
 
+import vn.oxymecie.appoxy.domain.model.TrangThai;
 import java.time.Clock;
 import java.time.Instant;
 import org.slf4j.Logger;
@@ -64,7 +65,7 @@ public class KhoiTao {
     store.execute("HE_THONG.taoQuanTri", null, null, c -> {
       String id = Ids.uid("TK");
       c.db().getTaiKhoan().add(new TaiKhoan(id, adminEmail.trim().toLowerCase(), "Quản trị", new java.util.ArrayList<>(java.util.List.of("NQ-GD")),
-          "Hoạt động", true, 0, null, null));
+          TrangThai.HOAT_DONG, true, 0, null, null));
       c.datMatKhau(id, bam);
       c.nhatKy("TaiKhoan", id, "Tạo tài khoản quản trị đầu tiên");
       return null;

@@ -1,5 +1,6 @@
 package vn.oxymecie.appoxy.domain.logic;
 
+import vn.oxymecie.appoxy.domain.model.TrangThai;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -149,7 +150,7 @@ public class KhoService {
     String id = vn.oxymecie.appoxy.common.Ids.safe(idDeXuat) && c.phieuKho(idDeXuat) == null ? idDeXuat : c.uid("PK");
     boolean nhap = "Nhập".equals(p.loai());
     PhieuKho out = new PhieuKho(id, soPhieu, p.ngay(), p.loai(), "Nhập tay – điều chỉnh", hdId, p.kho(), Texts.trimToNull(p.lyDo()),
-        c.me(), "Hiệu lực", Texts.trimToNull(p.ghiChu()), dong, nhap ? Texts.trimToNull(p.soHoaDon()) : null, nhap ? ncc : null,
+        c.me(), TrangThai.HIEU_LUC, Texts.trimToNull(p.ghiChu()), dong, nhap ? Texts.trimToNull(p.soHoaDon()) : null, nhap ? ncc : null,
         Texts.emptyToNull(p.kiemKeId()));
     Ctx.upsert(c.db().getPhieuKho(), out, PhieuKho::getId);
     return out;
@@ -193,7 +194,7 @@ public class KhoService {
     c.require(Perm.khoPhieuTay);
     KiemKe k = c.kiemKe(id);
     if (k == null) throw ApiException.notFound("Không tìm thấy đợt kiểm kê");
-    if (c.db().getPhieuKho().stream().anyMatch(p -> id.equals(p.getKiemKeId()) && "Hiệu lực".equals(p.getTrangThai())))
+    if (c.db().getPhieuKho().stream().anyMatch(p -> id.equals(p.getKiemKeId()) && TrangThai.HIEU_LUC.equals(p.getTrangThai())))
       throw ApiException.conflict("Đã có phiếu điều chỉnh Hiệu lực — huỷ phiếu trước");
     Ctx.drop(c.db().getKiemKe(), KiemKe::getId, id);
   }
@@ -206,7 +207,7 @@ public class KhoService {
     c.require(Perm.khoPhieuTay);
     KiemKe k = c.kiemKe(id);
     if (k == null) throw ApiException.notFound("Không tìm thấy đợt kiểm kê");
-    if (c.db().getPhieuKho().stream().anyMatch(p -> id.equals(p.getKiemKeId()) && "Hiệu lực".equals(p.getTrangThai())))
+    if (c.db().getPhieuKho().stream().anyMatch(p -> id.equals(p.getKiemKeId()) && TrangThai.HIEU_LUC.equals(p.getTrangThai())))
       throw ApiException.conflict("Đợt này đã có phiếu điều chỉnh");
     List<Calc.DongLechKK> lech = Calc.lechKiemKe(c.db(), k).stream().filter(r -> r.lech() != 0).toList();
     if (lech.isEmpty()) throw ApiException.invalid("Không có chênh lệch — không cần điều chỉnh");
@@ -238,7 +239,7 @@ public class KhoService {
   public void quyenPhieu(Ctx c, PhieuKho p) {
     c.require("Tự động HĐ Mua".equals(p.getNguonGoc()) ? Perm.hdmNhapKho
         : "Tự động HĐ Bán".equals(p.getNguonGoc()) ? Perm.hdbGiaoHang : Perm.khoPhieuTay);
-    if ("Đã huỷ".equals(p.getTrangThai())) throw ApiException.conflict("Phiếu đã huỷ");
+    if (TrangThai.DA_HUY.equals(p.getTrangThai())) throw ApiException.conflict("Phiếu đã huỷ");
     if (c.dangChoXoa("PhieuKho", p.getId())) throw ApiException.conflict("Phiếu đang chờ huỷ — khoá sửa");
   }
 
@@ -253,7 +254,7 @@ public class KhoService {
       if ("Nhập".equals(p.getLoai())) {
         Set<String> los = new HashSet<>();
         for (int i = 0; i < p.getDong().size(); i++) los.add(Calc.maLo(p, i));
-        PhieuKho x = c.db().getPhieuKho().stream().filter(q -> "Xuất".equals(q.getLoai()) && "Hiệu lực".equals(q.getTrangThai())
+        PhieuKho x = c.db().getPhieuKho().stream().filter(q -> "Xuất".equals(q.getLoai()) && TrangThai.HIEU_LUC.equals(q.getTrangThai())
             && q.getNgay().compareTo(ngay) < 0 && q.getDong().stream().anyMatch(d -> d.getLo() != null && los.contains(d.getLo())))
             .findFirst().orElse(null);
         if (x != null) throw ApiException.invalid("Lô của phiếu đã xuất ngày " + Dates.vi(x.getNgay()) + " (phiếu " + x.getSoPhieu()

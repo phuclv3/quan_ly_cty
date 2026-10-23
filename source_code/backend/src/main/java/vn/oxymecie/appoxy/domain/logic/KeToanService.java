@@ -1,5 +1,6 @@
 package vn.oxymecie.appoxy.domain.logic;
 
+import vn.oxymecie.appoxy.domain.model.TrangThai;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -82,7 +83,7 @@ public class KeToanService {
 
   /** Phiếu sửa được: Nháp / Từ chối, không phải phiếu phát sinh, không chờ xoá, đủ quyền. */
   public boolean phieuSuaDuoc(Ctx c, PhieuThuChi p, boolean isNew) {
-    if (!isNew && !"Nháp".equals(p.getTrangThai()) && !"Từ chối".equals(p.getTrangThai())) return false;
+    if (!isNew && !TrangThai.NHAP.equals(p.getTrangThai()) && !TrangThai.TU_CHOI.equals(p.getTrangThai())) return false;
     if (p.getPhatSinh() != null) return false;
     if (!isNew && c.dangChoXoa("PhieuThuChi", p.getId())) return false;
     Level l = c.level(Perm.soQuy);
@@ -135,10 +136,10 @@ public class KeToanService {
     }
     if (isNew) clean.setSoPhieu(c.nextSo(c.cauHinh().getTienToTC(), clean.getNgayLap()));
     else clean.setSoPhieu(cu.getSoPhieu());
-    String truoc = cu == null ? "Nháp" : cu.getTrangThai();
-    clean.setTrangThai(gui ? "Chờ duyệt" : "Nháp");
+    String truoc = cu == null ? TrangThai.NHAP : cu.getTrangThai();
+    clean.setTrangThai(gui ? TrangThai.CHO_DUYET : TrangThai.NHAP);
     clean.setLyDoTuChoi(gui ? null : cu == null ? null : cu.getLyDoTuChoi());
-    if (gui || !"Nháp".equals(truoc) || clean.getLichSu() == null || clean.getLichSu().isEmpty())
+    if (gui || !TrangThai.NHAP.equals(truoc) || clean.getLichSu() == null || clean.getLichSu().isEmpty())
       clean.setLichSu(ghiLichSu(c, clean.getLichSu(), gui ? "Gửi duyệt" : "Lưu nháp", null));
     Ctx.upsert(c.db().getPhieuThuChi(), clean, PhieuThuChi::getId);
     return clean;
@@ -160,7 +161,7 @@ public class KeToanService {
   public void xoaNhapPhieu(Ctx c, String id) {
     PhieuThuChi p = c.phieu(id);
     if (p == null) throw ApiException.notFound("Không tìm thấy phiếu");
-    if (!"Nháp".equals(p.getTrangThai())) throw ApiException.conflict("Chỉ xoá thẳng phiếu Nháp — phiếu khác gửi yêu cầu xoá");
+    if (!TrangThai.NHAP.equals(p.getTrangThai())) throw ApiException.conflict("Chỉ xoá thẳng phiếu Nháp — phiếu khác gửi yêu cầu xoá");
     if (!chuPhieu(c, p)) throw ApiException.forbidden("Tài khoản của bạn không có quyền xoá phiếu này");
     if (c.db().getPhieuThuChi().stream().anyMatch(x -> id.equals(x.getPhieuTamUngGoc())))
       throw ApiException.conflict("Phiếu tạm ứng đã có quyết toán");
@@ -171,9 +172,9 @@ public class KeToanService {
   public void rutLaiPhieu(Ctx c, String id) {
     PhieuThuChi p = c.phieu(id);
     if (p == null) throw ApiException.notFound("Không tìm thấy phiếu");
-    if (!"Chờ duyệt".equals(p.getTrangThai())) throw ApiException.conflict("Chỉ rút lại phiếu đang Chờ duyệt");
+    if (!TrangThai.CHO_DUYET.equals(p.getTrangThai())) throw ApiException.conflict("Chỉ rút lại phiếu đang Chờ duyệt");
     if (!chuPhieu(c, p)) throw ApiException.forbidden("Tài khoản của bạn không có quyền rút phiếu này");
-    p.setTrangThai("Nháp");
+    p.setTrangThai(TrangThai.NHAP);
     p.setLichSu(ghiLichSu(c, p.getLichSu(), "Rút lại", null));
   }
 
@@ -182,12 +183,12 @@ public class KeToanService {
     c.require(Perm.soQuyDuyet, Level.approve);
     List<String> bo = new ArrayList<>();
     for (PhieuThuChi p : c.db().getPhieuThuChi()) {
-      if (!ids.contains(p.getId()) || !"Chờ duyệt".equals(p.getTrangThai())) continue;
+      if (!ids.contains(p.getId()) || !TrangThai.CHO_DUYET.equals(p.getTrangThai())) continue;
       if (tuDuyet(c, p.getNguoiDeNghi())) {
         bo.add(p.getSoPhieu());
         continue;
       }
-      p.setTrangThai("Đã duyệt");
+      p.setTrangThai(TrangThai.DA_DUYET);
       p.setNguoiDuyet(c.me());
       p.setNgayDuyet(c.now());
       p.setLichSu(ghiLichSu(c, p.getLichSu(), "Duyệt", null));
@@ -199,8 +200,8 @@ public class KeToanService {
     c.require(Perm.soQuyDuyet, Level.approve);
     if (Texts.blank(lyDo)) throw ApiException.invalid("Cần nhập lý do từ chối");
     for (PhieuThuChi p : c.db().getPhieuThuChi()) {
-      if (!ids.contains(p.getId()) || !"Chờ duyệt".equals(p.getTrangThai())) continue;
-      p.setTrangThai("Từ chối");
+      if (!ids.contains(p.getId()) || !TrangThai.CHO_DUYET.equals(p.getTrangThai())) continue;
+      p.setTrangThai(TrangThai.TU_CHOI);
       p.setLyDoTuChoi(lyDo);
       p.setNguoiDuyet(c.me());
       p.setNgayDuyet(c.now());
@@ -214,7 +215,7 @@ public class KeToanService {
     List<String> e = new ArrayList<>();
     HopDongBan h = c.hdb(x.getHdbId());
     if (h == null) e.add("Chưa chọn Số HĐ bán");
-    else if ("Báo giá".equals(h.getTrangThai())) e.add("HĐ đang ở Báo giá — chỉ ghi chi phí cho HĐ từ Hiệu lực trở đi");
+    else if (TrangThai.BAO_GIA.equals(h.getTrangThai())) e.add("HĐ đang ở Báo giá — chỉ ghi chi phí cho HĐ từ Hiệu lực trở đi");
     LoaiChiPhi l = c.lcp(x.getLoaiChiPhi());
     if (l == null || !"Thực hiện HĐ".equals(l.getNhom())) e.add("Chưa chọn Loại chi phí thực hiện HĐ");
     if (Texts.blank(x.getNoiDung())) e.add("Chưa nhập Nội dung");
@@ -234,7 +235,7 @@ public class KeToanService {
     ChiPhiHD cu = isNew ? null : c.chiPhi(x.getId());
     if (!isNew && cu == null) throw ApiException.notFound("Không tìm thấy chi phí");
     if (cu != null) {
-      if (!"Nháp".equals(cu.getTrangThai()) && !"Từ chối".equals(cu.getTrangThai())) throw ApiException.conflict("Chi phí này không sửa được");
+      if (!TrangThai.NHAP.equals(cu.getTrangThai()) && !TrangThai.TU_CHOI.equals(cu.getTrangThai())) throw ApiException.conflict("Chi phí này không sửa được");
       if (c.dangChoXoa("ChiPhiThucHienHD", cu.getId())) throw ApiException.conflict("Chi phí này không sửa được");
       if (!c.canEdit(Perm.cpHD, saleCua(c, cu.getHdbId()))) throw ApiException.forbidden(Ctx.KHONG_QUYEN);
     }
@@ -261,10 +262,10 @@ public class KeToanService {
     } else {
       out.setMaCP(cu.getMaCP());
     }
-    String truoc = cu == null ? "Nháp" : cu.getTrangThai();
-    out.setTrangThai(gui ? "Chờ duyệt" : "Nháp");
+    String truoc = cu == null ? TrangThai.NHAP : cu.getTrangThai();
+    out.setTrangThai(gui ? TrangThai.CHO_DUYET : TrangThai.NHAP);
     out.setLyDoTuChoi(gui ? null : cu == null ? null : cu.getLyDoTuChoi());
-    if (gui || !"Nháp".equals(truoc) || out.getLichSu() == null || out.getLichSu().isEmpty())
+    if (gui || !TrangThai.NHAP.equals(truoc) || out.getLichSu() == null || out.getLichSu().isEmpty())
       out.setLichSu(ghiLichSu(c, out.getLichSu(), gui ? "Gửi duyệt" : "Lưu nháp", null));
     Ctx.upsert(c.db().getChiPhiHD(), out, ChiPhiHD::getId);
     return out;
@@ -274,12 +275,12 @@ public class KeToanService {
     c.require(Perm.cpHDDuyet, Level.approve);
     List<String> bo = new ArrayList<>();
     for (ChiPhiHD x : c.db().getChiPhiHD()) {
-      if (!ids.contains(x.getId()) || !"Chờ duyệt".equals(x.getTrangThai())) continue;
+      if (!ids.contains(x.getId()) || !TrangThai.CHO_DUYET.equals(x.getTrangThai())) continue;
       if (tuDuyet(c, x.getNguoiThucHien())) {
         bo.add(x.getMaCP());
         continue;
       }
-      x.setTrangThai("Đã duyệt");
+      x.setTrangThai(TrangThai.DA_DUYET);
       x.setNguoiDuyet(c.me());
       x.setNgayDuyet(c.now());
       x.setLichSu(ghiLichSu(c, x.getLichSu(), "Duyệt", null));
@@ -291,8 +292,8 @@ public class KeToanService {
     c.require(Perm.cpHDDuyet, Level.approve);
     if (Texts.blank(lyDo)) throw ApiException.invalid("Cần nhập lý do từ chối");
     for (ChiPhiHD x : c.db().getChiPhiHD()) {
-      if (!ids.contains(x.getId()) || !"Chờ duyệt".equals(x.getTrangThai())) continue;
-      x.setTrangThai("Từ chối");
+      if (!ids.contains(x.getId()) || !TrangThai.CHO_DUYET.equals(x.getTrangThai())) continue;
+      x.setTrangThai(TrangThai.TU_CHOI);
       x.setLyDoTuChoi(lyDo);
       x.setNguoiDuyet(c.me());
       x.setNgayDuyet(c.now());
@@ -303,7 +304,7 @@ public class KeToanService {
   public void xoaNhapChiPhi(Ctx c, String id) {
     ChiPhiHD x = c.chiPhi(id);
     if (x == null) throw ApiException.notFound("Không tìm thấy chi phí");
-    if (!"Nháp".equals(x.getTrangThai())) throw ApiException.conflict("Chỉ xoá thẳng chi phí Nháp — chi phí khác gửi yêu cầu xoá");
+    if (!TrangThai.NHAP.equals(x.getTrangThai())) throw ApiException.conflict("Chỉ xoá thẳng chi phí Nháp — chi phí khác gửi yêu cầu xoá");
     if (!c.canEdit(Perm.cpHD, saleCua(c, x.getHdbId()))) throw ApiException.forbidden("Tài khoản của bạn không có quyền xoá chi phí này");
     Ctx.drop(c.db().getChiPhiHD(), ChiPhiHD::getId, id);
   }
@@ -311,9 +312,9 @@ public class KeToanService {
   public void rutLaiChiPhi(Ctx c, String id) {
     ChiPhiHD x = c.chiPhi(id);
     if (x == null) throw ApiException.notFound("Không tìm thấy chi phí");
-    if (!"Chờ duyệt".equals(x.getTrangThai())) throw ApiException.conflict("Chỉ rút lại chi phí đang Chờ duyệt");
+    if (!TrangThai.CHO_DUYET.equals(x.getTrangThai())) throw ApiException.conflict("Chỉ rút lại chi phí đang Chờ duyệt");
     if (!c.canEdit(Perm.cpHD, saleCua(c, x.getHdbId()))) throw ApiException.forbidden("Tài khoản của bạn không có quyền rút chi phí này");
-    x.setTrangThai("Nháp");
+    x.setTrangThai(TrangThai.NHAP);
     x.setLichSu(ghiLichSu(c, x.getLichSu(), "Rút lại", null));
   }
 }

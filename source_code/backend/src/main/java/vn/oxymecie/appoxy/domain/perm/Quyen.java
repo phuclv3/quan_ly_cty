@@ -1,5 +1,6 @@
 package vn.oxymecie.appoxy.domain.perm;
 
+import vn.oxymecie.appoxy.domain.model.TrangThai;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -19,7 +20,7 @@ public final class Quyen {
   public static Level levelOf(Collection<NhomQuyen> groups, Perm p) {
     Level best = Level.none;
     for (NhomQuyen g : groups) {
-      if (!"Hoạt động".equals(g.getTrangThai())) continue;
+      if (!TrangThai.HOAT_DONG.equals(g.getTrangThai())) continue;
       if (g.isToanQuyen()) return p.maxLevel();
       Level l = Level.parse(g.getQuyen() == null ? null : g.getQuyen().get(p.ma));
       if (!p.mucDo.contains(l)) continue;
@@ -33,13 +34,13 @@ public final class Quyen {
   /** Nhóm đang hoạt động của một tài khoản. */
   public static List<NhomQuyen> nhomCua(TaiKhoan t, List<NhomQuyen> all) {
     if (t == null) return List.of();
-    return all.stream().filter(g -> t.getNhom().contains(g.getId()) && "Hoạt động".equals(g.getTrangThai())).toList();
+    return all.stream().filter(g -> t.getNhom().contains(g.getId()) && TrangThai.HOAT_DONG.equals(g.getTrangThai())).toList();
   }
 
   /** Còn ít nhất 1 tài khoản Hoạt động có quyền sửa NT-03 (không cho tự khoá cả hệ thống). Tài khoản ẩn không tính. */
   public static boolean conQuanTri(List<TaiKhoan> taiKhoan, List<NhomQuyen> nhom) {
     for (TaiKhoan t : taiKhoan) {
-      if (!"Hoạt động".equals(t.getTrangThai()) || TaiKhoan.laAn(t.getId())) continue;
+      if (!TrangThai.HOAT_DONG.equals(t.getTrangThai()) || TaiKhoan.laAn(t.getId())) continue;
       List<NhomQuyen> gs = nhom.stream().filter(g -> t.getNhom().contains(g.getId())).toList();
       if (levelOf(gs, Perm.taiKhoan).atLeast(Level.edit)) return true;
     }

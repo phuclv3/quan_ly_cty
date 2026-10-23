@@ -1,5 +1,6 @@
 package vn.oxymecie.appoxy.domain.logic;
 
+import vn.oxymecie.appoxy.domain.model.TrangThai;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -104,7 +105,7 @@ public class HeThongService {
     String ma = Texts.trim(n.getMa()).toUpperCase();
     if (!ma.matches("^[A-Z0-9_]{2,30}$")) throw ApiException.invalid("Mã nhóm 2–30 ký tự: chữ in hoa không dấu, số, gạch dưới (VD KE_TOAN)");
     if (Texts.blank(n.getTen())) throw ApiException.invalid("Chưa nhập tên nhóm");
-    if (!List.of("Hoạt động", "Ngưng").contains(n.getTrangThai())) throw ApiException.invalid("Trạng thái nhóm không hợp lệ");
+    if (!List.of(TrangThai.HOAT_DONG, TrangThai.NGUNG).contains(n.getTrangThai())) throw ApiException.invalid("Trạng thái nhóm không hợp lệ");
     String id = cu != null ? cu.getId() : null;
     if (c.db().getNhomQuyen().stream().anyMatch(g -> !Objects.equals(g.getId(), id) && g.getMa().equals(ma))) throw ApiException.conflict("Mã nhóm " + ma + " đã có");
     // Chỉ giữ mức hợp lệ của từng chức năng; bỏ mức "none".
