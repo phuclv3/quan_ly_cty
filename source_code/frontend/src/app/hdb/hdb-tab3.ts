@@ -3,7 +3,7 @@ import { Store } from '../core/store';
 import { TT } from '../core/trang-thai';
 import { DongHangBan, DotTTBan, HopDongBan, LCP_HOA_HONG } from '../core/models';
 import { Buoc, apDungTuDongHdb, congNgay, dotBanDaThu, dotQuaHan, hdbCalc, kiemTraDongBan, loConHang, tongDongBan, tongDongBanTH } from '../core/calc';
-import { xuatToTrinhHdb } from '../shared/export';
+import { xemThuToTrinhHdb } from '../shared/export';
 import { money, pct, sum, todayIso, uid, viDate } from '../core/util';
 import { BuocTable, Kpi, MoneyInput, Pick, TrangThai } from '../shared/ui-kit';
 import { maHangOpts, moTaMa } from '../kho/kho-util';
@@ -356,11 +356,9 @@ export class HdbTab3 {
     this.store.say(`Đã gửi ${r.ids.length} đề nghị cấp vật tư — xem ở Kho › Đề nghị vật tư hoặc tạo HĐ mua từ đề nghị`);
   }
 
-  /** Tờ trình chi phí kinh doanh của HĐ: backend điền số liệu đã lưu vào mẫu Word rồi trả file .docx. */
+  /** Tờ trình chi phí kinh doanh của HĐ: backend điền số liệu đang nhập (kể cả chưa lưu) vào mẫu Word rồi trả file .docx. */
   protected async inToTrinh(): Promise<void> {
-    const s = this.saved();
-    if (!s) return this.store.say('Lưu HĐ trước khi xuất tờ trình');
-    await xuatToTrinhHdb(s.id);
+    await xemThuToTrinhHdb(this.f());
   }
   /** F-08: đã có phiếu Thu (chưa bị từ chối) → khoá Giá trị trước VAT / VAT. */
   protected readonly khoaGiaTri = computed(() => !!this.saved() && this.store.hdbCoPhieuThu(this.saved()!));

@@ -11,6 +11,7 @@ import { Confirm } from '../shared/confirm';
 import { HoSoPanel, guiXoa } from '../shared/ho-so';
 import { TrangThai } from '../shared/ui-kit';
 import { Icon } from '../shared/icon';
+import { xemThuToTrinhHdb } from '../shared/export';
 import { FileHd, ThongTinHd, XemFileHd, taiFileCho } from '../shared/file-hd';
 import { HdbTab1 } from './hdb-tab1';
 import { HdbGiaoHang } from './hdb-giao-hang';
@@ -57,7 +58,8 @@ const TABS = [
         </div>
         <div class="actions">
           @if (saved()) {
-            <button type="button" class="btn quiet" (click)="xemFile.set(true)"><app-icon name="eye" [size]="16" /> Xem file hợp đồng</button>
+            <button type="button" class="btn quiet" [disabled]="!coFileHd()" [attr.title]="coFileHd() ? null : 'Chưa có file hợp đồng'" (click)="xemFile.set(true)"><app-icon name="eye" [size]="16" /> Xem file hợp đồng</button>
+            <button type="button" class="btn quiet" (click)="xuatToTrinh()"><app-icon name="download" [size]="16" /> Xem tờ trình</button>
           }
           @if (saved() && dirty() && (edit1() || edit3())) {
             <button type="button" class="btn quiet" (click)="huyNhap()">Huỷ thay đổi</button>
@@ -301,6 +303,13 @@ export class HdbDetail {
   /** File hợp đồng chọn khi HĐ chưa lưu — tải lên ngay sau lần Lưu đầu. */
   protected readonly fileCho = signal<File[]>([]);
   protected readonly xemFile = signal(false);
+  protected readonly coFileHd = computed(() => !!this.saved() && (this.store.hoSoCua('HDB', this.saved()!.id, 'Hợp đồng')?.files.length ?? 0) > 0);
+  /** Tờ trình (Word) theo số liệu đang hiển thị (kể cả chưa lưu) — backend dựng từ mẫu. */
+  protected async xuatToTrinh(): Promise<void> {
+    const s = this.saved();
+    if (!s) return;
+    await xemThuToTrinhHdb(this.f());
+  }
   protected readonly infoFile = computed<ThongTinHd>(() => {
     const h = this.f();
     return { loai: 'bán', soHD: h.soHD, tenDoiTac: h.tenKH, mst: h.mst, diaChi: h.diaChi, ngayKy: h.ngayKy, giaTri: this.c().sauVAT, ghiChu: h.ghiChu };

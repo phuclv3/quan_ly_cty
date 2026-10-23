@@ -77,5 +77,8 @@ export const xuatZip = (ten: string, muc: { path: string; fileId: string }[]) =>
 /** Bản sao lưu dữ liệu (JSON). */
 export const xuatBanSao = () => tai('GET', '/xuat/ban-sao', undefined, 'app-oxy-ban-sao.json');
 
-/** Tờ trình chi phí kinh doanh của HĐ bán (Word, theo mẫu). */
+/** Xem thử tờ trình từ HĐ bán đang nhập (chưa cần lưu) — backend điền vào mẫu Word. */
+export const xemThuToTrinhHdb = (hd: unknown) => tai('POST', '/hop-dong-ban/to-trinh', hd, 'to-trinh.docx');
+
+/** Tờ trình chi phí kinh doanh của HĐ bán đã lưu (Word, theo mẫu). */
 export const xuatToTrinhHdb = (id: string) => tai('GET', `/hop-dong-ban/${encodeURIComponent(id)}/to-trinh`, undefined, 'to-trinh.docx');

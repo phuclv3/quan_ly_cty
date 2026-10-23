@@ -68,7 +68,7 @@ interface TraForm {
         </div>
         <div class="actions">
           @if (saved()) {
-            <button type="button" class="btn quiet" (click)="xemFile.set(true)"><app-icon name="eye" [size]="16" /> Xem file hợp đồng</button>
+            <button type="button" class="btn quiet" [disabled]="!coFileHd()" [attr.title]="coFileHd() ? null : 'Chưa có file hợp đồng'" (click)="xemFile.set(true)"><app-icon name="eye" [size]="16" /> Xem file hợp đồng</button>
           }
           @if (canSave() && !isNew()) {
             @if (dirty() && !isNew()) { <button type="button" class="btn quiet" (click)="boThayDoi()">Bỏ thay đổi</button> }
@@ -714,6 +714,7 @@ export class HdmDetail {
   /** File hợp đồng chọn khi HĐ chưa lưu — tải lên ngay sau lần Lưu đầu. */
   protected readonly fileCho = signal<File[]>([]);
   protected readonly xemFile = signal(false);
+  protected readonly coFileHd = computed(() => !!this.saved() && (this.store.hoSoCua('HDM', this.saved()!.id, 'Hợp đồng')?.files.length ?? 0) > 0);
   protected readonly infoFile = computed<ThongTinHd>(() => {
     const m = this.f();
     return { loai: 'mua', soHD: m.soHD, tenDoiTac: m.tenNCC, mst: m.mst, diaChi: m.diaChi, ngayKy: m.ngayKy, giaTri: this.calc().tong, ghiChu: m.ghiChu };

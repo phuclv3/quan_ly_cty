@@ -10,7 +10,7 @@ import { HO_SO_ACCEPT, MAX_FILE_BYTES, getBlob, viSize } from '../core/files';
 import { money, viDate } from '../core/util';
 import { CONG_TY } from '../core/cong-ty';
 
-/** Dữ liệu HĐ để dựng bản xem giả lập khi chưa có file thật. */
+/** Thông tin HĐ hiện ở tiêu đề popup xem file. */
 export interface ThongTinHd {
   loai: 'bán' | 'mua';
   soHD: string;
@@ -22,12 +22,24 @@ export interface ThongTinHd {
   ghiChu?: string;
 }
 
-/** Một mục trong danh sách xem: file đã lưu (FileRef), file chờ lưu (File) hoặc bản giả lập. */
-type Muc = { k: 'ref'; id: string; name: string; mime: string; size: number; ref: FileRef } | { k: 'cho'; id: string; name: string; mime: string; size: number; file: File } | { k: 'gl'; id: 'gl'; name: string; mime: ''; size: 0 };
+/** Một mục trong danh sách xem: file đã lưu (FileRef) hoặc file chờ lưu (File). */
+type Muc = { k: 'ref'; id: string; name: string; mime: string; size: number; ref: FileRef } | { k: 'cho'; id: string; name: string; mime: string; size: number; file: File };
+
+/** Đoán loại tệp từ vài byte đầu (PDF / PNG / JPEG / WEBP), không được thì theo đuôi tên. */
+async function doanMime(blob: Blob, ten: string): Promise<string> {
+  const b = new Uint8Array(await blob.slice(0, 12).arrayBuffer());
+  const hex = (i: number, n: number) => Array.from(b.slice(i, i + n), (x) => x.toString(16).padStart(2, '0')).join('');
+  if (hex(0, 4) === '25504446') return 'application/pdf';
+  if (hex(0, 4) === '89504e47') return 'image/png';
+  if (hex(0, 3) === 'ffd8ff') return 'image/jpeg';
+  if (hex(0, 4) === '52494646' && hex(8, 4) === '57454250') return 'image/webp';
+  const duoi = /\.([a-z0-9]+)$/i.exec(ten)?.[1]?.toLowerCase();
+  return ({ pdf: 'application/pdf', png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp' } as Record<string, string>)[duoi ?? ''] ?? '';
+}
 
 /**
  * Popup xem file hợp đồng: ảnh hiện trực tiếp, PDF nhúng iframe, loại khác cho tải về.
- * Luôn có mục "Bản giả lập" dựng từ dữ liệu HĐ — dùng khi chưa có file hoặc file không còn trên máy.
+ * Chưa có file hợp đồng thì không mở được (các nút Xem bị khoá).
  */
 @Component({
   selector: 'app-xem-file-hd',
@@ -43,15 +55,7 @@ type Muc = { k: 'ref'; id: string; name: string; mime: string; size: number; ref
     .khung img { max-width: 100%; max-height: 75vh; object-fit: contain; }
     .khung iframe { width: 100%; height: 75vh; border: 0; background: #fff; }
     .trong { padding: 24px; text-align: center; color: var(--ink-3); display: grid; gap: 10px; justify-items: center; }
-    .giay { position: relative; width: min(100%, 640px); margin: 16px; padding: 40px 44px; background: #fff; color: #1a1a1a; box-shadow: 0 2px 12px rgba(0,0,0,.18); font-family: 'Times New Roman', serif; font-size: 15px; line-height: 1.55; align-self: start; }
-    .giay h3 { text-align: center; font-size: 19px; margin: 14px 0 4px; letter-spacing: .5px; }
-    .giay .qh { text-align: center; font-weight: 700; }
-    .giay .c { text-align: center; }
-    .giay p { margin: 6px 0; }
-    .giay .ky { display: grid; grid-template-columns: 1fr 1fr; text-align: center; margin-top: 32px; font-weight: 700; }
-    .giay .ky small { display: block; font-weight: 400; font-style: italic; margin-bottom: 56px; }
-    .dau { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; font: 700 64px/1 var(--font); color: rgba(200, 30, 30, .12); transform: rotate(-24deg); }
-    @media (max-width: 720px) { .xem { grid-template-columns: 1fr; } .giay { padding: 24px 18px; } }
+    @media (max-width: 720px) { .xem { grid-template-columns: 1fr; } }
   `,
   template: `
     <app-modal [open]="open()" [title]="'File hợp đồng ' + (info().soHD || '(chưa có số)')" [sub]="info().tenDoiTac" size="lg" (closed)="open.set(false)">
@@ -62,7 +66,7 @@ type Muc = { k: 'ref'; id: string; name: string; mime: string; size: number; ref
               <button type="button" [class.on]="chon().id === m.id" (click)="chonId.set(m.id)">
                 <span><b>{{ m.name }}</b></span>
                 <small class="muted">
-                  @switch (m.k) { @case ('gl') { Dựng từ dữ liệu HĐ } @case ('cho') { Chờ lưu · {{ size(m.size) }} } @default { {{ size(m.size) }} } }
+                  @switch (m.k) { @case ('cho') { Chờ lưu · {{ size(m.size) }} } @default { {{ size(m.size) }} } }
                 </small>
               </button>
             </li>
@@ -79,35 +83,9 @@ type Muc = { k: 'ref'; id: string; name: string; mime: string; size: number; ref
             }
             @case ('mat') {
               <div class="trong"><app-icon name="file" [size]="40" /><span>Tệp không còn trên máy này (lưu IndexedDB cục bộ).</span>
-                <button type="button" class="btn sm quiet" (click)="chonId.set('gl')">Xem bản giả lập</button></div>
+</div>
             }
-            @default {
-              @let h = info();
-              <article class="giay" aria-label="Bản giả lập hợp đồng">
-                <div class="dau">BẢN GIẢ LẬP</div>
-                <p class="qh">CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM</p>
-                <p class="c"><u>Độc lập – Tự do – Hạnh phúc</u></p>
-                <h3>HỢP ĐỒNG {{ h.loai === 'bán' ? 'MUA BÁN' : 'MUA HÀNG' }}</h3>
-                <p class="c">Số: {{ h.soHD || '……………' }}</p>
-                <p class="c"><i>Ngày ký: {{ h.ngayKy ? viDate(h.ngayKy) : '…/…/……' }}</i></p>
-                @if (h.loai === 'bán') {
-                  <p><b>BÊN A (Bên mua):</b> {{ h.tenDoiTac || '……………' }}</p>
-                  <p>MST: {{ h.mst || '—' }} · Địa chỉ: {{ h.diaChi || '—' }}</p>
-                  <p><b>BÊN B (Bên bán):</b> {{ congTy.ten }}</p>
-                  <p>MST: {{ congTy.mst }} · Địa chỉ: {{ congTy.diaChi }}</p>
-                } @else {
-                  <p><b>BÊN A (Bên mua):</b> {{ congTy.ten }}</p>
-                  <p>MST: {{ congTy.mst }} · Địa chỉ: {{ congTy.diaChi }}</p>
-                  <p><b>BÊN B (Bên bán):</b> {{ h.tenDoiTac || '……………' }}</p>
-                  <p>MST: {{ h.mst || '—' }} · Địa chỉ: {{ h.diaChi || '—' }}</p>
-                }
-                <p><b>Điều 1.</b> Bên B cung cấp hàng hoá cho Bên A theo phụ lục chi tiết đính kèm.</p>
-                <p><b>Điều 2.</b> Tổng giá trị hợp đồng: <b>{{ money(h.giaTri) }} VNĐ</b>.</p>
-                <p><b>Điều 3.</b> Thanh toán theo các đợt đã thoả thuận.</p>
-                @if (h.ghiChu) { <p><b>Ghi chú:</b> {{ h.ghiChu }}</p> }
-                <div class="ky"><div>ĐẠI DIỆN BÊN A<small>(Ký, ghi rõ họ tên)</small></div><div>ĐẠI DIỆN BÊN B<small>(Ký, ghi rõ họ tên)</small></div></div>
-              </article>
-            }
+            @default { <p class="trong">Đang mở…</p> }
           }
         </div>
       </div>
@@ -137,17 +115,16 @@ export class XemFileHd {
   protected readonly muc = computed<Muc[]>(() => [
     ...this.files().map((ref) => ({ k: 'ref' as const, id: ref.id, name: ref.name, mime: ref.mime, size: ref.size, ref })),
     ...this.pending().map((file, i) => ({ k: 'cho' as const, id: `cho-${i}-${file.name}`, name: file.name, mime: file.type, size: file.size, file })),
-    { k: 'gl', id: 'gl', name: 'Bản giả lập (mẫu)', mime: '', size: 0 },
   ]);
-  protected readonly chon = computed(() => this.muc().find((m) => m.id === this.chonId()) ?? this.muc()[0]);
-  protected readonly xem = signal<{ t: 'dang' | 'img' | 'pdf' | 'khac' | 'mat' | 'gl'; url?: string; safe?: SafeResourceUrl }>({ t: 'gl' });
+  protected readonly chon = computed(() => (this.muc().find((m) => m.id === this.chonId()) ?? this.muc()[0]) as Muc);
+  protected readonly xem = signal<{ t: 'dang' | 'img' | 'pdf' | 'khac' | 'mat'; url?: string; safe?: SafeResourceUrl }>({ t: 'dang' });
 
   private url = '';
 
   constructor() {
     // Mở popup → chọn file đầu tiên; đổi mục chọn → nạp blob và tạo object URL mới.
     effect(() => {
-      if (this.open()) this.chonId.set(this.muc()[0].id);
+      if (this.open()) this.chonId.set(this.muc()[0]?.id ?? '');
     });
     effect(() => {
       const m = this.open() ? this.chon() : undefined;
@@ -163,13 +140,15 @@ export class XemFileHd {
 
   private async nap(m: Muc | undefined): Promise<void> {
     this.thuHoi();
-    if (!m || m.k === 'gl') return this.xem.set({ t: 'gl' });
+    if (!m) return;
     this.xem.set({ t: 'dang' });
     const blob = m.k === 'cho' ? m.file : await getBlob(m.ref.id).catch(() => undefined);
     if (this.chon()?.id !== m.id) return; // người dùng đã chọn mục khác trong lúc chờ
     if (!blob) return this.xem.set({ t: 'mat' });
     this.url = URL.createObjectURL(blob);
-    const mime = blob.type || m.mime;
+    // Máy chủ có thể trả kiểu lạ (octet-stream, x-download…) hoặc rỗng → đoán theo magic bytes, rồi theo đuôi tên tệp.
+    const xemDuoc = (x: string) => x === 'application/pdf' || x.startsWith('image/');
+    const mime = [blob.type, m.mime].find(xemDuoc) ?? (await doanMime(blob, m.name));
     const t = mime.startsWith('image/') ? 'img' : mime === 'application/pdf' ? 'pdf' : 'khac';
     this.xem.set({ t, url: this.url, safe: t === 'pdf' ? this.san.bypassSecurityTrustResourceUrl(this.url) : undefined });
   }
@@ -193,7 +172,7 @@ export class XemFileHd {
     <section class="card stack">
       <div class="between">
         <h2 class="section-title">File hợp đồng <small class="muted">(nếu có)</small></h2>
-        <button type="button" class="btn sm" (click)="moXem.set(true)"><app-icon name="eye" [size]="16" /> Xem file hợp đồng</button>
+        <button type="button" class="btn sm" [disabled]="!files().length && !pending().length" title="Chưa có file hợp đồng" (click)="moXem.set(true)"><app-icon name="eye" [size]="16" /> Xem file hợp đồng</button>
       </div>
       @if (files().length || pending().length) {
         <ul class="ds">
@@ -215,7 +194,7 @@ export class XemFileHd {
           }
         </ul>
       } @else {
-        <p class="sub">Chưa có file hợp đồng — bấm "Xem file hợp đồng" để xem bản giả lập dựng từ dữ liệu HĐ.</p>
+        <p class="sub">Chưa có file hợp đồng — tải file lên để xem.</p>
       }
       @if (edit()) {
         <label class="drop">
