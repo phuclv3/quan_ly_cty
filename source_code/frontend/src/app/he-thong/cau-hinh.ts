@@ -70,7 +70,7 @@ const BANG: { k: TableKey; nhan: string }[] = [
 
     <div class="tabs" role="tablist">
       @if (coTab('tham-so')) { <button role="tab" [class.on]="tab() === 'tham-so'" (click)="setTab('tham-so')">Tham số</button> }
-      @if (coTab('du-lieu')) { <button role="tab" [class.on]="tab() === 'du-lieu'" (click)="setTab('du-lieu')">Dữ liệu trên máy này</button> }
+      @if (coTab('du-lieu')) { <button role="tab" [class.on]="tab() === 'du-lieu'" (click)="setTab('du-lieu')">Dữ liệu</button> }
     </div>
 
     @switch (tab()) {
@@ -139,8 +139,8 @@ const BANG: { k: TableKey; nhan: string }[] = [
 
       @case ('du-lieu') {
         <div class="note warn">
-          Bản chạy thử này lưu toàn bộ dữ liệu ngay trong trình duyệt của máy này, kể cả tệp đính kèm.
-          Máy khác / trình duyệt khác không thấy dữ liệu này; xoá dữ liệu duyệt web là mất. Hãy xuất bản sao định kỳ.
+          Dữ liệu lưu tập trung ở máy chủ (MySQL + kho tệp hồ sơ) — sao lưu định kỳ ở máy chủ theo hướng dẫn backend.
+          Số bản ghi dưới đây là phần bạn được xem theo quyền.
         </div>
         <div class="grid c2" style="margin-top:14px">
           <div class="card">
@@ -155,12 +155,12 @@ const BANG: { k: TableKey; nhan: string }[] = [
           <div class="stack" style="display:grid;gap:14px;align-content:start">
             <div class="card">
               <h3>Xuất bản sao</h3>
-              <p class="sub">Tệp JSON chứa toàn bộ dữ liệu (không gồm nội dung tệp đính kèm). Tệp có chuỗi băm mật khẩu — cất giữ như tài liệu mật.</p>
+              <p class="sub">Tệp JSON chứa toàn bộ dữ liệu (không gồm nội dung tệp đính kèm). Gồm dữ liệu bạn được xem (không có mật khẩu) — cất giữ như tài liệu mật.</p>
               <div class="btn-row" style="justify-content:flex-start;margin-top:10px"><button class="btn" (click)="xuat()">Xuất bản sao (JSON)</button></div>
             </div>
             <div class="card">
               <h3>Nạp lại dữ liệu mẫu</h3>
-              <p class="sub">Xoá MỌI dữ liệu trên máy này (hợp đồng, phiếu, tài khoản, cấu hình…) và dựng lại từ dữ liệu mẫu. Sau đó đăng xuất.</p>
+              <p class="sub">Xoá MỌI dữ liệu trên máy chủ (hợp đồng, phiếu, tài khoản, cấu hình…) và dựng lại từ dữ liệu mẫu — chỉ máy chủ chạy hồ sơ phát triển. Sau đó đăng xuất.</p>
               <div class="btn-row" style="justify-content:flex-start;margin-top:10px"><button class="btn danger" (click)="napLai()">Nạp lại dữ liệu mẫu</button></div>
             </div>
           </div>
@@ -287,8 +287,8 @@ export class CauHinhPage {
   protected async napLai(): Promise<void> {
     if (!this.store.isGD()) return;
     const go = await this.confirm.prompt({
-      title: 'Xoá toàn bộ dữ liệu trên máy này và nạp lại dữ liệu mẫu?',
-      message: 'Mọi hợp đồng, phiếu, chi phí, tài khoản, cấu hình đã nhập trên máy này mất hẳn — không hoàn tác được. Nên "Xuất bản sao (JSON)" trước.',
+      title: 'Xoá toàn bộ dữ liệu trên máy chủ và nạp lại dữ liệu mẫu?',
+      message: 'Mọi hợp đồng, phiếu, chi phí, tài khoản, cấu hình trên máy chủ mất hẳn — không hoàn tác được. Nên "Xuất bản sao (JSON)" trước.',
       warn: 'Sau khi nạp lại bạn bị đăng xuất.',
       label: 'Gõ NẠP LẠI để xác nhận',
       placeholder: 'NẠP LẠI',
@@ -297,7 +297,11 @@ export class CauHinhPage {
     });
     if (go === null) return;
     if (fold(go).replace(/\s+/g, ' ') !== 'nap lai') return this.store.say('Chưa gõ đúng "NẠP LẠI" — không thay đổi gì');
-    await this.store.resetToSeed();
+    try {
+      await this.store.resetToSeed();
+    } catch (e) {
+      return this.store.say(e instanceof Error && e.message !== 'Không tìm thấy đường dẫn' ? e.message : 'Máy chủ không bật chức năng nạp lại dữ liệu mẫu (chỉ có ở môi trường phát triển)');
+    }
     this.store.say('Đã nạp lại dữ liệu mẫu');
     this.auth.logout();
   }

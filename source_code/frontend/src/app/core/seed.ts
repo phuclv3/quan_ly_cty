@@ -41,7 +41,6 @@ import {
 import { RAW } from './seed-data';
 import { RAW_KH_CRM } from './seed-kh';
 import { RAW_ANH_XA, RAW_KIEM_KE, RAW_LO_NHAP, RAW_MA_HANG, RawMaHang } from './seed-kho';
-import { hashPassword, randomHex } from './crypto';
 import { nhomMacDinh } from './perm';
 import { fold, nextCode, nowIso, todayIso, uid, yy } from './util';
 
@@ -97,15 +96,12 @@ export const TAI_KHOAN_SALE_KD: { email: string; hoTen: string }[] = [
 export async function themTaiKhoanSale(db: Db): Promise<void> {
   for (const t of TAI_KHOAN_SALE_KD) {
     if (db.taiKhoan.some((x) => x.email.toLowerCase() === t.email)) continue;
-    const salt = randomHex();
     db.taiKhoan.push({
       id: uid('TK'),
       email: t.email,
       hoTen: t.hoTen,
       nhom: ['NQ-SALE'],
       trangThai: 'Hoạt động',
-      matKhauBam: await hashPassword(MAT_KHAU_DEMO, salt),
-      salt,
       batDoiMK: true,
       soLanSai: 0,
     });
@@ -153,15 +149,12 @@ export async function buildSeed(): Promise<Db> {
 
   // ── Tài khoản demo ──
   for (const t of TAI_KHOAN_DEMO) {
-    const salt = randomHex();
     const acc: TaiKhoan = {
       id: uid('TK'),
       email: t.email,
       hoTen: t.hoTen,
       nhom: t.nhom,
       trangThai: 'Hoạt động',
-      matKhauBam: await hashPassword(MAT_KHAU_DEMO, salt),
-      salt,
       batDoiMK: false,
       soLanSai: 0,
     };

@@ -1,33 +1,16 @@
 import { Injectable, computed, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { TaiKhoan } from './models';
-import { Store } from './store';
-import { hashPassword, loiMatKhauMoi, matKhauTam, randomHex } from './crypto';
-import { fold, uid } from './util';
+import { ChangeSet, Store } from './store';
+import { api, readToken, setUnauthorizedHandler, writeToken } from './api';
+import { loiMatKhauMoi } from './crypto';
+import { fold } from './util';
 
-const TOKEN_KEY = 'app-oxy:token';
-const HET_HAN_MS = 12 * 3600_000;
-const KHOA_MS = 15 * 60_000;
-const SAI_TOI_DA = 5;
-const LOI_CHUNG = 'Email hoặc mật khẩu không đúng';
-
-function readToken(): string | null {
-  try {
-    return localStorage.getItem(TOKEN_KEY);
-  } catch {
-    return null;
-  }
-}
-function writeToken(t: string | null): void {
-  try {
-    if (t) localStorage.setItem(TOKEN_KEY, t);
-    else localStorage.removeItem(TOKEN_KEY);
-  } catch {
-    /* trình duyệt chặn bộ nhớ: phiên chỉ sống tới khi tải lại */
-  }
-}
-
-/** Đăng nhập nội bộ email + mật khẩu (NT-01), đổi / đặt lại mật khẩu (NT-02), tài khoản (NT-03). */
+/**
+ * Đăng nhập nội bộ email + mật khẩu (NT-01), đổi / đặt lại mật khẩu (NT-02), tài khoản (NT-03).
+ * Kiểm tra mật khẩu, khoá 5 lần sai, phiên 12 giờ, quyền quản trị tài khoản đều do máy chủ thực hiện
+ * (backend AuthService); ở đây chỉ kiểm tra nhanh để báo lỗi sớm trên form.
+ */
 @Injectable({ providedIn: 'root' })
 export class Auth {
   private readonly store = inject(Store);
@@ -38,91 +21,36 @@ export class Auth {
   readonly mustChange = computed(() => !!this.me()?.batDoiMK);
 
   constructor() {
-    void this.store.firstLoad.then(() => this.restore());
-    // Gia hạn phiên theo hoạt động: mỗi lần bấm/gõ đẩy hạn thêm 12 giờ (giới hạn 1 lần/phút).
-    let last = 0;
-    const touch = () => {
-      if (Date.now() - last < 60_000) return;
-      last = Date.now();
-      this.touch();
-    };
-    addEventListener('pointerdown', touch, { passive: true });
-    addEventListener('keydown', touch, { passive: true });
-  }
-
-  private restore(): void {
-    const token = readToken();
-    if (!token) return;
-    const p = this.store.db().phien.find((x) => x.token === token);
-    if (!p || p.hetHan < new Date().toISOString()) {
-      writeToken(null);
-      return;
-    }
-    const t = this.store.db().taiKhoan.find((x) => x.email === p.email);
-    if (!t || t.trangThai === 'Khoá') {
-      writeToken(null);
-      return;
-    }
-    this.store.meId.set(t.id);
-  }
-
-  private touch(): void {
-    const token = readToken();
-    if (!token || !this.store.ready()) return;
-    const p = this.store.db().phien.find((x) => x.token === token);
-    if (!p) return;
-    if (p.hetHan < new Date().toISOString()) {
+    setUnauthorizedHandler(() => {
+      if (!readToken()) return;
       this.expire();
-      return;
-    }
-    const hetHan = new Date(Date.now() + HET_HAN_MS).toISOString();
-    this.store.setPhien((rows) => rows.map((x) => (x.token === token ? { ...x, hetHan } : x)));
+    });
   }
 
   private expire(): void {
     writeToken(null);
-    this.store.meId.set(null);
+    this.store.xoaPhien();
     this.store.say('Phiên đăng nhập đã hết hạn — vui lòng đăng nhập lại');
     void this.router.navigate(['/dang-nhap']);
   }
 
   async login(emailRaw: string, matKhau: string): Promise<string | null> {
     await this.store.firstLoad;
-    const email = emailRaw.trim().toLowerCase();
-    const t = this.store.db().taiKhoan.find((x) => x.email.toLowerCase() === email);
-    if (!t) return LOI_CHUNG;
-    if (t.trangThai === 'Khoá') return 'Tài khoản đã bị khoá — liên hệ Giám đốc';
-    if (t.khoaDen && t.khoaDen > new Date().toISOString()) {
-      const phut = Math.ceil((new Date(t.khoaDen).getTime() - Date.now()) / 60_000);
-      return `Sai mật khẩu quá ${SAI_TOI_DA} lần — thử lại sau ${phut} phút`;
+    try {
+      const r = await api<{ token: string; taiKhoan: TaiKhoan }>('POST', '/auth/login', { email: emailRaw.trim().toLowerCase(), matKhau });
+      writeToken(r.token);
+      await this.store.sauDangNhap(r.taiKhoan.id);
+      return null;
+    } catch (e) {
+      writeToken(null);
+      return e instanceof Error ? e.message : 'Không đăng nhập được';
     }
-    const ok = (await hashPassword(matKhau, t.salt)) === t.matKhauBam;
-    if (!ok) {
-      const sai = t.soLanSai + 1;
-      this.store.putTaiKhoan({
-        ...t,
-        soLanSai: sai >= SAI_TOI_DA ? 0 : sai,
-        khoaDen: sai >= SAI_TOI_DA ? new Date(Date.now() + KHOA_MS).toISOString() : t.khoaDen,
-      });
-      return sai >= SAI_TOI_DA ? `Sai mật khẩu ${SAI_TOI_DA} lần — tài khoản bị khoá đăng nhập 15 phút` : LOI_CHUNG;
-    }
-    const token = randomHex(24);
-    const now = new Date();
-    this.store.setPhien((rows) => [
-      ...rows.filter((x) => x.hetHan > now.toISOString()),
-      { token, email: t.email, hetHan: new Date(now.getTime() + HET_HAN_MS).toISOString() },
-    ]);
-    this.store.putTaiKhoan({ ...t, soLanSai: 0, khoaDen: undefined, lanDangNhapCuoi: now.toISOString() });
-    writeToken(token);
-    this.store.meId.set(t.id);
-    return null;
   }
 
   logout(): void {
-    const token = readToken();
-    if (token) this.store.setPhien((rows) => rows.filter((x) => x.token !== token));
+    if (readToken()) void api('POST', '/auth/logout').catch(() => undefined);
     writeToken(null);
-    this.store.meId.set(null);
+    this.store.xoaPhien();
     void this.router.navigate(['/dang-nhap']);
   }
 
@@ -130,16 +58,19 @@ export class Auth {
   async doiMatKhau(cu: string, moi: string, nhapLai: string): Promise<string | null> {
     const t = this.me();
     if (!t) return 'Chưa đăng nhập';
-    if ((await hashPassword(cu, t.salt)) !== t.matKhauBam) return 'Mật khẩu cũ không đúng';
     if (moi !== nhapLai) return 'Hai lần nhập mật khẩu mới không khớp';
     const loi = loiMatKhauMoi(moi, cu);
     if (loi) return loi;
-    const salt = randomHex();
-    this.store.putTaiKhoan({ ...t, salt, matKhauBam: await hashPassword(moi, salt), batDoiMK: false });
-    return null;
+    try {
+      await api('POST', '/auth/doi-mat-khau', { cu, moi, nhapLai });
+      await this.store.reload();
+      return null;
+    } catch (e) {
+      return e instanceof Error ? e.message : 'Không đổi được mật khẩu';
+    }
   }
 
-  // ── Quản lý tài khoản (chỉ Giám đốc — Ma trận quyền) ──
+  // ── Quản lý tài khoản (quyền NT-03) ──
 
   private guard(): string | null {
     return this.store.canEdit('taiKhoan') ? null : 'Chỉ Giám đốc quản lý tài khoản';
@@ -155,19 +86,23 @@ export class Auth {
     if (o.nhom.length === 0) return 'Chọn ít nhất 1 nhóm quyền';
     const loi = loiMatKhauMoi(o.matKhau);
     if (loi) return loi;
-    const salt = randomHex();
-    this.store.putTaiKhoan({
-      id: uid('TK'),
-      email,
-      hoTen: o.hoTen.trim(),
-      nhom: o.nhom,
-      trangThai: 'Hoạt động',
-      salt,
-      matKhauBam: await hashPassword(o.matKhau, salt),
-      batDoiMK: true,
-      soLanSai: 0,
-    });
-    return null;
+    try {
+      const r = await api<{ changes?: ChangeSet }>('POST', '/tai-khoan', { hoTen: o.hoTen.trim(), email, nhom: o.nhom, matKhau: o.matKhau });
+      this.store.apDung(r?.changes);
+      return null;
+    } catch (e) {
+      return e instanceof Error ? e.message : 'Không tạo được tài khoản';
+    }
+  }
+
+  /** Gửi lệnh tài khoản; lỗi máy chủ → báo và nạp lại dữ liệu. */
+  private gui(method: string, path: string, body?: unknown): void {
+    void api<{ changes?: ChangeSet }>(method, path, body)
+      .then((r) => this.store.apDung(r?.changes))
+      .catch((e: unknown) => {
+        this.store.say(e instanceof Error ? e.message : 'Lỗi máy chủ', 'bad');
+        void this.store.reload();
+      });
   }
 
   suaTaiKhoan(id: string, o: { hoTen: string; nhom: string[] }): string | null {
@@ -179,7 +114,7 @@ export class Auth {
     const moi = { ...t, hoTen: o.hoTen.trim() || t.hoTen, nhom: o.nhom };
     const ds = this.store.db().taiKhoan.map((x) => (x.id === id ? moi : x));
     if (!this.store.conQuanTri(ds, this.store.db().nhomQuyen)) return 'Thay đổi này làm hệ thống không còn ai quản trị tài khoản';
-    this.store.putTaiKhoan(moi);
+    this.gui('PUT', `/tai-khoan/${encodeURIComponent(id)}`, { hoTen: moi.hoTen, nhom: o.nhom });
     return null;
   }
 
@@ -193,21 +128,20 @@ export class Auth {
     const moi: TaiKhoan['trangThai'] = t.trangThai === 'Khoá' ? 'Hoạt động' : 'Khoá';
     const ds = this.store.db().taiKhoan.map((x) => (x.id === id ? { ...x, trangThai: moi } : x));
     if (!this.store.conQuanTri(ds, this.store.db().nhomQuyen)) return 'Không khoá tài khoản quản trị cuối cùng';
-    this.store.putTaiKhoan({ ...t, trangThai: moi, soLanSai: 0, khoaDen: undefined });
-    if (moi === 'Khoá') this.store.setPhien((rows) => rows.filter((x) => x.email !== t.email));
+    this.gui('POST', `/tai-khoan/${encodeURIComponent(id)}/doi-trang-thai`);
     return null;
   }
 
-  /** Đặt lại mật khẩu → huỷ mọi phiên của tài khoản đó. Trả mật khẩu tạm để đọc cho người dùng. */
+  /** Đặt lại mật khẩu → máy chủ huỷ mọi phiên của tài khoản đó, trả mật khẩu tạm để đọc cho người dùng. */
   async datLaiMatKhau(id: string, batDoi: boolean): Promise<{ loi: string | null; matKhau?: string }> {
     const g = this.guard();
     if (g) return { loi: g };
-    const t = this.store.db().taiKhoan.find((x) => x.id === id);
-    if (!t) return { loi: 'Không tìm thấy tài khoản' };
-    const mk = matKhauTam();
-    const salt = randomHex();
-    this.store.putTaiKhoan({ ...t, salt, matKhauBam: await hashPassword(mk, salt), batDoiMK: batDoi, soLanSai: 0, khoaDen: undefined });
-    this.store.setPhien((rows) => rows.filter((x) => x.email !== t.email));
-    return { loi: null, matKhau: mk };
+    try {
+      const r = await api<{ matKhau: string; changes?: ChangeSet }>('POST', `/tai-khoan/${encodeURIComponent(id)}/dat-lai-mat-khau`, { batDoi });
+      this.store.apDung(r.changes);
+      return { loi: null, matKhau: r.matKhau };
+    } catch (e) {
+      return { loi: e instanceof Error ? e.message : 'Không đặt lại được mật khẩu' };
+    }
   }
 }

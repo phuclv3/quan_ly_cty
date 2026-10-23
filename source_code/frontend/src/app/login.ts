@@ -22,7 +22,7 @@ import { KiemTra } from './shared/kiem-tra';
         </div>
         <div class="field">
           <label for="lg-email">Email <span class="req">*</span></label>
-          <input id="lg-email" type="email" autocomplete="username" required [value]="email()" (input)="email.set($any($event.target).value)" />
+          <input id="lg-email" type="text" autocomplete="username" required [value]="email()" (input)="email.set($any($event.target).value)" />
         </div>
         <div class="field">
           <label for="lg-pw">Mật khẩu <span class="req">*</span></label>

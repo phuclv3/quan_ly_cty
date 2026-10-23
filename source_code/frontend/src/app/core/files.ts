@@ -1,44 +1,22 @@
 /**
  * Lưu tệp hồ sơ (NT-12).
  *
- * Bản chạy trên trình duyệt: nội dung tệp nằm ở IndexedDB của máy này, siêu dữ liệu (FileRef)
- * nằm trong cơ sở dữ liệu chung. Khi có Apps Script, thay putBlob/getBlob bằng upload lên Drive
- * công ty theo cây /App Oxy/Hồ sơ/{Năm}/{Số HĐ}/{Loại hồ sơ}/ (chờ Q-02).
+ * Nội dung tệp lưu ở kho tệp của backend (POST /api/tep, thư mục app.storage.dir); siêu dữ liệu (FileRef)
+ * nằm trong dữ liệu chung. Ảnh được nén / tạo thumbnail ngay trên trình duyệt trước khi tải lên.
  */
 import { FileRef } from './models';
-import { nowIso, uid } from './util';
+import { api, apiBlob } from './api';
 
 export const MAX_FILE_BYTES = 20 * 1024 * 1024;
 export const HO_SO_ACCEPT = '.pdf,.png,.jpg,.jpeg,.webp,.heic';
 
-const DB_NAME = 'app-oxy-files';
-const STORE = 'blobs';
-
-function openDb(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, 1);
-    req.onupgradeneeded = () => req.result.createObjectStore(STORE);
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-}
-
-async function tx<T>(mode: IDBTransactionMode, fn: (s: IDBObjectStore) => IDBRequest<T>): Promise<T> {
-  const db = await openDb();
-  return new Promise((resolve, reject) => {
-    const t = db.transaction(STORE, mode);
-    const req = fn(t.objectStore(STORE));
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-}
-
-export const putBlob = (id: string, blob: Blob) => tx('readwrite', (s) => s.put(blob, id));
-export const getBlob = (id: string) => tx<Blob | undefined>('readonly', (s) => s.get(id));
-export const deleteBlob = (id: string) => tx('readwrite', (s) => s.delete(id));
+/** Tải nội dung tệp từ máy chủ (chỉ khi người dùng được xem bản ghi chứa tệp). */
+export const getBlob = (id: string) => apiBlob(`/tep/${encodeURIComponent(id)}`);
+/** Nội dung tệp do máy chủ xoá khi yêu cầu xoá được duyệt — phía trình duyệt không cần làm gì. */
+export const deleteBlob = async (_id: string) => undefined;
 
 /** Ảnh: nén cạnh dài ≤ 2000px (JPEG 0,82) và tạo thumbnail 160px. PDF giữ nguyên. */
-export async function luuTep(file: File, nguoi: string): Promise<FileRef> {
+export async function luuTep(file: File, _nguoi: string): Promise<FileRef> {
   if (file.size > MAX_FILE_BYTES) throw new Error(`Tệp "${file.name}" lớn hơn 20MB`);
   let blob: Blob = file;
   let thumb: string | undefined;
@@ -55,9 +33,10 @@ export async function luuTep(file: File, nguoi: string): Promise<FileRef> {
       // Trình duyệt không giải mã được (VD HEIC trên Chrome): lưu nguyên tệp, không có thumbnail.
     }
   }
-  const id = uid('F');
-  await putBlob(id, blob);
-  return { id, name, mime: blob.type || file.type, size: blob.size, thumb, ngayUpload: nowIso(), nguoiUpload: nguoi };
+  const form = new FormData();
+  form.append('file', blob, name);
+  if (thumb) form.append('thumb', thumb);
+  return api<FileRef>('POST', '/tep', undefined, { form });
 }
 
 function loadImage(file: Blob): Promise<HTMLImageElement> {
@@ -99,7 +78,6 @@ function blobToDataUrl(b: Blob): Promise<string> {
 
 export async function moTep(f: FileRef): Promise<void> {
   const b = await getBlob(f.id);
-  if (!b) throw new Error('Tệp không còn trên máy này');
   const url = URL.createObjectURL(b);
   window.open(url, '_blank', 'noopener');
   setTimeout(() => URL.revokeObjectURL(url), 60_000);
@@ -185,7 +163,7 @@ export function taiBlob(ten: string, blob: Blob): void {
 export async function taiZip(tenZip: string, entries: { path: string; file: FileRef }[]): Promise<number> {
   const ds: { path: string; data: Uint8Array }[] = [];
   for (const e of entries) {
-    const blob = await getBlob(e.file.id);
+    const blob = await getBlob(e.file.id).catch(() => undefined);
     if (blob) ds.push({ path: e.path, data: new Uint8Array(await blob.arrayBuffer()) });
   }
   taiBlob(tenZip, taoZip(ds));

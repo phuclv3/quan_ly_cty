@@ -38,9 +38,7 @@ export interface TaiKhoan {
   /** Id các nhóm quyền (bảng TaiKhoan_Nhom). */
   nhom: string[];
   trangThai: 'Hoạt động' | 'Khoá';
-  /** SHA-256(mật khẩu + salt), hex. */
-  matKhauBam: string;
-  salt: string;
+  /** Mật khẩu băm (BCrypt) chỉ nằm ở máy chủ — không bao giờ gửi về trình duyệt. */
   batDoiMK: boolean;
   soLanSai: number;
   /** Khoá đăng nhập tạm tới mốc này (sai 5 lần → 15 phút). */
