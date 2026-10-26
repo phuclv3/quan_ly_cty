@@ -7,7 +7,7 @@ import { money, sum, viDate } from '../core/util';
 import { TrangThai } from '../shared/ui-kit';
 import { Facet, FilterBar, LOC_RONG, Loc, khopQ, khopSel, khopThoiGian } from '../shared/filter-bar';
 import { Pager, paginate } from '../shared/pager';
-import { xuatCsv } from '../shared/export';
+import { xuatExcel } from '../shared/export';
 import { ChonNhieu } from '../shared/chon-nhieu';
 import { ChonBar } from '../shared/chon-bar';
 import { Confirm } from '../shared/confirm';
@@ -27,7 +27,7 @@ const TRANG_THAI = [TT.NHAP, TT.CHO_DUYET, TT.DA_DUYET, TT.TU_CHOI];
     <div class="between" style="margin-bottom:8px">
       <p class="sub muted">Chi phí gắn từng HĐ bán; duyệt xong trừ vào Nguồn tiền chi ra và cộng vào chi phí của HĐ.</p>
       <div class="row">
-        <button type="button" class="btn quiet" (click)="xuat()">Xuất CSV</button>
+        <button type="button" class="btn quiet" (click)="xuat()">Xuất Excel</button>
         @if (store.canEdit('cpHD')) { <button type="button" class="btn" (click)="cp.set(store.newChiPhi())">+ Nhập chi phí</button> }
       </div>
     </div>
@@ -182,6 +182,6 @@ export class ChiPhiTab {
         ttNhan(c.trangThai),
       ];
     });
-    void xuatCsv('chi-phi-hd', [head, ...body]);
+    void xuatExcel('chi-phi-hd', [head, ...body]);
   }
 }

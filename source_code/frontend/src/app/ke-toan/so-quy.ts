@@ -8,7 +8,7 @@ import { money, sum, viDate } from '../core/util';
 import { TrangThai } from '../shared/ui-kit';
 import { Facet, FilterBar, LOC_RONG, Loc, khopQ, khopSel, khopThoiGian } from '../shared/filter-bar';
 import { Pager, paginate } from '../shared/pager';
-import { xuatCsv } from '../shared/export';
+import { xuatExcel } from '../shared/export';
 import { ChonNhieu } from '../shared/chon-nhieu';
 import { ChonBar } from '../shared/chon-bar';
 import { Confirm } from '../shared/confirm';
@@ -53,7 +53,7 @@ export interface SqRow {
         @if (draftOnly()) { Bạn chỉ thấy các phiếu do mình đề nghị. } @else { Sổ quỹ chung — không gắn hợp đồng. }
       </p>
       <div class="row">
-        <button type="button" class="btn quiet" (click)="xuat()">Xuất CSV</button>
+        <button type="button" class="btn quiet" (click)="xuat()">Xuất Excel</button>
         @if (coTheLap()) {
           @if (laTat() || laThu()) { <button type="button" class="btn" (click)="mo(store.newPhieu('Thu'))">+ Lập phiếu thu</button> }
           @if (laTat() || !laThu()) { <button type="button" class="btn" (click)="mo(store.newPhieu('Chi'))">+ Lập phiếu chi</button> }
@@ -272,6 +272,6 @@ export class SoQuyTab {
     const head = ['Số phiếu', 'Ngày lập', 'Loại phiếu', 'Nguồn tiền', 'Loại chi phí', 'Nội dung', 'Thu', 'Chi', 'Người đề nghị', 'Trạng thái'];
     const body = this.rows().map((r) => [r.so, viDate(r.ngay), r.loai, r.nguon, r.lcp ?? '', r.noiDung, r.thu, r.chi, r.nguoi, ttNhan(r.trangThai)]);
     body.push(['Tổng (không gồm Luân chuyển)', '', '', '', '', '', this.tongThu(), this.tongChi(), '', '']);
-    void xuatCsv(this.laTat() ? 'so-quy' : this.laThu() ? 'phieu-thu' : 'phieu-chi', [head, ...body]);
+    void xuatExcel(this.laTat() ? 'so-quy' : this.laThu() ? 'phieu-thu' : 'phieu-chi', [head, ...body]);
   }
 }

@@ -12,7 +12,7 @@ import { Pager, paginate } from '../shared/pager';
 import { Confirm } from '../shared/confirm';
 import { guiXoa, guiXoaNhieu } from '../shared/ho-so';
 import { ChonNhieu } from '../shared/chon-nhieu';
-import { xuatCsv } from '../shared/export';
+import { xuatExcel } from '../shared/export';
 
 const BLANK: NhaCungCap = { id: '', ten: '', mst: '', diaChi: '', quocGia: 'Việt Nam', nguoiLienHe: '', dienThoai: '', email: '', ghiChu: '' };
 type F = Exclude<keyof NhaCungCap, 'id'>;
@@ -28,7 +28,7 @@ import { ImportDm } from '../shared/import-dm';
     <div class="between">
       <app-filter style="flex:1 1 auto;min-width:0" [(loc)]="loc" memo="dm-ncc" [time]="false" placeholder="Tìm mã, tên, MST, quốc gia, người liên hệ…" />
       <div class="btn-row" style="margin-bottom:12px">
-        <button type="button" class="btn quiet" (click)="xuat()">Xuất CSV</button>
+        <button type="button" class="btn quiet" (click)="xuat()">Xuất Excel</button>
         @if (store.canEdit('ncc')) { <app-import-dm loai="ncc" /> <button type="button" class="btn" (click)="mo(null)">+ Thêm nhà cung cấp</button> }
       </div>
     </div>
@@ -235,6 +235,6 @@ export class DmNcc {
     const rows: (string | number)[][] = [['Mã NCC', 'Tên', 'MST', 'Địa chỉ', 'Quốc gia', 'Người liên hệ', 'Điện thoại', 'Email', 'Ghi chú', 'Số HĐ mua']];
     for (const n of this.list())
       rows.push([n.id, n.ten, n.mst, n.diaChi, n.quocGia, n.nguoiLienHe, n.dienThoai, n.email, n.ghiChu, this.soHD().get(n.id) ?? 0]);
-    void xuatCsv('nha-cung-cap', rows);
+    void xuatExcel('nha-cung-cap', rows);
   }
 }

@@ -9,7 +9,7 @@ import { money, pct, sum, viDate, vndShort } from '../core/util';
 import { FilterBar, khopQ, khopSel, khopThoiGian, Loc, LOC_RONG, Facet } from '../shared/filter-bar';
 import { Kpi, TrangThai } from '../shared/ui-kit';
 import { Pager, paginate } from '../shared/pager';
-import { xuatCsv } from '../shared/export';
+import { xuatExcel } from '../shared/export';
 import { Icon } from '../shared/icon';
 import { ImportHd } from '../shared/import-hd';
 import { SortTh, Sorter } from '../shared/sort';
@@ -38,7 +38,7 @@ interface Dong {
         <h1>Hợp đồng mua</h1>
       </div>
       <div class="actions">
-        <button type="button" class="btn quiet" (click)="xuat()"><app-icon name="download" [size]="16" /> Xuất CSV</button>
+        <button type="button" class="btn quiet" (click)="xuat()"><app-icon name="download" [size]="16" /> Xuất Excel</button>
         @if (store.canEdit('hdm')) {
           <app-import-hd loai="mua" />
           <a class="btn" routerLink="/hop-dong-mua/moi"><app-icon name="plus" [size]="16" /> Tạo HĐ mua</a>
@@ -248,6 +248,6 @@ export class HdmList {
       r.m.thuocPhuTai ? 'Có' : '',
       r.choXoa ? `${ttNhan(r.m.trangThai)} (Chờ xoá)` : ttNhan(r.m.trangThai),
     ]);
-    void xuatCsv('hop-dong-mua', [head, ...body]);
+    void xuatExcel('hop-dong-mua', [head, ...body]);
   }
 }

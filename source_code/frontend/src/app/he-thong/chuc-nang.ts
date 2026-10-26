@@ -3,7 +3,7 @@ import { Store } from '../core/store';
 import { NhomQuyen } from '../core/models';
 import { CHUC_NANG, ChucNang, LEVEL_LABEL, Level, MODULES, maxLevel } from '../core/perm';
 import { fold } from '../core/util';
-import { xuatCsv } from '../shared/export';
+import { xuatExcel } from '../shared/export';
 import { TrangThai } from '../shared/ui-kit';
 import { Icon } from '../shared/icon';
 import { LEVEL_TONE } from './nhom-quyen';
@@ -31,7 +31,7 @@ const mucCua = (g: NhomQuyen, c: ChucNang): Level => (g.trangThai !== TT.HOAT_DO
         @if (mod()) { <button type="button" class="f-x" aria-label="Bỏ lọc module" title="Bỏ lọc module" (click)="mod.set('')"><app-icon name="x" [size]="14" /></button> }
       </span>
       <button type="button" class="btn quiet f-clear" [disabled]="!q().trim() && !mod()" (click)="q.set(''); mod.set('')"><app-icon name="x" [size]="16" /> Xoá lọc</button>
-      <button type="button" class="btn quiet" (click)="xuat()"><app-icon name="download" [size]="16" /> Xuất CSV</button>
+      <button type="button" class="btn quiet" (click)="xuat()"><app-icon name="download" [size]="16" /> Xuất Excel</button>
     </div>
     <div class="tbl-wrap">
       <table class="tbl freeze">
@@ -74,7 +74,7 @@ export class ChucNangTab {
   protected xuat(): void {
     const rows: (string | number)[][] = [['Mã chức năng', 'Module', 'Tên chức năng', 'Mô tả', 'Mức cho phép']];
     for (const c of CHUC_NANG) rows.push([c.ma, c.module, c.ten, c.moTa, c.mucDo.filter((l) => l !== 'none').map((l) => LEVEL_LABEL[l]).join(', ')]);
-    void xuatCsv('danh-muc-chuc-nang', rows);
+    void xuatExcel('danh-muc-chuc-nang', rows);
   }
 }
 
@@ -86,7 +86,7 @@ export class ChucNangTab {
   template: `
     <div class="between" style="margin-bottom:12px">
       <p class="sub">Quyền thực tế từng nhóm (nhóm Ngưng coi như không có quyền). Một tài khoản nhiều nhóm lấy mức cao nhất. Sửa quyền ở tab Nhóm quyền.</p>
-      <button type="button" class="btn quiet" (click)="xuat()"><app-icon name="download" [size]="16" /> Xuất CSV</button>
+      <button type="button" class="btn quiet" (click)="xuat()"><app-icon name="download" [size]="16" /> Xuất Excel</button>
     </div>
     <div class="tbl-wrap">
       <table class="tbl freeze compact">
@@ -127,6 +127,6 @@ export class MaTranTab {
     const gs = this.store.nhomQuyen();
     const rows: (string | number)[][] = [['Mã chức năng', 'Chức năng', ...gs.map((g) => `${g.ten} (${g.ma})`)]];
     for (const c of CHUC_NANG) rows.push([c.ma, c.ten, ...gs.map((g) => { const l = mucCua(g, c); return l === 'none' ? '' : LEVEL_LABEL[l]; })]);
-    void xuatCsv('ma-tran-phan-quyen', rows);
+    void xuatExcel('ma-tran-phan-quyen', rows);
   }
 }

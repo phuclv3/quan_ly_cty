@@ -10,7 +10,7 @@ import { Facet, FilterBar, LOC_RONG, Loc, khopQ, khopSel, khopThoiGian } from '.
 import { Kpi, TrangThai } from '../shared/ui-kit';
 import { Pager, paginate } from '../shared/pager';
 import { SortTh, Sorter } from '../shared/sort';
-import { xuatCsv } from '../shared/export';
+import { xuatExcel } from '../shared/export';
 import { Icon } from '../shared/icon';
 import { ImportHd } from '../shared/import-hd';
 import { ChonNhieu } from '../shared/chon-nhieu';
@@ -38,7 +38,7 @@ interface Row {
         @if (store.ownOnly('hdb')) { <p class="sub">Chỉ hiện HĐ bạn phụ trách.</p> }
       </div>
       <div class="actions">
-        <button type="button" class="btn quiet" (click)="xuat()"><app-icon name="download" [size]="16" /> Xuất CSV</button>
+        <button type="button" class="btn quiet" (click)="xuat()"><app-icon name="download" [size]="16" /> Xuất Excel</button>
         @if (store.canEdit('hdb')) {
           <app-import-hd loai="ban" />
           <a class="btn" routerLink="/hop-dong-ban/moi"><app-icon name="plus" [size]="16" /> Tạo HĐ bán</a>
@@ -244,6 +244,6 @@ export class HdbList {
       this.store.userName(h.sale),
       ttNhan(h.trangThai),
     ]);
-    void xuatCsv('hop-dong-ban', [head, ...body]);
+    void xuatExcel('hop-dong-ban', [head, ...body]);
   }
 }

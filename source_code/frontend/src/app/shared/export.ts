@@ -1,7 +1,8 @@
 /**
- * Xuất / tải tệp: mọi tệp (CSV, Excel, ZIP hồ sơ, tờ trình Word, bản sao lưu) do backend dựng
+ * Xuất / tải tệp: mọi tệp (Excel, ZIP hồ sơ, tờ trình Word, bản sao lưu) do backend dựng
  * (web/XuatController, HopDongController); frontend chỉ gửi dữ liệu đang xem và lưu tệp trả về.
  */
+import { signal } from '@angular/core';
 import { API_BASE, ApiError, authHeaders } from '../core/api';
 
 let baoLoi: (msg: string) => void = () => undefined;
@@ -47,8 +48,12 @@ async function layTep(method: 'GET' | 'POST', path: string, body: unknown, macDi
 
 const loiKetNoi = (e: unknown) => (e instanceof ApiError ? e.message : 'Không kết nối được máy chủ để xuất tệp');
 
+/** Số tệp đang được tạo — app.ts hiện lớp phủ "Đang tạo file…" khi > 0 (chặn bấm lặp nút xuất). */
+export const dangTaoTep = signal(0);
+
 /** Gọi backend lấy tệp rồi tải xuống. Trả số tệp gói (ZIP) hoặc 0; null nếu lỗi (đã hiện toast). */
 async function tai(method: 'GET' | 'POST', path: string, body: unknown, macDinh: string): Promise<number | null> {
+  dangTaoTep.update((n) => n + 1);
   try {
     const { blob, ten, soTep } = await layTep(method, path, body, macDinh);
     const url = URL.createObjectURL(blob);
@@ -64,20 +69,22 @@ async function tai(method: 'GET' | 'POST', path: string, body: unknown, macDinh:
   } catch (e) {
     baoLoi(loiKetNoi(e));
     return null;
+  } finally {
+    dangTaoTep.update((n) => n - 1);
   }
 }
 
 export type Cell = string | number | null;
 
-/** CSV từ bảng đang xem — 'bao-cao-thang' → bao-cao-thang-2026-08-26.csv. */
-export const xuatCsv = (ten: string, dong: Cell[][]) => tai('POST', '/xuat/csv', { ten, dong }, `${ten}.csv`);
+/** Excel (.xlsx, template chung của backend) từ bảng đang xem, dòng đầu là tiêu đề — 'bao-cao-thang' → bao-cao-thang-2026-08-26.xlsx. */
+export const xuatExcel = (ten: string, dong: Cell[][]) => tai('POST', '/xuat/excel', { ten, dong }, `${ten}.xlsx`);
 
 export interface SheetXlsx {
   ten: string;
   dong: (string | number)[][];
   /** Độ rộng cột (đơn vị ký tự Excel). */
   rong?: number[];
-  /** Dòng đầu là tiêu đề: in đậm + nền xám. */
+  /** Dòng đầu là tiêu đề (mặc định có): in đậm, nền xanh, cố định + bộ lọc. */
   tieuDe?: boolean;
 }
 

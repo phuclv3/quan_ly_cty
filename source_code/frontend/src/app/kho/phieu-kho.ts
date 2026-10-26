@@ -9,7 +9,7 @@ import { TT, ttNhan } from '../core/trang-thai';
 import { nhoLoc } from '../core/ui';
 import { money, sum, viDate, viMoment } from '../core/util';
 import { Confirm } from '../shared/confirm';
-import { xemPhieuKhoPdf, xuatCsv } from '../shared/export';
+import { xemPhieuKhoPdf, xuatExcel } from '../shared/export';
 import { Facet, FilterBar, LOC_RONG, Loc, khopQ, khopSel, khopThoiGian } from '../shared/filter-bar';
 import { guiXoa, guiXoaNhieu } from '../shared/ho-so';
 import { ChonNhieu } from '../shared/chon-nhieu';
@@ -40,7 +40,7 @@ const quyenSua = (p: PhieuKho): Perm =>
       <div class="section-title">
         <span class="sub">{{ rows().length }} phiếu · Tổng SL {{ money(tongAll()) }} · Giá trị {{ money(giaTriAll()) }}</span>
         <div class="btn-row">
-          <button type="button" class="btn sm quiet" (click)="xuatCsv()">Xuất CSV</button>
+          <button type="button" class="btn sm quiet" (click)="xuatExcel()">Xuất Excel</button>
           @if (store.canEdit('khoPhieuTay')) {
             <button type="button" class="btn" (click)="moTay.set(true)">{{ loai() === 'Nhập' ? '+ Lập phiếu nhập' : '+ Lập phiếu xuất' }}</button>
           }
@@ -389,7 +389,7 @@ export class PhieuKhoTab {
     setTimeout(() => URL.revokeObjectURL(url), 60000);
   }
 
-  protected xuatCsv(): void {
+  protected xuatExcel(): void {
     const rows: (string | number)[][] = [['Số phiếu', 'Ngày', 'Nguồn gốc', 'Số HĐ liên quan', 'Số hoá đơn', 'NCC', 'Vị trí kho', 'Dòng', 'Mã lô', 'Mã hàng', 'Quy cách', 'Tên trên HĐ', 'SL', 'Đơn giá', 'Thành tiền', 'VAT %', 'Ghi chú dòng', 'Người thực hiện', 'Trạng thái']];
     for (const p of this.rows())
       p.dong.forEach((d, i) => {
@@ -416,6 +416,6 @@ export class PhieuKhoTab {
           ttNhan(p.trangThai),
         ]);
       });
-    void xuatCsv(this.loai() === 'Nhập' ? 'phieu-nhap' : 'phieu-xuat', rows);
+    void xuatExcel(this.loai() === 'Nhập' ? 'phieu-nhap' : 'phieu-xuat', rows);
   }
 }

@@ -5,7 +5,7 @@ import { KHO_CHUYEN_THANG, KiemKe } from '../core/models';
 import { Store } from '../core/store';
 import { nhoLoc } from '../core/ui';
 import { money, sum, viDate, vndShort } from '../core/util';
-import { xuatCsv } from '../shared/export';
+import { xuatExcel } from '../shared/export';
 import { Facet, FilterBar, LOC_RONG, Loc, khopQ, khopSel } from '../shared/filter-bar';
 import { Pager, paginate } from '../shared/pager';
 import { Kpi, Modal } from '../shared/ui-kit';
@@ -51,7 +51,7 @@ const tinhTrang = (ton: number) => (ton > 0 ? 'con' : ton < 0 ? 'am' : 'het');
         @if (che() === 'ma') {
           <label class="check-row"><input type="checkbox" [checked]="duMa()" (change)="duMa.set($any($event.target).checked)" /> Hiện cả mã chưa phát sinh</label>
         }
-        <button type="button" class="btn sm quiet" (click)="xuatCsv()">Xuất CSV</button>
+        <button type="button" class="btn sm quiet" (click)="xuatExcel()">Xuất Excel</button>
       </div>
     </div>
     <app-filter [(loc)]="loc" memo="kho-ton" [time]="false" [facets]="facets()" placeholder="Tìm mã hàng, tên, mã lô, nồng độ, số hoá đơn…" />
@@ -344,7 +344,7 @@ export class TonKhoTab {
     return hdCuaPhieu(this.store, p);
   }
 
-  protected xuatCsv(): void {
+  protected xuatExcel(): void {
     if (this.che() === 'ma') {
       const rows: (string | number)[][] = [['Mã hàng', 'Tên', 'Mô tả', 'Tên trên hoá đơn', 'Nhóm', 'Thể tích', 'ĐVT', 'Vị trí kho', 'Tổng nhập', 'Tổng xuất', 'Tồn', 'Số lô còn', 'Giá trị tồn', 'Ngày kiểm kê', 'Kiểm kê', 'Lệch']];
       for (const r of this.rowsMa()) {
@@ -352,12 +352,12 @@ export class TonKhoTab {
         const k = this.kk(r);
         rows.push([r.loaiHang, lh?.ten ?? '', lh?.moTa ?? '', this.tenHD(r.loaiHang).join('; '), lh?.nhom ?? '', lh?.theTich ?? '', lh?.dvt ?? '', this.store.khoTen(r.kho), r.nhap, r.xuat, r.ton, r.soLo, Math.round(r.giaTri), k ? viDate(k.ngay) : '', k?.thucTe ?? '', k?.lech ?? '']);
       }
-      void xuatCsv('ton-kho-theo-ma', rows);
+      void xuatExcel('ton-kho-theo-ma', rows);
       return;
     }
     const rows: (string | number)[][] = [['Mã lô', 'Ngày nhập', 'Số hoá đơn', 'NCC', 'Mã hàng', 'Mô tả', 'Tên trên hoá đơn', 'Quy cách / nồng độ', 'Vị trí kho', 'SL nhập', 'Đã xuất', 'Tồn', 'Đơn giá', 'VAT %', 'Giá trị tồn']];
     for (const l of this.rowsLo())
       rows.push([l.lo, viDate(l.ngay), l.soHoaDon ?? '', this.store.nccById(l.ncc)?.ten ?? '', l.loaiHang, this.store.loaiHangById(l.loaiHang)?.moTa ?? '', this.tenHD(l.loaiHang, l.lo).join('; '), l.quyCach, this.store.khoTen(l.kho), l.nhap, l.xuat, l.ton, l.donGia, l.vat, Math.round(l.giaTriTon)]);
-    void xuatCsv('ton-kho-theo-lo', rows);
+    void xuatExcel('ton-kho-theo-lo', rows);
   }
 }

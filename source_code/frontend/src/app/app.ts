@@ -3,6 +3,7 @@ import { NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router
 import { Icon } from './shared/icon';
 import { ConfirmHost } from './shared/confirm';
 import { Modal } from './shared/ui-kit';
+import { dangTaoTep } from './shared/export';
 import { Unsaved } from './shared/unsaved';
 import { applyLabels } from './shared/stack-table';
 import { batNgayVi } from './shared/ngay-vi';
@@ -63,6 +64,9 @@ import { MAT_KHAU_TOI_THIEU } from './core/crypto';
     </app-modal>
 
     <app-confirm-host />
+    @if (dangTaoTep() > 0) {
+      <div class="tao-tep-back" role="status" aria-live="polite"><div class="tao-tep"><span class="tao-tep-spin" aria-hidden="true"></span>Đang tạo file…</div></div>
+    }
     @if (store.toast()) {
       <div class="toast" [class.bad]="store.toastTone() === 'bad'" [attr.role]="store.toastTone() === 'bad' ? 'alert' : 'status'">{{ store.toast() }}</div>
     }
@@ -72,6 +76,7 @@ import { MAT_KHAU_TOI_THIEU } from './core/crypto';
 export class App {
   private readonly mPw = viewChild<Modal>('mPw');
   protected readonly store = inject(Store);
+  protected readonly dangTaoTep = dangTaoTep;
   protected readonly auth = inject(Auth);
   protected readonly ui = inject(Ui);
   protected readonly min = MAT_KHAU_TOI_THIEU;

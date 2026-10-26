@@ -3,7 +3,7 @@ import { AnhXaTen, LoaiHang } from '../core/models';
 import { Store } from '../core/store';
 import { nhoLoc } from '../core/ui';
 import { fold, money, num } from '../core/util';
-import { xuatCsv } from '../shared/export';
+import { xuatExcel } from '../shared/export';
 import { Facet, FilterBar, LOC_RONG, Loc, khopQ, khopSel } from '../shared/filter-bar';
 import { Pager, paginate } from '../shared/pager';
 import { dirtyOf } from '../shared/unsaved';
@@ -65,7 +65,7 @@ type Pick2 = { ten: string; theTich?: string };
     <div class="section-title">
       <span class="sub">{{ rows().length }} tên</span>
       <div class="btn-row">
-        <button type="button" class="btn sm quiet" (click)="xuatCsv()">Xuất CSV</button>
+        <button type="button" class="btn sm quiet" (click)="xuatExcel()">Xuất Excel</button>
         @if (edit()) { <button type="button" class="btn" (click)="moi()">+ Thêm tên</button> }
       </div>
     </div>
@@ -201,9 +201,9 @@ export class AnhXaTab {
     this.f.set(null);
   }
 
-  protected xuatCsv(): void {
+  protected xuatExcel(): void {
     const rows: (string | number)[][] = [['Tên hàng trong hợp đồng', 'Thể tích', 'Nồng độ ghi trong hợp đồng', 'Tổng SL đã bán', 'Số lần xuất hiện', 'MÃ HÀNG', 'MÃ LÔ hay dùng', 'Ghi chú']];
     for (const a of this.rows()) rows.push([a.ten, a.theTich ?? '', a.nongDo ?? '', a.tongSL, a.soLan, a.loaiHang ?? '', a.lo ?? '', a.ghiChu ?? '']);
-    void xuatCsv('anh-xa-ten-ban', rows);
+    void xuatExcel('anh-xa-ten-ban', rows);
   }
 }

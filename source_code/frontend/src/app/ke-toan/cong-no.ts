@@ -6,7 +6,7 @@ import { dotMuaDaTra, hdbCalc, hdmCalc, soNgayQuaHan } from '../core/calc';
 import { matches, money, sum, viDate } from '../core/util';
 import { Kpi } from '../shared/ui-kit';
 import { Pager, paginate } from '../shared/pager';
-import { xuatCsv } from '../shared/export';
+import { xuatExcel } from '../shared/export';
 import { TT } from '../core/trang-thai';
 
 interface CnRow {
@@ -75,7 +75,7 @@ function gom(rows: CnRow[]): Nhom[] {
       <label class="check-row"><input type="checkbox" [checked]="nhom()" (change)="nhom.set($any($event.target).checked)" /> Gộp theo {{ sub() === 'thu' ? 'khách hàng' : 'NCC' }}</label>
       <label class="check-row"><input type="checkbox" [checked]="conNo()" (change)="conNo.set($any($event.target).checked)" /> Chỉ HĐ còn nợ</label>
       <span style="flex:1"></span>
-      <button type="button" class="btn quiet" (click)="xuat()">Xuất CSV</button>
+      <button type="button" class="btn quiet" (click)="xuat()">Xuất Excel</button>
     </div>
 
     <div class="kpis">
@@ -201,6 +201,6 @@ export class CongNoTab {
     const body: (string | number)[][] = this.rows().map((r) => [r.soHD, r.soHoaDon, r.doiTac, r.giaTri, r.da, r.con, viDate(r.han), r.quaHan]);
     const tg = this.tong();
     body.push(['Tổng', '', '', tg.giaTri, tg.da, tg.con, '', '']);
-    void xuatCsv(t ? 'cong-no-phai-thu' : 'cong-no-phai-tra', [head, ...body]);
+    void xuatExcel(t ? 'cong-no-phai-thu' : 'cong-no-phai-tra', [head, ...body]);
   }
 }

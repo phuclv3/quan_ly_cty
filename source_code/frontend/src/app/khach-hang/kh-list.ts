@@ -8,7 +8,7 @@ import { Facet, FilterBar, LOC_RONG, Loc, khopQ, khopSel } from '../shared/filte
 import { Kpi, TrangThai } from '../shared/ui-kit';
 import { Pager, paginate } from '../shared/pager';
 import { SortTh, Sorter } from '../shared/sort';
-import { xuatCsv } from '../shared/export';
+import { xuatExcel } from '../shared/export';
 import { Icon } from '../shared/icon';
 import { ImportDm } from '../shared/import-dm';
 import { Confirm } from '../shared/confirm';
@@ -43,7 +43,7 @@ const optsTT = (xs: readonly string[]) => xs.map((x) => ({ value: x, label: ttNh
         <p class="sub">Theo dõi tiếp cận, cơ hội và chăm sóc khách — cũng là danh mục khách để chọn khi lập HĐ bán.</p>
       </div>
       <div class="actions">
-        <button type="button" class="btn quiet" (click)="xuat()"><app-icon name="download" [size]="16" /> Xuất CSV</button>
+        <button type="button" class="btn quiet" (click)="xuat()"><app-icon name="download" [size]="16" /> Xuất Excel</button>
         @if (store.canEdit('khachHang')) {
           <app-import-dm loai="kh" />
           <button type="button" class="btn" (click)="sua.set('')"><app-icon name="plus" [size]="16" /> Thêm khách hàng</button>
@@ -287,7 +287,7 @@ export class KhList {
       k.phuTrach ? this.store.userName(k.phuTrach) : '', ttNhan(k.trangThaiData), viDate(k.ngayTiepNhan), viDate(k.ngayPhanBo),
       viDate(csCuoi), soHD, k.ghiChu,
     ]);
-    void xuatCsv('khach-hang', [head, ...body]);
+    void xuatExcel('khach-hang', [head, ...body]);
   }
   /** Xoá nhiều: chỉ khách mình sửa được và chưa chờ xoá; khách bị ràng buộc bị bỏ qua kèm lý do. */
   protected async xoaNhieu(): Promise<void> {

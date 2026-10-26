@@ -5,7 +5,7 @@ import { Store } from '../core/store';
 import { TT } from '../core/trang-thai';
 import { nhoLoc } from '../core/ui';
 import { money, sum, viDate } from '../core/util';
-import { xuatCsv } from '../shared/export';
+import { xuatExcel } from '../shared/export';
 import { Facet, FilterBar, LOC_RONG, Loc, khopQ, khopSel } from '../shared/filter-bar';
 import { Pager, paginate } from '../shared/pager';
 import { Kpi } from '../shared/ui-kit';
@@ -48,7 +48,7 @@ interface HdGT {
     </div>
     <div class="section-title">
       <label class="check-row"><input type="checkbox" [checked]="caHd()" (change)="caHd.set($any($event.target).checked)" /> Hiện cả HĐ chưa xuất kho</label>
-      <button type="button" class="btn sm quiet" (click)="xuatCsv()">Xuất CSV</button>
+      <button type="button" class="btn sm quiet" (click)="xuatExcel()">Xuất Excel</button>
     </div>
     <app-filter [(loc)]="loc" memo="kho-gia-tri" [time]="false" [facets]="facets()" placeholder="Tìm số HĐ, khách hàng, mã hàng, mã lô…" />
     <div class="tbl-wrap">
@@ -171,11 +171,11 @@ export class GiaTriHdTab {
     });
   }
 
-  protected xuatCsv(): void {
+  protected xuatExcel(): void {
     const rows: (string | number)[][] = [['Số HĐ', 'Khách hàng', 'Ngày xuất', 'Số phiếu', 'Mã lô', 'Mã hàng', 'Quy cách lô', 'Tên trên HĐ', 'SL', 'Đơn giá vốn', 'Giá vốn', 'Cách tính']];
     for (const r of this.rows())
       for (const d of r.dong)
         rows.push([r.hd.soHD, r.hd.tenKH, viDate(d.ngay), d.soPhieu, d.lo, d.loaiHang, d.quyCach, d.tenTrenHD, d.sl, d.donGia, Math.round(d.thanhTien), d.cach]);
-    void xuatCsv('gia-von-theo-hd', rows);
+    void xuatExcel('gia-von-theo-hd', rows);
   }
 }
