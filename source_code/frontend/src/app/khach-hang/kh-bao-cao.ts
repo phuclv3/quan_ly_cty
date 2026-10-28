@@ -66,7 +66,7 @@ function khoang(nam: number, quy: string, thang: string): Khoang {
 
     @let d = bc();
     <div class="kpis">
-      <div class="k main">
+      <div class="k hero">
         <span class="l">Khách mua trong kỳ</span>
         <b class="v">{{ d.mua }} @if (d.dMua !== null) { <i class="pc">▲ {{ d.dMua }}%</i> }</b>
         <span class="s">{{ d.cu }} khách cũ · {{ d.moi }} khách mới</span>
@@ -201,9 +201,9 @@ function khoang(nam: number, quy: string, thang: string): Khoang {
     .grow { flex: 1 1 auto; }
     .kpis { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); margin-bottom: 14px; }
     .k { display: grid; gap: 4px; align-content: start; background: var(--surf); border-radius: 14px; padding: 12px 14px; position: relative; min-width: 0; }
-    .k.main { background: linear-gradient(135deg, #0f7a3d, #19a05a); color: #fff; }
+    .k.hero { background: linear-gradient(135deg, #0f7a3d, #19a05a); color: #fff; }
     .k .l { font-size: 12.5px; font-weight: 600; color: var(--ink-2); }
-    .k.main .l, .k.main .s { color: #fff; }
+    .k.hero .l, .k.hero .s { color: #fff; }
     .k .v { font-size: 28px; line-height: 1.15; }
     .k .s { font-size: 11px; color: var(--ink-3); line-height: 1.4; max-width: 66%; }
     .pc { font-size: 11px; font-style: normal; background: rgb(255 255 255 / 0.25); padding: 1px 6px; border-radius: 6px; vertical-align: middle; }

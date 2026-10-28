@@ -50,10 +50,10 @@ const optsTT = (xs: readonly string[]) => xs.map((x) => ({ value: x, label: ttNh
         <button type="button" class="btn quiet pill" (click)="xuat()">Xuất Excel</button>
         @if (tab() === 'ds' && store.canEdit('khachHang')) {
           <app-import-dm loai="kh" />
-          <button type="button" class="btn pill main" (click)="sua.set('')"><app-icon name="plus" [size]="16" /> Thêm khách hàng</button>
+          <button type="button" class="btn pill hero" (click)="sua.set('')"><app-icon name="plus" [size]="16" /> Thêm khách hàng</button>
         }
         @if (tab() === 'ch' && store.canEdit('khachHang')) {
-          <button type="button" class="btn pill main" (click)="coHoi()?.tao()"><app-icon name="plus" [size]="16" /> Tạo cơ hội</button>
+          <button type="button" class="btn pill hero" (click)="coHoi()?.tao()"><app-icon name="plus" [size]="16" /> Tạo cơ hội</button>
         }
       </div>
     </div>
@@ -203,8 +203,8 @@ const optsTT = (xs: readonly string[]) => xs.map((x) => ({ value: x, label: ttNh
     .actions { align-items: center; }
     .btn.pill { border-radius: 999px; min-height: 36px; padding: 4px 16px; font-size: 13.5px; background: var(--surf); color: #16642b; border: 1.5px solid #16642b; }
     .btn.pill:hover { background: var(--brand-tint); }
-    .btn.pill.main { background: #0f5a2a; color: #fff; border-color: #0f5a2a; }
-    .btn.pill.main:hover { background: #0b4620; }
+    .btn.pill.hero { background: #0f5a2a; color: #fff; border-color: #0f5a2a; }
+    .btn.pill.hero:hover { background: #0b4620; }
     .actions ::ng-deep app-import-dm > .btn { border-radius: 999px; min-height: 36px; padding: 4px 16px; font-size: 13.5px; background: var(--surf); color: #16642b; border: 1.5px solid #16642b; }
     .actions ::ng-deep app-import-dm > .btn app-icon { display: none; }
 

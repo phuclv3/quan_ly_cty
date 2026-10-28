@@ -20,7 +20,7 @@ const GD_CLASS: Record<GiaiDoanCH, string> = { 'Mới': 'moi', 'Đã báo giá':
   imports: [RouterLink, FilterBar, Pager, CoHoiForm],
   template: `
     <div class="kpis">
-      <div class="k main">
+      <div class="k hero">
         <span class="l">Cơ hội đang mở</span>
         <b class="v">{{ short(kpi().giaTriMo) }}</b>
         <span class="s">{{ kpi().soMo }} cơ hội · {{ kpi().soKhachMo }} khách hàng</span>
@@ -96,9 +96,9 @@ const GD_CLASS: Record<GiaiDoanCH, string> = { 'Mới': 'moi', 'Đã báo giá':
     :host { display: block; }
     .kpis { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr)); margin-bottom: 14px; }
     .k { display: grid; gap: 4px; align-content: start; background: var(--surf); border-radius: 16px; padding: 14px 16px; min-width: 0; position: relative; }
-    .k.main { background: linear-gradient(135deg, #0f7a3d, #19a05a); color: #fff; }
+    .k.hero { background: linear-gradient(135deg, #0f7a3d, #19a05a); color: #fff; }
     .k .l { font-size: 13px; font-weight: 600; color: var(--ink-2); }
-    .k.main .l, .k.main .s { color: #fff; }
+    .k.hero .l, .k.hero .s { color: #fff; }
     .k .v { font-size: 30px; line-height: 1.15; }
     .k .s { font-size: 11.5px; color: var(--ink-3); line-height: 1.4; max-width: 62%; }
     .spark { position: absolute; right: 14px; top: 34px; width: 96px; height: 30px; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
