@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, linkedSignal, output, signal } from '@angular/core';
 import { Store } from '../core/store';
 import { hdbCalc } from '../core/calc';
-import { ChamSocKH, KENH_CS, KenhCS } from '../core/models';
+import { ChamSocKH, KENH_CS, KenhCS, ViecGiao } from '../core/models';
 import { TT, ttNhan } from '../core/trang-thai';
 import { money, todayIso, viDate } from '../core/util';
 import { TrangThai } from '../shared/ui-kit';
@@ -14,10 +14,24 @@ import { dangMo, loaiCoHoi } from './co-hoi-data';
 interface Dong {
   id: string;
   luc: string;
-  kind: 'cs' | 'lich';
+  /** cs = lần chăm sóc tự nhập; sk = sự kiện hệ thống (đặt lịch, ký hợp đồng, tạo cơ hội). */
+  kind: 'cs' | 'sk';
   cs?: ChamSocKH;
-  text?: string;
+  /** Sự kiện: biểu tượng, nhãn, phần in đậm, phần còn lại. */
+  icon?: string;
+  nhan?: string;
+  dam?: string;
+  duoi?: string;
 }
+
+/** Nhãn ngắn + màu của kênh tương tác trên dòng thời gian. */
+const KENH_NHAN: Record<string, { n: string; c: string }> = {
+  'Gọi điện': { n: 'GỌI', c: 'goi' },
+  'Gặp trực tiếp': { n: 'GẶP', c: 'gap' },
+  'Họp online': { n: 'HỌP', c: 'hop' },
+  'Email': { n: 'EMAIL', c: 'mail' },
+};
+const THU = ['Chủ nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
 
 const NHAC = [
   { v: 0, l: 'Không nhắc' },
@@ -74,39 +88,41 @@ const NHAC = [
 
           @if (tiep(); as t) {
             <section class="hen">
-              <app-icon name="clock" [size]="16" />
-              <div>
+              <span class="hen-i" aria-hidden="true">📅</span>
+              <div class="hen-b">
                 <div class="hen-t">LỊCH HẸN SẮP TỚI</div>
-                <div>{{ hanNhan(t.han) }}{{ t.gio ? ' · ' + t.gio : '' }} · {{ t.noiDung }}</div>
-                @if (t.nguoiNhan.length) { <div class="sub">Cùng: {{ ten(t.nguoiNhan) }}</div> }
+                <div class="hen-d"><b>{{ thuNgay(t.han) }}{{ t.gio ? ' · ' + t.gio : '' }}</b> · {{ boTienTo(t.noiDung) }}</div>
+                @if (t.nguoiNhan.length) { <div class="hen-c">Cùng: {{ ten(t.nguoiNhan) }}</div> }
               </div>
-              @if (coViec() && !t.xongLuc) { <button type="button" class="lnk" (click)="xongLich(t.id)">Xong</button> }
+              @if (coViec() && edit()) { <button type="button" class="hen-doi" (click)="doiLich(t)">Đổi lịch</button> }
             </section>
           }
 
-          <h3 class="ls-t">Lịch sử tương tác <span class="sub">tự nhập, chỉ thêm — không sửa / xoá</span></h3>
+          <h3 class="ls-t">Lịch sử tương tác <span class="sub">chỉ thêm mới, không xoá</span></h3>
           <ol class="tl">
             @for (n of nhom(); track n.ngay) {
-              <li class="day">{{ n.nhan }}</li>
+              <li class="day"><span>{{ n.nhan }}</span></li>
               @for (d of n.ds; track d.id) {
-                @if (d.kind === 'lich') {
-                  <li class="sys"><span>{{ d.text }}</span></li>
+                @if (d.kind === 'sk') {
+                  <li class="sys"><span>{{ d.icon }} {{ d.nhan }} <b>{{ d.dam }}</b>{{ d.duoi }}</span></li>
                 } @else {
                   @let c = d.cs!;
                   @if (c.nguoi === 'Import') {
                     <li class="sys"><span>Import từ file theo dõi KH · {{ c.noiDung }}</span></li>
                   } @else {
-                    <li class="msg" [class.me]="c.nguoi === store.meId()">
-                      @if (c.nguoi !== store.meId()) { <span class="av" [style.background]="mau(c.nguoi)" [attr.title]="store.userName(c.nguoi)">{{ vt(store.userName(c.nguoi)) }}</span> }
+                    <li class="msg">
+                      <span class="av" [style.background]="mau(c.nguoi)" [attr.title]="store.userName(c.nguoi)">{{ vt(store.userName(c.nguoi)) }}</span>
                       <div class="col">
-                        @if (c.nguoi !== store.meId()) { <span class="who">{{ store.userName(c.nguoi) }}</span> }
+                        <div class="by">
+                          <b>{{ store.userName(c.nguoi) }}</b>
+                          @if (c.kenh) { <span class="kk" [class]="'kk ' + kenhNhan(c.kenh).c">{{ kenhNhan(c.kenh).n }}</span> }
+                          <span class="gio">{{ gio(c.luc) }}</span>
+                        </div>
                         <div class="bub">
-                          @if (c.kenh) { <span class="k">{{ c.kenh }}</span> }
                           <div class="nd">{{ c.noiDung }}</div>
-                          @if (c.ketQua) { <div class="kq">Kết quả: <b>{{ c.ketQua }}</b></div> }
+                          @if (c.ketQua) { <div class="kq">Kết quả: {{ c.ketQua }}</div> }
                           @if (c.coHoi) { <div class="kq">Cơ hội → <app-tt [v]="loaiCoHoi(c.coHoi).l" [t]="loaiCoHoi(c.coHoi).tone" /></div> }
                         </div>
-                        <span class="gio">{{ gio(c.luc) }}</span>
                       </div>
                     </li>
                   }
@@ -122,7 +138,7 @@ const NHAC = [
           <footer class="foot">
             @if (coViec()) {
               <section class="lich">
-                <div class="lich-h"><b>Hẹn lịch làm việc</b></div>
+                <div class="lich-h"><b>{{ doiId() ? 'Đổi lịch hẹn' : 'Hẹn lịch làm việc' }}</b>@if (doiId()) { <button type="button" class="x2" (click)="hienLich.update(n => n + 1)">Huỷ đổi</button> }</div>
                 @if (loiLich()) { <div class="note bad">{{ loiLich() }}</div> }
                 <div class="g3">
                   <label>Ngày<input type="date" [value]="lNgay()" (input)="lNgay.set($any($event.target).value)" /></label>
@@ -136,7 +152,7 @@ const NHAC = [
                 <div class="kenh">
                   @for (o of KENH; track o) { <button type="button" [class.on]="lKenh() === o" (click)="lKenh.set(o)">{{ o }}</button> }
                 </div>
-                <label>Nội dung<input [value]="lNd()" placeholder="VD Gọi hỏi kết quả duyệt ngân sách" (input)="lNd.set($any($event.target).value)" /></label>
+                <label>Nội dung<textarea rows="3" [value]="lNd()" placeholder="VD Gọi hỏi kết quả duyệt ngân sách, chốt số lượng" (input)="lNd.set($any($event.target).value)"></textarea></label>
                 <app-nguoi-them nhan="Người tham gia" placeholder="Thêm người tham gia — gõ tên hoặc email" [(ids)]="lTg" />
                 <div class="lich-f">
                   <span class="sub">Lịch hẹn vào Công việc cá nhân của từng người tham gia.</span>
@@ -184,35 +200,46 @@ const NHAC = [
     .kv span { color: var(--ink-3); }
     .row-btn { display: flex; gap: 14px; margin-top: 4px; }
     .lnk { border: 0; background: none; color: #0f5a2a; font-weight: 600; font-size: 12.5px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; padding: 0; }
-    .hen { display: flex; gap: 10px; align-items: flex-start; background: #fdf3d6; border-radius: 12px; padding: 10px 12px; font-size: 13px; }
-    .hen > div { flex: 1 1 auto; }
-    .hen-t { font-size: 10.5px; font-weight: 700; letter-spacing: 0.05em; color: #8a5a00; }
-    .ls-t { margin: 4px 0 0; font-size: 14px; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
-    .ls-t .sub { font-size: 11px; font-weight: 400; }
     .tl { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
-    .day { text-align: center; font-size: 11.5px; color: var(--ink-3); }
+    /* Lịch hẹn sắp tới */
+    .hen { display: flex; gap: 12px; align-items: center; background: #fdf3d6; border-radius: 14px; padding: 12px 14px; font-size: 14px; }
+    .hen-i { font-size: 26px; line-height: 1; flex: 0 0 auto; }
+    .hen-b { flex: 1 1 auto; min-width: 0; display: grid; gap: 2px; }
+    .hen-t { font-size: 11px; font-weight: 700; letter-spacing: 0.05em; color: #8a5a00; }
+    .hen-d { overflow-wrap: anywhere; }
+    .hen-d b { font-weight: 700; }
+    .hen-c { font-size: 12px; color: var(--ink-3); }
+    .hen-doi { border: 0; background: none; color: #8a5a00; font-weight: 700; font-size: 13.5px; cursor: pointer; white-space: nowrap; padding: 4px 2px; }
+    .hen-doi:hover { text-decoration: underline; }
+    /* Lịch sử tương tác */
+    .ls-t { margin: 6px 0 0; font-size: 16px; font-weight: 700; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+    .ls-t .sub { font-size: 12px; font-weight: 400; color: var(--ink-3); }
+    .tl { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+    .day { display: flex; align-items: center; gap: 12px; font-size: 12.5px; color: var(--ink-3); margin-top: 4px; }
+    .day::before, .day::after { content: ''; flex: 1 1 auto; height: 1px; background: var(--line); }
     .sys { text-align: center; }
-    .sys span { display: inline-block; padding: 3px 12px; border-radius: 999px; background: var(--surf-2); font-size: 12px; color: var(--ink-2); }
-    .msg { display: flex; gap: 8px; align-items: flex-end; max-width: 100%; }
-    .msg.me { justify-content: flex-end; }
-    .msg .av { margin-bottom: 18px; }
-    .col { display: grid; gap: 2px; min-width: 0; max-width: 82%; }
-    .msg.me .col { justify-items: end; }
-    .who { font-size: 11.5px; color: var(--ink-3); margin-left: 12px; }
-    .bub { background: #e9ebee; color: #1c1e21; border-radius: 18px 18px 18px 4px; padding: 7px 13px; min-width: 0; width: fit-content; }
-    .msg.me .bub { background: #0f7a3d; color: #fff; border-radius: 18px 18px 4px 18px; }
-    .msg.me .bub .kq { color: rgba(255, 255, 255, 0.85); }
-    .msg.me .bub .k { background: rgba(255, 255, 255, 0.22); color: #fff; }
-    .gio { font-size: 10.5px; color: var(--ink-3); margin: 0 12px; }
-    .k { display: inline-block; margin-bottom: 3px; padding: 0 7px; border-radius: 999px; background: #dce9f8; color: #2c5d94; font-size: 10.5px; font-weight: 700; }
-    .nd { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13.5px; margin-top: 2px; }
-    .kq { font-size: 12px; color: var(--ink-2); margin-top: 3px; }
+    .sys span { display: inline-block; padding: 6px 16px; border-radius: 999px; background: #eef1ef; font-size: 13px; color: var(--ink-2); max-width: 100%; overflow-wrap: anywhere; }
+    .sys span b { color: var(--ink); font-weight: 700; }
+    .msg { display: flex; gap: 10px; align-items: flex-start; }
+    .msg .av { width: 30px; height: 30px; font-size: 11px; margin-top: 2px; }
+    .col { display: grid; gap: 4px; min-width: 0; max-width: 100%; flex: 0 1 auto; }
+    .by { display: flex; align-items: center; gap: 8px; font-size: 13.5px; }
+    .by .gio { font-size: 12.5px; color: var(--ink-3); }
+    .kk { padding: 1px 7px; border-radius: 5px; font-size: 10.5px; font-weight: 700; letter-spacing: 0.03em; }
+    .kk.goi { background: #dce9f8; color: #2c5d94; }
+    .kk.gap { background: #d4efe9; color: #14806f; }
+    .kk.hop { background: #fbe9c8; color: #8a5a00; }
+    .kk.mail { background: #e8e0f7; color: #5a45a3; }
+    .bub { background: #eceeed; border-radius: 14px; padding: 10px 14px; min-width: 0; width: fit-content; max-width: 100%; }
+    .nd { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 14px; line-height: 1.45; }
+    .kq { font-size: 13px; font-weight: 600; color: #0f7a3d; margin-top: 6px; }
     .foot { flex: 0 1 auto; max-height: 62%; overflow: auto; border-top: 1px solid var(--line); padding: 10px 14px 0; display: grid; gap: 10px; align-content: start; }
     .lich { border: 1px solid #bfe0c8; background: #f1faf3; border-radius: 12px; padding: 10px 12px; display: grid; gap: 8px; font-size: 12.5px; }
     .lich-h { display: flex; justify-content: space-between; align-items: center; }
     .x2 { border: 0; background: none; cursor: pointer; color: var(--ink-3); }
     .lich label { display: grid; gap: 3px; font-size: 11.5px; color: var(--ink-3); }
     .lich input, .lich select { height: 34px; }
+    .lich textarea { min-height: 70px; resize: vertical; font-size: 13.5px; }
     .g3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
     .kenh { display: flex; flex-wrap: wrap; gap: 6px; }
     .kenh button { border: 1px solid var(--line-2); background: var(--surf); border-radius: 999px; padding: 3px 12px; font-size: 12px; cursor: pointer; }
@@ -272,11 +299,27 @@ export class KhDrawer {
   protected readonly nhom = computed(() => {
     const k = this.k();
     if (!k) return [];
+    const ngayGio = (iso: string) => iso.slice(8, 10) + '/' + iso.slice(5, 7);
     const ds: Dong[] = [
       ...(k.chamSoc ?? []).map((cs): Dong => ({ id: cs.id, luc: cs.luc, kind: 'cs', cs })),
       ...this.lich().map(
-        (v): Dong => ({ id: v.id, luc: v.taoLuc, kind: 'lich', text: `Đặt lịch hẹn ${viDate(v.han)}${v.gio ? ' ' + v.gio : ''} · ${v.noiDung}` }),
+        (v): Dong => ({
+          id: v.id, luc: v.taoLuc, kind: 'sk', icon: '📅', nhan: 'Đặt lịch hẹn',
+          dam: `${ngayGio(v.han ?? '')}${v.gio ? ' · ' + v.gio : ''}`, duoi: ' · ' + this.boTienTo(v.noiDung),
+        }),
       ),
+      ...this.store
+        .hdbVisible()
+        .filter((h) => h.maKH === k.id && !!h.ngayKy)
+        .map(
+          (h): Dong => ({
+            id: 'hdb-' + h.id, luc: h.ngayKy + 'T00:00:00.000Z', kind: 'sk', icon: '📄', nhan: 'Ký hợp đồng', dam: h.soHD || h.id,
+            duoi: this.store.canView('hdbTab3') ? ' · ' + this.short(hdbCalc(h, this.store.db()).sauVAT) : '',
+          }),
+        ),
+      ...(k.dsCoHoi ?? [])
+        .filter((c) => !!c.ngayTao)
+        .map((c): Dong => ({ id: 'ch-' + c.id, luc: c.ngayTao + 'T00:00:00.000Z', kind: 'sk', icon: '💼', nhan: 'Tạo cơ hội', dam: c.id, duoi: c.giaTri ? ' · ' + this.short(c.giaTri) : '' })),
     ].sort((a, b) => a.luc.localeCompare(b.luc));
     const hom = todayIso();
     const out: { ngay: string; nhan: string; ds: Dong[] }[] = [];
@@ -288,6 +331,19 @@ export class KhDrawer {
     }
     return out;
   });
+
+  protected kenhNhan(k: string): { n: string; c: string } {
+    return KENH_NHAN[k] ?? { n: k.toUpperCase(), c: 'goi' };
+  }
+  /** "Thứ 5, 12/11" */
+  protected thuNgay(iso?: string): string {
+    if (!iso) return '—';
+    return `${THU[new Date(iso + 'T00:00:00').getDay()]}, ${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
+  }
+  /** Bỏ tiền tố "[TÊN-VIẾT-TẮT] " hệ thống tự thêm vào nội dung lịch. */
+  protected boTienTo(nd: string): string {
+    return nd.replace(/^\[[^\]]*\]\s*/, '');
+  }
 
   // ── Ghi tương tác ──
   protected readonly nd = linkedSignal(() => (this.khId(), ''));
@@ -358,13 +414,26 @@ export class KhDrawer {
       nhacTruoc: this.lNhac(),
     });
     if (err) return this.loiLich.set(err);
+    const cu = this.doiId();
+    if (cu) {
+      this.store.phanHoiViec(cu, `Đổi lịch sang ${this.lNgay().slice(8, 10)}/${this.lNgay().slice(5, 7)}${this.lGio() ? ' ' + this.lGio() : ''}`);
+      this.store.xongViec(cu, true);
+    }
     this.hienLich.update((n) => n + 1);
-    this.store.say('Đã lưu lịch hẹn — xem ở Công việc');
+    this.store.say(cu ? 'Đã đổi lịch hẹn' : 'Đã lưu lịch hẹn — xem ở Công việc');
   }
 
-  protected xongLich(id: string): void {
-    const err = this.store.xongViec(id, true);
-    if (err) this.store.say(err, 'bad');
+  /** Mã lịch cũ đang được đổi (null = đặt lịch mới). Lưu xong, lịch cũ được đóng kèm ghi chú. */
+  protected readonly doiId = linkedSignal<string | null>(() => (this.hienLich(), null));
+  /** Đổi lịch: đưa lịch hẹn sắp tới vào form hẹn lịch để sửa ngày / giờ / nội dung / người tham gia. */
+  protected doiLich(t: ViecGiao): void {
+    this.lNgay.set(t.han ?? todayIso());
+    this.lGio.set(t.gio ?? '09:00');
+    this.lNd.set(this.boTienTo(t.noiDung));
+    this.lKenh.set(t.kenh ?? 'Gọi điện');
+    this.lNhac.set(t.nhacTruoc ?? 1);
+    this.lTg.set([...t.nguoiNhan]);
+    this.doiId.set(t.id);
   }
 
   protected hanNhan(iso?: string): string {

@@ -4,13 +4,17 @@ import { KhachHang } from '../core/models';
 import { TT } from '../core/trang-thai';
 import { sum, todayIso, viDate } from '../core/util';
 import { xuatExcel } from '../shared/export';
-import { chenhLech, dangMo, diemSpark, layCoHoi } from './co-hoi-data';
+import { mauAvatar } from '../shared/avatar';
+import { chenhLech, dangMo, diemSpark, layCoHoiTong } from './co-hoi-data';
 
 const MAU_NGUON = ['#0f5a2a', '#14806f', '#6cbf4b', '#e8a33d', '#9aa5b4'];
 const MAU_PHEU = ['#0f5a2a', '#19a05a', '#6cbf4b', '#9bd36a', '#d9453b'];
 const GD_PHEU = ['Mới', 'Đã báo giá', 'Đang đàm phán', 'Thắng', 'Thua'] as const;
 const pad = (n: number) => String(n).padStart(2, '0');
 const tr = (v: number) => (v / 1e6).toLocaleString('vi-VN', { maximumFractionDigits: 1 });
+/** Cận trên "đẹp" cho trục: ≤4 → 4, ≤10 → 10, lớn hơn → bội của 5 (12 → 15). */
+const canTren = (v: number) => (v <= 4 ? 4 : v <= 10 ? 10 : Math.ceil(v / 5) * 5);
+const soTruc = (v: number) => v.toLocaleString('vi-VN', { maximumFractionDigits: 1 });
 const ngayCuoiThang = (y: number, m: number) => new Date(y, m, 0).getDate();
 
 interface Khoang {
@@ -68,7 +72,7 @@ function khoang(nam: number, quy: string, thang: string): Khoang {
     <div class="kpis">
       <div class="k hero">
         <span class="l">Khách mua trong kỳ</span>
-        <b class="v">{{ d.mua }} @if (d.dMua !== null) { <i class="pc">▲ {{ d.dMua }}%</i> }</b>
+        <b class="v">{{ d.mua }} @if (d.dMua !== null) { <i class="pc">{{ d.dMua >= 0 ? '▲' : '▼' }} {{ abs(d.dMua) }}%</i> }</b>
         <span class="s">{{ d.cu }} khách cũ · {{ d.moi }} khách mới</span>
       </div>
       <div class="k">
@@ -97,7 +101,7 @@ function khoang(nam: number, quy: string, thang: string): Khoang {
         <svg class="bar" viewBox="0 0 560 210" role="img" aria-label="Khách mới và khách mua theo tháng">
           @for (t of d.truc; track t) {
             <line x1="34" x2="552" [attr.y1]="180 - t * 150 / d.maxThang" [attr.y2]="180 - t * 150 / d.maxThang" stroke="var(--line)" />
-            <text x="28" [attr.y]="184 - t * 150 / d.maxThang" text-anchor="end" class="ax">{{ t }}</text>
+            <text x="28" [attr.y]="184 - t * 150 / d.maxThang" text-anchor="end" class="ax">{{ soTruc(t) }}</text>
           }
           @for (m of d.thangData; track m.t; let i = $index) {
             <rect [attr.x]="40 + i * d.buoc + 4" [attr.y]="180 - m.moi * 150 / d.maxThang" [attr.width]="d.buoc / 2 - 6" [attr.height]="m.moi * 150 / d.maxThang" rx="2" fill="#e8a33d" />
@@ -110,7 +114,7 @@ function khoang(nam: number, quy: string, thang: string): Khoang {
       <section class="card-b">
         <h3>Phễu cơ hội theo trạng thái <span class="u">triệu đ</span></h3>
         @for (p of d.pheu; track p.nhan; let i = $index) {
-          <div class="hb"><span class="hl">{{ p.nhan }}</span><span class="hbar"><i [style.width.%]="p.pct" [style.background]="MAU_PHEU[i]"></i></span><b class="num">{{ p.gt }}</b></div>
+          <div class="hb"><span class="hl">{{ p.nhan }}</span><span class="hbar"><i [style.width.%]="p.pct" [style.background]="MAU_PHEU[i]"></i></span><b class="num">{{ p.gt }} tr</b></div>
         }
         <p class="note-s">Cơ hội Thua lưu lý do, không xoá — không cộng vào phễu đang mở</p>
       </section>
@@ -126,7 +130,7 @@ function khoang(nam: number, quy: string, thang: string): Khoang {
               <circle cx="60" cy="60" r="42" fill="none" stroke-width="18" [attr.stroke]="MAU_NGUON[i % 5]" [attr.stroke-dasharray]="s.dash" [attr.stroke-dashoffset]="s.off" transform="rotate(-90 60 60)" />
             }
             <text x="60" y="58" text-anchor="middle" class="dn">{{ d.mua }}</text>
-            <text x="60" y="72" text-anchor="middle" class="ax">khách mua</text>
+            <text x="60" y="73" text-anchor="middle" class="ax">khách hàng</text>
           </svg>
           <ul class="lg-col">
             @for (s of d.nguon; track s.nhan; let i = $index) {
@@ -137,23 +141,24 @@ function khoang(nam: number, quy: string, thang: string): Khoang {
       </section>
       <section class="card-b">
         <h3>KH mua hàng theo loại</h3>
-        <svg class="bar" viewBox="0 0 300 190" role="img" aria-label="Khách mua theo loại">
+        <svg class="bar" viewBox="0 0 320 200" role="img" aria-label="Khách mua theo loại">
           @for (t of d.truc2; track t) {
-            <line x1="26" x2="296" [attr.y1]="150 - t * 120 / d.max2" [attr.y2]="150 - t * 120 / d.max2" stroke="var(--line)" />
-            <text x="20" [attr.y]="154 - t * 120 / d.max2" text-anchor="end" class="ax">{{ t }}</text>
+            <line x1="34" x2="316" [attr.y1]="170 - t * 140 / d.max2" [attr.y2]="170 - t * 140 / d.max2" stroke="var(--line)" />
+            <text x="26" [attr.y]="174 - t * 140 / d.max2" text-anchor="end" class="ax2">{{ soTruc(t) }}</text>
           }
           @for (l of d.loai; track l.nhan; let i = $index) {
-            <rect [attr.x]="40 + i * d.buoc2 + 6" [attr.y]="150 - l.cu * 120 / d.max2" [attr.width]="d.buoc2 / 2 - 8" [attr.height]="l.cu * 120 / d.max2" rx="2" fill="#0f5a2a" />
-            <rect [attr.x]="40 + i * d.buoc2 + d.buoc2 / 2 - 2" [attr.y]="150 - l.moi * 120 / d.max2" [attr.width]="d.buoc2 / 2 - 8" [attr.height]="l.moi * 120 / d.max2" rx="2" fill="#e8a33d" />
-            <text [attr.x]="40 + i * d.buoc2 + d.buoc2 / 2" y="166" text-anchor="middle" class="ax">{{ l.nhan }}</text>
+            <rect [attr.x]="34 + i * d.buoc2 + (d.buoc2 - 2 * d.bw2 - 4) / 2" [attr.y]="170 - l.cu * 140 / d.max2" [attr.width]="d.bw2" [attr.height]="l.cu * 140 / d.max2" rx="3" fill="#0f5a2a" />
+            <rect [attr.x]="34 + i * d.buoc2 + (d.buoc2 - 2 * d.bw2 - 4) / 2 + d.bw2 + 4" [attr.y]="170 - l.moi * 140 / d.max2" [attr.width]="d.bw2" [attr.height]="l.moi * 140 / d.max2" rx="3" fill="#e8a33d" />
+            <text [attr.x]="34 + i * d.buoc2 + d.buoc2 / 2" y="191" text-anchor="middle" class="ax2">{{ l.nhan }}</text>
           }
         </svg>
         <div class="lg"><span><i style="background:#0f5a2a"></i>Khách cũ</span><span><i style="background:#e8a33d"></i>Khách mới</span></div>
+        @if (coEndUser(d.loai)) { <p class="chu-thich">Tư nhân, FDI = End-user</p> }
       </section>
       <section class="card-b">
         <h3>Giá trị HĐ theo khu vực <span class="u">triệu đ</span></h3>
         @for (v of d.khuVuc; track v.nhan; let i = $index) {
-          <div class="hb"><span class="hl">{{ v.nhan }}</span><span class="hbar"><i [style.width.%]="v.pct" [style.background]="MAU_NGUON[i % 5]"></i></span><b class="num">{{ v.gt }}</b></div>
+          <div class="hb"><span class="hl">{{ v.nhan }}</span><span class="hbar"><i [style.width.%]="v.pct" [style.background]="MAU_NGUON[i % 5]"></i></span><b class="num">{{ v.gt }} tr</b></div>
         } @empty { <p class="sub">Chưa có HĐ bán trong kỳ.</p> }
       </section>
     </div>
@@ -166,7 +171,7 @@ function khoang(nam: number, quy: string, thang: string): Khoang {
           <tbody>
             @for (r of d.sales; track r.ten) {
               <tr>
-                <td>@if (r.id) { <span class="pt"><span class="av">{{ vt(r.ten) }}</span>{{ r.ten }}</span> } @else { <span class="neg">Chưa phân bổ</span> }</td>
+                <td>@if (r.id) { <span class="pt"><span class="av" [style.background]="mau(r.id)">{{ vt(r.ten) }}</span>{{ r.ten }}</span> } @else { <span class="neg">Chưa phân bổ</span> }</td>
                 <td class="num">{{ r.soKH }}</td><td class="num">{{ r.tuongTac }}</td><td class="num">{{ r.mo ? tr(r.mo) + ' tr' : '—' }}</td>
                 <td class="num">{{ r.mua || '—' }}</td><td class="num">{{ r.tyLe === null ? '—' : r.tyLe + '%' }}</td>
               </tr>
@@ -186,7 +191,7 @@ function khoang(nam: number, quy: string, thang: string): Khoang {
             @for (r of d.top; track r.id; let i = $index) {
               <tr>
                 <td>{{ i + 1 }}</td><td><b>{{ r.ten }}</b></td><td>{{ r.nguon || '—' }}</td><td class="num">{{ r.soHD }}</td><td class="num">{{ tr(r.gt) }} tr</td>
-                <td>{{ r.tiep || '—' }}</td><td><span class="pn" [class.pt2]="r.phapNhan === 'Phú Tài'">{{ r.phapNhan === 'OXY' ? 'OXY' : 'Phú Tài' }}</span></td>
+                <td>{{ r.tiep || '—' }}</td><td><span class="pn" [class.pt2]="r.phapNhan !== 'OXY'">{{ r.phapNhan }}</span></td>
               </tr>
             } @empty { <tr><td colspan="7" class="empty">Chưa có HĐ bán trong kỳ.</td></tr> }
           </tbody>
@@ -201,7 +206,7 @@ function khoang(nam: number, quy: string, thang: string): Khoang {
     .grow { flex: 1 1 auto; }
     .kpis { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); margin-bottom: 14px; }
     .k { display: grid; gap: 4px; align-content: start; background: var(--surf); border-radius: 14px; padding: 12px 14px; position: relative; min-width: 0; }
-    .k.hero { background: linear-gradient(135deg, #0f7a3d, #19a05a); color: #fff; }
+    .k.hero { background: linear-gradient(135deg, #0f7a3d, #6cbf4b); color: #fff; }
     .k .l { font-size: 12.5px; font-weight: 600; color: var(--ink-2); }
     .k.hero .l, .k.hero .s { color: #fff; }
     .k .v { font-size: 28px; line-height: 1.15; }
@@ -213,29 +218,38 @@ function khoang(nam: number, quy: string, thang: string): Khoang {
     .row2 { display: grid; gap: 12px; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); margin-bottom: 12px; }
     .row3 { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); margin-bottom: 12px; }
     @media (max-width: 900px) { .row2 { grid-template-columns: minmax(0, 1fr); } }
-    .card-b { background: var(--surf); border-radius: 16px; padding: 14px 16px; min-width: 0; }
+    .card-b { background: var(--surf); border-radius: 18px; padding: 18px 20px; min-width: 0; }
     .card-b.wide { margin-bottom: 12px; }
-    .card-b h3 { font-size: 13.5px; margin-bottom: 10px; display: flex; justify-content: space-between; gap: 8px; }
+    .card-b h3 { font-size: 15.5px; margin-bottom: 14px; display: flex; justify-content: space-between; gap: 8px; }
     .u { font-size: 11px; font-weight: 500; color: var(--ink-3); }
     .bar { width: 100%; height: auto; }
     .ax { font-size: 9px; fill: var(--ink-3); }
+    .ax2 { font-size: 10.5px; fill: var(--ink-3); }
     .dn { font-size: 20px; font-weight: 700; fill: var(--ink); }
-    .lg { display: flex; gap: 14px; font-size: 11.5px; color: var(--ink-2); margin-top: 4px; }
-    .lg i, .lg-col i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 6px; }
-    .hb { display: grid; grid-template-columns: minmax(70px, 30%) 1fr 44px; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 12.5px; }
+    .lg { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13.5px; font-weight: 500; color: var(--ink-2); margin-top: 10px; }
+    .lg i, .lg-col i { display: inline-block; width: 14px; height: 14px; border-radius: 4px; margin-right: 8px; vertical-align: -2px; }
+    .hb { display: grid; grid-template-columns: minmax(70px, 30%) 1fr 64px; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 12.5px; }
+    .hb .num { text-align: right; font-weight: 700; white-space: nowrap; }
+    .chu-thich { margin: 10px 0 0; font-size: 12.5px; color: var(--ink-3); }
     .hl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .hbar { height: 10px; border-radius: 5px; background: var(--surf-3); overflow: hidden; }
     .hbar i { display: block; height: 100%; border-radius: 5px; }
     .note-s { margin-top: 10px; padding: 8px 10px; border-radius: 8px; background: var(--panel); font-size: 11px; color: var(--ink-3); }
-    .donut-w { display: grid; grid-template-columns: 120px 1fr; gap: 12px; align-items: center; }
-    .donut { width: 120px; height: 120px; }
-    .lg-col { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 12px; }
-    .lg-col li { display: grid; grid-template-columns: 1fr auto 40px; align-items: center; gap: 6px; }
+    /* Biểu đồ tròn ở trên, chú giải xếp dọc bên dưới (như thiết kế) */
+    .donut-w { display: grid; grid-template-columns: minmax(0, 1fr); justify-items: center; gap: 18px; }
+    .donut { width: 168px; height: 168px; }
+    .lg-col { list-style: none; margin: 0; padding: 0 4px; display: grid; gap: 10px; font-size: 13.5px; width: 100%; }
+    .lg-col li { display: grid; grid-template-columns: 12px minmax(0, 1fr) auto 44px; align-items: center; gap: 12px; }
+    .lg-col li i { width: 12px; height: 12px; margin: 0; border-radius: 3px; }
+    .lg-col li b { text-align: right; font-weight: 700; }
     .lg-col em { font-style: normal; color: var(--ink-3); text-align: right; }
-    .tbl-wrap { border-radius: 10px; border: 1px solid var(--line); box-shadow: none; overflow: auto; }
+    .tbl-wrap { border-radius: 0; border: 0; box-shadow: none; background: none; overflow: auto; }
     .tbl { font-size: 12.5px; }
-    .tbl thead th { background: var(--panel); font-size: 12px; white-space: nowrap; }
-    .tbl tbody td { padding-block: 8px; vertical-align: middle; }
+    .tbl thead th { background: var(--panel); font-size: 12px; font-weight: 600; color: var(--ink-2); white-space: nowrap; border-radius: 0; }
+    .tbl thead th:first-child { border-top-left-radius: 10px; } .tbl thead th:last-child { border-top-right-radius: 10px; }
+    .tbl tbody td { padding-block: 10px; vertical-align: middle; border-bottom: 1px solid var(--line); }
+    .tbl td.num:last-child { font-weight: 700; }
+    .neg { color: #c0392b; font-weight: 600; }
     .tbl tr.tong td { background: var(--panel); }
     .pt { display: inline-flex; align-items: center; gap: 6px; }
     .av { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: #0f5a2a; color: #fff; font-size: 9.5px; font-weight: 700; }
@@ -248,6 +262,11 @@ export class KhBaoCao {
   protected readonly MAU_NGUON = MAU_NGUON;
   protected readonly MAU_PHEU = MAU_PHEU;
   protected readonly tr = tr;
+  protected readonly soTruc = soTruc;
+  protected readonly mau = mauAvatar;
+  protected coEndUser(ds: { goc: string }[]): boolean {
+    return ds.some((l) => l.goc.startsWith('End-user'));
+  }
   protected readonly abs = Math.abs;
   protected readonly homNay = viDate(todayIso());
   protected readonly nams = (() => {
@@ -276,17 +295,28 @@ export class KhBaoCao {
   protected readonly bc = computed(() => {
     const s = this.store;
     const homNay = todayIso();
-    const ptKH = new Set(s.hopDongPhuTai().map((h) => h.maKH));
-    const phapNhanCua = (k: KhachHang) => (ptKH.has(k.id) ? 'Phú Tài' : 'OXY');
-    const ks = s.khachHang().filter((k) => !this.phapNhan() || phapNhanCua(k) === this.phapNhan());
-    const idKH = new Set(ks.map((k) => k.id));
-    const hd = s
-      .hopDongBan()
-      .filter((h) => idKH.has(h.maKH) && h.ngayKy && h.trangThai !== TT.HUY && h.trangThai !== TT.BAO_GIA)
-      .map((h) => ({ ma: h.maKH, ngay: h.ngayKy!, gt: h.truocVAT }));
-    const hdTheoKH = new Map<string, typeof hd>();
+    const pn = this.phapNhan();
+    type Hd = { ma: string; ngay: string; gt: number; pn: 'OXY' | 'Phú Tài' };
+    const hopLe = (t: string) => t !== TT.HUY && t !== TT.BAO_GIA;
+    // HĐ đã ký, không huỷ / báo giá. OXY lấy từ HĐ bán; Phú Tài là bảng HĐ riêng (hopDongPhuTai).
+    const hd: Hd[] = [
+      ...(pn === 'Phú Tài' ? [] : s.hopDongBan().filter((h) => h.ngayKy && hopLe(h.trangThai)).map((h): Hd => ({ ma: h.maKH, ngay: h.ngayKy!, gt: h.truocVAT, pn: 'OXY' }))),
+      ...(pn === 'OXY' ? [] : s.hopDongPhuTai().filter((h) => h.ngayKy && hopLe(h.trangThai)).map((h): Hd => ({ ma: h.maKH, ngay: h.ngayKy!, gt: h.truocVAT, pn: 'Phú Tài' }))),
+    ];
+    const hdTheoKH = new Map<string, Hd[]>();
     for (const h of hd) hdTheoKH.set(h.ma, [...(hdTheoKH.get(h.ma) ?? []), h].sort((a, b) => a.ngay.localeCompare(b.ngay)));
-    const co = layCoHoi(ks);
+    // Chọn một pháp nhân: chỉ tính khách có HĐ của pháp nhân đó.
+    const ks = s.khachHang().filter((k) => !pn || hdTheoKH.has(k.id));
+    const idKH = new Set(ks.map((k) => k.id));
+    for (const ma of [...hdTheoKH.keys()]) if (!idKH.has(ma)) hdTheoKH.delete(ma);
+    // Cơ hội: cả bản ghi cơ hội riêng lẫn cơ hội suy ra từ trạng thái cơ hội của khách (tab Cơ hội dùng cùng nguồn).
+    const co = layCoHoiTong(ks);
+    const lichSap = new Map<string, { nd: string; han: string }>();
+    for (const v of s.db().viecGiao ?? []) {
+      if (!v.khId || v.xongLuc || !v.han || v.han < homNay) continue;
+      const cu = lichSap.get(v.khId);
+      if (!cu || v.han < cu.han) lichSap.set(v.khId, { nd: v.noiDung.replace(/^\[[^\]]*\]\s*/, ''), han: v.han });
+    }
 
     const y = Number(this.nam());
     const kyNay = khoang(y, this.quy(), this.thang());
@@ -310,7 +340,7 @@ export class KhBaoCao {
         if (dsDen.length < 2) continue;
         const ngay = (iso: string) => new Date(iso).getTime() / 864e5;
         const chuKy = (ngay(dsDen[dsDen.length - 1].ngay) - ngay(dsDen[0].ngay)) / (dsDen.length - 1);
-        if (ngay(asOf) - ngay(dsDen[dsDen.length - 1].ngay) > 1.5 * chuKy) ngung++;
+        if (chuKy > 0 && ngay(asOf) - ngay(dsDen[dsDen.length - 1].ngay) > 1.5 * chuKy) ngung++;
       }
       const ty = (a: number, b: number) => (b ? Math.round((a / b) * 100) : 0);
       return { mua, moi, cu, thang, thua, ngung, tyThang: ty(thang, thang + thua), tyLai: ty(cu, mua.size) };
@@ -329,9 +359,9 @@ export class KhBaoCao {
       }
       return { t: m, mua: mua.size, moi: moi.size };
     });
-    const maxThang = Math.max(4, ...thangData.map((m) => m.mua));
+    const maxThang = canTren(Math.max(0, ...thangData.map((m) => m.mua)));
     const buoc = thangData.length ? 510 / thangData.length : 50;
-    const truc = [0, 1, 2, 3, 4].map((i) => Math.round((maxThang * i) / 4));
+    const truc = [0, 1, 2, 3, 4].map((i) => (maxThang * i) / 4);
 
     // Phễu
     const gtPheu = GD_PHEU.map((g) =>
@@ -366,10 +396,11 @@ export class KhBaoCao {
       else l.cu++;
       loaiMap.set(k.phanLoai || 'Khác', l);
     }
-    const loai = [...loaiMap].map(([nhan, v]) => ({ nhan, ...v })).slice(0, 5);
-    const max2 = Math.max(4, ...loai.map((l) => Math.max(l.cu, l.moi)));
-    const buoc2 = loai.length ? 250 / loai.length : 80;
-    const truc2 = [0, 1, 2, 3, 4].map((i) => Math.round((max2 * i) / 4));
+    const loai = [...loaiMap].map(([nhan, v]) => ({ nhan: nhan.replace(/^End-user\s+/, ''), goc: nhan, ...v })).slice(0, 5);
+    const max2 = canTren(Math.max(0, ...loai.map((l) => Math.max(l.cu, l.moi))));
+    const buoc2 = loai.length ? 282 / loai.length : 80;
+    const bw2 = Math.min(30, (buoc2 - 24) / 2);
+    const truc2 = [0, 1, 2, 3, 4].map((i) => (max2 * i) / 4);
 
     // Khu vực: giá trị HĐ trong kỳ theo tỉnh
     const tinhGt = new Map<string, number>();
@@ -395,7 +426,7 @@ export class KhBaoCao {
       const cs = co.filter((r) => ids.has(r.k.id));
       return {
         soKH: kh.length,
-        tuongTac: sum(kh, (k) => (k.chamSoc ?? []).filter((c) => trong(c.luc.slice(0, 10), kyNay)).length),
+        tuongTac: sum(kh, (k) => (k.chamSoc ?? []).filter((c) => c.nguoi !== 'Import' && trong(c.luc.slice(0, 10), kyNay)).length),
         mo: sum(cs.filter((r) => dangMo(r.c.giaiDoan)), (r) => r.c.giaTri),
         mua: kh.filter((k) => a.mua.has(k.id)).length,
         tyLe: tyRate(cs),
@@ -410,8 +441,14 @@ export class KhBaoCao {
     const top = ks
       .map((k) => {
         const ds = (hdTheoKH.get(k.id) ?? []).filter((h) => trong(h.ngay, kyNay));
-        const tiep = layCoHoi([k]).filter((r) => dangMo(r.c.giaiDoan) && r.c.tuongTacTiep).sort((x, z) => (x.c.ngayTuongTac ?? '9').localeCompare(z.c.ngayTuongTac ?? '9'))[0];
-        return { id: k.id, ten: k.ten, nguon: k.nguon, soHD: ds.length, gt: sum(ds, (h) => h.gt), tiep: tiep?.c.tuongTacTiep, phapNhan: phapNhanCua(k) };
+        const lich = lichSap.get(k.id);
+        const tiep = layCoHoiTong([k]).filter((r) => dangMo(r.c.giaiDoan) && r.c.tuongTacTiep).sort((x, z) => (x.c.ngayTuongTac ?? '9').localeCompare(z.c.ngayTuongTac ?? '9'))[0];
+        const pnSet = [...new Set(ds.map((h) => h.pn))];
+        return {
+          id: k.id, ten: k.ten, nguon: k.nguon, soHD: ds.length, gt: sum(ds, (h) => h.gt),
+          tiep: lich ? `${lich.nd} · ${lich.han.slice(8, 10)}/${lich.han.slice(5, 7)}` : tiep?.c.tuongTacTiep,
+          phapNhan: pnSet.length > 1 ? 'OXY + Phú Tài' : (pnSet[0] ?? 'OXY'),
+        };
       })
       .filter((r) => r.soHD)
       .sort((x, z) => z.gt - x.gt)
@@ -442,7 +479,7 @@ export class KhBaoCao {
       ngung: a.ngung, ngungT: b?.ngung ?? 0, cNgung: b ? chenhLech(a.ngung, b.ngung) : 0,
       sTyThang, sTyLai, sNgung,
       thangData, maxThang, buoc, truc,
-      pheu, nguon, loai, max2, buoc2, truc2, khuVuc, sales, top,
+      pheu, nguon, loai, max2, buoc2, bw2, truc2, khuVuc, sales, top,
       tong: {
         soKH: ks.length,
         tuongTac: sum(sales, (r) => r.tuongTac),

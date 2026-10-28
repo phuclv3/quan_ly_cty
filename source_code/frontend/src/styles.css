@@ -1133,6 +1133,8 @@ input.ngay:not(:disabled):not([readonly]) { cursor: text; }
   border: 0; border-radius: 22px; box-shadow: var(--shadow); background: var(--surf); overflow: visible; gap: 14px;
 }
 .topbar::before { display: none; }
+/* Khe 14px quanh thanh header (dính trên cùng) tô màu nền trang để nội dung cuộn không lộ ra phía sau / hai bên */
+.topbar { box-shadow: 0 0 0 14px var(--bg), var(--shadow); }
 .topbar .burger { display: inline-grid; flex: 0 0 auto; }
 .topbar .m-brand { display: none; }
 .search { position: relative; display: flex; align-items: center; gap: 8px; height: 44px; padding: 0 16px; width: min(560px, 100%); border-radius: 999px; background: var(--panel); color: var(--ink-3); }
@@ -1152,6 +1154,7 @@ input.ngay:not(:disabled):not([readonly]) { cursor: text; }
   .shell, .shell.collapsed { grid-template-columns: minmax(0, 1fr); }
   .side { top: 0 !important; margin: 0; border-radius: 0; height: auto; }
   .topbar { top: 8px; margin: 8px 8px 0; height: 58px; border-radius: 18px; padding: 0 10px; }
+  .topbar { box-shadow: 0 0 0 8px var(--bg), var(--shadow); }
   .topbar .burger { display: none; }
   .topbar .m-brand { display: flex; }
   .topbar .m-brand img { height: 34px; width: auto; }
