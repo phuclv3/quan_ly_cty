@@ -34,6 +34,13 @@ public class ChamSocKHEntity {
 
   @Column(name = "co_hoi")
   private String coHoi;
+
+  @Column(name = "kenh")
+  private String kenh;
+
+  @Column(name = "ket_qua")
+  private String ketQua;
+
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
   @JoinColumn(name = "khach_hang_id", nullable = false)
   private KhachHangEntity khachHang;

@@ -38,4 +38,8 @@ public class ViecGiao {
   private YeuCauHan yeuCauHan;
   /** Tệp đính kèm khi giao việc. */
   private List<FileRef> files = new ArrayList<>();
+  /** Lịch chăm sóc khách hàng: mã KH (kd_khach_hang.id), kênh, nhắc trước (ngày). */
+  private String khId;
+  private String kenh;
+  private Integer nhacTruoc;
 }

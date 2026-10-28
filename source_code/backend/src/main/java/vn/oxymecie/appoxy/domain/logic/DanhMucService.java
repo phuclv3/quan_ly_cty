@@ -104,7 +104,7 @@ public class DanhMucService {
   }
 
   /** Ghi một lần chăm sóc; đổi trạng thái tiếp cận / cơ hội cùng lúc nếu chọn. */
-  public void ghiChamSoc(Ctx c, String id, String noiDung, String tiepCanMoi, String coHoiMoi) {
+  public void ghiChamSoc(Ctx c, String id, String noiDung, String tiepCanMoi, String coHoiMoi, String kenh, String ketQua) {
     KhachHang k = c.kh(id);
     if (k == null) throw ApiException.notFound("Không tìm thấy khách hàng");
     c.require(Perm.khachHang, vn.oxymecie.appoxy.domain.perm.Level.edit, Texts.emptyToNull(k.getPhuTrach()));
@@ -117,7 +117,8 @@ public class DanhMucService {
     List<String> doi = new ArrayList<>();
     if (tiepCan != null) doi.add("Tiếp cận → " + tiepCan);
     if (coHoi != null) doi.add("Cơ hội → " + coHoi);
-    ChamSocKH dong = new ChamSocKH(c.uid("CS"), c.now(), c.me(), nd.isEmpty() ? String.join(" · ", doi) : nd, coHoi);
+    ChamSocKH dong = new ChamSocKH(c.uid("CS"), c.now(), c.me(), nd.isEmpty() ? String.join(" · ", doi) : nd, coHoi,
+        Texts.emptyToNull(kenh), Texts.emptyToNull(Texts.trim(ketQua)));
     if (tiepCan != null) k.setTiepCan(tiepCan);
     if (coHoi != null) k.setCoHoi(coHoi);
     List<ChamSocKH> ds = new ArrayList<>();

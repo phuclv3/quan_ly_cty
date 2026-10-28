@@ -69,6 +69,15 @@ public class ViecGiaoEntity {
   @Column(name = "hdm_id")
   private String hdmId;
 
+  @Column(name = "kh_id")
+  private String khId;
+
+  @Column(name = "kenh")
+  private String kenh;
+
+  @Column(name = "nhac_truoc")
+  private Integer nhacTruoc;
+
   @Column(name = "yc_nguoi")
   private String ycNguoi;
 

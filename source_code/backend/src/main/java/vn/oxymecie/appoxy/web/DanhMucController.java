@@ -93,7 +93,7 @@ public class DanhMucController {
   @PostMapping("/khach-hang/{id}/cham-soc")
   public CommandResponse<Void> chamSoc(@PathVariable String id, @Valid @RequestBody Req.ChamSoc r) {
     return cmd.run("KH.chamSoc", c -> {
-      svc.ghiChamSoc(c, id, r.noiDung(), r.tiepCan(), r.coHoi());
+      svc.ghiChamSoc(c, id, r.noiDung(), r.tiepCan(), r.coHoi(), r.kenh(), r.ketQua());
       c.nhatKy("DM_KhachHang", id, "Chăm sóc");
       return null;
     });

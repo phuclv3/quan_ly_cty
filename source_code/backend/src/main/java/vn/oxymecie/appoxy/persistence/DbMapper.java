@@ -159,7 +159,7 @@ public class DbMapper {
 
   KhachHang khachHang(KhachHangEntity e) {
     List<ChamSocKH> cs = e.getChamSoc().stream()
-        .map(x -> new ChamSocKH(x.getId(), t(x.getLuc()), x.getNguoi(), x.getNoiDung(), x.getCoHoi())).toList();
+        .map(x -> new ChamSocKH(x.getId(), t(x.getLuc()), x.getNguoi(), x.getNoiDung(), x.getCoHoi(), x.getKenh(), x.getKetQua())).toList();
     List<CoHoiKH> ch = e.getDsCoHoi().stream().map(x -> new CoHoiKH(x.getId(), x.getHuongBan(), x.getNhomHang(), x.getGiaTri(), x.getGiaiDoan(),
         d(x.getNgayTao()), d(x.getNgayBaoGia()), d(x.getNgayChot()), x.getLyDoThua(), x.getTuongTacTiep(), d(x.getNgayTuongTac()),
         d(x.getNgayTaiTiepCan()))).toList();
@@ -219,7 +219,8 @@ public class DbMapper {
         .map(x -> new PhanHoiViec(x.getNguoi(), t(x.getLuc()), x.getNoiDung(), x.getHeThong())).toList());
     return new ViecGiao(e.getId(), e.getNoiDung(), e.getNguoiTao(), t(e.getTaoLuc()), new ArrayList<>(e.getNguoiNhan()), e.getHdbId(),
         d(e.getHan()), e.getGio(), e.isUuTien(), t(e.getXongLuc()), e.getNguoiXong(), ph, e.getMa(), e.getNhom(), d(e.getBatDau()),
-        e.getMucUuTien(), e.getNguonLoai(), e.getHdmId(), yeuCauHan(e), new ArrayList<>(e.getFiles().stream().map(this::file).toList()));
+        e.getMucUuTien(), e.getNguonLoai(), e.getHdmId(), yeuCauHan(e), new ArrayList<>(e.getFiles().stream().map(this::file).toList()),
+        e.getKhId(), e.getKenh(), e.getNhacTruoc());
   }
 
   CanhBao canhBao(CanhBaoEntity e) {
@@ -470,6 +471,8 @@ public class DbMapper {
       ce.setNguoi(c.getNguoi());
       ce.setNoiDung(c.getNoiDung());
       ce.setCoHoi(c.getCoHoi());
+      ce.setKenh(c.getKenh());
+      ce.setKetQua(c.getKetQua());
       ce.setKhachHang(e);
       moi.add(ce);
     }
@@ -700,6 +703,9 @@ public class DbMapper {
     e.setMucUuTien(Texts.emptyToNull(x.getMucUuTien()));
     e.setNguonLoai(Texts.emptyToNull(x.getNguonLoai()));
     e.setHdmId(Texts.emptyToNull(x.getHdmId()));
+    e.setKhId(Texts.emptyToNull(x.getKhId()));
+    e.setKenh(Texts.emptyToNull(x.getKenh()));
+    e.setNhacTruoc(x.getNhacTruoc());
     YeuCauHan y = x.getYeuCauHan();
     e.setYcNguoi(y == null ? null : y.getNguoi());
     e.setYcLuc(y == null ? null : in(y.getLuc()));

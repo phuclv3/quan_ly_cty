@@ -14,4 +14,8 @@ public class ChamSocKH {
   private String nguoi;
   private String noiDung;
   private String coHoi;
+  /** Kênh tương tác: Gọi điện / Gặp trực tiếp / Họp online / Email. */
+  private String kenh;
+  /** Kết quả buổi tương tác (người dùng tự nhập). */
+  private String ketQua;
 }

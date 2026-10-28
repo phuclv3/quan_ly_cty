@@ -43,7 +43,7 @@ public final class Req {
 
   public record PhanBo(@NotEmpty(message = "Chưa chọn khách hàng") List<@NotBlank String> ids, @Size(max = 40) String sale) {}
 
-  public record ChamSoc(@Size(max = 4000) String noiDung, String tiepCan, String coHoi) {}
+  public record ChamSoc(@Size(max = 4000) String noiDung, String tiepCan, String coHoi, @Size(max = 30) String kenh, @Size(max = 1000) String ketQua) {}
 
   public record DoiMa(@NotBlank(message = "Chưa nhập mã mới") @Size(max = 40) String moi) {}
 
@@ -94,7 +94,8 @@ public final class Req {
                          String hdbId, String hdmId, String nguonLoai, String nhom,
                          @Pattern(regexp = "^(\\d{4}-\\d{2}-\\d{2})?$", message = NGAY_MSG) String batDau,
                          @Pattern(regexp = NGAY, message = NGAY_MSG) String han, String gio, String mucUuTien,
-                         List<vn.oxymecie.appoxy.domain.model.FileRef> files) {}
+                         List<vn.oxymecie.appoxy.domain.model.FileRef> files,
+                         @Size(max = 20) String khId, @Size(max = 30) String kenh, Integer nhacTruoc) {}
 
   public record BaoRuiRo(@NotBlank(message = "Chọn mức cảnh báo") @Pattern(regexp = "^P[012]$", message = "Mức cảnh báo phải là P0, P1 hoặc P2") String muc,
                          @NotBlank(message = "Nhập nội dung rủi ro") @Size(max = 4000) String noiDung,
