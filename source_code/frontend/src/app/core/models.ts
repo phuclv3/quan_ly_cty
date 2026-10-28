@@ -482,6 +482,54 @@ export interface ViecGiao {
   files?: FileRef[];
 }
 
+/**
+ * Cảnh báo rủi ro nhập tay (tab Cảnh báo) — nghiệp vụ riêng với việc được giao, bảng riêng.
+ * Cảnh báo hệ thống tự phát hiện không lưu, tính lại từ dữ liệu mỗi lần xem.
+ */
+export interface CanhBaoTay {
+  id: string;
+  /** Mã CB-0001. */
+  ma: string;
+  muc: MucCanhBao;
+  noiDung: string;
+  anhHuong: string;
+  /** Người theo dõi: nhóm phụ trách. */
+  theoDoi?: NhomViec;
+  hdbId?: string;
+  hdmId?: string;
+  nguoiTao: string;
+  taoLuc: string;
+  /** Có = đã xử lý. */
+  xuLyLuc?: string;
+  nguoiXuLy?: string;
+  /** Ghi chú khi xử lý. */
+  ghiChuXuLy?: string;
+  /** TAY = người dùng báo rủi ro; HE_THONG = vết xử lý của cảnh báo hệ thống tự phát hiện (nội dung là ảnh chụp lúc có người thao tác đầu tiên). */
+  nguon: 'TAY' | 'HE_THONG';
+  /** Khoá ổn định của cảnh báo hệ thống (VD tc-thu-<id HĐ bán>). */
+  khoaHeThong?: string;
+  /** Id tài khoản được giao xử lý. */
+  nguoiPhuTrach?: string;
+  lichSu: LichSuCanhBao[];
+}
+
+export interface LichSuCanhBao {
+  luc: string;
+  nguoi: string;
+  hanhDong: 'Báo rủi ro' | 'Giao người phụ trách' | 'Đã xử lý' | 'Mở lại';
+  ghiChu?: string;
+}
+
+/** Nguyên tắc đánh mức: P0 rủi ro nghiêm trọng đang xảy ra / sắp xảy ra, cần can thiệp ngay; P1 đáng kể, có khả năng ảnh hưởng cam kết hoặc tài chính; P2 dấu hiệu sớm, còn thời gian phòng ngừa. */
+export const MUC_CANH_BAO = ['P0', 'P1', 'P2'] as const;
+export type MucCanhBao = (typeof MUC_CANH_BAO)[number];
+export const MUC_CANH_BAO_TEN: Record<MucCanhBao, string> = { P0: 'Khẩn cấp', P1: 'Cao', P2: 'Cảnh báo sớm' };
+export const MUC_CANH_BAO_MOTA: Record<MucCanhBao, string> = {
+  P0: 'Rủi ro nghiêm trọng đang xảy ra hoặc sắp xảy ra, cần can thiệp ngay',
+  P1: 'Rủi ro đáng kể, có khả năng ảnh hưởng cam kết hoặc tài chính',
+  P2: 'Dấu hiệu rủi ro còn ở mức thấp, có thời gian phòng ngừa',
+};
+
 export const NHOM_VIEC = ['Kinh doanh', 'Marketing', 'Mua hàng', 'Kho', 'Kế toán', 'Hành chính', 'Kỹ thuật'] as const;
 export type NhomViec = (typeof NHOM_VIEC)[number];
 export const MUC_UU_TIEN = ['Cao', 'Trung bình', 'Thấp'] as const;
@@ -862,6 +910,8 @@ export interface Db {
   anhXaTen: AnhXaTen[];
   deNghiVatTu: DeNghiVatTu[];
   viecGiao: ViecGiao[];
+  /** Cảnh báo rủi ro nhập tay — bảng riêng, không lẫn với việc được giao. */
+  canhBao: CanhBaoTay[];
   hopDongPhuTai: HopDongPhuTai[];
   dongTienPT: DongTienPT[];
   /** Bộ đếm số chứng từ theo tiền tố + năm, VD { 'TC26': 12 } — không tái dùng số đã xoá. */

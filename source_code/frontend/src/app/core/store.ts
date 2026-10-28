@@ -36,6 +36,9 @@ import {
   YeuCauHan,
   NguonViec,
   MucUuTien,
+  MucCanhBao,
+  CanhBaoTay,
+  LichSuCanhBao,
   NhomViec,
   ycConHan,
   CoHoi,
@@ -86,6 +89,24 @@ import {
 import { luuTep } from './files';
 import { TT, ttNhan } from './trang-thai';
 import { fold, money, nowIso, todayIso, uid, viDate, vnd, yy } from './util';
+
+/** Dữ liệu báo rủi ro (cảnh báo nhập tay). */
+export interface BaoRuiRoIn {
+  muc: MucCanhBao;
+  noiDung: string;
+  anhHuong: string;
+  theoDoi?: NhomViec | '';
+  hdbId?: string;
+  hdmId?: string;
+}
+
+/** Thao tác trên cảnh báo hệ thống: ảnh chụp cảnh báo + người phụ trách + đã xử lý hay chưa. */
+export interface CanhBaoHeThongIn extends BaoRuiRoIn {
+  khoa: string;
+  nguoiPhuTrach?: string;
+  xong: boolean;
+  ghiChu?: string;
+}
 
 /** Dữ liệu giao việc / đặt lịch. */
 export interface GiaoViecIn {
@@ -1510,6 +1531,115 @@ export class Store {
     return null;
   }
 
+  // ── Cảnh báo (tách biệt với việc được giao) ──
+  // Nhập tay: lưu đầy đủ. Hệ thống tự phát hiện: chỉ lưu vết xử lý (khoá ổn định) khi có người giao / đánh dấu đã xử lý.
+
+  readonly canhBaoTay = computed(() => this.db().canhBao ?? []);
+
+  baoRuiRo(o: BaoRuiRoIn): Result {
+    return this.exec(() => this.baoRuiRo_(o), () => ['POST', '/canh-bao', o]);
+  }
+  xuLyCanhBao(id: string, xong: boolean, ghiChu?: string): Result {
+    return this.exec(() => this.xuLyCanhBao_(id, xong, ghiChu), () => ['POST', `/canh-bao/${e_(id)}/xu-ly`, { xong, ghiChu }]);
+  }
+  giaoCanhBao(id: string, nguoiPhuTrach: string): Result {
+    return this.exec(() => this.giaoCanhBao_(id, nguoiPhuTrach), () => ['POST', `/canh-bao/${e_(id)}/giao`, { nguoiPhuTrach }]);
+  }
+  /** Giao người / đánh dấu đã xử lý cho cảnh báo hệ thống (tạo vết theo khoá nếu chưa có). */
+  xuLyCanhBaoHeThong(o: CanhBaoHeThongIn): Result {
+    return this.exec(() => this.xuLyCanhBaoHeThong_(o), () => ['POST', '/canh-bao/he-thong', o]);
+  }
+
+  /** Cảnh báo hệ thống: ai vào được chức năng Việc đều xử lý; nhập tay: người báo hoặc người có quyền Sửa. */
+  coTheXuLyCanhBao(c: Pick<CanhBaoTay, 'nguon' | 'nguoiTao'>): boolean {
+    return c.nguon === 'HE_THONG' ? this.canView('viec') : c.nguoiTao === this.meId() || this.canEdit('viec');
+  }
+
+  private ghiCB(c: CanhBaoTay, hanhDong: LichSuCanhBao['hanhDong'], ghiChu?: string): LichSuCanhBao[] {
+    return [...(c.lichSu ?? []), { luc: nowIso(), nguoi: this.meId()!, hanhDong, ghiChu: ghiChu || undefined }];
+  }
+
+  private taoCB(o: BaoRuiRoIn, nguon: CanhBaoTay['nguon'], khoa?: string): CanhBaoTay | string {
+    const e = this.require('viec', 'own');
+    if (e) return e;
+    const noiDung = o.noiDung.trim();
+    if (!noiDung) return 'Nhập nội dung rủi ro';
+    if (!o.anhHuong.trim()) return 'Nhập ảnh hưởng của rủi ro';
+    if (o.hdbId && o.hdmId) return 'Chỉ gắn một hồ sơ liên quan';
+    if (o.hdbId && !this.hdbById(o.hdbId)) return 'HĐ bán không tồn tại';
+    if (o.hdmId && !this.db().hopDongMua.some((m) => m.id === o.hdmId)) return 'HĐ mua không tồn tại';
+    const max = Math.max(0, ...(this.db().canhBao ?? []).map((x) => +(/^CB-(\d+)$/.exec(x.ma)?.[1] ?? 0)));
+    const c: CanhBaoTay = {
+      id: uid('CB'),
+      ma: `CB-${String(max + 1).padStart(4, '0')}`,
+      muc: o.muc,
+      noiDung,
+      anhHuong: o.anhHuong.trim(),
+      theoDoi: o.theoDoi || undefined,
+      hdbId: o.hdbId || undefined,
+      hdmId: o.hdmId || undefined,
+      nguoiTao: this.meId()!,
+      taoLuc: nowIso(),
+      nguon,
+      khoaHeThong: khoa,
+      lichSu: [],
+    };
+    return c;
+  }
+
+  private baoRuiRo_(o: BaoRuiRoIn): Result {
+    const c = this.taoCB(o, 'TAY');
+    if (typeof c === 'string') return c;
+    this.upsert('canhBao', { ...c, lichSu: this.ghiCB(c, 'Báo rủi ro') });
+    return null;
+  }
+
+  private xuLyCanhBao_(id: string, xong: boolean, ghiChu?: string): Result {
+    const c = (this.db().canhBao ?? []).find((x) => x.id === id);
+    if (!c) return 'Không tìm thấy cảnh báo';
+    if (!this.coTheXuLyCanhBao(c)) return 'Bạn không có quyền xử lý cảnh báo này';
+    this.upsert('canhBao', this.apDungXuLy(c, xong, ghiChu));
+    return null;
+  }
+
+  private apDungXuLy(c: CanhBaoTay, xong: boolean, ghiChu?: string): CanhBaoTay {
+    if (xong === !!c.xuLyLuc) return c;
+    const gc = ghiChu?.trim() || undefined;
+    return {
+      ...c,
+      xuLyLuc: xong ? nowIso() : undefined,
+      nguoiXuLy: xong ? this.meId()! : undefined,
+      ghiChuXuLy: xong ? gc : undefined,
+      lichSu: this.ghiCB(c, xong ? 'Đã xử lý' : 'Mở lại', xong ? gc : undefined),
+    };
+  }
+
+  private giaoCanhBao_(id: string, nguoi: string): Result {
+    const c = (this.db().canhBao ?? []).find((x) => x.id === id);
+    if (!c) return 'Không tìm thấy cảnh báo';
+    if (!this.coTheXuLyCanhBao(c)) return 'Bạn không có quyền xử lý cảnh báo này';
+    if (nguoi && !this.db().taiKhoan.some((t) => t.id === nguoi)) return 'Người phụ trách không tồn tại';
+    this.upsert('canhBao', { ...c, nguoiPhuTrach: nguoi || undefined, lichSu: this.ghiCB(c, 'Giao người phụ trách') });
+    return null;
+  }
+
+  private xuLyCanhBaoHeThong_(o: CanhBaoHeThongIn): Result {
+    let c = (this.db().canhBao ?? []).find((x) => x.khoaHeThong === o.khoa);
+    if (!c) {
+      const m = this.taoCB(o, 'HE_THONG', o.khoa);
+      if (typeof m === 'string') return m;
+      c = m;
+    } else {
+      // Mức đổi so với lúc đã xử lý (leo thang / hạ) → mở lại để xử lý theo mức mới.
+      if (c.muc !== o.muc && c.xuLyLuc) c = this.apDungXuLy(c, false);
+      c = { ...c, muc: o.muc, noiDung: o.noiDung.trim() || c.noiDung, anhHuong: o.anhHuong.trim() || c.anhHuong };
+    }
+    if (o.nguoiPhuTrach && !this.db().taiKhoan.some((t) => t.id === o.nguoiPhuTrach)) return 'Người phụ trách không tồn tại';
+    if ((o.nguoiPhuTrach || undefined) !== c.nguoiPhuTrach) c = { ...c, nguoiPhuTrach: o.nguoiPhuTrach || undefined, lichSu: this.ghiCB(c, 'Giao người phụ trách') };
+    this.upsert('canhBao', this.apDungXuLy(c, o.xong, o.ghiChu));
+    return null;
+  }
+
   /** Tài khoản thuộc nhóm toàn quyền (Giám đốc) — việc giao được đánh dấu ưu tiên. */
   private coToanQuyen(): boolean {
     const t = this.me();
@@ -2720,7 +2850,7 @@ export function dbRong(): Db {
     version: 0, taiKhoan: [], nhomQuyen: [], phien: [],
     cauHinh: { TNDN_NGUONG: 0.2, TNDN_MUC1: 0.25, TNDN_MUC2: 0.5, PT_THUE: 0.2, PT_GIU: 0.1, PT_CACH_CHIA: 'Nhân', SO_DOT_TOI_DA: 3, TIEN_TO_TC: 'TC', TIEN_TO_CP: 'CP', TIEN_TO_NK: 'NK', TIEN_TO_XK: 'XK' },
     cauHinhLog: [], yeuCauXoa: [], hoSo: [], hoaDon: [], nguonTien: [], loaiChiPhi: [], khachHang: [], ncc: [], kho: [], loaiHang: [],
-    phieuThuChi: [], chiPhiHD: [], hopDongBan: [], hopDongMua: [], phieuKho: [], kiemKe: [], anhXaTen: [], deNghiVatTu: [], viecGiao: [],
+    phieuThuChi: [], chiPhiHD: [], hopDongBan: [], hopDongMua: [], phieuKho: [], kiemKe: [], anhXaTen: [], deNghiVatTu: [], viecGiao: [], canhBao: [],
     hopDongPhuTai: [], dongTienPT: [], boDem: {},
   };
 }

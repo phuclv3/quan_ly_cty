@@ -138,6 +138,7 @@ export async function buildSeed(): Promise<Db> {
     anhXaTen: [],
     deNghiVatTu: [],
     viecGiao: [],
+    canhBao: [],
     hopDongPhuTai: [],
     dongTienPT: [],
     boDem: {},

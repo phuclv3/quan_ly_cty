@@ -1,8 +1,9 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal, viewChild } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { FileRef, MUC_UU_TIEN, MucUuTien, NHOM_VIEC, NguonViec, NhomViec, PHUT_DUYET_HAN, ViecGiao, ycConHan } from '../core/models';
+import { CanhBaoTay, FileRef, MUC_CANH_BAO, MUC_CANH_BAO_MOTA, MUC_CANH_BAO_TEN, MUC_UU_TIEN, MucCanhBao, MucUuTien, NHOM_VIEC, NguonViec, NhomViec, PHUT_DUYET_HAN, ViecGiao, ycConHan } from '../core/models';
 import { Store } from '../core/store';
-import { daysFromToday, todayIso, viDate, viMoment } from '../core/util';
+import { daysFromToday, nowIso, todayIso, viDate, viMoment } from '../core/util';
+import { CanhBao, NHOM_RUI_RO, soSanhCanhBao, tinhCanhBaoTuDong } from './canh-bao';
 import { Icon } from '../shared/icon';
 import { Modal, PickGo, PickOption } from '../shared/ui-kit';
 import { TepDinhKem } from '../shared/tep-dinh-kem';
@@ -25,6 +26,23 @@ interface Soan {
   gio: string;
   files: FileRef[];
 }
+
+/** Báo rủi ro nhập tay → tạo một việc mang mức cảnh báo. */
+interface RuiRo {
+  noiDung: string;
+  muc: MucCanhBao;
+  anhHuong: string;
+  nhom: NhomViec | '';
+  nguonLoai: NguonViec;
+  hdbId: string;
+  hdmId: string;
+}
+
+const MUC_CB_NGAN: Record<MucCanhBao, string> = {
+  P0: 'can thiệp ngay',
+  P1: 'ảnh hưởng cam kết / tài chính',
+  P2: 'còn thời gian phòng ngừa',
+};
 
 const NGUON_TEN: Record<NguonViec, string> = { HDB: 'HĐ BÁN', HDM: 'HĐ MUA', NOI_BO: 'NỘI BỘ' };
 
@@ -74,7 +92,41 @@ const NGUON_TEN: Record<NguonViec, string> = { HDB: 'HĐ BÁN', HDM: 'HĐ MUA', 
      .msg.toi{justify-self:end;background:var(--ok-bg)}.msg.he{justify-self:center;background:none;color:var(--ink-3);font-size:13px}
      .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
      .vg{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:12px 14px}
-     .vg .s12{grid-column:span 12}.vg .s4{grid-column:span 4}.vg .s3{grid-column:span 3}
+     .vg .s12{grid-column:span 12}.vg .s6{grid-column:span 6}.vg .s4{grid-column:span 4}.vg .s3{grid-column:span 3}
+     .mtabs{display:inline-flex;gap:4px;margin:12px 0 4px;padding:4px;border-radius:999px;background:var(--surf);box-shadow:0 1px 2px rgba(20,40,20,.06)}
+     .mtabs button{height:34px;padding:0 18px;border:0;border-radius:999px;background:transparent;color:var(--ink-2);font-size:14.5px;cursor:pointer}
+     .mtabs button.on{background:#16642b;color:#fff;font-weight:700}
+     .cbcards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:12px}
+     .cbc{display:grid;gap:2px;text-align:left;padding:14px 16px;border-radius:16px;border:1px solid var(--line);background:var(--surf);cursor:pointer;color:var(--ink)}
+     .cbc small{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600}.cbc b{font-size:30px;line-height:1.1}.cbc span{font-size:12.5px;color:var(--ink-3)}
+     .cbc.all{background:#16642b;border-color:#16642b;color:#fff}.cbc.all span{color:#d6ecdc}
+     .cbc.p0 b{color:#c0392b}.cbc.p1 b{color:var(--ink)}.cbc.p2 b{color:var(--ink)}
+     .cbc.sel{box-shadow:0 0 0 2px #16642b}
+     .cbc .dot,.cbg .dot,.cbs .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:currentColor}
+     .cbc.p0 small{color:#c0392b}.cbc.p1 small{color:#c8661b}.cbc.p2 small{color:#b8860b}
+     .cbhead{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:10px}.cbhead h2{font-size:17px;margin:0}
+     table.cbt{border-collapse:separate;border-spacing:0}
+     table.cbt tr.cbg td{padding:8px 12px;font-size:13px;border-bottom:1px solid var(--line)}
+     table.cbt tr.cbg span{color:var(--ink-3);margin-left:4px}
+     table.cbt tr.cbg.p0 td{background:#fdeceb;color:#a3261d}table.cbt tr.cbg.p1 td{background:#fdf1e6;color:#b4560f}table.cbt tr.cbg.p2 td{background:#fdf6e0;color:#8a5a00}
+     table.cbt tr.cbr td:first-child{border-left:4px solid transparent}
+     table.cbt tr.cbr.p0 td:first-child{border-left-color:#c0392b}table.cbt tr.cbr.p1 td:first-child{border-left-color:#e08a2c}table.cbt tr.cbr.p2 td:first-child{border-left-color:#e0b02c}
+     table.cbt tbody td{vertical-align:top}
+     .cbn{display:block;margin-top:2px;font-size:12px;color:var(--ink-3);font-weight:400}.cbah{color:var(--ink-2);max-width:260px}
+     .cbm{display:inline-block;padding:1px 8px;border-radius:7px;font-size:12.5px;font-weight:700}
+     .cbm.p0{background:#c0392b;color:#fff}.cbm.p1{background:#fde8d2;color:#b4560f}.cbm.p2{background:#fbf0d6;color:#8a5a00}
+     .cbhs{display:inline-block;padding:1px 9px;border-radius:7px;font-size:12.5px;font-weight:700;text-decoration:none;background:var(--brand-tint);color:#16642b}
+     .cbhs.hdm{background:#dcebfa;color:#1d5a99}.cbhs.kho{background:#e3f3ee;color:#1b6b5a}.cbhs.kt{background:#efe6fa;color:#6b3fb0}
+     .cbw{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}.cbq{display:inline-block;width:9px;height:9px;border-radius:2px;background:#1b6b5a}
+     .cbq.m1{background:#2b7fc0}.cbq.m2{background:#7a5bc7}.cbq.m3{background:#d59a1b}.cbq.m4{background:#c0572b}
+     .cbs{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font-size:13px;font-weight:600;color:#b4560f}.cbs.done{color:#16642b}
+     .cbgo{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:8px;background:var(--surf-2);color:var(--ink-2)}
+     table.cbt tr.cbr{cursor:pointer}table.cbt tr.cbr:hover td{background:var(--surf-2)}
+     .rr-muc{display:grid;gap:8px}
+     .rr-m{display:grid;gap:2px;text-align:left;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--surf);cursor:pointer;color:var(--ink)}
+     .rr-m small{color:var(--ink-3);font-size:12.5px}.rr-m.on{border-width:2px;padding:9px 11px}
+     .rr-m.p0.on{border-color:#c0392b;background:#fdeceb}.rr-m.p1.on{border-color:#e08a2c;background:#fdf1e6}.rr-m.p2.on{border-color:#e0b02c;background:#fdf6e0}
+     @media (max-width:900px){.cbcards{grid-template-columns:repeat(2,minmax(0,1fr))}}
      .vg-sec{margin-top:4px;padding-top:12px;border-top:1px solid var(--line);font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#16642b}
      .vg-days{display:flex;align-items:center;justify-content:center;height:40px;border-radius:var(--radius-sm);background:var(--brand-tint);color:#16642b;font-weight:700;font-size:18px}
      .vg .chips{margin-top:2px}
@@ -88,11 +140,82 @@ const NGUON_TEN: Record<NguonViec, string> = { HDB: 'HĐ BÁN', HDM: 'HĐ MUA', 
       <div class="crumbs"><a routerLink="/">Trang chủ</a> › Công việc & Cảnh báo</div>
       <div class="between"><h1>Công việc & Cảnh báo</h1>
         @if (store.canEdit('viec', store.meId() ?? undefined)) {
-          <button type="button" class="btn" (click)="moSoan()"><app-icon name="plus" [size]="16" /> Giao việc / Đặt lịch</button>
+          @if (tab() === 'canhbao') {
+            <button type="button" class="btn" (click)="moRuiRo()"><app-icon name="plus" [size]="16" /> Báo rủi ro</button>
+          } @else {
+            <button type="button" class="btn" (click)="moSoan()"><app-icon name="plus" [size]="16" /> Giao việc / Đặt lịch</button>
+          }
         }
       </div>
     </div>
 
+    <div class="mtabs" role="tablist" aria-label="Công việc hoặc Cảnh báo">
+      <button type="button" role="tab" [class.on]="tab() === 'viec'" [attr.aria-selected]="tab() === 'viec'" (click)="tab.set('viec')">Công việc</button>
+      <button type="button" role="tab" [class.on]="tab() === 'canhbao'" [attr.aria-selected]="tab() === 'canhbao'" (click)="tab.set('canhbao')">Cảnh báo</button>
+    </div>
+
+    @if (tab() === 'canhbao') {
+      <div class="cbcards">
+        <button type="button" class="cbc all" [class.sel]="!fMucCB()" (click)="fMucCB.set('')">
+          <small>Tất cả cảnh báo</small><b>{{ demCB().tong }}</b><span>đang cảnh báo</span>
+        </button>
+        @for (m of MUC_CB; track m) {
+          <button type="button" class="cbc" [class]="'cbc ' + m.toLowerCase()" [class.sel]="fMucCB() === m" (click)="fMucCB.set(fMucCB() === m ? '' : m)">
+            <small><i class="dot"></i>{{ m }} · {{ MUC_CB_TEN[m] }}</small><b>{{ demCB()[m] }}</b><span>{{ MUC_CB_NGAN[m] }}</span>
+          </button>
+        }
+      </div>
+
+      <section class="pn">
+        <div class="cbhead">
+          <h2>Danh sách cảnh báo</h2>
+          <span class="sub">sắp theo mức · cập nhật {{ capNhat }}</span>
+        </div>
+        <div class="vfil">
+          <label class="sr-in"><app-icon name="search" [size]="16" /><input type="search" placeholder="Tìm nội dung rủi ro, mã hồ sơ…" aria-label="Tìm cảnh báo" [value]="qCB()" (input)="qCB.set($any($event.target).value)" /></label>
+          <select aria-label="Người theo dõi" (change)="fTheoDoi.set($any($event.target).value)">
+            <option value="" [selected]="!fTheoDoi()">Người theo dõi: Tất cả</option>
+            @for (n of dsTheoDoi(); track n) { <option [value]="n" [selected]="fTheoDoi() === n">{{ n }}</option> }
+          </select>
+          <div class="schips" role="group" aria-label="Trạng thái cảnh báo" style="margin:0">
+            <button type="button" [class.on]="ttCB() === 'dang'" (click)="ttCB.set('dang')">Đang cảnh báo ({{ demCB().tong }})</button>
+            <button type="button" [class.on]="ttCB() === 'xong'" (click)="ttCB.set('xong')">Đã xử lý ({{ soXuLy() }})</button>
+          </div>
+        </div>
+
+        <div class="tbl-wrap">
+          <table class="vt cbt tbl">
+            <thead><tr><th style="width:56px">Mức</th><th>Nội dung rủi ro</th><th>Ảnh hưởng</th><th>Hồ sơ liên quan</th><th>Người theo dõi</th><th>Trạng thái</th><th style="width:44px"></th></tr></thead>
+            @for (g of nhomCB(); track g.muc) {
+              <tbody>
+                <tr class="cbg" [class]="'cbg ' + g.muc.toLowerCase()"><td colspan="7"><i class="dot"></i><b>{{ g.muc }} · {{ MUC_CB_TEN[g.muc] }}</b> <span>{{ g.ds.length }} cảnh báo</span></td></tr>
+                @for (r of g.ds; track r.key) {
+                  <tr class="cbr" [class]="'cbr ' + r.muc.toLowerCase()" (click)="moCB(r)">
+                    <td><span class="cbm" [class]="'cbm ' + r.muc.toLowerCase()">{{ r.muc }}</span></td>
+                    <td><b>{{ r.noiDung }}</b>@if (r.nhom !== 'Nhập tay') { <small class="cbn">{{ r.nhom }}</small> } @else { <small class="cbn">Nhập tay</small> }</td>
+                    <td class="cbah">{{ r.anhHuong }}</td>
+                    <td>
+                      @if (r.hoSo; as h) { <a class="cbhs" [class]="'cbhs ' + h.mau" [routerLink]="h.link" [queryParams]="h.qp" (click)="$event.stopPropagation()">{{ h.nhan }} ›</a> } @else { <span class="muted">—</span> }
+                    </td>
+                    <td><span class="cbw"><i [class]="'cbq ' + mauTD(r.theoDoi)"></i>{{ r.theoDoi }}</span></td>
+                    <td><span class="cbs" [class.done]="!!r.xongLuc"><i class="dot"></i>{{ r.xongLuc ? 'Đã xử lý' : 'Đang cảnh báo' }}</span></td>
+                    <td><span class="cbgo" aria-hidden="true">›</span></td>
+                  </tr>
+                }
+              </tbody>
+            } @empty {
+              <tbody><tr><td colspan="7" class="empty">{{ ttCB() === 'xong' ? 'Chưa có cảnh báo nào được xử lý.' : 'Không có cảnh báo nào.' }}</td></tr></tbody>
+            }
+          </table>
+        </div>
+        <div class="legend">
+          <span><b>Nguyên tắc đánh mức:</b> @for (m of MUC_CB; track m) { <b>{{ m }}</b> {{ MUC_CB_MOTA[m] }}{{ $last ? '.' : '; ' }} }</span>
+          <span><b>Nhóm cảnh báo hệ thống tự động thiết lập:</b></span>
+          @for (n of NHOM_RR; track n.ten) { <span>· <b>{{ n.ten }}</b>: {{ n.dieuKien }}</span> }
+          <span>Cảnh báo tự động biến mất khi hết điều kiện; cảnh báo nhập tay (Báo rủi ro) chuyển sang "Đã xử lý" khi đánh dấu hoàn thành.</span>
+        </div>
+      </section>
+    } @else {
     @if (soUuTien() || soTre()) {
       <div class="banner">★ <span>{{ soUuTien() }} việc ưu tiên chưa hoàn thành · {{ soTre() }} việc trễ hạn</span></div>
     }
@@ -169,6 +292,117 @@ const NGUON_TEN: Record<NguonViec, string> = { HDB: 'HĐ BÁN', HDM: 'HĐ MUA', 
         <span>{{ rows().length }} / {{ dem()['tat'] }} việc</span>
       </div>
     </section>
+    }
+
+    <!-- Chi tiết cảnh báo -->
+    <app-modal [open]="!!cbXem()" [title]="cbXem()?.heThong ? 'Cảnh báo hệ thống' : 'Cảnh báo nhập tay'" size="md" (closed)="cbXemKey.set(null)">
+      @if (cbXem(); as x) {
+        <div class="dt-tags">
+          <span class="cbm" [class]="'cbm ' + x.c.muc.toLowerCase()">{{ x.c.muc }} · {{ MUC_CB_TEN[x.c.muc] }}</span>
+          <span class="cbs" [class.done]="!!x.c.xongLuc"><i class="dot"></i>{{ x.c.xongLuc ? 'Đã xử lý' : 'Đang cảnh báo' }}</span>
+          @if (x.c.nhom !== 'Nhập tay') { <span class="tg">{{ x.c.nhom }}</span> }
+          @if (x.c.nhomTheoDoi) { <span class="tg">Theo dõi: {{ x.c.nhomTheoDoi }}</span> }
+        </div>
+        <h2 style="margin:10px 0 6px">{{ x.c.noiDung }}</h2>
+        <div class="note warn"><b>Ảnh hưởng:</b> {{ x.c.anhHuong }}</div>
+        <div class="dt-grid">
+          <div class="dt-card">
+            <small>Nguồn</small>
+            @if (x.heThong) { <b>Hệ thống tự phát hiện</b><em>tính lại từ dữ liệu mỗi lần xem</em> }
+            @else { <b>{{ store.userName(x.c.nguoiTao) }}</b><em>{{ viMoment(x.c.taoLuc ?? '') }}</em> }
+          </div>
+          <div class="dt-card">
+            <small>Hồ sơ liên quan</small>
+            @if (x.c.hoSo; as h) { <a [routerLink]="h.link" [queryParams]="h.qp" (click)="cbXemKey.set(null)"><b>{{ h.nhan }} ›</b></a> } @else { <b>Không gắn hồ sơ</b> }
+          </div>
+        </div>
+        @if (x.duocXuLy) {
+          <div class="field">
+            <label for="cb-pt">Người phụ trách xử lý</label>
+            <select id="cb-pt" (change)="giaoCB($any($event.target).value)">
+              <option value="" [selected]="!x.c.nguoiPhuTrach">— Chưa giao ({{ x.c.nhomTheoDoi || 'nhóm phụ trách' }} theo dõi) —</option>
+              @for (t of phuTrachOpts(); track t.id) { <option [value]="t.id" [selected]="x.c.nguoiPhuTrach === t.id">{{ t.hoTen }}</option> }
+            </select>
+          </div>
+        } @else if (x.c.nguoiPhuTrach) {
+          <div class="note">Người phụ trách: <b>{{ store.userName(x.c.nguoiPhuTrach) }}</b></div>
+        }
+        @if (x.c.xongLuc) {
+          <div class="note ok">✓ Đã xử lý {{ viMoment(x.c.xongLuc) }} bởi {{ store.userName(x.c.nguoiXuLy) }}@if (x.c.ghiChuXuLy) { — {{ x.c.ghiChuXuLy }} }</div>
+        } @else if (x.duocXuLy) {
+          <div class="field"><label for="cb-gc">Ghi chú xử lý (tuỳ chọn)</label><textarea id="cb-gc" rows="2" placeholder="VD đã nhắc khách, hẹn thanh toán 30/10" [value]="ghiChuXL()" (input)="ghiChuXL.set($any($event.target).value)"></textarea></div>
+        }
+        @if (x.c.lichSu?.length) {
+          <details class="wide">
+            <summary class="lbl">Lịch sử ({{ x.c.lichSu!.length }})</summary>
+            <ol class="lich-su">
+              @for (l of x.c.lichSu!; track $index) {
+                <li><time>{{ viMoment(l.luc) }}</time><span><b>{{ l.hanhDong }}</b> · {{ store.userName(l.nguoi) }}@if (l.ghiChu) { — {{ l.ghiChu }} }</span></li>
+              }
+            </ol>
+          </details>
+        }
+        @if (x.heThong) { <p class="sub" style="margin-top:8px">Cảnh báo tự hết khi điều kiện không còn. Đã xử lý mà mức rủi ro đổi thì cảnh báo hiện lại.</p> }
+      }
+      <div foot class="btn-row">
+        @if (cbXem(); as x) {
+          @if (x.duocXuLy) { <button type="button" class="btn" (click)="xuLyCB(!x.c.xongLuc)">{{ x.c.xongLuc ? '↺ Mở lại cảnh báo' : '✓ Đánh dấu đã xử lý' }}</button> }
+        }
+        <button type="button" class="btn quiet" (click)="cbXemKey.set(null)">Đóng</button>
+      </div>
+    </app-modal>
+
+    <!-- Báo rủi ro (cảnh báo nhập tay) -->
+    <app-modal [open]="!!rr()" title="Báo rủi ro" sub="Rủi ro bạn phát hiện mà hệ thống chưa tự cảnh báo" size="md" [dirty]="dirtyRR()" (closed)="rr.set(null)">
+      @if (rr(); as r) {
+        <div class="vg">
+          <div class="field s12">
+            <label for="rr-nd">Nội dung rủi ro <span class="req">*</span></label>
+            <textarea id="rr-nd" rows="2" placeholder="VD nhà cung cấp báo lô 3 về trễ 5 ngày" [value]="r.noiDung" (input)="setRR({ noiDung: $any($event.target).value })"></textarea>
+          </div>
+          <div class="field s12">
+            <span class="lbl">Mức cảnh báo <span class="req">*</span></span>
+            <div class="rr-muc" role="radiogroup" aria-label="Mức cảnh báo">
+              @for (m of MUC_CB; track m) {
+                <button type="button" role="radio" [attr.aria-checked]="r.muc === m" [class]="'rr-m ' + m.toLowerCase()" [class.on]="r.muc === m" (click)="setRR({ muc: m })">
+                  <b>{{ m }} · {{ MUC_CB_TEN[m] }}</b><small>{{ MUC_CB_MOTA[m] }}</small>
+                </button>
+              }
+            </div>
+          </div>
+          <div class="field s12">
+            <label for="rr-ah">Ảnh hưởng <span class="req">*</span></label>
+            <textarea id="rr-ah" rows="2" placeholder="VD ảnh hưởng lịch giao lô 3 cho khách" [value]="r.anhHuong" (input)="setRR({ anhHuong: $any($event.target).value })"></textarea>
+          </div>
+          <div class="field s6">
+            <label for="rr-td">Người theo dõi</label>
+            <select id="rr-td" (change)="setRR({ nhom: $any($event.target).value })">
+              <option value="" [selected]="!r.nhom">— Chọn nhóm —</option>
+              @for (n of NHOM; track n) { <option [value]="n" [selected]="r.nhom === n">{{ n }}</option> }
+            </select>
+          </div>
+          <div class="field s6">
+            <label for="rr-ng">Hồ sơ liên quan</label>
+            <select id="rr-ng" (change)="setRR({ nguonLoai: $any($event.target).value, hdbId: '', hdmId: '' })">
+              <option value="NOI_BO" [selected]="r.nguonLoai === 'NOI_BO'">Không gắn hồ sơ</option>
+              <option value="HDB" [selected]="r.nguonLoai === 'HDB'">Hợp đồng bán</option>
+              <option value="HDM" [selected]="r.nguonLoai === 'HDM'">Hợp đồng mua</option>
+            </select>
+          </div>
+          @if (r.nguonLoai === 'HDB') {
+            <div class="field s12"><app-pick-go inputId="rr-hdb" [options]="hdbOpts()" [value]="r.hdbId" placeholder="Gõ số HĐ hoặc khách rồi chọn…" (valueChange)="setRR({ hdbId: $event })" /></div>
+          }
+          @if (r.nguonLoai === 'HDM') {
+            <div class="field s12"><app-pick-go inputId="rr-hdm" [options]="hdmOpts()" [value]="r.hdmId" placeholder="Gõ số HĐ hoặc NCC rồi chọn…" (valueChange)="setRR({ hdmId: $event })" /></div>
+          }
+        </div>
+        @if (err()) { <div class="note bad">{{ err() }}</div> }
+      }
+      <div foot class="btn-row">
+        <button type="button" class="btn quiet" (click)="rr.set(null)">Huỷ</button>
+        <button type="button" class="btn" (click)="guiRR()">⚠ Báo rủi ro</button>
+      </div>
+    </app-modal>
 
     <!-- Giao việc / Đặt lịch -->
     <app-modal #mSoan [open]="!!soan()" title="Giao việc / Đặt lịch" sub="Không chọn người nhận = việc của mình" size="md" [dirty]="dirty()" (closed)="soan.set(null)">
@@ -436,12 +670,179 @@ const NGUON_TEN: Record<NguonViec, string> = { HDB: 'HĐ BÁN', HDM: 'HĐ MUA', 
 export class ViecPage {
   private readonly mSoan = viewChild<Modal>('mSoan');
   protected readonly store = inject(Store);
+  private readonly router = inject(Router);
   protected readonly viDate = viDate;
   protected readonly viMoment = viMoment;
   protected readonly NHOM = NHOM_VIEC;
   protected readonly MUC = MUC_UU_TIEN;
   protected readonly PHUT = PHUT_DUYET_HAN;
   protected readonly DS_TT: TrangThaiViec[] = ['Chưa bắt đầu', 'Đang làm', 'Chờ phê duyệt', 'Hoàn thành'];
+  protected readonly MUC_CB = MUC_CANH_BAO;
+  protected readonly MUC_CB_TEN = MUC_CANH_BAO_TEN;
+  protected readonly MUC_CB_MOTA = MUC_CANH_BAO_MOTA;
+  protected readonly MUC_CB_NGAN = MUC_CB_NGAN;
+  protected readonly NHOM_RR = NHOM_RUI_RO;
+  protected readonly capNhat = `${viDate(todayIso())} ${nowIso().slice(11, 16)}`;
+
+  // ── Tab Cảnh báo ──
+  protected readonly tab = signal<'viec' | 'canhbao'>('viec');
+  protected readonly qCB = signal('');
+  protected readonly fTheoDoi = signal('');
+  protected readonly fMucCB = signal<MucCanhBao | ''>('');
+  protected readonly ttCB = signal<'dang' | 'xong'>('dang');
+
+  /** Bản ghi bảng cảnh báo → dòng hiển thị (nhập tay, hoặc vết xử lý đã có). */
+  private vm(c: CanhBaoTay): CanhBao {
+    const hdb = this.store.hdbById(c.hdbId);
+    const hdm = c.hdmId ? this.store.db().hopDongMua.find((m) => m.id === c.hdmId) : undefined;
+    return {
+      key: c.nguon === 'HE_THONG' ? c.khoaHeThong! : c.id,
+      muc: c.muc,
+      nhom: 'Nhập tay',
+      noiDung: c.noiDung,
+      anhHuong: c.anhHuong,
+      hoSo: hdb
+        ? { nhan: hdb.soHD || '(báo giá)', link: ['/hop-dong-ban', hdb.id], mau: 'hdb' }
+        : hdm
+          ? { nhan: hdm.soHD || '(chưa số)', link: ['/hop-dong-mua', hdm.id], mau: 'hdm' }
+          : undefined,
+      theoDoi: c.nguoiPhuTrach ? this.store.userName(c.nguoiPhuTrach) : (c.theoDoi ?? this.store.userName(c.nguoiTao)),
+      nhomTheoDoi: c.theoDoi,
+      nguoiPhuTrach: c.nguoiPhuTrach,
+      nguoiTao: c.nguoiTao,
+      nguoiXuLy: c.nguoiXuLy,
+      ghiChuXuLy: c.ghiChuXuLy,
+      lichSu: c.lichSu,
+      tayId: c.id,
+      xongLuc: c.xuLyLuc,
+      taoLuc: c.taoLuc,
+    };
+  }
+  /** Vết xử lý của cảnh báo hệ thống, theo khoá. */
+  private readonly vetHT = computed(() => new Map(this.store.canhBaoTay().filter((c) => c.nguon === 'HE_THONG' && c.khoaHeThong).map((c) => [c.khoaHeThong!, c])));
+  /**
+   * Cảnh báo hệ thống đang phát hiện, gắn vết xử lý nếu có. Đã xử lý ở đúng mức hiện tại → ẩn khỏi "Đang cảnh báo"
+   * (nằm ở "Đã xử lý"); mức đổi so với lúc xử lý → hiện lại.
+   */
+  private readonly cbTuDong = computed(() =>
+    tinhCanhBaoTuDong(this.store).map((a): CanhBao => {
+      const r = this.vetHT().get(a.key);
+      if (!r) return { ...a, nhomTheoDoi: a.theoDoi as NhomViec };
+      const daXuLy = !!r.xuLyLuc && r.muc === a.muc;
+      return {
+        ...a,
+        nhomTheoDoi: a.theoDoi as NhomViec,
+        theoDoi: r.nguoiPhuTrach ? this.store.userName(r.nguoiPhuTrach) : a.theoDoi,
+        nguoiPhuTrach: r.nguoiPhuTrach,
+        lichSu: r.lichSu,
+        tayId: r.id,
+        xongLuc: daXuLy ? r.xuLyLuc : undefined,
+      };
+    }),
+  );
+  private readonly cbDang = computed(() =>
+    [...this.cbTuDong().filter((c) => !c.xongLuc), ...this.store.canhBaoTay().filter((c) => c.nguon === 'TAY' && !c.xuLyLuc).map((c) => this.vm(c))].sort(soSanhCanhBao),
+  );
+  /** Đã xử lý: mọi bản ghi có xuLyLuc (nhập tay và vết xử lý hệ thống), mới xử lý trước. */
+  private readonly cbXong = computed(() =>
+    this.store
+      .canhBaoTay()
+      .filter((c) => !!c.xuLyLuc)
+      .sort((a, b) => b.xuLyLuc!.localeCompare(a.xuLyLuc!))
+      .map((c) => this.vm(c)),
+  );
+  protected readonly soXuLy = computed(() => this.cbXong().length);
+  protected readonly demCB = computed(() => {
+    const d = { tong: this.cbDang().length, P0: 0, P1: 0, P2: 0 };
+    for (const c of this.cbDang()) d[c.muc]++;
+    return d;
+  });
+  protected readonly dsTheoDoi = computed(() => [...new Set([...this.cbDang(), ...this.cbXong()].map((c) => c.theoDoi))].sort((a, b) => a.localeCompare(b, 'vi')));
+  /** Danh sách theo bộ lọc, gom theo mức P0 → P1 → P2 (mức không có cảnh báo thì ẩn). */
+  protected readonly nhomCB = computed(() => {
+    const q = this.qCB().trim().toLowerCase();
+    const td = this.fTheoDoi();
+    const mu = this.fMucCB();
+    const ds = (this.ttCB() === 'xong' ? this.cbXong() : this.cbDang())
+      .filter((c) => !td || c.theoDoi === td)
+      .filter((c) => !mu || c.muc === mu)
+      .filter((c) => !q || `${c.noiDung} ${c.anhHuong} ${c.hoSo?.nhan ?? ''} ${c.theoDoi} ${c.nhom}`.toLowerCase().includes(q));
+    return MUC_CANH_BAO.map((muc) => ({ muc, ds: ds.filter((c) => c.muc === muc) })).filter((g) => g.ds.length);
+  });
+  protected mauTD(ten: string): string {
+    let h = 0;
+    for (const c of ten) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+    return `m${h % 5}`;
+  }
+  protected moCB(c: CanhBao): void {
+    this.ghiChuXL.set('');
+    this.cbXemKey.set(c.key);
+  }
+
+  // ── Chi tiết cảnh báo (nhập tay hoặc hệ thống): giao người, xử lý, lịch sử ──
+  protected readonly cbXemKey = signal<string | null>(null);
+  protected readonly ghiChuXL = signal('');
+  protected readonly cbXem = computed(() => {
+    const k = this.cbXemKey();
+    const c = k ? ([...this.cbDang(), ...this.cbXong(), ...this.cbTuDong()].find((x) => x.key === k) ?? null) : null;
+    if (!c) return null;
+    const heThong = c.nhom !== 'Nhập tay';
+    return { c, heThong, duocXuLy: this.store.coTheXuLyCanhBao({ nguon: heThong ? 'HE_THONG' : 'TAY', nguoiTao: c.nguoiTao ?? '' }) };
+  });
+  protected readonly phuTrachOpts = computed(() => this.store.taiKhoan().filter((t) => t.trangThai === TT.HOAT_DONG));
+  /** Ảnh chụp cảnh báo hệ thống gửi kèm khi tạo vết xử lý. */
+  private snap(c: CanhBao): { khoa: string; muc: MucCanhBao; noiDung: string; anhHuong: string; theoDoi?: NhomViec; hdbId?: string; hdmId?: string } {
+    const [goc, id] = c.hoSo?.link ?? [];
+    return {
+      khoa: c.key,
+      muc: c.muc,
+      noiDung: c.noiDung,
+      anhHuong: c.anhHuong,
+      theoDoi: c.nhomTheoDoi,
+      hdbId: goc === '/hop-dong-ban' ? id : undefined,
+      hdmId: goc === '/hop-dong-mua' ? id : undefined,
+    };
+  }
+  protected giaoCB(nguoi: string): void {
+    const x = this.cbXem();
+    if (!x) return;
+    const e = x.heThong
+      ? this.store.xuLyCanhBaoHeThong({ ...this.snap(x.c), nguoiPhuTrach: nguoi, xong: !!x.c.xongLuc })
+      : this.store.giaoCanhBao(x.c.tayId!, nguoi);
+    this.store.say(e ?? (nguoi ? 'Đã giao người phụ trách' : 'Đã bỏ người phụ trách'));
+  }
+  protected xuLyCB(xong: boolean): void {
+    const x = this.cbXem();
+    if (!x) return;
+    const e = x.heThong
+      ? this.store.xuLyCanhBaoHeThong({ ...this.snap(x.c), nguoiPhuTrach: x.c.nguoiPhuTrach, xong, ghiChu: this.ghiChuXL() })
+      : this.store.xuLyCanhBao(x.c.tayId!, xong, this.ghiChuXL());
+    this.store.say(e ?? (xong ? 'Đã xử lý cảnh báo' : 'Đã mở lại cảnh báo'));
+    if (!e) this.cbXemKey.set(null);
+  }
+
+  // ── Báo rủi ro ──
+  protected readonly rr = signal<RuiRo | null>(null);
+  protected readonly dirtyRR = dirtyOf(this.rr);
+  protected moRuiRo(): void {
+    this.err.set('');
+    this.rr.set({ noiDung: '', muc: 'P1', anhHuong: '', nhom: '', nguonLoai: 'NOI_BO', hdbId: '', hdmId: '' });
+  }
+  protected setRR(p: Partial<RuiRo>): void {
+    this.rr.update((r) => (r ? { ...r, ...p } : r));
+  }
+  protected guiRR(): void {
+    const r = this.rr();
+    if (!r) return;
+    if (!r.noiDung.trim()) return this.err.set('Nhập nội dung rủi ro');
+    if (!r.anhHuong.trim()) return this.err.set('Nhập ảnh hưởng của rủi ro');
+    if (r.nguonLoai === 'HDB' && !r.hdbId) return this.err.set('Chọn Hợp đồng bán trong danh sách gợi ý');
+    if (r.nguonLoai === 'HDM' && !r.hdmId) return this.err.set('Chọn Hợp đồng mua trong danh sách gợi ý');
+    const e = this.store.baoRuiRo({ muc: r.muc, noiDung: r.noiDung, anhHuong: r.anhHuong, theoDoi: r.nhom, hdbId: r.hdbId, hdmId: r.hdmId });
+    if (e) return this.err.set(e);
+    this.store.say('Đã báo rủi ro');
+    this.rr.set(null);
+  }
 
   protected readonly phamVi = signal<PhamVi>('tatCa');
   protected readonly q = signal('');
@@ -650,11 +1051,12 @@ export class ViecPage {
     inject(DestroyRef).onDestroy(() => clearInterval(id));
     // /viec?moi=<hdbId> → soạn việc gắn sẵn HĐ; /viec?id=<việc> → mở chi tiết.
     const route = inject(ActivatedRoute);
-    const router = inject(Router);
+    const router = this.router;
     const qp = route.snapshot.queryParamMap;
+    if (qp.get('tab') === 'canh-bao') this.tab.set('canhbao');
     if (qp.has('moi')) this.moSoan(qp.get('moi') ?? '');
     if (qp.get('id')) this.moXem(qp.get('id')!);
-    if (qp.has('moi') || qp.has('id')) void router.navigate([], { relativeTo: route, queryParams: { moi: null, id: null }, queryParamsHandling: 'merge', replaceUrl: true });
+    if (qp.has('moi') || qp.has('id')) void router.navigate([], { relativeTo: route, queryParams: { moi: null, id: null, tab: null }, queryParamsHandling: 'merge', replaceUrl: true });
   }
 
   protected tenNhan(v: ViecGiao): string {

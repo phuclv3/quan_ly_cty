@@ -385,14 +385,15 @@ a.kpi:hover, button.kpi:hover { border-color: var(--brand); }
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 7px;
   min-height: 38px; padding: 6px 13px; border-radius: 7px;
-  border: 1px solid var(--brand); background: var(--brand); color: var(--on-brand);
+  border: 1px solid #16642b; background: #16642b; color: var(--on-brand);
   font-weight: 600; font-size: 15px; line-height: 1.6; cursor: pointer; text-decoration: none; white-space: nowrap;
 }
-.btn:hover { background: var(--brand-hi); border-color: var(--brand-hi); }
+.btn:hover { background: #0f4d20; border-color: #0f4d20; }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .btn.quiet { background: var(--surf-2); color: var(--ink-2); border-color: var(--line); font-weight: 600; }
 .btn.quiet:hover { background: var(--surf-3); color: var(--ink); }
-.btn.ok { background: var(--leaf); border-color: var(--leaf); color: #fff; }
+.btn.ok { background: #16642b; border-color: #16642b; color: #fff; }
+.btn.ok:hover { background: #0f4d20; border-color: #0f4d20; }
 .btn.danger { background: var(--surf); color: var(--bad-fg); border-color: color-mix(in srgb, var(--bad-fg) 45%, transparent); font-weight: 600; }
 .btn.danger:hover { background: var(--bad-bg); }
 .btn.sm { min-height: 34px; padding: 4px 11px; font-size: 14.5px; }
@@ -1161,7 +1162,9 @@ input.ngay:not(:disabled):not([readonly]) { cursor: text; }
 }
 @media (min-width: 901px) {
   .shell.collapsed .side-brand span { display: none; }
-  .shell.collapsed .side-brand img { width: 52px; height: 40px; object-fit: cover; object-position: left; }
+  /* Thu gọn: chỉ lấy phần chữ "OXY" của logo, thu nhỏ để không bị cắt chữ Y; bỏ padding để đủ chỗ. */
+  .shell.collapsed .side-brand { padding-left: 0 !important; padding-right: 0 !important; justify-items: center; }
+  .shell.collapsed .side-brand img { width: 52px; max-width: none; height: 34px; object-fit: cover; object-position: left center; }
 }
 
 /* ── Popup chi tiết công việc (viec.ts) ── */
