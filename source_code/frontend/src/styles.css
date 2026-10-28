@@ -1317,7 +1317,75 @@ input.ngay:not(:disabled):not([readonly]) { cursor: text; }
 .btn.f-clear:hover:not(:disabled) { background: var(--surf-3); border-color: transparent; color: var(--ink); }
 @media (max-width: 900px) { .btn { min-height: 42px; } .btn.sm { min-height: 36px; } }
 
-/* Bảng đã vừa khung nhìn (fit-table.ts): ẩn thanh cuộn ngoài. */
-@media (min-width: 901px) { html.fit-lock, html.fit-lock body { overflow: hidden; } }
-@media (min-width: 901px) { html.fit-tbl .main { padding-bottom: 14px; } }
-@media (min-width: 901px) { html.fit-tbl .main :is(.panel, .card):has(app-pager) { margin-bottom: 0; padding-bottom: 4px; } }
+
+/* ══ Kiểu chuẩn toàn hệ thống (theo màn Khách hàng): nút / tab / ô chọn dạng viên thuốc, khối trắng bo tròn, thẻ KPI màu ══ */
+/* Nút */
+.page .btn { border-radius: 999px; border-width: 1.5px; font-size: 13.5px; }
+.page .btn:not(.sm) { min-height: 36px; padding: 4px 16px; }
+.page .btn.sm { min-height: 30px; padding: 2px 12px; font-size: 13px; }
+.page .btn:not(.quiet):not(.danger):not(.ok):not(.danger-solid) { background: #0f5a2a; border-color: #0f5a2a; color: #fff; }
+.page .btn:not(.quiet):not(.danger):not(.ok):not(.danger-solid):hover { background: #0b4620; border-color: #0b4620; }
+.page .btn.quiet:not(.danger) { background: var(--surf); color: #16642b; border-color: #16642b; }
+.page .btn.quiet:not(.danger):hover { background: var(--brand-tint); color: #0f5a2a; }
+.page .btn.quiet.f-clear { background: none; border: 0; color: var(--ink-3); }
+.page .btn.danger { background: var(--surf); }
+
+/* Đầu trang */
+.page .page-head { align-items: center; }
+.page .page-head h1 { font-size: 26px; }
+.page .page-head .actions { align-items: center; }
+
+/* Tab: viên thuốc (thay gạch chân) */
+.page .tabs { position: static; display: inline-flex; max-width: 100%; gap: 4px; padding: 4px; margin: 0 0 14px; border-radius: 999px; background: var(--surf); box-shadow: none; }
+.page .tabs button, .page .tabs a { padding: 7px 18px; border-radius: 999px; font-size: 13.5px; font-weight: 600; color: var(--ink-2); border-bottom: 0; }
+.page .tabs button:hover, .page .tabs a:hover { background: var(--panel); color: var(--ink); }
+.page .tabs .on, .page .tabs .on:hover { background: #0f5a2a; color: #fff; border-bottom: 0; }
+.page .tabs .on .count, .page .tabs .on .tag { background: rgba(255, 255, 255, 0.22); color: #fff; }
+.page .seg { display: inline-flex; gap: 4px; padding: 4px; margin-bottom: 14px; border: 0; border-radius: 999px; background: var(--surf); overflow: visible; }
+.page .seg button { border: 0; background: none; padding: 7px 18px; border-radius: 999px; font-size: 13.5px; font-weight: 600; color: var(--ink-2); cursor: pointer; }
+.page .seg button.on { background: #0f5a2a; color: #fff; }
+
+/* Khối trắng bo tròn */
+.page .card, .page .panel { background: var(--surf); border: 0; border-radius: 18px; box-shadow: none; }
+.page .panel { padding: 16px 18px 18px; margin-bottom: 14px; }
+.page .panel-t { font-size: 15px; margin-bottom: 12px; }
+
+/* Bộ lọc: ô tìm kiếm + ô chọn dạng viên thuốc */
+.page .filters { gap: 10px; margin-bottom: 14px; }
+.page .filters .search { height: 40px; border-radius: 999px; background: var(--surf); border: 0; box-shadow: none; max-width: 300px; }
+.page .filters .fsel select, .page .filters .pick-btn { height: 40px; border-radius: 999px; background: var(--surf); border: 0; font-weight: 600; font-size: 13.5px; padding-inline: 16px; }
+.page .filters .fsel.has > select, .page .filters .multi .pick-btn.has { background: var(--brand-tint); }
+.page .panel .filters .search, .page .card .filters .search, .page .panel .filters .fsel select, .page .card .filters .fsel select,
+.page .panel .filters .pick-btn, .page .card .filters .pick-btn { background: var(--panel); }
+.page .panel .filters .fsel.has > select, .page .card .filters .fsel.has > select, .page .panel .filters .multi .pick-btn.has, .page .card .filters .multi .pick-btn.has { background: var(--brand-tint); }
+.page .filters .f-clear { background: none; border: 0; color: var(--ink-3); font-size: 13px; }
+.page .pager-size select, .page .bulk select { border-radius: 999px; }
+
+/* Bảng */
+@media (min-width: 901px) {
+  .page .tbl { font-size: 13px; }
+  .page .tbl thead th { background: var(--panel); font-size: 12px; white-space: nowrap; }
+  .page .tbl thead th:first-child { border-top-left-radius: 10px; }
+  .page .tbl thead th:last-child { border-top-right-radius: 10px; }
+  .page .tbl tbody td { padding-block: 9px; vertical-align: middle; }
+  .page .tbl td .sub { font-size: 11.5px; }
+}
+.page .panel .tbl-wrap, .page .card .tbl-wrap { border: 0; border-radius: 0; box-shadow: none; background: none; }
+
+/* Nút icon vuông bo góc ở cột thao tác */
+.page .ico-btn { display: inline-grid; place-items: center; width: 30px; height: 30px; border: 0; border-radius: 8px; background: var(--surf-2); color: var(--ink-2); cursor: pointer; text-decoration: none; }
+.page .ico-btn:hover { background: var(--surf-3); }
+
+/* Thẻ KPI: nền gradient, chữ trắng */
+.page .kpis > .kpi { border: 0; border-radius: 14px; color: #fff; box-shadow: none; padding: 14px 16px; background: linear-gradient(135deg, #0f7a3d, #19a05a); }
+.page .kpis > .kpi:nth-child(4n + 2) { background: linear-gradient(135deg, #4bb04f, #7ccf5b); }
+.page .kpis > .kpi:nth-child(4n + 3) { background: linear-gradient(135deg, #14806f, #26a58f); }
+.page .kpis > .kpi:nth-child(4n) { background: linear-gradient(135deg, #e0911c, #f2b13d); }
+.page .kpis > .kpi.bad { background: linear-gradient(135deg, #b8322a, #d9534a); }
+.page .kpis > .kpi.warn { background: linear-gradient(135deg, #e0911c, #f2b13d); }
+.page .kpis > .kpi .kpi-l, .page .kpis > .kpi .kpi-s, .page .kpis > .kpi .kpi-v { color: #fff; }
+.page .kpis > .kpi .kpi-l { text-transform: none; letter-spacing: 0; font-size: 13px; }
+.page .kpis > .kpi .kpi-v { font-size: 30px; }
+.page .kpis > .kpi .kpi-s { font-size: 11.5px; opacity: 0.92; line-height: 1.4; }
+/* Tab / nút chọn nằm trong khối trắng: nền xám nhạt để thấy khung */
+.page .card .tabs, .page .panel .tabs, .page .card .seg, .page .panel .seg { background: var(--panel); }

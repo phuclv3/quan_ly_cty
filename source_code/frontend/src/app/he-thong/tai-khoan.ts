@@ -224,8 +224,13 @@ interface FormTK {
       .nhom-opt input { margin-top: 4px; flex: 0 0 auto; }
       .nhom-opt > span { display: flex; flex-wrap: wrap; gap: 2px 8px; align-items: center; min-width: 0; }
       .nhom-opt small { flex-basis: 100%; }
-      .tabs button { display: grid; text-align: left; line-height: 1.25; }
-      .tab-s { font-size: 12.5px; font-weight: 400; color: var(--ink-3); }
+      .tabs { border-radius: 22px; }
+      .tabs button { display: grid; grid-template-columns: 1fr auto; align-items: center; column-gap: 10px; text-align: left; line-height: 1.25; padding: 8px 18px; border-radius: 18px; }
+      .tab-t { grid-column: 1; }
+      .tabs button .count { grid-column: 2; grid-row: 1; position: static; min-width: 22px; height: 20px; padding: 0 7px; font-size: 12px; line-height: 20px; }
+      .tabs button.on .count { background: rgba(255, 255, 255, 0.22) !important; color: #fff !important; }
+      .tab-s { grid-column: 1 / -1; }
+      .tab-s { font-size: 12px; font-weight: 400; color: var(--ink-3); }
       .tabs button.on .tab-s { color: inherit; opacity: 0.8; }
       .tk-tom { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
       .tk-help summary { cursor: pointer; color: var(--ink-3); font-size: 14px; }
@@ -235,9 +240,6 @@ interface FormTK {
       .tk-mail { overflow-wrap: anywhere; }
       .av { flex: 0 0 auto; display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--brand-tint); color: var(--brand); font-weight: 700; }
       .tom-quyen { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 12px; padding: 10px 12px; border-radius: 8px; background: var(--surf-2); }
-      .seg { display: inline-flex; border: 1px solid var(--line-2); border-radius: 999px; overflow: hidden; margin-bottom: 12px; }
-      .seg button { font: inherit; padding: 6px 16px; border: 0; background: var(--surf); cursor: pointer; color: var(--ink-2); }
-      .seg button.on { background: var(--brand); color: #fff; font-weight: 600; }
     `,
   ],
 })
