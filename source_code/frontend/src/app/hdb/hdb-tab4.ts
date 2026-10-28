@@ -20,7 +20,7 @@ import { Icon } from '../shared/icon';
   ],
   template: `
     <div>
-      <section class="card">
+      <section class="card blk xanh">
         <div class="section-title">
           <h2>Chi phí thực hiện HĐ</h2>
           <div class="btn-row">
@@ -53,7 +53,7 @@ import { Icon } from '../shared/icon';
         </div>
       </section>
 
-      <section class="card">
+      <section class="card blk duong">
         <h2 class="section-title">Lợi nhuận gộp tạm tính</h2>
         <app-buoc [rows]="buoc()" />
       </section>

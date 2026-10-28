@@ -31,7 +31,7 @@ interface ThuNhap {
       <app-kpi label="Công nợ phải thu" [value]="money(c().conPhaiThu)" [sub]="c().phat ? 'Giá trị quyết toán − Σ thực thu đã duyệt' : 'Sau VAT − Σ thực thu đã duyệt'" [tone]="c().quaHan ? 'bad' : c().conPhaiThu > 0 ? 'warn' : 'ok'" />
     </div>
 
-    <section class="card">
+    <section class="card blk xanh">
       <div class="section-title">
         <h2>Sản phẩm & giá (chọn từ kho)</h2>
         <div class="btn-row">
@@ -98,7 +98,7 @@ interface ThuNhap {
     </section>
 
     <div class="grid c2">
-      <section class="card">
+      <section class="card blk duong">
         <h2 class="section-title">Giá trị HĐ & Chênh lệch</h2>
         <div class="form-grid">
           <div class="field">
@@ -147,14 +147,14 @@ interface ThuNhap {
         @if (f().phatHD) { <p class="sub">HĐ ký 100% giá trị nhưng quyết toán phát sinh phạt → công nợ phải thu tính theo Giá trị quyết toán.</p> }
       </section>
 
-      <section class="card">
+      <section class="card blk vang">
         <h2 class="section-title">Thuế TNDN trên chênh lệch</h2>
         <app-buoc [rows]="buocThue()" />
         <p class="sub">Tham số lưu theo HĐ lúc tạo: mốc {{ pct(f().thamSoThue.nguong) }} × GTHĐ thực tế, mức {{ pct(f().thamSoThue.muc1) }} / {{ pct(f().thamSoThue.muc2) }}. Chênh lệch ≤ 0 → thuế = 0.</p>
       </section>
     </div>
 
-    <section class="card">
+    <section class="card blk tim">
       <div class="section-title">
         <h2>Tiền trả khách (hoa hồng)</h2>
         <span class="sub">Lưu ở Chi phí thực hiện HĐ loại "Hoa hồng kinh doanh"</span>
@@ -196,7 +196,7 @@ interface ThuNhap {
       }
     </section>
 
-    <section class="card">
+    <section class="card blk xanh">
       <div class="section-title">
         <h2>Đợt thanh toán</h2>
         <span class="sub">Tối đa {{ max() }} đợt · Σ đợt {{ money(tongDot()) }} / {{ money(c().sauVAT) }}</span>

@@ -372,7 +372,7 @@ interface TraForm {
 
         @case ('4') {
           <h3 class="section-title">Tổng giá trị HĐ</h3>
-          <section class="card stack">
+          <section class="card stack blk xanh">
             <div class="form-grid">
               <div class="field"><span class="lbl">Σ Thành tiền VNĐ các dòng</span><div class="ro num" title="Σ SL × Đơn giá × Tỷ giá (Tab 3)">{{ money(c.tongDong) }}</div></div>
               @for (nt of nguyenTe(); track nt.t) {
@@ -475,7 +475,7 @@ interface TraForm {
           @if (tongDot() !== c.tong && m.dotTT.length) { <p class="hint muted">Σ số tiền các đợt ({{ money(tongDot()) }}) khác Tổng giá trị HĐ ({{ money(c.tong) }}).</p> }
 
           <h3 class="section-title">Xuất hoá đơn & Tiến độ hàng hoá</h3>
-          <section class="card stack">
+          <section class="card stack blk duong">
             <div class="form-grid">
               <div class="field">
                 <label for="xhd">NCC đã xuất hoá đơn</label>

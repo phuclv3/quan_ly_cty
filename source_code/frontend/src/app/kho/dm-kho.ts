@@ -71,7 +71,8 @@ import { ImportDm } from '../shared/import-dm';
 
     <app-modal #mKho [open]="!!f()" [title]="f()?.id ? 'Sửa kho ' + f()!.id : 'Thêm kho'" size="sm" [dirty]="dirty()" (closed)="f.set(null)">
       @if (f(); as k) {
-        <div class="form-grid">
+        <div class="form-grid blk xanh">
+<h3 class="blk-t">Thông tin kho</h3>
           <div class="field"><span class="lbl">Mã kho</span><div class="ro">{{ k.id || 'Tự sinh khi lưu' }}</div></div>
           <div class="field"><span class="lbl">Loại</span><div class="ro">Kho thường</div></div>
           <div class="field wide"><label for="k-ten">Tên / địa điểm <span class="req">*</span></label><input id="k-ten" [value]="k.ten" (input)="set({ ten: $any($event.target).value })" /></div>

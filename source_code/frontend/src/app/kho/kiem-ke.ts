@@ -126,7 +126,8 @@ const dongRong = (loaiHang = ''): DongForm => ({ loaiHang, soLuong: 0, tenHang: 
     <!-- Nhập số đếm -->
     <app-modal #mKK [open]="!!f()" [title]="f()?.id ? 'Sửa đợt kiểm kê' : 'Thêm đợt kiểm kê'" size="lg" [dirty]="dirty()" (closed)="f.set(null)">
       @if (f(); as x) {
-        <div class="form-grid">
+        <div class="form-grid blk xanh">
+<h3 class="blk-t">Thông tin đợt kiểm kê</h3>
           <div class="field"><label for="kk-ngay">Ngày kiểm kê <span class="req">*</span></label><input id="kk-ngay" type="date" [value]="x.ngay" (input)="set({ ngay: $any($event.target).value })" /></div>
           <div class="field">
             <span class="lbl">Kho <span class="req">*</span></span>
@@ -134,6 +135,7 @@ const dongRong = (loaiHang = ''): DongForm => ({ loaiHang, soLuong: 0, tenHang: 
           </div>
           <div class="field wide"><label for="kk-gc">Ghi chú</label><input id="kk-gc" [value]="x.ghiChu" (input)="set({ ghiChu: $any($event.target).value })" /></div>
         </div>
+        <section class="blk duong">
         <h3 class="section-title">
           Số đếm thực tế
           <span class="btn-row">
@@ -166,6 +168,7 @@ const dongRong = (loaiHang = ''): DongForm => ({ loaiHang, soLuong: 0, tenHang: 
           </table>
         </div>
         <p class="hint muted">Cùng một mã có thể nhiều dòng (khác xuất xứ / nồng độ) — khi đối chiếu tự cộng theo mã.</p>
+        </section>
         @if (err()) { <div class="note bad">{{ err() }}</div> }
       }
       <div foot class="btn-row">

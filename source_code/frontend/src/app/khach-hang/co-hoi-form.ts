@@ -22,7 +22,8 @@ const BLANK: CoHoiKH = { id: '', huongBan: '', giaTri: 0, giaiDoan: 'Mới' };
       [sub]="f().id ? '' : 'Cơ hội gắn với một khách hàng'" [dirty]="dirty()" (closed)="closed.emit()">
       @let c = f();
       @if (err()) { <div class="note bad">{{ err() }}</div> }
-      <div class="form-grid cols-3">
+      <div class="form-grid blk xanh cols-3">
+<h3 class="blk-t">Thông tin cơ hội</h3>
         <div class="field span-3">
           <label for="chf-kh">Khách hàng <span class="req">*</span></label>
           <app-pick-go inputId="chf-kh" [options]="khOpts()" [value]="khId()" placeholder="Gõ tên khách hàng…" [disabled]="!!c.id" (valueChange)="khId.set($event)" />

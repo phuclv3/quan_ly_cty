@@ -26,7 +26,8 @@ import { TT, ttNhan } from '../core/trang-thai';
         @if (err()) { <div class="note bad">{{ err() }}</div> }
         @if (canhBaoHH(); as w) { <div class="note warn">{{ w }}</div> }
 
-        <div class="form-grid">
+        <div class="form-grid blk xanh">
+<h3 class="blk-t">Thông tin chi phí</h3>
           <div class="field"><span class="lbl">Mã CP</span><div class="ro">{{ c.maCP || 'Tự sinh khi lưu (CP' + c.ngay.slice(2, 4) + '-nnnn)' }}</div></div>
           <div class="field">
             <label>Số HĐ bán <span class="req">*</span></label>

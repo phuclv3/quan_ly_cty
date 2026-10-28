@@ -99,7 +99,8 @@ const quyenSua = (p: PhieuKho): Perm =>
             @if (choXoa(p)) { <app-tt v="Chờ xoá" /> }
             @if (p.kho === ctId) { <span class="tag mute">Chuyển thẳng — không tính tồn</span> }
           </div>
-          <div class="form-grid">
+          <div class="form-grid blk xanh">
+<h3 class="blk-t">Thông tin phiếu</h3>
             <div class="field">
               <label for="pk-ngay">Ngày <span class="req">*</span></label>
               <input id="pk-ngay" type="date" [value]="ngay()" [disabled]="!suaDuoc(p)" (input)="ngay.set($any($event.target).value)" />
@@ -129,8 +130,10 @@ const quyenSua = (p: PhieuKho): Perm =>
               <textarea id="pk-gc" rows="2" [value]="ghiChu()" [disabled]="!suaDuoc(p)" (input)="ghiChu.set($any($event.target).value)"></textarea>
             </div>
           </div>
+          <section class="blk duong">
           <h3 class="section-title">Dòng hàng</h3>
           <ng-container [ngTemplateOutlet]="bang" />
+          </section>
           @if (suaLo(); as s) {
             <div class="card" style="margin-top:10px">
               <h3 class="section-title">Sửa lô {{ lo(p, s.i) }} · {{ p.dong[s.i].loaiHang }} (SL {{ p.dong[s.i].soLuong }} — không sửa)</h3>

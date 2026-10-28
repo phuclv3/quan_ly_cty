@@ -65,7 +65,8 @@ const dongRong = (): DongNhap => ({ loaiHang: '', lo: '', soLuong: 0, tenTrenHD:
     </section>
 
     <app-modal #mGH [open]="open()" title="Ghi nhận giao hàng" [sub]="'HĐ ' + h().soHD" size="lg" [dirty]="dirty()" (closed)="open.set(false)">
-      <div class="form-grid">
+      <div class="form-grid blk xanh">
+<h3 class="blk-t">Thông tin giao hàng</h3>
         <div class="field">
           <label for="gh-ngay">Ngày giao <span class="req">*</span></label>
           <input id="gh-ngay" type="date" [value]="ngay()" (input)="ngay.set($any($event.target).value)" />

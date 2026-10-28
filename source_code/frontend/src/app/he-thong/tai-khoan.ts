@@ -148,7 +148,8 @@ interface FormTK {
     <!-- Thêm / sửa tài khoản -->
     <app-modal #mTK [open]="!!form()" [title]="form()?.id ? 'Sửa tài khoản' : 'Thêm tài khoản'" size="md" [dirty]="dirtyForm()" (closed)="form.set(null)">
       @if (form(); as f) {
-        <div class="form-grid">
+        <div class="form-grid blk xanh">
+<h3 class="blk-t">Thông tin tài khoản</h3>
           <div class="field">
             <label for="tk-ten">Họ tên <span class="req">*</span></label>
             <input id="tk-ten" [value]="f.hoTen" (input)="set('hoTen', $any($event.target).value)" />
@@ -166,6 +167,7 @@ interface FormTK {
             </div>
           }
         </div>
+        <section class="blk tim">
         <div class="field">
           <span class="lbl">Nhóm quyền <span class="req">*</span> <span class="muted" style="font-weight:400">— chọn nhiều, quyền là hợp của các nhóm</span></span>
           <div class="nhom-pick">
@@ -187,6 +189,7 @@ interface FormTK {
           @for (x of tomTat(f.nhom); track x.module) { <span class="chip" [class.ok]="x.muc === 'Duyệt'">{{ x.module }}: {{ x.muc }}</span> }
           @empty { <span class="muted">chưa có quyền nào — hãy chọn ít nhất một nhóm</span> }
         </div>
+        </section>
         @if (loi()) { <div class="note bad">{{ loi() }}</div> }
       }
       <div foot class="btn-row">

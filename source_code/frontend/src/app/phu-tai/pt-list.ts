@@ -198,7 +198,8 @@ const formRong = (): FormDT => ({ ngay: todayIso(), chieu: 'Thu về PT', hdptId
 
     <app-modal #mDong [open]="form() !== null" title="Thêm dòng điều chỉnh quỹ ảo" sub="Dòng nhập tay — bắt buộc lý do" size="sm" [dirty]="dirtyForm()" (closed)="form.set(null)">
       @if (form(); as fm) {
-        <div class="form-grid">
+        <div class="form-grid blk xanh">
+<h3 class="blk-t">Dòng điều chỉnh quỹ ảo</h3>
           <div class="field">
             <label for="dt-ngay">Ngày <span class="req">*</span></label>
             <input id="dt-ngay" type="date" [value]="fm.ngay" (input)="setF('ngay', $any($event.target).value)" />

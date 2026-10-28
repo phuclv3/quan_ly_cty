@@ -99,7 +99,8 @@ import { ImportDm } from '../shared/import-dm';
     <app-modal #mNcc [open]="!!f()" [title]="f()?.id ? 'Sửa nhà cung cấp ' + f()!.id : 'Thêm nhà cung cấp'" [dirty]="dirty()" (closed)="dong()">
       @if (err()) { <div class="note bad">{{ err() }}</div> }
       @if (f(); as d) {
-        <div class="form-grid">
+        <div class="form-grid blk xanh">
+<h3 class="blk-t">Thông tin nhà cung cấp</h3>
           <div class="field wide"><label for="ncc-ten">Tên nhà cung cấp <span class="req">*</span></label><input id="ncc-ten" [value]="d.ten" (input)="set('ten', $any($event.target).value)" /></div>
           <div class="field">
             <label for="ncc-tt">Trạng thái</label>

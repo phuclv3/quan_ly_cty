@@ -14,8 +14,9 @@ import { viDate } from '../core/util';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [PickGo, ThemDoiTac, TraMst],
   template: `
-    <section class="card">
-      <h2 class="section-title">Thông tin chung</h2>
+    <section class="card form-card">
+      <fieldset class="form-sec">
+      <legend>Thông tin hợp đồng</legend>
       <div class="form-grid">
         <div class="field">
           <label for="hdb-so">Số HĐ bán @if (f().trangThai !== TT.BAO_GIA) { <span class="req">*</span> }</label>
@@ -45,6 +46,12 @@ import { viDate } from '../core/util';
           <app-pick-go inputId="hdb-sale" [options]="saleOpts()" [value]="f().sale" [disabled]="!edit() || store.level('hdb') === 'own'" placeholder="Gõ tên hoặc email Sale…" (valueChange)="set('sale', $event)" />
           @if (edit() && store.level('hdb') === 'own') { <span class="hint">Sale chỉ lập / sửa HĐ của chính mình.</span> }
         </div>
+      </div>
+      </fieldset>
+
+      <fieldset class="form-sec">
+      <legend>Khách hàng</legend>
+      <div class="form-grid">
         <div class="field wide">
           <label for="hdb-kh">Khách hàng <span class="req">*</span></label>
           <app-pick-go inputId="hdb-kh" [options]="khOpts()" [value]="f().maKH" [disabled]="!edit() || khoaDinhDanh()" placeholder="Gõ tên hoặc MST khách hàng…" (valueChange)="chonKH($event)" />
@@ -73,11 +80,18 @@ import { viDate } from '../core/util';
             <div class="ro">{{ f().diaChi || '—' }}</div>
           }
         </div>
+      </div>
+      </fieldset>
+
+      <fieldset class="form-sec">
+      <legend>Ghi chú</legend>
+      <div class="form-grid">
         <div class="field full">
           <label for="hdb-gc">Ghi chú</label>
           <textarea id="hdb-gc" rows="2" [value]="f().ghiChu" [disabled]="!edit()" (input)="set('ghiChu', $any($event.target).value)"></textarea>
         </div>
       </div>
+      </fieldset>
     </section>
   `,
 })

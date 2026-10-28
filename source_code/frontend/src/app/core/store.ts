@@ -494,6 +494,17 @@ export class Store {
     return out.sort((a, b) => a.label.localeCompare(b.label, 'vi'));
   }
 
+  /** Mọi tài khoản đang hoạt động (người phụ trách khách hàng…), sắp theo tên; giá trị đang gán mà nay đã khoá vẫn giữ lại. */
+  nguoiOpts(dangChon?: string): { value: string; label: string; hint: string }[] {
+    const ds = this.taiKhoan().filter((t) => t.trangThai === TT.HOAT_DONG);
+    const out = ds.map((t) => ({ value: t.id, label: t.hoTen, hint: t.email }));
+    if (dangChon && !ds.some((t) => t.id === dangChon)) {
+      const t = this.db().taiKhoan.find((x) => x.id === dangChon);
+      out.push({ value: dangChon, label: t?.hoTen ?? dangChon, hint: (t?.email ?? '') + ' · không còn hoạt động' });
+    }
+    return out.sort((a, b) => a.label.localeCompare(b.label, 'vi'));
+  }
+
   // ── Đếm việc chờ (menu, dashboard) ───────────────────────────────────
   readonly phieuChoDuyet = computed(() => this.db().phieuThuChi.filter((p) => p.trangThai === TT.CHO_DUYET));
   readonly cpChoDuyet = computed(() => this.db().chiPhiHD.filter((p) => p.trangThai === TT.CHO_DUYET));

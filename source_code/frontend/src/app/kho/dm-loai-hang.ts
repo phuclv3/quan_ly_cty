@@ -119,6 +119,7 @@ import { ImportDm } from '../shared/import-dm';
 
     <app-modal #mLh [open]="!!f()" [title]="f()?.isNew ? 'Thêm mã hàng' : 'Sửa mã hàng ' + (f()?.l?.id ?? '')" [dirty]="dirty()" (closed)="f.set(null)">
       @if (f(); as x) {
+        <section class="blk xanh">
         <h3 class="section-title">Trường cố định</h3>
         <div class="form-grid">
           <div class="field">
@@ -147,6 +148,8 @@ import { ImportDm } from '../shared/import-dm';
             <input id="lh-mota" placeholder="VD Khí chuẩn NO trong N2, bình nhôm 8L" [value]="x.l.moTa ?? ''" (input)="set({ moTa: $any($event.target).value })" />
           </div>
         </div>
+        </section>
+        <section class="blk vang">
         <h3 class="section-title">Tên tham chiếu</h3>
         <div class="form-grid">
           <div class="field full">
@@ -155,6 +158,7 @@ import { ImportDm } from '../shared/import-dm';
           </div>
           <label class="check-row wide"><input type="checkbox" [checked]="x.l.dangDung" (change)="set({ dangDung: $any($event.target).checked })" /> Đang dùng</label>
         </div>
+        </section>
         @if (!x.isNew) { <p class="hint muted">Nhóm, loại khí, thể tích là phần cấu thành mã — không sửa; cần khác thì tạo mã mới và Ngưng mã cũ.</p> }
         @if (err()) { <div class="note bad">{{ err() }}</div> }
       }

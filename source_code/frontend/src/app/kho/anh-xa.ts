@@ -97,7 +97,8 @@ type Pick2 = { ten: string; theTich?: string };
 
     <app-modal #mAX [open]="!!f()" [title]="f()?.id ? 'Gán mã — ' + f()!.ten : 'Thêm tên hàng'" [dirty]="dirty()" (closed)="f.set(null)">
       @if (f(); as x) {
-        <div class="form-grid">
+        <div class="form-grid blk xanh">
+<h3 class="blk-t">Ánh xạ tên hàng</h3>
           @if (!x.id) {
             <div class="field full"><label for="ax-ten">Tên hàng trong hợp đồng <span class="req">*</span></label><input id="ax-ten" [value]="x.ten" (input)="set({ ten: $any($event.target).value })" /></div>
             <div class="field"><label for="ax-tt">Thể tích</label><input id="ax-tt" placeholder="8L" [value]="x.theTich" (input)="set({ theTich: $any($event.target).value })" /></div>

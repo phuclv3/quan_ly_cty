@@ -51,7 +51,8 @@ interface Card {
       <app-modal #mNguon [open]="true" [title]="isNew() ? 'Thêm nguồn tiền' : 'Sửa nguồn tiền ' + n.id" size="md" [dirty]="dirty()" (closed)="f.set(null)">
         @if (err()) { <div class="note bad">{{ err() }}</div> }
         @if (khoa()) { <div class="note info">Nguồn đã có phiếu Đã duyệt — khoá Số dư đầu kỳ và Ngày đầu kỳ.</div> }
-        <div class="form-grid">
+        <div class="form-grid blk xanh">
+<h3 class="blk-t">Thông tin nguồn tiền</h3>
           <div class="field"><label for="nt-id">Mã nguồn <span class="req">*</span></label><input id="nt-id" [disabled]="!isNew()" [value]="n.id" (input)="set('id', $any($event.target).value.trim())" /></div>
           <div class="field"><label for="nt-ten">Tên <span class="req">*</span></label><input id="nt-ten" placeholder="Tiền mặt, UNC-MSB…" [value]="n.ten" (input)="set('ten', $any($event.target).value)" /></div>
           <div class="field">

@@ -44,7 +44,8 @@ import { TT, ttNhan } from '../core/trang-thai';
         @if (choXoa()) { <div class="note bad">Phiếu đang có yêu cầu xoá chờ duyệt — khoá sửa.</div> }
         @if (err()) { <div class="note bad">{{ err() }}</div> }
 
-        <div class="form-grid">
+        <div class="form-grid blk xanh">
+<h3 class="blk-t">Thông tin phiếu</h3>
           <div class="field"><span class="lbl">Số phiếu</span><div class="ro">{{ p.soPhieu || 'Tự sinh khi lưu (TC' + p.ngayLap.slice(2, 4) + p.ngayLap.slice(5, 7) + '-nnn)' }}</div></div>
           <div class="field">
             <label for="pf-loai">Loại phiếu</label>

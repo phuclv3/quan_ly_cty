@@ -999,15 +999,14 @@ tr.hilite > td { background: var(--warn-bg) !important; }
 }
 
 /* ── Form chia nhóm (fieldset + legend), lưới cột cố định ──────────── */
-.form-card { display: grid; gap: 0; padding: 0; overflow: hidden; }
-.form-sec { margin: 0; padding: 18px 20px 20px; border: 0; border-top: 1px solid var(--line); min-width: 0; }
-.form-sec:first-child { border-top: 0; }
+.form-card { display: grid; gap: 14px; padding: 14px; overflow: hidden; background: transparent; border: 0; box-shadow: none; }
+.form-sec { margin: 0; padding: 18px 20px 20px; min-width: 0; }
 .form-sec > legend {
   float: left; width: 100%; margin: 0 0 14px; padding: 0;
   display: flex; align-items: center; gap: 10px;
-  font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--brand);
+  font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #0f5a2a;
 }
-.form-sec > legend::before { content: ''; width: 4px; height: 16px; border-radius: 2px; background: var(--brand); }
+.form-sec > legend::before { content: ''; width: 4px; height: 16px; border-radius: 2px; background: linear-gradient(180deg, #4bb04f, #7ccf5b); }
 .form-sec > legend + * { clear: both; }
 .form-grid.cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 18px; }
 .form-grid .span-2 { grid-column: span 2; }
@@ -1389,3 +1388,28 @@ input.ngay:not(:disabled):not([readonly]) { cursor: text; }
 .page .kpis > .kpi .kpi-s { font-size: 11.5px; opacity: 0.92; line-height: 1.4; }
 /* Tab / nút chọn nằm trong khối trắng: nền xám nhạt để thấy khung */
 .page .card .tabs, .page .panel .tabs, .page .card .seg, .page .panel .seg { background: var(--panel); }
+
+/* ── Khối trong form (thẻ trắng bo tròn, vạch nhấn gradient xanh lá) ───────────
+   Dùng cho: .blk (popup), fieldset.form-sec (HĐ mua / bán). Nền popup xám xanh nhạt để thẻ nổi lên. */
+.blk, .form-sec {
+  background: #fff;
+  border: 1px solid #e3ebe5;
+  border-radius: 16px;
+  box-shadow: 0 1px 2px rgba(16, 40, 28, 0.04), 0 6px 18px rgba(16, 40, 28, 0.05);
+}
+.blk { padding: 14px 16px 16px; }
+.blk > .section-title:first-child, .blk > h3:first-child { margin-top: 0; }
+.blk > .section-title, .blk > h3 { font-size: 13px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #0f5a2a; }
+.modal-body:has(> .blk, > .cols) { background: #f4f7f5; }
+.form-card { background: #f4f7f5; border-radius: var(--radius); }
+.blk :is(.tbl-wrap) { background: #fff; }
+
+/* Chuẩn chung theo form Thêm khách hàng: tiêu đề khối có vạch nhấn gradient, nhãn đậm vừa, chip chọn nhanh. */
+.blk > .blk-t, .blk > .section-title, .blk > h3 { display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #0f5a2a; }
+.blk > .blk-t { grid-column: 1 / -1; margin: 0 0 2px; }
+.blk > .blk-t::before, .blk > .section-title::before, .blk > h3::before { content: ''; width: 4px; height: 14px; border-radius: 2px; background: linear-gradient(180deg, #4bb04f, #7ccf5b); flex: 0 0 auto; }
+.blk .field > label, .blk .field > .lbl, .form-sec .field > label, .form-sec .field > .lbl { font-size: 12.5px; font-weight: 600; color: var(--ink-2); }
+.chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip-row button { border: 1px solid transparent; background: #eef2ef; border-radius: 999px; padding: 6px 14px; font-size: 13px; font-weight: 600; color: var(--ink-2); cursor: pointer; }
+.chip-row button:hover { background: #e1e9e3; }
+.chip-row button.on { background: linear-gradient(135deg, #4bb04f, #7ccf5b); color: #fff; box-shadow: 0 2px 6px rgba(75, 176, 79, 0.35); }

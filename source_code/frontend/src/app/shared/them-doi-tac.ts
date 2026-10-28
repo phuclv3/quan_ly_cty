@@ -36,7 +36,8 @@ const RONG: Nhap = { ten: '', mst: '', diaChi: '', quocGia: '', nguoiLienHe: '',
           <button type="button" class="linkish" (click)="chonCo(t.id)">Dùng {{ nhan() }} này</button>
         </div>
       }
-      <div class="form-grid">
+      <div class="form-grid blk xanh">
+<h3 class="blk-t">Thông tin đối tác</h3>
         <div class="field">
           <label for="tdt-mst">MST @if (loai() === 'kh') { <span class="req">*</span> }</label>
           <input id="tdt-mst" class="mono" placeholder="10 số" [required]="loai() === 'kh'" [value]="f().mst" (input)="set('mst', $any($event.target).value.trim())" />

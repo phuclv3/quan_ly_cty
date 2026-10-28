@@ -49,7 +49,8 @@ const xuatRong = (): DongXuatF => ({ loaiHang: '', lo: '', soLuong: 0, tenTrenHD
   imports: [Modal, Pick],
   template: `
     <app-modal #mTay [open]="open()" [title]="f().loai === 'Nhập' ? 'Lập phiếu nhập kho' : 'Lập phiếu xuất kho'" [sub]="f().loai === 'Nhập' ? 'Nhập kho' : 'Nguồn gốc: Nhập tay – điều chỉnh'" size="lg" [dirty]="dirty()" (closed)="closed.emit()">
-      <div class="form-grid">
+      <div class="form-grid blk xanh">
+<h3 class="blk-t">Thông tin phiếu</h3>
         <div class="field"><label for="pt-ngay">Ngày <span class="req">*</span></label><input id="pt-ngay" type="date" [value]="f().ngay" (input)="set('ngay', $any($event.target).value)" /></div>
         <div class="field">
           <label for="pt-loai">Loại <span class="req">*</span></label>
@@ -86,6 +87,7 @@ const xuatRong = (): DongXuatF => ({ loaiHang: '', lo: '', soLuong: 0, tenTrenHD
         }
       </div>
 
+      <section class="blk duong">
       @if (f().loai === 'Nhập') {
         <h3 class="section-title">Lô nhập <button type="button" class="btn sm quiet" (click)="themNhap()">+ Thêm dòng</button></h3>
         <div class="note warn">Lưu ý: mã nhập kho và tên hàng xuất hoá đơn phải ghi đúng theo hoá đơn NCC gửi về.</div>
@@ -158,8 +160,9 @@ const xuatRong = (): DongXuatF => ({ loaiHang: '', lo: '', soLuong: 0, tenTrenHD
         <p class="hint muted">Giá vốn lấy đúng đơn giá của lô bị trừ. Không chọn lô thì hệ thống trừ lô nhập trước, có thể tách nhiều lô. Không cho xuất quá tồn, không trừ lô nhập sau ngày xuất.
           Gõ "Tên hàng trên HĐ" đã gán ở tab Ánh xạ tên bán → tự điền mã hàng + lô hay dùng.</p>
       }
+      </section>
 
-      <div class="form-grid">
+      <div class="form-grid blk vang">
         <div class="field wide">
           <label for="pt-lydo">Lý do @if (!coChungTu()) { <span class="req">*</span> }</label>
           <textarea id="pt-lydo" rows="2" [placeholder]="f().loai === 'Nhập' ? 'Bắt buộc khi không có số hoá đơn: tồn đầu kỳ, hàng trả lại, kiểm kê…' : 'Bắt buộc khi không gắn HĐ bán: mượn, hỏng, kiểm kê…'" [value]="f().lyDo" (input)="set('lyDo', $any($event.target).value)"></textarea>

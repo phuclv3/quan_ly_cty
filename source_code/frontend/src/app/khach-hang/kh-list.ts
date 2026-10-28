@@ -96,7 +96,7 @@ const optsTT = (xs: readonly string[]) => xs.map((x) => ({ value: x, label: ttNh
         @if (phanBo()) {
           <select aria-label="Giao cho Sale" [value]="giaoCho()" (change)="giaoCho.set($any($event.target).value)">
             <option value="">— Trả về chưa phân bổ —</option>
-            @for (o of store.saleOpts(); track o.value) { <option [value]="o.value" [selected]="o.value === giaoCho()">{{ o.label }} — {{ o.hint }}</option> }
+            @for (o of store.nguoiOpts(); track o.value) { <option [value]="o.value" [selected]="o.value === giaoCho()">{{ o.label }} — {{ o.hint }}</option> }
           </select>
           <button type="button" class="btn sm" (click)="phanBoChon()">Phân bổ</button>
         }

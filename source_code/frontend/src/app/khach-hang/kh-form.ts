@@ -20,32 +20,28 @@ type F = Exclude<keyof KhachHang, 'id' | 'chamSoc'>;
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterLink, Modal, PickGo, MoneyInput, TraMst],
   styles: `
-    .cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; align-items: start; }
+    .cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; align-items: stretch; }
     @media (max-width: 860px) { .cols { grid-template-columns: minmax(0, 1fr); } }
-    .col { display: grid; gap: 14px; }
-    .cd { border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px 16px; background: var(--surf); }
-    .cd.dn { background: #eef8f0; border-color: #cfe8d5; }
-    .cd.lh { background: #eef4fc; border-color: #d3e1f4; }
-    .cd.lh > h3 { color: #2c5d94; } .cd.lh > h3::before { background: #5b8fd1; }
-    .cd.kd { background: #fff7e8; border-color: #f2dfb6; }
-    .cd.kd > h3 { color: #8a5a00; } .cd.kd > h3::before { background: #e0911c; }
-    .cd.gc { background: #f5f3fb; border-color: #dfdaf0; }
-    .cd.gc > h3 { color: #5a45a3; } .cd.gc > h3::before { background: #7b5cc4; }
-    .cd input:not([type=checkbox]), .cd select, .cd textarea { background-color: #fff; }
-    .cd > h3 { margin: 0 0 12px; font-size: 13px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #0f5a2a; display: flex; align-items: center; gap: 8px; }
-    .cd > h3::before { content: ''; width: 4px; height: 14px; border-radius: 2px; background: #19a05a; }
+    /* Bốn khối xếp lưới 2×2 (Doanh nghiệp | Theo dõi KD / Liên hệ | Ghi chú) để mỗi hàng cao bằng nhau. */
+    .col { display: contents; }
+    .cd.dn { order: 1; } .cd.kd { order: 2; } .cd.lh { order: 3; } .cd.gc { order: 4; }
+    .cd { display: flex; flex-direction: column; background: #fff; border: 1px solid #e3ebe5; border-radius: 16px; padding: 14px 16px 16px; box-shadow: 0 1px 2px rgba(16, 40, 28, 0.04), 0 6px 18px rgba(16, 40, 28, 0.05); }
+    .cd.gc .field { flex: 1 1 auto; display: flex; }
+    .cd.gc textarea { flex: 1 1 auto; min-height: 90px; resize: none; }
+    .cd > h3 { margin: 0 0 12px; font-size: 12.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #0f5a2a; display: flex; align-items: center; gap: 8px; }
+    .cd > h3::before { content: ''; width: 4px; height: 14px; border-radius: 2px; background: linear-gradient(180deg, #4bb04f, #7ccf5b); }
     .g { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; }
     .g .s2 { grid-column: span 2; } .g .s3 { grid-column: span 3; } .g .s4 { grid-column: span 4; } .g .s6 { grid-column: span 6; }
     @media (max-width: 560px) { .g .s2, .g .s3, .g .s4 { grid-column: span 6; } }
     .field > label, .field > .lbl { font-size: 12.5px; font-weight: 600; color: var(--ink-2); }
     .chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
-    .chip-row button { border: 1.5px solid var(--line-2); background: #fff; border-radius: 999px; padding: 5px 13px; font-size: 13px; font-weight: 600; color: var(--ink-2); cursor: pointer; }
-    .chip-row button:hover { background: var(--surf-2); }
-    .chip-row button.on { background: #0f5a2a; border-color: #0f5a2a; color: #fff; }
-    .chip-row button.on.bad { background: #c0392b; border-color: #c0392b; }
-    .chip-row button.on.ngung { background: #6b7280; border-color: #6b7280; }
-    .sub-box { grid-column: 1 / -1; border-radius: 12px; padding: 10px 12px; background: #f1faf3; border: 1px solid #bfe0c8; display: grid; gap: 10px; }
-    .sub-box.thua { background: #fdf0ee; border-color: #f0c4be; }
+    .chip-row button { border: 1px solid transparent; background: #eef2ef; border-radius: 999px; padding: 6px 14px; font-size: 13px; font-weight: 600; color: var(--ink-2); cursor: pointer; transition: background 0.12s; }
+    .chip-row button:hover { background: #e1e9e3; }
+    .chip-row button.on { background: linear-gradient(135deg, #4bb04f, #7ccf5b); color: #fff; box-shadow: 0 2px 6px rgba(75, 176, 79, 0.35); }
+    .chip-row button.on.bad { background: linear-gradient(135deg, #d9453b, #ee7b6f); box-shadow: 0 2px 6px rgba(217, 69, 59, 0.3); }
+    .chip-row button.on.ngung { background: #6b7280; box-shadow: none; }
+    .sub-box { grid-column: 1 / -1; border-radius: 12px; padding: 10px 12px; background: #f1faf3; border: 1px solid #cfe8d5; display: grid; gap: 10px; }
+    .sub-box.thua { background: #fdf0ee; border-color: #f4cbc6; }
     .ro-line { font-size: 13px; color: var(--ink-2); padding-top: 8px; }
   `,
   template: `
@@ -176,7 +172,7 @@ type F = Exclude<keyof KhachHang, 'id' | 'chamSoc'>;
               </div>
               <div class="field s3">
                 <label for="khf-pt">Người phụ trách</label>
-                <app-pick-go inputId="khf-pt" [options]="saleOpts()" [value]="k.phuTrach ?? ''" placeholder="Chưa phân bổ — gõ tên Sale…"
+                <app-pick-go inputId="khf-pt" [options]="saleOpts()" [value]="k.phuTrach ?? ''" placeholder="Chưa phân bổ — gõ tên người dùng…"
                   [disabled]="!store.canEdit('phanBoKH')" (valueChange)="set('phuTrach', $event || undefined)" />
                 @if (!store.canEdit('phanBoKH')) { <span class="hint">Cần quyền "Phân bổ data khách hàng" để đổi.</span> }
               </div>
@@ -213,7 +209,7 @@ type F = Exclude<keyof KhachHang, 'id' | 'chamSoc'>;
           <section class="cd gc">
             <h3>Ghi chú</h3>
             <div class="field">
-              <textarea id="khf-gc" rows="3" aria-label="Ghi chú" [value]="k.ghiChu" (input)="set('ghiChu', $any($event.target).value)"></textarea>
+              <textarea id="khf-gc" rows="4" aria-label="Ghi chú" [value]="k.ghiChu" (input)="set('ghiChu', $any($event.target).value)"></textarea>
             </div>
           </section>
         </div>
@@ -261,7 +257,7 @@ export class KhForm {
   protected readonly doiThang = computed(() => !!this.f().id && loaiCoHoi(this.f().coHoi).v === TT.KY_HOP_DONG && loaiCoHoi(this.goc().coHoi).v !== TT.KY_HOP_DONG);
   protected readonly lyDo = linkedSignal(() => (this.khId(), ''));
   protected readonly lyDoKhac = linkedSignal(() => (this.khId(), ''));
-  protected readonly saleOpts = computed<PickOption[]>(() => this.store.saleOpts(this.f().phuTrach));
+  protected readonly saleOpts = computed<PickOption[]>(() => this.store.nguoiOpts(this.f().phuTrach));
   protected readonly trung = linkedSignal<KhachHang | null>(() => (this.khId(), null));
   protected readonly err = linkedSignal(() => (this.khId(), ''));
 
