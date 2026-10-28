@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, ElementRef, HostListener, computed, inject, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, HostListener, afterNextRender, computed, inject, signal, viewChild } from '@angular/core';
+import { fitTables } from './shared/fit-table';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { Icon, IconName } from './shared/icon';
 import { Store } from './core/store';
@@ -79,7 +80,7 @@ interface NavItem {
           <span class="who"><b>{{ store.tenNhom(auth.me()) }}</b><small>{{ auth.me()?.email }}</small></span>
         </div>
       </header>
-      <main class="main">
+      <main class="main" #main>
         @if (chuaCapQuyen()) {
           <!-- Spec 00 §3.3: tài khoản không còn nhóm quyền nào đang hoạt động. -->
           <div class="card empty" role="alert">
@@ -113,6 +114,16 @@ export class Shell {
   protected readonly store = inject(Store);
   protected readonly ui = inject(Ui);
   protected readonly auth = inject(Auth);
+  private readonly main = viewChild<ElementRef<HTMLElement>>('main');
+
+  constructor() {
+    const destroyRef = inject(DestroyRef);
+    // Bảng có phân trang cuộn trong khung bảng, không cuộn cả trang.
+    afterNextRender(() => {
+      const el = this.main()?.nativeElement;
+      if (el) destroyRef.onDestroy(fitTables(el));
+    });
+  }
 
   private readonly choDuyetKT = computed(() =>
     this.store.canApprove('soQuyDuyet') ? this.store.phieuChoDuyet().length + this.store.cpChoDuyet().length : 0,
