@@ -6,6 +6,7 @@ import { daysFromToday, nowIso, todayIso, viDate, viMoment } from '../core/util'
 import { CanhBao, NHOM_RUI_RO, soSanhCanhBao, tinhCanhBaoTuDong } from './canh-bao';
 import { Icon } from '../shared/icon';
 import { Modal, PickGo, PickOption } from '../shared/ui-kit';
+import { NguoiThem } from '../shared/nguoi-them';
 import { TepDinhKem } from '../shared/tep-dinh-kem';
 import { dirtyOf } from '../shared/unsaved';
 import { TT } from '../core/trang-thai';
@@ -54,7 +55,7 @@ const NGUON_TEN: Record<NguonViec, string> = { HDB: 'HĐ BÁN', HDM: 'HĐ MUA', 
   selector: 'app-viec',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'page' },
-  imports: [RouterLink, Icon, Modal, PickGo, TepDinhKem],
+  imports: [RouterLink, Icon, Modal, PickGo, TepDinhKem, NguoiThem],
   styles: [
     `.vh h1{font-size:34px;letter-spacing:-.01em}.vh .crumbs{color:var(--ink-3)}.vh .crumbs a{color:var(--brand);font-weight:600;text-decoration:none}
      .pn{background:var(--surf);border-radius:18px;padding:16px 18px;box-shadow:0 1px 2px rgba(20,40,20,.06);margin-top:14px}
@@ -319,10 +320,8 @@ const NGUON_TEN: Record<NguonViec, string> = { HDB: 'HĐ BÁN', HDM: 'HĐ MUA', 
         @if (x.duocXuLy) {
           <div class="field">
             <label for="cb-pt">Người phụ trách xử lý</label>
-            <select id="cb-pt" (change)="giaoCB($any($event.target).value)">
-              <option value="" [selected]="!x.c.nguoiPhuTrach">— Chưa giao ({{ x.c.nhomTheoDoi || 'nhóm phụ trách' }} theo dõi) —</option>
-              @for (t of phuTrachOpts(); track t.id) { <option [value]="t.id" [selected]="x.c.nguoiPhuTrach === t.id">{{ t.hoTen }}</option> }
-            </select>
+            <app-pick-go inputId="cb-pt" [options]="phuTrachOpts()" [value]="x.c.nguoiPhuTrach ?? ''"
+              [placeholder]="'Chưa giao (' + (x.c.nhomTheoDoi || 'nhóm phụ trách') + ' theo dõi) — gõ tên để giao'" (valueChange)="giaoCB($event)" />
           </div>
         } @else if (x.c.nguoiPhuTrach) {
           <div class="note">Người phụ trách: <b>{{ store.userName(x.c.nguoiPhuTrach) }}</b></div>
@@ -450,11 +449,8 @@ const NGUON_TEN: Record<NguonViec, string> = { HDB: 'HĐ BÁN', HDM: 'HĐ MUA', 
 
           <div class="vg-sec s12">Người nhận</div>
           <div class="field s12">
-            <app-pick-go inputId="vg-nn" [options]="nguoiOpts()" value="" placeholder="Gõ tên để thêm người nhận…" (valueChange)="themNhan($event)" />
-            <div class="chips">
-              @for (id of s.nguoiNhan; track id) { <span class="tag info">👤 {{ store.userName(id) }} <button type="button" class="linkish" aria-label="Bỏ" (click)="boNhan(id)">✕</button></span> }
-              @empty { <span class="sub">👤 Việc của tôi</span> }
-            </div>
+            <app-nguoi-them [coBan]="true" placeholder="Thêm người nhận — gõ tên hoặc email" [ids]="s.nguoiNhan" (idsChange)="set({ nguoiNhan: $event })" />
+            @if (!s.nguoiNhan.length) { <span class="sub">Chưa chọn ai: đây là việc của tôi (tự đặt lịch).</span> }
           </div>
 
           <div class="vg-sec s12">Thời gian</div>
@@ -789,7 +785,7 @@ export class ViecPage {
     const heThong = c.nhom !== 'Nhập tay';
     return { c, heThong, duocXuLy: this.store.coTheXuLyCanhBao({ nguon: heThong ? 'HE_THONG' : 'TAY', nguoiTao: c.nguoiTao ?? '' }) };
   });
-  protected readonly phuTrachOpts = computed(() => this.store.taiKhoan().filter((t) => t.trangThai === TT.HOAT_DONG));
+  protected readonly phuTrachOpts = computed<PickOption[]>(() => this.store.nguoiOpts(this.cbXem()?.c.nguoiPhuTrach));
   /** Ảnh chụp cảnh báo hệ thống gửi kèm khi tạo vết xử lý. */
   private snap(c: CanhBao): { khoa: string; muc: MucCanhBao; noiDung: string; anhHuong: string; theoDoi?: NhomViec; hdbId?: string; hdmId?: string } {
     const [goc, id] = c.hoSo?.link ?? [];
@@ -972,12 +968,6 @@ export class ViecPage {
     const s = this.soan();
     return s ? this.soNgay(s) : null;
   });
-  protected readonly nguoiOpts = computed<PickOption[]>(() =>
-    this.store
-      .taiKhoan()
-      .filter((t) => t.trangThai === TT.HOAT_DONG && t.id !== this.store.meId() && !this.soan()?.nguoiNhan.includes(t.id))
-      .map((t) => ({ value: t.id, label: t.hoTen, hint: t.email })),
-  );
   protected readonly hdbOpts = computed<PickOption[]>(() =>
     this.store
       .hdbVisible()
@@ -1102,12 +1092,6 @@ export class ViecPage {
   }
   protected set(p: Partial<Soan>): void {
     this.soan.update((s) => (s ? { ...s, ...p } : s));
-  }
-  protected themNhan(id: string): void {
-    if (id) this.soan.update((s) => (s && !s.nguoiNhan.includes(id) ? { ...s, nguoiNhan: [...s.nguoiNhan, id] } : s));
-  }
-  protected boNhan(id: string): void {
-    this.soan.update((s) => (s ? { ...s, nguoiNhan: s.nguoiNhan.filter((x) => x !== id) } : s));
   }
   protected hanNhanhChon(ngay: string, gio: string): void {
     this.set({ han: ngay, gio, batDau: this.soan()?.batDau && this.soan()!.batDau! <= ngay ? this.soan()!.batDau : ngay });

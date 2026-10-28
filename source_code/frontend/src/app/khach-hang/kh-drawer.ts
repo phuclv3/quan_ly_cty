@@ -6,6 +6,7 @@ import { TT, ttNhan } from '../core/trang-thai';
 import { money, todayIso, viDate } from '../core/util';
 import { TrangThai } from '../shared/ui-kit';
 import { Icon } from '../shared/icon';
+import { NguoiThem } from '../shared/nguoi-them';
 import { chuVietTat, mauAvatar } from '../shared/avatar';
 import { dangMo, loaiCoHoi } from './co-hoi-data';
 
@@ -33,7 +34,7 @@ const NHAC = [
 @Component({
   selector: 'app-kh-drawer',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TrangThai, Icon],
+  imports: [TrangThai, Icon, NguoiThem],
   host: { '(document:keydown.escape)': 'closed.emit()' },
   template: `
     @if (k(); as k) {
@@ -136,19 +137,7 @@ const NHAC = [
                   @for (o of KENH; track o) { <button type="button" [class.on]="lKenh() === o" (click)="lKenh.set(o)">{{ o }}</button> }
                 </div>
                 <label>Nội dung<input [value]="lNd()" placeholder="VD Gọi hỏi kết quả duyệt ngân sách" (input)="lNd.set($any($event.target).value)" /></label>
-                <div class="tg">
-                  <span class="lb">Người tham gia</span>
-                  <div class="chips">
-                    <span class="tag-me">{{ store.userName(store.meId() ?? '') }} <i>(bạn)</i></span>
-                    @for (id of lTg(); track id) {
-                      <span class="tag-u">{{ store.userName(id) }}<button type="button" [attr.aria-label]="'Bỏ ' + store.userName(id)" (click)="boTg(id)">×</button></span>
-                    }
-                    <select aria-label="Thêm người tham gia" (change)="themTg($any($event.target))">
-                      <option value="">+ Thêm</option>
-                      @for (o of nguoiOpts(); track o.id) { <option [value]="o.id">{{ o.hoTen }}</option> }
-                    </select>
-                  </div>
-                </div>
+                <app-nguoi-them nhan="Người tham gia" placeholder="Thêm người tham gia — gõ tên hoặc email" [(ids)]="lTg" />
                 <div class="lich-f">
                   <span class="sub">Lịch hẹn vào Công việc cá nhân của từng người tham gia.</span>
                   <button type="button" class="btn sm" (click)="luuLich()">Lưu lịch hẹn</button>
@@ -228,11 +217,6 @@ const NHAC = [
     .kenh { display: flex; flex-wrap: wrap; gap: 6px; }
     .kenh button { border: 1px solid var(--line-2); background: var(--surf); border-radius: 999px; padding: 3px 12px; font-size: 12px; cursor: pointer; }
     .kenh button.on { background: #e3f1e3; border-color: #0f5a2a; color: #0f5a2a; font-weight: 700; }
-    .tg .lb { font-size: 11.5px; color: var(--ink-3); }
-    .tag-me, .tag-u { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 999px; background: var(--surf); border: 1px solid var(--line-2); font-size: 12px; }
-    .tag-me i { color: var(--ink-3); font-style: normal; }
-    .tag-u button { border: 0; background: none; cursor: pointer; font-size: 14px; line-height: 1; color: var(--ink-3); }
-    .tg select { width: auto; height: 28px; border-radius: 999px; font-size: 12px; }
     .lich-f { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
     .lich-f .sub { font-size: 11px; }
     .nhap { display: flex; align-items: center; gap: 8px; position: sticky; bottom: 0; margin-bottom: 14px; padding: 6px 8px 6px 18px; border-radius: 999px; background: #eef2ee; }
@@ -355,18 +339,6 @@ export class KhDrawer {
   protected readonly lNd = linkedSignal(() => (this.hienLich(), ''));
   protected readonly lTg = linkedSignal<string[]>(() => (this.hienLich(), []));
   protected readonly loiLich = signal('');
-
-  /** Người trong công ty (tài khoản đang hoạt động) chưa được chọn, trừ bản thân. */
-  protected readonly nguoiOpts = computed(() =>
-    this.store.taiKhoan().filter((t) => t.trangThai === TT.HOAT_DONG && t.id !== this.store.meId() && !this.lTg().includes(t.id)),
-  );
-  protected themTg(el: HTMLSelectElement): void {
-    if (el.value) this.lTg.update((x) => [...x, el.value]);
-    el.value = '';
-  }
-  protected boTg(id: string): void {
-    this.lTg.update((x) => x.filter((i) => i !== id));
-  }
 
   protected luuLich(): void {
     const k = this.k();

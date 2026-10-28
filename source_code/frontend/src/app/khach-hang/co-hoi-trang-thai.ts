@@ -1,9 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, linkedSignal, output, viewChild } from '@angular/core';
 import { Store } from '../core/store';
-import { CoHoiKH, GIAI_DOAN_CH, GiaiDoanCH, LY_DO_THUA } from '../core/models';
-import { todayIso } from '../core/util';
+import { CoHoiKH, GIAI_DOAN_CH, GiaiDoanCH, KhachHang, LY_DO_THUA } from '../core/models';
+import { todayIso, vndShort } from '../core/util';
 import { Modal } from '../shared/ui-kit';
-import { layCoHoi } from './co-hoi-data';
+import { CO_HOI_KH, layCoHoiTong } from './co-hoi-data';
+import { TT } from '../core/trang-thai';
 
 /**
  * Dialog trạng thái cơ hội: Mới / Đã báo giá / Đang đàm phán / Thắng / Thua.
@@ -14,47 +15,84 @@ import { layCoHoi } from './co-hoi-data';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [Modal],
   styles: `
-    .gd { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
-    .gd button { border: 1.5px solid var(--line-2); background: var(--surf); border-radius: 999px; padding: 7px 16px; font-size: 13.5px; font-weight: 600; cursor: pointer; }
-    .gd button.on { background: #0f5a2a; border-color: #0f5a2a; color: #fff; }
-    .gd button.on.thua { background: #c0392b; border-color: #c0392b; }
+    .tom { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; margin-bottom: 12px; }
+    .tom b { font-size: 15px; }
+    .tom .ma { color: #0f7a3d; font-weight: 700; font-size: 13px; }
+    .tom .kv { font-size: 12.5px; color: var(--ink-3); }
+    .tom .kv b { font-size: 12.5px; color: var(--ink-2); }
+    .gd { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+    @media (max-width: 560px) { .gd { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    .gd button { display: grid; justify-items: center; gap: 4px; padding: 10px 6px; border: 1.5px solid #e3ebe5; background: #fff; border-radius: 12px; font-size: 13px; font-weight: 700; color: var(--ink-2); cursor: pointer; transition: background 0.12s, border-color 0.12s; }
+    .gd button i { width: 10px; height: 10px; border-radius: 50%; background: #c9ced6; }
+    .gd button.bg i { background: #5b8fd1; } .gd button.dp i { background: #e0911c; } .gd button.thang i { background: #19a05a; } .gd button.thua i { background: #d9453b; }
+    .gd button:hover:not(:disabled) { background: #f6faf7; }
+    .gd button:disabled { opacity: 0.45; cursor: not-allowed; }
+    .gd button.on { color: #fff; border-color: transparent; background: #6b7280; box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15); }
+    .gd button.on i { background: #fff; }
+    .gd button.on.moi { background: #6b7280; }
+    .gd button.on.bg { background: linear-gradient(135deg, #3f78bd, #6fa3e0); }
+    .gd button.on.dp { background: linear-gradient(135deg, #d9820f, #f2b13d); }
+    .gd button.on.thang { background: linear-gradient(135deg, #4bb04f, #7ccf5b); }
+    .gd button.on.thua { background: linear-gradient(135deg, #d9453b, #ee7b6f); }
+    .doi { margin-top: 10px; font-size: 12.5px; color: var(--ink-3); }
+    .doi b { color: var(--ink); }
+    .ld-row { display: flex; flex-wrap: wrap; gap: 6px; }
+    .ld-row button { border: 1px solid transparent; background: #eef2ef; border-radius: 999px; padding: 6px 14px; font-size: 13px; font-weight: 600; color: var(--ink-2); cursor: pointer; }
+    .ld-row button:hover { background: #e1e9e3; }
+    .ld-row button.on { background: linear-gradient(135deg, #d9453b, #ee7b6f); color: #fff; }
+    .ct { display: grid; gap: 12px; }
+    .ct .g2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
   `,
   template: `
-    <app-modal #m [open]="ma() !== null" size="sm" [title]="r() ? r()!.c.id + ' — ' + r()!.k.ten : 'Cơ hội'" [sub]="r() ? r()!.c.huongBan : ''"
+    <app-modal #m [open]="ma() !== null" size="md" title="Trạng thái cơ hội" [sub]="r() ? r()!.c.id + ' · ' + r()!.k.ten : ''"
       [dirty]="dirty()" (closed)="closed.emit()">
-      @if (err()) { <div class="note bad">{{ err() }}</div> }
-      <div class="gd" role="radiogroup" aria-label="Trạng thái cơ hội">
-        @for (g of GIAI_DOAN; track g) {
-          <button type="button" role="radio" [class.on]="gd() === g" [class.thua]="g === 'Thua'" [disabled]="daThua() && g !== 'Thua'" [attr.aria-checked]="gd() === g" (click)="chon(g)">{{ g }}</button>
+      @if (r(); as x) {
+        @if (err()) { <div class="note bad">{{ err() }}</div> }
+        <section class="blk">
+          <h3 class="blk-t">Giai đoạn</h3>
+          <div class="tom">
+            <b>{{ x.k.ten }}</b>
+            <span class="kv">{{ x.c.huongBan }}</span>
+            <span class="kv">Giá trị <b>{{ x.c.giaTri ? short(x.c.giaTri) : '—' }}</b></span>
+            @if (x.k.phuTrach) { <span class="kv">Phụ trách <b>{{ store.userName(x.k.phuTrach) }}</b></span> }
+          </div>
+          <div class="gd" role="radiogroup" aria-label="Trạng thái cơ hội">
+            @for (g of GIAI_DOAN; track g) {
+              <button type="button" role="radio" [class]="CLS[g]" [class.on]="gd() === g" [disabled]="daThua() && g !== 'Thua'"
+                [attr.aria-checked]="gd() === g" (click)="chon(g)"><i></i>{{ g }}</button>
+            }
+          </div>
+          @if (dirty()) { <div class="doi">Đổi từ <b>{{ x.c.giaiDoan }}</b> → <b>{{ gd() }}</b></div> }
+          @else if (daThua()) { <div class="doi">Cơ hội đã Thua — chỉ có thể <b>Tái tiếp cận</b> để đưa về Mới.</div> }
+        </section>
+
+        @if (gd() === 'Thua' || gd() === 'Thắng') {
+          <section class="blk">
+            <h3 class="blk-t">{{ gd() === 'Thua' ? 'Lý do thua & ngày chốt' : 'Ngày chốt' }}</h3>
+            <div class="ct">
+              @if (gd() === 'Thua') {
+                <div class="field">
+                  <span class="lbl">Lý do thua <span class="req">*</span></span>
+                  <div class="ld-row" role="radiogroup" aria-label="Lý do thua">
+                    @for (o of LY_DO; track o) { <button type="button" role="radio" [class.on]="lyDo() === o" [attr.aria-checked]="lyDo() === o" (click)="lyDo.set(o)">{{ o }}</button> }
+                  </div>
+                </div>
+              }
+              <div class="g2">
+                <div class="field">
+                  <label for="cht-nc">Ngày chốt</label>
+                  <input id="cht-nc" type="date" [value]="ngayChot()" (input)="ngayChot.set($any($event.target).value)" />
+                </div>
+              </div>
+            </div>
+          </section>
         }
-      </div>
-      @if (gd() === 'Thua') {
-        <div class="form-grid">
-          <div class="field full">
-            <label for="cht-ld">Lý do thua <span class="req">*</span></label>
-            <select id="cht-ld" (change)="lyDo.set($any($event.target).value)">
-              <option value="" [selected]="!lyDo()">— Chọn lý do —</option>
-              @for (o of LY_DO; track o) { <option [value]="o" [selected]="o === lyDo()">{{ o }}</option> }
-            </select>
-          </div>
-        </div>
-      }
-      @if (gd() === 'Thắng' || gd() === 'Thua') {
-        <div class="form-grid">
-          <div class="field full">
-            <label for="cht-nc">Ngày chốt</label>
-            <input id="cht-nc" type="date" [value]="ngayChot()" (input)="ngayChot.set($any($event.target).value)" />
-          </div>
-        </div>
-      }
-      @if (daThua()) {
-        <div class="note info">Cơ hội đã Thua — chỉ có thể <b>Tái tiếp cận</b> để đưa về trạng thái Mới.</div>
       }
       <ng-container foot>
-        <button type="button" class="btn quiet" style="margin-right:auto" (click)="sua.emit(ma()!)">Sửa chi tiết</button>
+        @if (r() && !r()!.kh) { <button type="button" class="btn quiet" style="margin-right:auto" (click)="sua.emit(ma()!)">Sửa chi tiết</button> }
         @if (daThua()) { <button type="button" class="btn quiet" (click)="taiTiepCan()">Tái tiếp cận</button> }
         <button type="button" class="btn quiet" (click)="m.tryClose()">Huỷ</button>
-        <button type="button" class="btn" [disabled]="!dirty()" (click)="luu()">Lưu</button>
+        <button type="button" class="btn" [disabled]="!dirty()" (click)="luu()">Lưu trạng thái</button>
       </ng-container>
     </app-modal>
   `,
@@ -64,13 +102,15 @@ export class CoHoiTrangThai {
   private readonly m = viewChild<Modal>('m');
   protected readonly GIAI_DOAN = GIAI_DOAN_CH;
   protected readonly LY_DO = LY_DO_THUA;
+  protected readonly short = vndShort;
+  protected readonly CLS: Record<GiaiDoanCH, string> = { 'Mới': 'moi', 'Đã báo giá': 'bg', 'Đang đàm phán': 'dp', 'Thắng': 'thang', 'Thua': 'thua' };
 
   readonly ma = input<string | null>(null);
   readonly closed = output<void>();
   /** Mở form sửa đầy đủ. */
   readonly sua = output<string>();
 
-  protected readonly r = computed(() => (this.ma() ? layCoHoi(this.store.khachHang()).find((x) => x.c.id === this.ma()) : undefined));
+  protected readonly r = computed(() => (this.ma() ? layCoHoiTong(this.store.khachHang()).find((x) => x.c.id === this.ma()) : undefined));
   protected readonly gd = linkedSignal<GiaiDoanCH>(() => this.r()?.c.giaiDoan ?? 'Mới');
   protected readonly lyDo = linkedSignal(() => this.r()?.c.lyDoThua ?? '');
   protected readonly ngayChot = linkedSignal(() => this.r()?.c.ngayChot ?? todayIso());
@@ -86,10 +126,21 @@ export class CoHoiTrangThai {
   protected taiTiepCan(): void {
     const r = this.r();
     if (!r || r.c.giaiDoan !== 'Thua') return;
+    if (r.kh) return this.luuKhach(r.k, 'Mới', 'Tái tiếp cận khách hàng — chuyển về trạng thái Mới');
     const c: CoHoiKH = { ...r.c, giaiDoan: 'Mới', ngayChot: undefined, lyDoThua: undefined, ngayTaiTiepCan: undefined };
     const e = this.store.saveKhachHang({ ...structuredClone(r.k), dsCoHoi: (r.k.dsCoHoi ?? []).map((x) => (x.id === c.id ? c : x)) });
     if (e) return this.err.set(e);
     this.store.say(`Đã tái tiếp cận ${c.id} — chuyển về Mới`);
+    this.closed.emit();
+  }
+
+  /** Cơ hội suy ra từ khách: đổi trạng thái cơ hội ở cấp khách hàng (+ ghi lý do vào lịch sử chăm sóc). */
+  private luuKhach(k: KhachHang, g: GiaiDoanCH, ghiChu: string): void {
+    const ma = CO_HOI_KH.find((o) => o.l === g)?.v ?? TT.CHUA_TIEP_CAN;
+    const e = this.store.saveKhachHang({ ...structuredClone(k), coHoi: ma });
+    if (e) return this.err.set(e);
+    this.store.ghiChamSoc(k.id, ghiChu || `Cơ hội → ${g}`);
+    this.store.say(`Cơ hội ${k.id} → ${g}`);
     this.closed.emit();
   }
 
@@ -103,6 +154,7 @@ export class CoHoiTrangThai {
     if (!r) return;
     const g = this.gd();
     if (g === 'Thua' && !this.lyDo()) return this.err.set('Chọn lý do thua');
+    if (r.kh) return this.luuKhach(r.k, g, g === 'Thua' ? 'Lý do thua: ' + this.lyDo() : '');
     const chot = g === 'Thắng' || g === 'Thua';
     const c: CoHoiKH = {
       ...r.c,

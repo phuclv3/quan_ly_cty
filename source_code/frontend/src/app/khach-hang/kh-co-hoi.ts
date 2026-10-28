@@ -1,5 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { Store } from '../core/store';
 import { GIAI_DOAN_CH, GiaiDoanCH, LOAI_SP_KH, LY_DO_THUA } from '../core/models';
 import { nhoLoc } from '../core/ui';
@@ -7,9 +6,10 @@ import { sum, todayIso, vndShort, viDate } from '../core/util';
 import { Facet, FilterBar, LOC_RONG, Loc, khopQ, khopSel } from '../shared/filter-bar';
 import { Pager, paginate } from '../shared/pager';
 import { xuatExcel } from '../shared/export';
+import { mauAvatar } from '../shared/avatar';
 import { CoHoiForm } from './co-hoi-form';
 import { CoHoiTrangThai } from './co-hoi-trang-thai';
-import { CoHoiRow, chenhLech, dangMo, diemSpark, layCoHoi } from './co-hoi-data';
+import { CoHoiRow, chenhLech, dangMo, diemSpark, layCoHoiTong } from './co-hoi-data';
 
 const opts = (xs: readonly string[]) => xs.map((x) => ({ value: x, label: x }));
 const GD_CLASS: Record<GiaiDoanCH, string> = { 'Mới': 'moi', 'Đã báo giá': 'bg', 'Đang đàm phán': 'dp', 'Thắng': 'thang', 'Thua': 'thua' };
@@ -18,7 +18,7 @@ const GD_CLASS: Record<GiaiDoanCH, string> = { 'Mới': 'moi', 'Đã báo giá':
 @Component({
   selector: 'app-kh-co-hoi',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, FilterBar, Pager, CoHoiForm, CoHoiTrangThai],
+  imports: [FilterBar, Pager, CoHoiForm, CoHoiTrangThai],
   template: `
     <div class="kpis">
       <div class="k hero">
@@ -65,9 +65,9 @@ const GD_CLASS: Record<GiaiDoanCH, string> = { 'Mới': 'moi', 'Đã báo giá':
           <tbody>
             @for (r of pg.items(); track r.c.id) {
               <tr class="click" (click)="tt.set(r.c.id)">
-                <td class="mono"><b>{{ r.c.id }}</b></td>
+                <td class="ma"><button type="button" class="kh-ten" title="Xem chi tiết khách hàng" (click)="$event.stopPropagation(); xem.emit(r.k.id)"><b>{{ r.c.id }}</b></button></td>
                 <td>
-                  <a class="kh-ten" [routerLink]="['/khach-hang', r.k.id]" (click)="$event.stopPropagation()"><b>{{ r.k.ten }}</b></a>
+                  <b class="kh-txt" (click)="$event.stopPropagation()">{{ r.k.ten }}</b>
                   <div class="sub">{{ r.c.huongBan }}</div>
                 </td>
                 <td class="num">{{ r.c.giaTri ? short(r.c.giaTri) : '—' }}</td>
@@ -77,13 +77,14 @@ const GD_CLASS: Record<GiaiDoanCH, string> = { 'Mới': 'moi', 'Đã báo giá':
                   @if (p.text) { <div class="sub" [class.neg]="p.bad">{{ p.text }}</div> }
                 </td>
                 <td>
-                  @if (r.k.phuTrach) { <span class="pt"><span class="av">{{ vt(store.userName(r.k.phuTrach)) }}</span>{{ store.userName(r.k.phuTrach) }}</span> }
+                  @if (r.k.phuTrach) { <span class="pt"><span class="av" [style.background]="mau(r.k.phuTrach)">{{ vt(store.userName(r.k.phuTrach)) }}</span>{{ store.userName(r.k.phuTrach) }}</span> }
                   @else { <span class="sub">Chưa phân bổ</span> }
                 </td>
-                <td>{{ r.c.tuongTacTiep || '—' }}{{ r.c.tuongTacTiep && r.c.ngayTuongTac ? ' · ' + ngayNgan(r.c.ngayTuongTac) : '' }}</td>
+                @let tc = tuongTac(r);
+                <td>{{ tc.text || '—' }}{{ tc.text && tc.ngay ? ' · ' + ngayNgan(tc.ngay) : '' }}</td>
               </tr>
             } @empty {
-              <tr><td colspan="6" class="empty">Chưa có cơ hội nào. Bấm "Tạo cơ hội" để thêm.</td></tr>
+              <tr><td colspan="6" class="empty">Chưa có khách nào ở trạng thái cơ hội. Đổi trạng thái cơ hội của khách hoặc bấm "Tạo cơ hội".</td></tr>
             }
           </tbody>
         </table>
@@ -110,8 +111,8 @@ const GD_CLASS: Record<GiaiDoanCH, string> = { 'Mới': 'moi', 'Đã báo giá':
     .dl.up { color: #19a05a; }
     .dl.down { color: #d9453b; }
 
-    .chips { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 14px; }
-    .chip-f { display: inline-flex; align-items: center; gap: 6px; border: 0; border-radius: 999px; padding: 7px 14px; background: var(--surf); font-size: 13px; font-weight: 600; color: var(--ink-2); cursor: pointer; }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 14px; padding: 6px 8px; border-radius: 999px; background: var(--surf); }
+    .chip-f { display: inline-flex; align-items: center; gap: 6px; border: 0; border-radius: 999px; padding: 7px 14px; background: transparent; font-size: 13px; font-weight: 600; color: var(--ink-2); cursor: pointer; }
     .chip-f.on { background: #0f5a2a; color: #fff; }
     .chip-f.tai { background: #fbe9c8; color: #8a5a00; }
     .chip-f.tai.on { background: #e0911c; color: #fff; }
@@ -119,20 +120,37 @@ const GD_CLASS: Record<GiaiDoanCH, string> = { 'Mới': 'moi', 'Đã báo giá':
     .dot { width: 8px; height: 8px; border-radius: 50%; background: #c9ced6; display: inline-block; }
     .dot.bg { background: #7aa7d9; } .dot.dp { background: #8bd3a0; } .dot.thang { background: #e8d49a; } .dot.thua { background: #e9b3ad; }
 
-    .panel { background: var(--surf); border-radius: 18px; padding: 14px 16px 16px; }
-    .tbl-wrap { border-radius: 12px; border: 1px solid var(--line); box-shadow: none; overflow: auto; }
-    .tbl { font-size: 12.5px; }
-    .tbl thead th { background: var(--panel); font-size: 12px; white-space: nowrap; }
-    .tbl tbody td { padding-block: 9px; vertical-align: middle; }
+    .panel { background: var(--surf); border-radius: 18px; padding: 16px 18px 18px; }
+    .tbl-wrap { border-radius: 0; border: 0; box-shadow: none; background: none; overflow: auto; }
+    .tbl { font-size: 13px; }
+    .tbl thead th { background: var(--panel); font-size: 12px; font-weight: 600; color: var(--ink-2); white-space: nowrap; border-radius: 0; }
+    .tbl thead th:first-child { border-top-left-radius: 10px; } .tbl thead th:last-child { border-top-right-radius: 10px; }
+    .tbl tbody td { padding-block: 10px; vertical-align: middle; border-bottom: 1px solid var(--line); }
+    .tbl td.ma { white-space: nowrap; font-family: var(--font); }
+    .tbl td.ma b { font-weight: 700; }
+    .tbl td.num { font-weight: 700; white-space: nowrap; }
+    .tbl tbody tr.click:hover td { background: #f6faf7; }
+    .sub.neg { color: #c0392b; }
+
+    /* Bộ lọc dạng viên thuốc (như danh sách khách hàng) */
+    .panel ::ng-deep .filters { gap: 10px; margin-bottom: 14px; }
+    .panel ::ng-deep .filters .search { height: 40px; border-radius: 999px; background: var(--panel); border: 0; box-shadow: none; max-width: 360px; }
+    .panel ::ng-deep .filters .fsel select, .panel ::ng-deep .filters .pick-btn { height: 40px; border-radius: 999px; background: var(--panel); border: 0; font-weight: 600; font-size: 13.5px; padding-inline: 16px; }
+    .panel ::ng-deep .filters .f-clear { background: none; border: 0; color: var(--ink-3); font-size: 13px; }
     .tbl ::ng-deep .sub { font-size: 11.5px; }
-    .kh-ten { color: var(--ink); }
+    /* !important: styles.css (.tbl a) tô màu --brand (xanh rất đậm, nhìn như chữ đen) — cần xanh sáng hơn để nhận ra là liên kết */
+    .kh-txt { color: var(--ink); cursor: default; }
+    .kh-ten { border: 0; background: none; padding: 0; font: inherit; text-align: left; }
+    .kh-ten, .kh-ten b { color: #138a4a !important; cursor: pointer; }
+    .kh-ten b { text-decoration: underline; text-decoration-color: rgba(19, 138, 74, 0.4); text-underline-offset: 3px; }
+    .kh-ten:hover b { text-decoration-color: #138a4a; }
     .gd { display: inline-block; padding: 1px 9px; border-radius: 6px; font-size: 11.5px; font-weight: 700; background: var(--mute-bg); color: var(--mute-fg); }
     .gd.bg { background: #dce9f8; color: #2c5d94; }
     .gd.dp { background: #d9f3e0; color: #17663f; }
     .gd.thang { background: #e2f3e9; color: #17663f; }
     .gd.thua { background: #fbe4e1; color: #a3261d; }
     .pt { display: inline-flex; align-items: center; gap: 6px; }
-    .av { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: #0f5a2a; color: #fff; font-size: 10px; font-weight: 700; flex: 0 0 auto; }
+    .av { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: #0f5a2a; color: #fff; font-size: 10px; font-weight: 700; flex: 0 0 auto; }
   `,
 })
 export class KhCoHoi {
@@ -141,12 +159,15 @@ export class KhCoHoi {
   protected readonly GD_CLASS = GD_CLASS;
   protected readonly short = vndShort;
   protected readonly abs = Math.abs;
+  protected readonly mau = mauAvatar;
 
   protected readonly loc = signal<Loc>(nhoLoc('kh-co-hoi', LOC_RONG));
   protected readonly gd = signal<'' | GiaiDoanCH>('');
   protected readonly taiTiep = signal(false);
   /** Lọc theo một khách (từ ngăn chi tiết khách hàng). */
   readonly khLoc = input<string | null>(null);
+  /** Bấm mã / tên khách: màn cha mở ngăn chi tiết khách hàng. */
+  readonly xem = output<string>();
   /** Dialog trạng thái: mã CH đang xem, null = đóng. */
   protected readonly tt = signal<string | null>(null);
   /** null = đóng · '' = tạo mới · mã CH = sửa. */
@@ -164,7 +185,7 @@ export class KhCoHoi {
   }
 
   private readonly all = computed(() =>
-    layCoHoi(this.store.khachHang()).sort((a, b) => (b.c.ngayTao ?? '').localeCompare(a.c.ngayTao ?? '') || b.c.id.localeCompare(a.c.id)),
+    layCoHoiTong(this.store.khachHang()).sort((a, b) => (b.c.ngayTao ?? '').localeCompare(a.c.ngayTao ?? '') || b.c.id.localeCompare(a.c.id)),
   );
 
   protected readonly facets = computed<Facet[]>(() => {
@@ -250,6 +271,25 @@ export class KhCoHoi {
       sTyLe: diemSpark(tyLeThang),
     };
   });
+
+  /** Lịch hẹn chưa xong sớm nhất của từng khách (đặt ở ngăn chi tiết khách hàng). */
+  private readonly lichKhach = computed(() => {
+    const homNay = todayIso();
+    const m = new Map<string, { noiDung: string; han: string; gio: string }>();
+    for (const v of this.store.db().viecGiao ?? []) {
+      if (!v.khId || v.xongLuc || !v.han || v.han < homNay) continue;
+      const cu = m.get(v.khId);
+      const khoa = v.han + (v.gio ?? '');
+      if (!cu || khoa < cu.han + cu.gio) m.set(v.khId, { noiDung: v.noiDung.replace(/^\[[^\]]*\]\s*/, ''), han: v.han, gio: v.gio ?? '' });
+    }
+    return m;
+  });
+  /** Tương tác tiếp: ưu tiên lịch hẹn sắp tới của khách, không có thì lấy trường nhập trên cơ hội. */
+  protected tuongTac(r: CoHoiRow): { text: string; ngay?: string } {
+    const l = this.lichKhach().get(r.k.id);
+    if (l) return { text: l.noiDung, ngay: l.han };
+    return { text: r.c.tuongTacTiep ?? '', ngay: r.c.ngayTuongTac };
+  }
 
   protected mui(d: number): string {
     return d > 0 ? '▲' : d < 0 ? '▼' : '';

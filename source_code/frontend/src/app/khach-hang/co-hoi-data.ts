@@ -5,6 +5,8 @@ import { TT } from '../core/trang-thai';
 export interface CoHoiRow {
   c: CoHoiKH;
   k: KhachHang;
+  /** true = cơ hội suy ra từ trạng thái cơ hội của khách (khách chưa có bản ghi cơ hội riêng); c.id = mã khách. */
+  kh?: boolean;
 }
 
 /**
@@ -29,6 +31,30 @@ export const dangMo = (g: GiaiDoanCH) => g === 'Mới' || g === 'Đã báo giá'
 
 export function layCoHoi(ks: readonly KhachHang[]): CoHoiRow[] {
   return ks.flatMap((k) => (k.dsCoHoi ?? []).map((c) => ({ c, k })));
+}
+
+/**
+ * Mọi cơ hội để hiện ở tab Cơ hội: bản ghi cơ hội riêng của khách (dsCoHoi) và, với khách chưa có bản ghi nào,
+ * một dòng suy ra từ trạng thái cơ hội của khách (khác "Mới", hoặc đã có giá trị cơ hội).
+ */
+export function layCoHoiTong(ks: readonly KhachHang[]): CoHoiRow[] {
+  return ks.flatMap((k): CoHoiRow[] => {
+    if (k.dsCoHoi?.length) return k.dsCoHoi.map((c) => ({ c, k }));
+    const g = loaiCoHoi(k.coHoi).l as GiaiDoanCH;
+    if (g === 'Mới' && !k.giaTriCoHoi) return [];
+    const chot = g === 'Thắng' || g === 'Thua' ? (k.chamSoc ?? []).find((x) => x.coHoi && loaiCoHoi(x.coHoi).l === g)?.luc.slice(0, 10) ?? k.ngayTiepNhan : undefined;
+    const c: CoHoiKH = {
+      id: k.id,
+      huongBan: [k.loaiSP, k.hinhThucHD].filter(Boolean).join(' · ') || 'Cơ hội của khách',
+      nhomHang: k.loaiSP,
+      giaTri: k.giaTriCoHoi ?? 0,
+      giaiDoan: g,
+      ngayTao: k.ngayTiepNhan,
+      ngayBaoGia: g === 'Đã báo giá' ? k.ngayTiepNhan : undefined,
+      ngayChot: chot,
+    };
+    return [{ c, k, kh: true }];
+  });
 }
 
 /** Toạ độ polyline của đường sparkline (khung w×h, có lề 2px). Ít hơn 2 điểm thì vẽ đường phẳng. */

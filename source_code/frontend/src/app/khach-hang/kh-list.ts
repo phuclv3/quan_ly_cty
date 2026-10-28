@@ -12,6 +12,7 @@ import { Pager, paginate } from '../shared/pager';
 import { SortTh, Sorter } from '../shared/sort';
 import { xuatExcel } from '../shared/export';
 import { Icon } from '../shared/icon';
+import { PickGo } from '../shared/ui-kit';
 import { ImportDm } from '../shared/import-dm';
 import { Confirm } from '../shared/confirm';
 import { guiXoa, guiXoaNhieu } from '../shared/ho-so';
@@ -40,7 +41,7 @@ const optsTT = (xs: readonly string[]) => xs.map((x) => ({ value: x, label: ttNh
   selector: 'app-kh-list',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'page' },
-  imports: [RouterLink, FilterBar, Kpi, TrangThai, Pager, SortTh, Icon, KhForm, ImportDm, KhCoHoi, KhBaoCao, KhDrawer],
+  imports: [RouterLink, FilterBar, Kpi, TrangThai, Pager, SortTh, Icon, KhForm, ImportDm, KhCoHoi, KhBaoCao, KhDrawer, PickGo],
   template: `
     <div class="page-head">
       <div>
@@ -69,7 +70,7 @@ const optsTT = (xs: readonly string[]) => xs.map((x) => ({ value: x, label: ttNh
     </div>
 
     @if (tab() === 'ch') {
-      <app-kh-co-hoi [khLoc]="locKh()" />
+      <app-kh-co-hoi [khLoc]="locKh()" (xem)="mo($event)" />
     } @else if (tab() === 'bc') {
       <app-kh-bao-cao />
     } @else {
@@ -86,7 +87,7 @@ const optsTT = (xs: readonly string[]) => xs.map((x) => ({ value: x, label: ttNh
     <section class="panel">
     <div class="panel-h">
       <h2 class="panel-t">Danh sách khách hàng</h2>
-      <span class="hint-r">bấm tên khách hoặc biểu tượng <app-icon name="chat" [size]="14" /> để xem chi tiết và lịch sử chăm sóc</span>
+      <span class="hint-r">bấm mã khách hàng để xem chi tiết và lịch sử chăm sóc</span>
     </div>
     <app-filter [(loc)]="loc" memo="kh-list" [time]="false" [facets]="facets()" placeholder="Tìm mã, tên, MST, tỉnh, người liên hệ, điện thoại, ghi chú…" />
 
@@ -94,10 +95,7 @@ const optsTT = (xs: readonly string[]) => xs.map((x) => ({ value: x, label: ttNh
       <div class="note info bulk">
         <b>Đã chọn {{ chon().size }} khách</b>
         @if (phanBo()) {
-          <select aria-label="Giao cho Sale" [value]="giaoCho()" (change)="giaoCho.set($any($event.target).value)">
-            <option value="">— Trả về chưa phân bổ —</option>
-            @for (o of store.nguoiOpts(); track o.value) { <option [value]="o.value" [selected]="o.value === giaoCho()">{{ o.label }} — {{ o.hint }}</option> }
-          </select>
+          <app-pick-go class="giao-pick" inputId="giao-cho" [options]="store.nguoiOpts()" [value]="giaoCho()" placeholder="Trả về chưa phân bổ — hoặc gõ tên người để giao…" (valueChange)="giaoCho.set($event)" />
           <button type="button" class="btn sm" (click)="phanBoChon()">Phân bổ</button>
         }
         @if (xoaNhieuDuoc()) { <button type="button" class="btn sm danger" (click)="xoaNhieu()">Xoá {{ chon().size }} đã chọn</button> }
@@ -121,17 +119,17 @@ const optsTT = (xs: readonly string[]) => xs.map((x) => ({ value: x, label: ttNh
             <th app-sort-th [sx]="sx" k="giaTri" class="num">Giá trị cơ hội</th>
             <th app-sort-th [sx]="sx" k="phuTrach">Phụ trách</th>
             <th app-sort-th [sx]="sx" k="cs">Chăm sóc gần nhất</th>
-            <th app-sort-th [sx]="sx" k="soHD" class="num">HĐ bán</th>
-            <th></th>
+            <th app-sort-th [sx]="sx" k="soHD" class="ctr">HĐ bán</th>
+            <th class="ctr">Thao tác</th>
           </tr>
         </thead>
         <tbody>
           @for (r of pg.items(); track r.k.id) {
-            <tr class="click" (click)="mo(r.k.id)">
+            <tr>
               @if (coChon()) {
                 <td (click)="$event.stopPropagation()"><input type="checkbox" [attr.aria-label]="'Chọn ' + r.k.ten" [checked]="chon().has(r.k.id)" (change)="flip(r.k.id)" /></td>
               }
-              <td class="c-ma"><b>{{ r.k.id }}</b></td>
+              <td class="c-ma"><a class="ma-link" [routerLink]="[]" [queryParams]="{ kh: r.k.id }" queryParamsHandling="merge" (click)="$event.stopPropagation()"><b>{{ r.k.id }}</b></a></td>
               <td class="c-vt">@if (r.k.tenVietTat) { <span class="vt" [attr.title]="r.k.tenVietTat">{{ r.k.tenVietTat }}</span> } @else { — }</td>
               <td class="c-ten">
                 <b class="ten">{{ r.k.ten }}</b>
@@ -149,11 +147,10 @@ const optsTT = (xs: readonly string[]) => xs.map((x) => ({ value: x, label: ttNh
                 } @else { <app-tt [v]="TT.CHUA_PHAN_BO" /> }
               </td>
               <td>{{ viDate(r.csCuoi) }}</td>
-              <td class="num">{{ r.soHD }}</td>
+              <td class="ctr">{{ r.soHD }}</td>
               <td (click)="$event.stopPropagation()">
-                <div class="row" style="flex-wrap:nowrap; gap:6px">
-                  <button type="button" class="ico-btn chat" title="Chi tiết & lịch sử chăm sóc" aria-label="Chi tiết & lịch sử chăm sóc" (click)="mo(r.k.id)"><app-icon name="chat" [size]="15" /></button>
-                  @if (store.canEditKH(r.k) && !r.xoa) {
+                <div class="row" style="flex-wrap:nowrap; gap:6px; justify-content:center">
+                                    @if (store.canEditKH(r.k) && !r.xoa) {
                     <button type="button" class="ico-btn" title="Sửa" aria-label="Sửa" (click)="sua.set(r.k.id)"><app-icon name="edit" [size]="15" /></button>
                     @let vuong = store.lyDoKhongXoa('DM_KhachHang', r.k.id);
                     <button type="button" class="ico-btn bad" [attr.title]="vuong ? vuong + ' — không xoá được' : 'Xoá'" aria-label="Xoá" (click)="xoa(r.k)"><app-icon name="trash" [size]="15" /></button>
@@ -179,7 +176,7 @@ const optsTT = (xs: readonly string[]) => xs.map((x) => ({ value: x, label: ttNh
   `,
   styles: `
     .bulk { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 12px; }
-    .bulk select { width: auto; min-width: 220px; }
+    .bulk .giao-pick { width: 340px; max-width: 100%; }
     .lh-cell { max-width: 200px; overflow-wrap: anywhere; }
     .c-ma { width: 1%; white-space: nowrap; }
     /* !important: styles.css ép cột thứ 2/3 của bảng rộng tối thiểu 280px (dành cho cột tên) */
@@ -242,6 +239,10 @@ const optsTT = (xs: readonly string[]) => xs.map((x) => ({ value: x, label: ttNh
     .tbl-wrap { border-radius: 0; border: 0; box-shadow: none; overflow: auto; background: none; }
     .tbl { font-size: 13px; font-family: var(--font); }
     .tbl .c-ma b { font-weight: 700; }
+    .tbl th.ctr, .tbl td.ctr { text-align: center; }
+    /* Mã KH là liên kết xanh (như tab Cơ hội) — bấm mở ngăn chi tiết */
+    .ma-link, .ma-link b { color: #138a4a !important; text-decoration: none; cursor: pointer; }
+    .ma-link:hover b { text-decoration: underline; }
     .tbl thead th { background: var(--panel); font-size: 12px; white-space: nowrap; border-radius: 0; }
     .tbl thead th:first-child { border-top-left-radius: 10px; } .tbl thead th:last-child { border-top-right-radius: 10px; }
     .tbl tbody td { padding-block: 9px; vertical-align: middle; }
