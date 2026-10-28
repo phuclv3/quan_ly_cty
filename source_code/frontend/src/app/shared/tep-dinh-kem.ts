@@ -14,7 +14,7 @@ import { Icon } from './icon';
   imports: [Icon],
   template: `
     <div class="field">
-      <span class="lbl">Chứng từ đính kèm</span>
+      @if (nhan()) { <span class="lbl">{{ nhan() }}</span> }
       <ul class="tep-list">
         @for (f of files(); track f.id; let i = $index) {
           <li>
@@ -43,6 +43,8 @@ export class TepDinhKem {
   private readonly store = inject(Store);
   readonly files = model<FileRef[]>([]);
   readonly edit = input(false);
+  /** Nhãn phía trên danh sách; rỗng = không hiện (khi màn cha đã có tiêu đề). */
+  readonly nhan = input('Chứng từ đính kèm');
   protected readonly accept = HO_SO_ACCEPT;
   protected readonly viSize = viSize;
   protected readonly dangTai = signal(false);

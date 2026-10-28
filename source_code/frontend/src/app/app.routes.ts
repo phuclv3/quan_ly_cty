@@ -80,7 +80,6 @@ export const routes: Routes = [
         canActivate: [permGuard('phuTai')],
         loadComponent: () => import('./phu-tai/pt-detail').then((m) => m.PtDetail),
       },
-      { path: 'bao-cao', title: T('Báo cáo'), canActivate: [permGuard('baoCao')], loadComponent: () => import('./bao-cao/bao-cao').then((m) => m.BaoCaoPage) },
       // Danh mục cũ đã tách vào menu Kinh doanh — giữ đường dẫn cũ (bookmark, ?tab=) chuyển sang màn mới.
       {
         path: 'danh-muc',

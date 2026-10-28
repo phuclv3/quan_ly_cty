@@ -33,6 +33,11 @@ import {
   ChamSocKH,
   DeNghiVatTu,
   ViecGiao,
+  YeuCauHan,
+  NguonViec,
+  MucUuTien,
+  NhomViec,
+  ycConHan,
   CoHoi,
   TiepCan,
   AnhXaTen,
@@ -80,7 +85,22 @@ import {
 } from './calc';
 import { luuTep } from './files';
 import { TT, ttNhan } from './trang-thai';
-import { fold, money, nowIso, todayIso, uid, vnd, yy } from './util';
+import { fold, money, nowIso, todayIso, uid, viDate, vnd, yy } from './util';
+
+/** Dữ liệu giao việc / đặt lịch. */
+export interface GiaoViecIn {
+  noiDung: string;
+  nguoiNhan: string[];
+  nguonLoai?: NguonViec;
+  hdbId?: string;
+  hdmId?: string;
+  nhom?: NhomViec | '';
+  batDau?: string;
+  han?: string;
+  gio?: string;
+  mucUuTien?: MucUuTien;
+  files?: FileRef[];
+}
 
 const KEY = 'app-oxy:db';
 
@@ -133,6 +153,7 @@ export class Store {
     this.firstLoad = this.load();
     // Người khác sửa dữ liệu → phiên bản máy chủ tăng → nạp lại (30 giây / lần, chỉ khi không có lệnh đang gửi).
     setInterval(() => void this.kiemPhienBan(), 30_000);
+    setInterval(() => this.dongHo.set(Date.now()), 30_000);
     addEventListener('focus', () => void this.kiemPhienBan());
   }
 
@@ -309,12 +330,16 @@ export class Store {
   readonly anhXaTen = computed(() => this.db().anhXaTen);
   readonly deNghiVatTu = computed(() => this.db().deNghiVatTu);
   /** Việc được giao: "Sửa của mình" chỉ thấy việc mình giao hoặc được giao. */
-  readonly viecVisible = computed(() => {
-    const me = this.meId();
-    const all = this.db().viecGiao ?? [];
-    return this.ownOnly('viec') ? all.filter((v) => v.nguoiTao === me || v.nguoiNhan.includes(me ?? '')) : all;
-  });
+  /** Danh sách công việc toàn công ty: ai có quyền vào chức năng đều xem được (sửa / phản hồi vẫn chỉ người liên quan). */
+  readonly viecVisible = computed(() => this.db().viecGiao ?? []);
   /** Việc chưa xong giao cho tôi (hoặc việc của tôi) — số trên menu. */
+  /** Yêu cầu đổi hạn đang chờ TÔI (người giao) duyệt — còn trong 60 phút. Đồng hồ cập nhật mỗi 30 giây. */
+  private readonly dongHo = signal(Date.now());
+  readonly ycChoToi = computed(() => {
+    const me = this.meId();
+    const now = this.dongHo();
+    return (this.db().viecGiao ?? []).filter((v) => v.nguoiTao === me && ycConHan(v.yeuCauHan, now));
+  });
   readonly viecCuaToi = computed(() => {
     const me = this.meId() ?? '';
     return (this.db().viecGiao ?? []).filter((v) => !v.xongLuc && (v.nguoiNhan.includes(me) || (!v.nguoiNhan.length && v.nguoiTao === me))).length;
@@ -557,8 +582,14 @@ export class Store {
   ghiThucThu(hdbId: string, dot: number, o: { ngayThu: string; soTienThu: number; nguonTienNhan: string }): Result {
     return this.exec(() => this.ghiThucThu_(hdbId, dot, o), () => ['POST', `/hop-dong-ban/${e_(hdbId)}/dot/${dot}/thuc-thu`, o]);
   }
-  giaoViec(o: { noiDung: string; nguoiNhan: string[]; hdbId?: string; han?: string; gio?: string }): Result {
+  giaoViec(o: GiaoViecIn): Result {
     return this.exec(() => this.giaoViec_(o), () => ['POST', '/viec', o]);
+  }
+  yeuCauDoiHan(id: string, o: { hanMoi: string; gioMoi?: string; lyDo: string; files: FileRef[] }): Result {
+    return this.exec(() => this.yeuCauDoiHan_(id, o), () => ['POST', `/viec/${e_(id)}/yeu-cau-han`, o]);
+  }
+  duyetDoiHan(id: string, duyet: boolean): Result {
+    return this.exec(() => this.duyetDoiHan_(id, duyet), () => ['POST', `/viec/${e_(id)}/duyet-han`, { duyet }]);
   }
   phanHoiViec(id: string, noiDung: string): Result {
     return this.exec(() => this.phanHoiViec_(id, noiDung), () => ['POST', `/viec/${e_(id)}/phan-hoi`, { noiDung }]);
@@ -1381,25 +1412,75 @@ export class Store {
 
   // ── Việc được giao (ToDoList) ──
 
-  private giaoViec_(o: { noiDung: string; nguoiNhan: string[]; hdbId?: string; han?: string; gio?: string }): Result {
+  private giaoViec_(o: GiaoViecIn): Result {
     const e = this.require('viec', 'own');
     if (e) return e;
     const noiDung = o.noiDung.trim();
     if (!noiDung) return 'Nhập nội dung việc';
     const me = this.meId()!;
+    const loai: NguonViec = o.nguonLoai || (o.hdbId ? 'HDB' : o.hdmId ? 'HDM' : 'NOI_BO');
+    if (loai === 'HDB' && o.hdbId && !this.hdbById(o.hdbId)) return 'HĐ bán không tồn tại';
+    if (loai === 'HDM' && o.hdmId && !this.db().hopDongMua.some((m) => m.id === o.hdmId)) return 'HĐ mua không tồn tại';
+    const han = o.han || todayIso();
+    const batDau = o.batDau || todayIso();
+    if (batDau > han) return 'Ngày bắt đầu phải trước hoặc bằng ngày kết thúc';
+    const max = Math.max(0, ...(this.db().viecGiao ?? []).map((x) => +(/^VIEC-(\d+)$/.exec(x.ma ?? '')?.[1] ?? 0)));
     const v: ViecGiao = {
       id: uid('VG'),
       noiDung,
       nguoiTao: me,
       taoLuc: nowIso(),
       nguoiNhan: [...new Set(o.nguoiNhan.filter((x) => x && x !== me))],
-      hdbId: o.hdbId || undefined,
-      han: o.han || todayIso(),
+      hdbId: loai === 'HDB' ? o.hdbId || undefined : undefined,
+      hdmId: loai === 'HDM' ? o.hdmId || undefined : undefined,
+      nguonLoai: loai,
+      nhom: o.nhom || undefined,
+      batDau,
+      han,
       gio: o.gio || undefined,
+      mucUuTien: o.mucUuTien || 'Trung bình',
+      files: o.files ?? [],
+      ma: `VIEC-${String(max + 1).padStart(4, '0')}`,
       uuTien: this.coToanQuyen(),
       phanHoi: [],
     };
     this.upsert('viecGiao', v);
+    return null;
+  }
+
+  private yeuCauDoiHan_(id: string, o: { hanMoi: string; gioMoi?: string; lyDo: string; files: FileRef[] }): Result {
+    const v = this.db().viecGiao.find((x) => x.id === id);
+    if (!v) return 'Không tìm thấy việc';
+    const me = this.meId()!;
+    if (!v.nguoiNhan.includes(me)) return 'Chỉ người được giao mới đề nghị đổi hạn';
+    if (v.xongLuc) return 'Việc đã hoàn thành';
+    if (ycConHan(v.yeuCauHan)) return 'Đang có yêu cầu đổi hạn chờ duyệt';
+    if (!o.hanMoi) return 'Chọn hạn mới';
+    if (!o.lyDo.trim()) return 'Nhập lý do đổi hạn';
+    if (v.batDau && o.hanMoi < v.batDau) return 'Hạn mới phải sau ngày bắt đầu';
+    const lyDo = o.lyDo.trim();
+    const yc: YeuCauHan = { nguoi: me, luc: nowIso(), hanMoi: o.hanMoi, gioMoi: o.gioMoi || undefined, lyDo, files: o.files, trangThai: 'Chờ duyệt' };
+    this.upsert('viecGiao', { ...v, yeuCauHan: yc, phanHoi: [...v.phanHoi, { nguoi: me, luc: yc.luc, noiDung: `Đề nghị đổi hạn sang ${viDate(o.hanMoi)}: ${lyDo}`, heThong: true }] });
+    return null;
+  }
+
+  /** Người giao duyệt / từ chối. Duyệt → hạn mới; từ chối hoặc quá 1 giờ → hạn cũ, trạng thái cũ. */
+  private duyetDoiHan_(id: string, duyet: boolean): Result {
+    const v = this.db().viecGiao.find((x) => x.id === id);
+    if (!v) return 'Không tìm thấy việc';
+    const me = this.meId()!;
+    if (v.nguoiTao !== me) return 'Chỉ người giao việc mới duyệt';
+    const y = v.yeuCauHan;
+    if (!y || y.trangThai !== 'Chờ duyệt') return 'Không có yêu cầu chờ duyệt';
+    if (!ycConHan(y)) return 'Yêu cầu đã quá 1 giờ, hạn giữ nguyên';
+    const dong = { nguoi: me, luc: nowIso(), noiDung: duyet ? `Đã duyệt đổi hạn sang ${viDate(y.hanMoi)}` : 'Từ chối đổi hạn', heThong: true };
+    this.upsert('viecGiao', {
+      ...v,
+      han: duyet ? y.hanMoi : v.han,
+      gio: duyet ? y.gioMoi : v.gio,
+      yeuCauHan: { ...y, trangThai: duyet ? 'Đã duyệt' : 'Từ chối' },
+      phanHoi: [...v.phanHoi, dong],
+    });
     return null;
   }
 
@@ -1413,6 +1494,7 @@ export class Store {
     const v = this.db().viecGiao.find((x) => x.id === id);
     if (!v) return 'Không tìm thấy việc';
     if (!this.lienQuanViec(v)) return 'Bạn không liên quan việc này';
+    if (v.xongLuc) return 'Việc đã hoàn thành — mở lại việc để trao đổi';
     if (!noiDung.trim()) return 'Nhập nội dung phản hồi';
     this.upsert('viecGiao', { ...v, phanHoi: [...v.phanHoi, { nguoi: this.meId()!, luc: nowIso(), noiDung: noiDung.trim() }] });
     return null;

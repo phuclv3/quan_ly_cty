@@ -469,6 +469,40 @@ export interface ViecGiao {
   xongLuc?: string;
   nguoiXong?: string;
   phanHoi: { nguoi: string; luc: string; noiDung: string; heThong?: boolean }[];
+  /** Mã việc VIEC-0001. */
+  ma?: string;
+  nhom?: NhomViec;
+  /** Ngày bắt đầu; `han` là ngày kết thúc. */
+  batDau?: string;
+  mucUuTien?: MucUuTien;
+  nguonLoai?: NguonViec;
+  hdmId?: string;
+  yeuCauHan?: YeuCauHan;
+  /** Tệp đính kèm khi giao việc. */
+  files?: FileRef[];
+}
+
+export const NHOM_VIEC = ['Kinh doanh', 'Marketing', 'Mua hàng', 'Kho', 'Kế toán', 'Hành chính', 'Kỹ thuật'] as const;
+export type NhomViec = (typeof NHOM_VIEC)[number];
+export const MUC_UU_TIEN = ['Cao', 'Trung bình', 'Thấp'] as const;
+export type MucUuTien = (typeof MUC_UU_TIEN)[number];
+export type NguonViec = 'HDB' | 'HDM' | 'NOI_BO';
+/** Người giao phải duyệt yêu cầu đổi hạn trong thời gian này, quá giờ thì hạn giữ nguyên. */
+export const PHUT_DUYET_HAN = 60;
+
+/** Yêu cầu còn trong thời hạn duyệt (≤ 60 phút kể từ lúc gửi). */
+export const ycConHan = (y: YeuCauHan | undefined, now = Date.now()): boolean =>
+  !!y && y.trangThai === 'Chờ duyệt' && now < new Date(y.luc).getTime() + PHUT_DUYET_HAN * 60_000;
+
+/** Người nhận đề nghị đổi hạn (kèm tệp); người giao duyệt. */
+export interface YeuCauHan {
+  nguoi: string;
+  luc: string;
+  hanMoi: string;
+  gioMoi?: string;
+  lyDo: string;
+  files: FileRef[];
+  trangThai: 'Chờ duyệt' | 'Đã duyệt' | 'Từ chối' | 'Hết hạn';
 }
 
 /** Phiếu đề nghị cấp vật tư: HĐ bán thiếu hàng trong kho → đề nghị mua; HĐ mua lấy dòng từ đề nghị. */

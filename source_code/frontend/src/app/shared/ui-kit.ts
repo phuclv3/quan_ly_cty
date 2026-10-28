@@ -437,7 +437,7 @@ export class PickGo {
       if (this.open()) e.stopPropagation();
       this.dong();
     } else if (e.key === 'Tab') {
-      this.dong();
+      this.chonKhiRoi();
     }
   }
   protected choose(v: string): void {
@@ -449,8 +449,14 @@ export class PickGo {
     this.open.set(false);
     this.query.set('');
   }
+  /** Gõ xong rời ô (Tab / bấm ra ngoài) mà chỉ còn đúng 1 kết quả → tự chọn, khỏi phải bấm vào danh sách. */
+  private chonKhiRoi(): void {
+    const ds = this.ketQua().ds;
+    if (this.open() && this.query().trim() && ds.length === 1) this.choose(ds[0].value);
+    else this.dong();
+  }
   protected outside(e: Event): void {
-    if (this.open() && !this.el.nativeElement.contains(e.target as Node)) this.dong();
+    if (this.open() && !this.el.nativeElement.contains(e.target as Node)) this.chonKhiRoi();
   }
 }
 

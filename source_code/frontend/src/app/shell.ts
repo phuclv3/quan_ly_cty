@@ -67,9 +67,9 @@ interface NavItem {
         </div>
         <span class="spacer"></span>
         @if (store.canView('viec')) {
-          <a class="bell" routerLink="/viec" [attr.aria-label]="'Việc được giao: ' + store.viecCuaToi()">
+          <a class="bell" routerLink="/viec" [attr.aria-label]="'Việc được giao: ' + (store.viecCuaToi() + store.ycChoToi().length)">
             <app-icon name="bell" [size]="20" />
-            @if (store.viecCuaToi() > 0) { <i class="bell-n">{{ store.viecCuaToi() }}</i> }
+            @if (store.viecCuaToi() + store.ycChoToi().length > 0) { <i class="bell-n">{{ store.viecCuaToi() + store.ycChoToi().length }}</i> }
           </a>
         }
         <div class="user-chip">
@@ -127,7 +127,7 @@ export class Shell {
 
   /** Thanh tab đáy (điện thoại): 4 mục ưu tiên đầu tiên người dùng được xem. */
   protected readonly tabs = computed<NavItem[]>(() => {
-    const uuTien = ['/', '/hop-dong-ban', '/khach-hang', '/ke-toan', '/kho', '/hop-dong-mua', '/phu-tai', '/bao-cao'];
+    const uuTien = ['/', '/hop-dong-ban', '/khach-hang', '/ke-toan', '/kho', '/hop-dong-mua', '/phu-tai'];
     const coThe = this.items();
     return uuTien.map((p) => coThe.find((x) => x.path === p)).filter((x): x is NavItem => !!x).slice(0, 4);
   });
@@ -159,7 +159,7 @@ export class Shell {
   protected readonly items = computed<NavItem[]>(() => {
     const all: NavItem[] = [
       { path: '/', label: 'Trang chủ', icon: 'home', perms: null, exact: true, group: 'Điều hành' },
-      { path: '/viec', label: 'Công việc & Cảnh báo', short: 'Việc', icon: 'list', perms: ['viec'], count: this.store.viecCuaToi(), group: 'Điều hành' },
+      { path: '/viec', label: 'Công việc & Cảnh báo', short: 'Việc', icon: 'list', perms: ['viec'], count: this.store.viecCuaToi() + this.store.ycChoToi().length, group: 'Điều hành' },
       { path: '/khach-hang', label: 'Khách hàng', short: 'Khách', icon: 'contact', perms: ['khachHang'], group: 'Nghiệp vụ' },
       { path: '/hop-dong-ban', label: 'Hợp đồng bán', short: 'HĐ bán', icon: 'sell', perms: ['hdb'], group: 'Nghiệp vụ' },
       { path: '/nha-cung-cap', label: 'Nhà cung cấp', short: 'NCC', icon: 'truck', perms: ['ncc'], group: 'Nghiệp vụ' },
@@ -168,7 +168,6 @@ export class Shell {
       { path: '/in-tem', label: 'In tem bình khí', short: 'Tem', icon: 'box', perms: ['inTem'], group: 'Nghiệp vụ' },
       { path: '/ke-toan', label: 'Tài chính – Kế toán', short: 'Kế toán', icon: 'wallet', perms: ['soQuy', 'congNo', 'cpHD', 'nguonTien'], count: this.choDuyetKT(), group: 'Nghiệp vụ' },
       { path: '/phu-tai', label: 'Phú Tài', icon: 'chart', perms: ['phuTai'], group: 'Nghiệp vụ' },
-      { path: '/bao-cao', label: 'Báo cáo', icon: 'chart', perms: ['baoCao'], group: 'Nghiệp vụ' },
       { path: '/duyet-xoa', label: 'Phê duyệt', icon: 'check', perms: ['duyetXoa', 'duyetXoaKT'], count: this.choXoa(), group: 'Quản trị hệ thống' },
       { path: '/tai-khoan', label: 'Người dùng & Phân quyền', icon: 'users', perms: ['taiKhoan'], group: 'Quản trị hệ thống' },
       { path: '/cau-hinh', label: 'Cài đặt', icon: 'settings', perms: ['cauHinh'], group: 'Quản trị hệ thống' },

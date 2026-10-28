@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Store } from '../core/store';
-import { KHO_CHUYEN_THANG, ViecGiao } from '../core/models';
+import { KHO_CHUYEN_THANG, PHUT_DUYET_HAN, ViecGiao } from '../core/models';
 import { dotBanDaThu, hdbCalc, hdmCalc, hoSoThieu, ptCalc, soDuQuyPT, tamUngTreo, tonKho } from '../core/calc';
 import { daysFromToday, money, sum, todayIso, viDate, viMoment, vndShort, nowIso } from '../core/util';
 import { Modal, PickGo, PickOption } from '../shared/ui-kit';
@@ -50,7 +50,10 @@ interface Viec {
     .hs a{display:inline-block;padding:1px 9px;border-radius:7px;background:var(--brand-tint);color:#16642b;font-weight:700;font-size:14px;text-decoration:none}
     .who{display:flex;align-items:center;gap:8px}.av{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:11px;font-weight:700;flex:0 0 auto}
     .han.neg{font-weight:700}
-    .btn-xl{display:inline-flex;align-items:center;gap:4px;height:34px;padding:0 14px;border-radius:999px;border:1.5px solid #16642b;background:var(--surf);color:#16642b;font-weight:700;font-size:14px;cursor:pointer;white-space:nowrap}
+    .btn-xl{display:inline-flex;align-items:center;justify-content:center;gap:2px;height:32px;padding:0 12px 0 14px;border-radius:999px;border:1.5px solid #16642b;background:var(--surf);color:#16642b;font:inherit;font-weight:700;font-size:14px;line-height:1;cursor:pointer;white-space:nowrap;transition:background-color .15s,color .15s,box-shadow .15s}
+    .btn-xl app-icon{transform:rotate(-90deg);margin-left:2px}
+    .btn-xl:focus-visible{box-shadow:0 0 0 3px rgba(22,100,43,.25);outline:0}
+    .pri tbody td:last-child{text-align:right;width:1%;white-space:nowrap}
     a.btn-xl{text-decoration:none}.btn-xl:hover{background:#16642b;color:#fff}
     .dh2{margin:22px 0 10px;font-size:19px}
     .tl{display:grid;gap:0;margin:6px 0 12px;padding-left:4px;max-height:300px;overflow:auto}
@@ -292,7 +295,28 @@ export class Dashboard {
       gio: undefined as string | undefined,
       tre: x.tone === 'bad' ? 1 : 0,
     }));
-    return [...viecs, ...canhBao].sort((a, b) => Number(b.p0) - Number(a.p0));
+    // Yêu cầu đổi hạn đang chờ tôi duyệt (trong 60 phút) — mở chi tiết việc để Duyệt / Từ chối.
+    const duyetHan = this.store.ycChoToi().map((v) => {
+      const y = v.yeuCauHan!;
+      const con = Math.max(0, Math.ceil((new Date(y.luc).getTime() + PHUT_DUYET_HAN * 60_000 - Date.now()) / 60_000));
+      return {
+        key: `yc${v.id}`,
+        viecId: null,
+        p0: true,
+        text: `Duyệt đổi hạn: ${v.noiDung}`,
+        sub: `${this.store.userName(y.nguoi)} đề nghị hạn mới ${viDate(y.hanMoi)} · còn ${con} phút để duyệt`,
+        loai: 'PHÊ DUYỆT',
+        ma: v.ma ?? 'VIEC',
+        mau: 'pd',
+        link: ['/viec'],
+        qp: { id: v.id } as Record<string, string> | undefined,
+        ai: me,
+        han: homNay,
+        gio: undefined as string | undefined,
+        tre: 0,
+      };
+    });
+    return [...duyetHan, ...viecs, ...canhBao].sort((a, b) => Number(b.p0) - Number(a.p0));
   });
   protected readonly demMuc = computed(() => ({ p0: this.hang().filter((r) => r.p0).length, p1: this.hang().filter((r) => !r.p0).length }));
   protected ngayNgan(iso: string): string {
@@ -364,7 +388,7 @@ export class Dashboard {
     if (!v || !ds.length) return;
     const ten = ds.map((id) => this.store.userName(id)).join(', ');
     const ghi = this.ghiChu().trim();
-    const err = this.store.giaoViec({ noiDung: `${v.noiDung}${ghi ? ` — ${ghi}` : ''}`, nguoiNhan: ds, hdbId: v.hdbId, han: todayIso(), gio: v.gio });
+    const err = this.store.giaoViec({ noiDung: `${v.noiDung}${ghi ? ` — ${ghi}` : ''}`, nguoiNhan: ds, hdbId: v.hdbId, hdmId: v.hdmId, nguonLoai: v.nguonLoai, nhom: v.nhom, mucUuTien: v.mucUuTien, files: v.files, han: todayIso(), gio: v.gio });
     if (err) return this.store.say(err);
     this.store.phanHoiViec(v.id, `Chuyển cho ${ten} tiếp tục xử lý${ghi ? `: ${ghi}` : ''}`);
     this.store.xongViec(v.id, true);
