@@ -48,6 +48,7 @@ const CAU_HINH: Record<LoaiDm, CauHinhDm> = {
     neo: 'Tên khách hàng',
     cot: [
       { ten: 'Tên khách hàng', rong: 34, huongDan: 'Bắt buộc.' },
+      { ten: 'Tên viết tắt', rong: 16, huongDan: 'Tuỳ chọn, VD KCN-A.' },
       { ten: 'MST', rong: 16, huongDan: 'Bắt buộc, 10 số hoặc 10 số-3 số (VD 0101248141-001). Trùng MST đã có → bỏ qua. Nên định dạng ô là Text để giữ số 0 đầu.' },
       { ten: 'Địa chỉ', rong: 36, huongDan: 'Tuỳ chọn.' },
       { ten: 'Người liên hệ', rong: 20, huongDan: 'Tuỳ chọn.' },
@@ -57,7 +58,7 @@ const CAU_HINH: Record<LoaiDm, CauHinhDm> = {
       { ten: 'Email Sale phụ trách', rong: 24, huongDan: 'Email tài khoản Sale. Trống = theo quy tắc của app (Sale tự import thì mình phụ trách, còn lại chưa phân bổ). Cần quyền phân bổ KH.' },
       { ten: 'Ghi chú', rong: 24, huongDan: 'Tuỳ chọn.' },
     ],
-    viDu: [['Công ty TNHH Ví Dụ (xoá dòng này)', '0101234567', '12 Phố Mẫu, Hà Nội', 'Nguyễn Văn A', '0900000000', 'a@vidu.vn', 'Hà Nội', '', '']],
+    viDu: [['Công ty TNHH Ví Dụ (xoá dòng này)', 'VIDU', '0101234567', '12 Phố Mẫu, Hà Nội', 'Nguyễn Văn A', '0900000000', 'a@vidu.vn', 'Hà Nội', '', '']],
   },
   ncc: {
     ten: 'nhà cung cấp',
@@ -142,8 +143,8 @@ function docDong(loai: LoaiDm, rows: string[][], store: Store): DongKq[] | strin
       const sale = email ? db.taiKhoan.find((x) => fold(x.email) === fold(email))?.id : undefined;
       if (email && !sale) loi.push(`Không thấy tài khoản Sale ${email}`);
       const k: KhachHang = {
-        id: '', ten, mst, diaChi: o(r, 'Địa chỉ'), nguoiLienHe: o(r, 'Người liên hệ'), dienThoai: o(r, 'Điện thoại'), email: o(r, 'Email'),
-        ghiChu: o(r, 'Ghi chú'), tinh: o(r, 'Tỉnh') || undefined, phuTrach: sale || undefined, import: true,
+        id: '', ten, tenVietTat: o(r, 'Tên viết tắt') || undefined, mst, diaChi: o(r, 'Địa chỉ'), nguoiLienHe: o(r, 'Người liên hệ'),
+        dienThoai: o(r, 'Điện thoại'), email: o(r, 'Email'), ghiChu: o(r, 'Ghi chú'), tinh: o(r, 'Tỉnh') || undefined, phuTrach: sale || undefined, import: true,
       };
       kq.push({ dong, ten: ten || '—', khoa: mst, loi, luu: () => store.saveKhachHang(k) });
     } else if (loai === 'ncc') {

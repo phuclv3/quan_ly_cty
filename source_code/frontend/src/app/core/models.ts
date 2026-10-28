@@ -241,9 +241,35 @@ export interface ChamSocKH {
   coHoi?: CoHoi;
 }
 
+/** Giai đoạn một cơ hội bán hàng. */
+export const GIAI_DOAN_CH = ['Mới', 'Đã báo giá', 'Đang đàm phán', 'Thắng', 'Thua'] as const;
+export type GiaiDoanCH = (typeof GIAI_DOAN_CH)[number];
+export const LY_DO_THUA = ['Giá cao hơn đối thủ', 'Dự án hoãn', 'Chọn nhà cung cấp khác', 'Không đáp ứng kỹ thuật', 'Khác'] as const;
+
+/** Một cơ hội bán hàng của khách hàng (lưu cùng bản ghi khách, như nhật ký chăm sóc). */
+export interface CoHoiKH {
+  /** CH-0001 */
+  id: string;
+  huongBan: string;
+  nhomHang?: string;
+  giaTri: number;
+  giaiDoan: GiaiDoanCH;
+  ngayTao?: string;
+  ngayBaoGia?: string;
+  /** Ngày chốt Thắng / Thua. */
+  ngayChot?: string;
+  lyDoThua?: string;
+  tuongTacTiep?: string;
+  ngayTuongTac?: string;
+  /** Cơ hội Thua cần tiếp cận lại vào ngày này. */
+  ngayTaiTiepCan?: string;
+}
+
 export interface KhachHang {
   id: string;
   ten: string;
+  /** Tên viết tắt (VD KCN-A) — tuỳ chọn. */
+  tenVietTat?: string;
   mst: string;
   diaChi: string;
   nguoiLienHe: string;
@@ -269,6 +295,7 @@ export interface KhachHang {
   /** Giá trị cơ hội (đã chào giá / dự kiến), VNĐ chưa VAT. */
   giaTriCoHoi?: number;
   chamSoc?: ChamSocKH[];
+  dsCoHoi?: CoHoiKH[];
   /** Bản ghi đến từ file theo dõi KH (Excel). */
   import?: boolean;
 }

@@ -27,6 +27,7 @@ import { TT, ttNhan } from '../core/trang-thai';
           <div class="crumbs"><a routerLink="/">Trang chủ</a> › <a routerLink="/khach-hang">Khách hàng</a> › {{ k.id }}</div>
           <h1>
             {{ k.ten || k.id }}
+            @if (k.tenVietTat) { <span class="vt-h">{{ k.tenVietTat }}</span> }
             <app-tt [v]="k.coHoi || TT.CHUA_TIEP_CAN" />
             @if (k.trangThai === TT.NGUNG) { <app-tt [v]="TT.NGUNG" /> }
             @if (choXoa()) { <app-tt v="Chờ xoá" /> }
@@ -52,6 +53,7 @@ import { TT, ttNhan } from '../core/trang-thai';
       <section class="card">
         <div class="form-grid cols-3 xem">
           <div class="field span-2"><span class="lbl">Tên công ty / đơn vị</span><div class="ro multi">{{ k.ten }}</div></div>
+          <div class="field"><span class="lbl">Tên viết tắt</span><div class="ro">{{ k.tenVietTat || '—' }}</div></div>
           <div class="field"><span class="lbl">Mã số thuế</span><div class="ro mono">{{ k.mst || '—' }}</div></div>
           <div class="field span-2"><span class="lbl">Địa chỉ</span><div class="ro">{{ k.diaChi || '—' }}</div></div>
           <div class="field"><span class="lbl">Tỉnh / Thành phố</span><div class="ro">{{ k.tinh || '—' }}</div></div>
@@ -136,6 +138,7 @@ import { TT, ttNhan } from '../core/trang-thai';
     }
   `,
   styles: `
+    .vt-h { display: inline-block; padding: 1px 10px; border-radius: 8px; background: var(--surf-3); font-size: 14px; font-weight: 700; vertical-align: middle; }
     .xem .ro { min-height: 40px; }
     .cs-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .cs-log { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 10px; }

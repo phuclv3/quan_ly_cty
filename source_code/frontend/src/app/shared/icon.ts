@@ -41,6 +41,8 @@ export type IconName =
   | 'lock'
   | 'contact'
   | 'bell'
+  | 'mail'
+  | 'chat'
   | 'send';
 
 @Component({
@@ -85,6 +87,8 @@ export type IconName =
         @case ('eye') { <path d="M2.4 12s3.6-6.6 9.6-6.6 9.6 6.6 9.6 6.6-3.6 6.6-9.6 6.6S2.4 12 2.4 12z" /><circle cx="12" cy="12" r="2.8" /> }
         @case ('edit') { <path d="M4 20h4.2L19.4 8.8a2.2 2.2 0 0 0-3.2-3.2L5 16.8z" /><path d="m14.6 7.2 3.2 3.2" /> }
         @case ('send') { <path d="M21 3 10.5 13.5" /><path d="M21 3 14.5 21l-4-7.5L3 9.5z" /> }
+        @case ('chat') { <path d="M20.4 11.6a7.8 7.8 0 0 1-11.3 7L4 20l1.4-4.4A7.8 7.8 0 1 1 20.4 11.6z" /><path d="M9.2 10.4h5.6M9.2 13.4h3.4" /> }
+        @case ('mail') { <rect x="3" y="5.4" width="18" height="13.2" rx="2.2" /><path d="m3.6 7.4 8.4 6.2 8.4-6.2" /> }
         @case ('bell') { <path d="M6 16.6V11a6 6 0 0 1 12 0v5.6l1.6 2H4.4z" /><path d="M10 21h4" /> }
         @case ('lock') { <rect x="4.4" y="10.6" width="15.2" height="10" rx="2" /><path d="M7.8 10.6V7.4a4.2 4.2 0 0 1 8.4 0v3.2" /> }
       }

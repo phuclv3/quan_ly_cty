@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, HostListener, computed, inject, signal, viewChild } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { Icon, IconName } from './shared/icon';
 import { Store } from './core/store';
@@ -39,14 +39,14 @@ interface NavItem {
         @for (it of items(); track it.path) {
           @if (it.group) { <div class="grp-label">{{ it.group }}</div> }
           <a [routerLink]="it.path" routerLinkActive="on" [routerLinkActiveOptions]="{ exact: !!it.exact }" [attr.title]="it.label">
-            <app-icon [name]="it.icon" [size]="24" />
+            <app-icon [name]="it.icon" [size]="20" />
             <span class="lb">{{ it.label }}</span>
             @if ((it.count ?? 0) > 0) { <span class="count">{{ it.count }}</span> }
           </a>
         }
         <div class="foot">
-          <button type="button" class="nav" title="Đổi mật khẩu" (click)="ui.doiMatKhau.set(true)"><app-icon name="key" [size]="24" /><span class="lb">Đổi mật khẩu</span></button>
-          <button type="button" class="nav" title="Đăng xuất" (click)="auth.logout()"><app-icon name="logout" [size]="24" /><span class="lb">Đăng xuất</span></button>
+          <button type="button" class="nav" title="Đổi mật khẩu" (click)="ui.doiMatKhau.set(true)"><app-icon name="key" [size]="20" /><span class="lb">Đổi mật khẩu</span></button>
+          <button type="button" class="nav" title="Đăng xuất" (click)="auth.logout()"><app-icon name="logout" [size]="20" /><span class="lb">Đăng xuất</span></button>
         </div>
       </nav>
       <div class="col">
@@ -55,8 +55,9 @@ interface NavItem {
         <a class="brand m-brand" routerLink="/" aria-label="Về trang chủ"><img src="brand/logo-oxymecie.png" alt="Oxy Mecie" height="40" /></a>
         <div class="search">
           <app-icon name="search" [size]="18" />
-          <input type="search" placeholder="Tìm số HĐ, khách hàng, NCC…" aria-label="Tìm nhanh" autocomplete="off"
+          <input #o type="search" placeholder="Tìm khách hàng, MST, số điện thoại…" aria-label="Tìm nhanh" autocomplete="off"
                  [value]="q()" (input)="q.set($any($event.target).value)" (keydown.escape)="q.set('')" />
+          <kbd class="kbd">⌘ F</kbd>
           @if (ketQua().length) {
             <ul class="search-res">
               @for (r of ketQua(); track r.link) {
@@ -66,6 +67,7 @@ interface NavItem {
           }
         </div>
         <span class="spacer"></span>
+        <a class="bell" routerLink="/viec" aria-label="Thư"><app-icon name="mail" [size]="20" /></a>
         @if (store.canView('viec')) {
           <a class="bell" routerLink="/viec" [attr.aria-label]="'Việc được giao: ' + (store.viecCuaToi() + store.ycChoToi().length)">
             <app-icon name="bell" [size]="20" />
@@ -138,6 +140,15 @@ export class Shell {
   });
 
   protected readonly q = signal('');
+  private readonly o = viewChild<ElementRef<HTMLInputElement>>('o');
+  /** Ctrl/⌘ + F: đưa con trỏ vào ô tìm nhanh (thay tìm của trình duyệt). */
+  @HostListener('document:keydown', ['$event'])
+  protected phim(e: KeyboardEvent): void {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f' && !e.shiftKey && !e.altKey) {
+      e.preventDefault();
+      this.o()?.nativeElement.focus();
+    }
+  }
   protected readonly initial = computed(() => {
     const p = (this.auth.me()?.hoTen ?? '?').replace(/\(.*?\)/g, '').trim().split(/\s+/);
     return (p.length > 1 ? p[0][0] + p[p.length - 1][0] : p[0].slice(0, 2)).toUpperCase();
@@ -153,6 +164,10 @@ export class Shell {
     if (this.store.canView('hdm'))
       for (const m of this.store.hdmVisible())
         if (`${m.soHD} ${m.tenNCC}`.toLowerCase().includes(k)) out.push({ nhan: m.soHD || '(chưa số)', loai: 'HĐ mua', phu: m.tenNCC, link: `/hop-dong-mua/${m.id}` });
+    if (this.store.canView('khachHang'))
+      for (const c of this.store.khachHang())
+        if (`${c.id} ${c.ten} ${c.tenVietTat ?? ''} ${c.mst} ${c.dienThoai}`.toLowerCase().includes(k))
+          out.unshift({ nhan: c.tenVietTat || c.id, loai: 'Khách hàng', phu: c.ten, link: `/khach-hang/${c.id}` });
     return out.slice(0, 8);
   });
 

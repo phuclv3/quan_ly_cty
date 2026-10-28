@@ -45,6 +45,10 @@ type F = Exclude<keyof KhachHang, 'id' | 'chamSoc'>;
             <input id="khf-ten" [value]="k.ten" (input)="set('ten', $any($event.target).value)" />
           </div>
           <div class="field">
+            <label for="khf-vt">Tên viết tắt</label>
+            <input id="khf-vt" placeholder="VD KCN-A" [value]="k.tenVietTat ?? ''" (input)="set('tenVietTat', $any($event.target).value || undefined)" />
+          </div>
+          <div class="field">
             <label for="khf-mst">Mã số thuế <span class="req">*</span></label>
             <input id="khf-mst" class="mono" required placeholder="10 số, VD 0101248141" [value]="k.mst" (input)="set('mst', $any($event.target).value.trim())" />
             <app-tra-mst [mst]="k.mst" (ketQua)="dienMST($event)" />
