@@ -160,10 +160,13 @@ public class DbMapper {
   KhachHang khachHang(KhachHangEntity e) {
     List<ChamSocKH> cs = e.getChamSoc().stream()
         .map(x -> new ChamSocKH(x.getId(), t(x.getLuc()), x.getNguoi(), x.getNoiDung(), x.getCoHoi())).toList();
-    return new KhachHang(e.getId(), e.getTen(), e.getMst(), e.getDiaChi(), e.getNguoiLienHe(), e.getDienThoai(), e.getEmail(), Texts.nz(e.getGhiChu()),
+    List<CoHoiKH> ch = e.getDsCoHoi().stream().map(x -> new CoHoiKH(x.getId(), x.getHuongBan(), x.getNhomHang(), x.getGiaTri(), x.getGiaiDoan(),
+        d(x.getNgayTao()), d(x.getNgayBaoGia()), d(x.getNgayChot()), x.getLyDoThua(), x.getTuongTacTiep(), d(x.getNgayTuongTac()),
+        d(x.getNgayTaiTiepCan()))).toList();
+    return new KhachHang(e.getId(), e.getTen(), e.getTenVietTat(), e.getMst(), e.getDiaChi(), e.getNguoiLienHe(), e.getDienThoai(), e.getEmail(), Texts.nz(e.getGhiChu()),
         e.getTrangThai(), e.getTinh(), e.getChucVu(), e.getPhanLoai(), e.getNguon(), e.getLoaiSP(), e.getHinhThucHD(), e.getTiepCan(),
         e.getCoHoi(), e.getPhuTrach(), e.getTrangThaiData(), d(e.getNgayTiepNhan()), d(e.getNgayPhanBo()), e.getGiaTriCoHoi(),
-        orNull(new ArrayList<>(cs)), trueOrNull(e.isLaImport()));
+        orNull(new ArrayList<>(cs)), orNull(new ArrayList<>(ch)), trueOrNull(e.isLaImport()));
   }
 
   NhaCungCap ncc(NhaCungCapEntity e) {
@@ -432,6 +435,7 @@ public class DbMapper {
   public void applyKhachHang(KhachHang x, KhachHangEntity e, String me, Instant now) {
     e.setId(x.getId());
     e.setTen(x.getTen());
+    e.setTenVietTat(Texts.emptyToNull(x.getTenVietTat()));
     e.setMst(Texts.nz(x.getMst()));
     e.setDiaChi(Texts.nz(x.getDiaChi()));
     e.setNguoiLienHe(Texts.nz(x.getNguoiLienHe()));
@@ -471,6 +475,31 @@ public class DbMapper {
     }
     e.getChamSoc().retainAll(moi);
     for (ChamSocKHEntity ce : moi) if (!e.getChamSoc().contains(ce)) e.getChamSoc().add(ce);
+    Map<String, CoHoiKHEntity> chCu = new HashMap<>();
+    for (CoHoiKHEntity c : e.getDsCoHoi()) chCu.put(c.getId(), c);
+    List<CoHoiKHEntity> chMoi = new ArrayList<>();
+    List<CoHoiKH> chDs = x.getDsCoHoi() == null ? List.of() : x.getDsCoHoi();
+    for (int i = 0; i < chDs.size(); i++) {
+      CoHoiKH c = chDs.get(i);
+      CoHoiKHEntity ce = chCu.getOrDefault(c.getId(), new CoHoiKHEntity());
+      ce.setId(c.getId());
+      ce.setThuTu(i);
+      ce.setHuongBan(Texts.nz(c.getHuongBan()));
+      ce.setNhomHang(Texts.emptyToNull(c.getNhomHang()));
+      ce.setGiaTri(c.getGiaTri() == null ? 0 : c.getGiaTri());
+      ce.setGiaiDoan(c.getGiaiDoan());
+      ce.setNgayTao(ld(c.getNgayTao()));
+      ce.setNgayBaoGia(ld(c.getNgayBaoGia()));
+      ce.setNgayChot(ld(c.getNgayChot()));
+      ce.setLyDoThua(Texts.emptyToNull(c.getLyDoThua()));
+      ce.setTuongTacTiep(Texts.emptyToNull(c.getTuongTacTiep()));
+      ce.setNgayTuongTac(ld(c.getNgayTuongTac()));
+      ce.setNgayTaiTiepCan(ld(c.getNgayTaiTiepCan()));
+      ce.setKhachHang(e);
+      chMoi.add(ce);
+    }
+    e.getDsCoHoi().retainAll(chMoi);
+    for (CoHoiKHEntity ce : chMoi) if (!e.getDsCoHoi().contains(ce)) e.getDsCoHoi().add(ce);
     audit(e, me, now);
   }
 

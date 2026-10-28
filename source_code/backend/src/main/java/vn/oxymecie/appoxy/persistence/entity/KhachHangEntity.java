@@ -25,6 +25,9 @@ public class KhachHangEntity extends Audited {
   @Column(nullable = false)
   private String ten;
 
+  @Column(name = "ten_viet_tat")
+  private String tenVietTat;
+
   @Column(nullable = false)
   private String mst;
 
@@ -88,4 +91,8 @@ public class KhachHangEntity extends Audited {
   @OneToMany(mappedBy = "khachHang", cascade = CascadeType.ALL, orphanRemoval = true)
   @OrderBy("thuTu")
   private List<ChamSocKHEntity> chamSoc = new ArrayList<>();
+
+  @OneToMany(mappedBy = "khachHang", cascade = CascadeType.ALL, orphanRemoval = true)
+  @OrderBy("thuTu")
+  private List<CoHoiKHEntity> dsCoHoi = new ArrayList<>();
 }

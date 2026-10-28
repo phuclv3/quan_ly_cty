@@ -13,6 +13,7 @@ import lombok.NoArgsConstructor;
 public class KhachHang {
   private String id;
   private String ten;
+  private String tenVietTat;
   private String mst;
   private String diaChi;
   private String nguoiLienHe;
@@ -34,6 +35,7 @@ public class KhachHang {
   private String ngayPhanBo;
   private Long giaTriCoHoi;
   private List<ChamSocKH> chamSoc;
+  private List<CoHoiKH> dsCoHoi;
   @JsonProperty("import")
   private Boolean laImport;
 }
