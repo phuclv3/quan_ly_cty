@@ -40,8 +40,12 @@ import { TT } from '../core/trang-thai';
     .ld-row button { border: 1px solid transparent; background: #eef2ef; border-radius: 999px; padding: 6px 14px; font-size: 13px; font-weight: 600; color: var(--ink-2); cursor: pointer; }
     .ld-row button:hover { background: #e1e9e3; }
     .ld-row button.on { background: linear-gradient(135deg, #d9453b, #ee7b6f); color: #fff; }
-    .ct { display: grid; gap: 12px; }
-    .ct .g2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .ct { display: grid; gap: 12px; margin-top: 14px; padding-top: 14px; border-top: 1px dashed #d5e2d9; }
+    /* mỗi dòng chi tiết: nhãn bên trái, giá trị bên phải */
+    .ro-ct { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 12px; align-items: center; }
+    .ro-ct > label, .ro-ct > .lbl { font-size: 12.5px; font-weight: 600; color: var(--ink-2); }
+    .ro-ct input { max-width: 220px; }
+    @media (max-width: 560px) { .ro-ct { grid-template-columns: minmax(0, 1fr); gap: 6px; } }
   `,
   template: `
     <app-modal #m [open]="ma() !== null" size="md" title="Trạng thái cơ hội" [sub]="r() ? r()!.c.id + ' · ' + r()!.k.ten : ''"
@@ -64,29 +68,23 @@ import { TT } from '../core/trang-thai';
           </div>
           @if (dirty()) { <div class="doi">Đổi từ <b>{{ x.c.giaiDoan }}</b> → <b>{{ gd() }}</b></div> }
           @else if (daThua()) { <div class="doi">Cơ hội đã Thua — chỉ có thể <b>Tái tiếp cận</b> để đưa về Mới.</div> }
-        </section>
-
-        @if (gd() === 'Thua' || gd() === 'Thắng') {
-          <section class="blk">
-            <h3 class="blk-t">{{ gd() === 'Thua' ? 'Lý do thua & ngày chốt' : 'Ngày chốt' }}</h3>
+          @if (gd() === 'Thua' || gd() === 'Thắng') {
             <div class="ct">
               @if (gd() === 'Thua') {
-                <div class="field">
+                <div class="ro-ct">
                   <span class="lbl">Lý do thua <span class="req">*</span></span>
                   <div class="ld-row" role="radiogroup" aria-label="Lý do thua">
                     @for (o of LY_DO; track o) { <button type="button" role="radio" [class.on]="lyDo() === o" [attr.aria-checked]="lyDo() === o" (click)="lyDo.set(o)">{{ o }}</button> }
                   </div>
                 </div>
               }
-              <div class="g2">
-                <div class="field">
-                  <label for="cht-nc">Ngày chốt</label>
-                  <input id="cht-nc" type="date" [value]="ngayChot()" (input)="ngayChot.set($any($event.target).value)" />
-                </div>
+              <div class="ro-ct">
+                <label for="cht-nc">Ngày chốt</label>
+                <input id="cht-nc" type="date" [value]="ngayChot()" (input)="ngayChot.set($any($event.target).value)" />
               </div>
             </div>
-          </section>
-        }
+          }
+        </section>
       }
       <ng-container foot>
         @if (r() && !r()!.kh) { <button type="button" class="btn quiet" style="margin-right:auto" (click)="sua.emit(ma()!)">Sửa chi tiết</button> }

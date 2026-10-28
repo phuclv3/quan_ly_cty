@@ -11,6 +11,8 @@ import { CoHoiForm } from './co-hoi-form';
 import { CoHoiTrangThai } from './co-hoi-trang-thai';
 import { CoHoiRow, chenhLech, dangMo, diemSpark, layCoHoiTong } from './co-hoi-data';
 
+/** Cộng n ngày vào 'YYYY-MM-DD'. */
+const congNgay = (iso: string, n: number) => new Date(new Date(iso).getTime() + n * 864e5).toISOString().slice(0, 10);
 const opts = (xs: readonly string[]) => xs.map((x) => ({ value: x, label: x }));
 const GD_CLASS: Record<GiaiDoanCH, string> = { 'Mới': 'moi', 'Đã báo giá': 'bg', 'Đang đàm phán': 'dp', 'Thắng': 'thang', 'Thua': 'thua' };
 
@@ -81,7 +83,7 @@ const GD_CLASS: Record<GiaiDoanCH, string> = { 'Mới': 'moi', 'Đã báo giá':
                   @else { <span class="sub">Chưa phân bổ</span> }
                 </td>
                 @let tc = tuongTac(r);
-                <td>{{ tc.text || '—' }}{{ tc.text && tc.ngay ? ' · ' + ngayNgan(tc.ngay) : '' }}</td>
+                <td [class.goi-y]="tc.goiY" [class.qua-han]="tc.quaHan" [attr.title]="tc.quaHan ? 'Lịch hẹn đã quá hạn, chưa hoàn thành' : tc.goiY ? 'Gợi ý theo giai đoạn — đặt lịch hẹn ở chi tiết khách để thay thế' : null">{{ tc.text || '—' }}{{ tc.text && tc.ngay ? ' · ' + ngayNgan(tc.ngay) : '' }}</td>
               </tr>
             } @empty {
               <tr><td colspan="6" class="empty">Chưa có khách nào ở trạng thái cơ hội. Đổi trạng thái cơ hội của khách hoặc bấm "Tạo cơ hội".</td></tr>
@@ -129,6 +131,8 @@ const GD_CLASS: Record<GiaiDoanCH, string> = { 'Mới': 'moi', 'Đã báo giá':
     .tbl td.ma { white-space: nowrap; font-family: var(--font); }
     .tbl td.ma b { font-weight: 700; }
     .tbl td.num { font-weight: 700; white-space: nowrap; }
+    .tbl td.goi-y { color: var(--ink-2); font-style: italic; }
+    .tbl td.qua-han { color: #c0392b; font-weight: 600; }
     .tbl tbody tr.click:hover td { background: #f6faf7; }
     .sub.neg { color: #c0392b; }
 
@@ -272,23 +276,51 @@ export class KhCoHoi {
     };
   });
 
-  /** Lịch hẹn chưa xong sớm nhất của từng khách (đặt ở ngăn chi tiết khách hàng). */
+  /**
+   * Lịch hẹn chưa xong của từng khách (đặt ở ngăn chi tiết khách hàng):
+   * `sap` = lịch sắp tới gần nhất (từ hôm nay); `qua` = lịch đã quá hạn gần nhất (để khỏi bỏ sót việc chưa làm).
+   */
   private readonly lichKhach = computed(() => {
     const homNay = todayIso();
-    const m = new Map<string, { noiDung: string; han: string; gio: string }>();
+    type L = { noiDung: string; han: string; gio: string };
+    const sap = new Map<string, L>();
+    const qua = new Map<string, L>();
     for (const v of this.store.db().viecGiao ?? []) {
-      if (!v.khId || v.xongLuc || !v.han || v.han < homNay) continue;
-      const cu = m.get(v.khId);
-      const khoa = v.han + (v.gio ?? '');
-      if (!cu || khoa < cu.han + cu.gio) m.set(v.khId, { noiDung: v.noiDung.replace(/^\[[^\]]*\]\s*/, ''), han: v.han, gio: v.gio ?? '' });
+      if (!v.khId || v.xongLuc || !v.han) continue;
+      const l: L = { noiDung: v.noiDung.replace(/^\[[^\]]*\]\s*/, ''), han: v.han, gio: v.gio ?? '' };
+      const khoa = l.han + l.gio;
+      if (v.han >= homNay) {
+        const cu = sap.get(v.khId);
+        if (!cu || khoa < cu.han + cu.gio) sap.set(v.khId, l);
+      } else {
+        const cu = qua.get(v.khId);
+        if (!cu || khoa > cu.han + cu.gio) qua.set(v.khId, l);
+      }
     }
-    return m;
+    return { sap, qua };
   });
-  /** Tương tác tiếp: ưu tiên lịch hẹn sắp tới của khách, không có thì lấy trường nhập trên cơ hội. */
-  protected tuongTac(r: CoHoiRow): { text: string; ngay?: string } {
-    const l = this.lichKhach().get(r.k.id);
-    if (l) return { text: l.noiDung, ngay: l.han };
-    return { text: r.c.tuongTacTiep ?? '', ngay: r.c.ngayTuongTac };
+  /**
+   * Tương tác tiếp, theo thứ tự ưu tiên:
+   *  1. lịch hẹn sắp tới của khách;  2. lịch hẹn đã quá hạn chưa xong (hiện đỏ);  3. trường nhập trên cơ hội;
+   *  4. gợi ý theo giai đoạn (chữ nghiêng): Mới → Khảo sát nhu cầu, Đã báo giá → Hạn phản hồi (báo giá + 7 ngày),
+   *     Đang đàm phán → Đàm phán lại, Thắng → Chăm sóc sau bán, Thua → Hỏi lại tiến độ (đến ngày tái tiếp cận nếu có).
+   */
+  protected tuongTac(r: CoHoiRow): { text: string; ngay?: string; goiY?: boolean; quaHan?: boolean } {
+    const { sap, qua } = this.lichKhach();
+    const s = sap.get(r.k.id);
+    if (s) return { text: s.noiDung, ngay: s.han };
+    const q = qua.get(r.k.id);
+    if (q) return { text: q.noiDung, ngay: q.han, quaHan: true };
+    if (r.c.tuongTacTiep) return { text: r.c.tuongTacTiep, ngay: r.c.ngayTuongTac };
+    const c = r.c;
+    switch (c.giaiDoan) {
+      case 'Mới': return { text: 'Khảo sát nhu cầu', goiY: true };
+      case 'Đã báo giá': return { text: 'Hạn phản hồi', ngay: c.ngayBaoGia ? congNgay(c.ngayBaoGia, 7) : undefined, goiY: true };
+      case 'Đang đàm phán': return { text: 'Đàm phán lại', goiY: true };
+      case 'Thắng': return { text: 'Chăm sóc sau bán', goiY: true };
+      case 'Thua': return { text: 'Hỏi lại tiến độ', ngay: c.ngayTaiTiepCan, goiY: true };
+      default: return { text: 'Liên hệ khách hàng', goiY: true };
+    }
   }
 
   protected mui(d: number): string {
@@ -320,7 +352,7 @@ export class KhCoHoi {
     const head = ['Mã', 'Khách hàng', 'Tên viết tắt', 'Hướng bán', 'Nhóm hàng', 'Giá trị', 'Giai đoạn', 'Ngày tạo', 'Ngày báo giá', 'Ngày chốt', 'Lý do thua', 'Phụ trách', 'Tương tác tiếp', 'Ngày tương tác'];
     const body = this.rows().map(({ c, k }) => [
       c.id, k.ten, k.tenVietTat ?? '', c.huongBan, c.nhomHang ?? '', c.giaTri, c.giaiDoan, viDate(c.ngayTao), viDate(c.ngayBaoGia), viDate(c.ngayChot),
-      c.lyDoThua ?? '', k.phuTrach ? this.store.userName(k.phuTrach) : '', c.tuongTacTiep ?? '', viDate(c.ngayTuongTac),
+      c.lyDoThua ?? '', k.phuTrach ? this.store.userName(k.phuTrach) : '', this.tuongTac({ c, k }).text, viDate(this.tuongTac({ c, k }).ngay),
     ]);
     void xuatExcel('co-hoi', [head, ...body]);
   }
