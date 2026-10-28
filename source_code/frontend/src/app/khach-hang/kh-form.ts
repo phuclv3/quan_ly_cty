@@ -24,6 +24,14 @@ type F = Exclude<keyof KhachHang, 'id' | 'chamSoc'>;
     @media (max-width: 860px) { .cols { grid-template-columns: minmax(0, 1fr); } }
     .col { display: grid; gap: 14px; }
     .cd { border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px 16px; background: var(--surf); }
+    .cd.dn { background: #eef8f0; border-color: #cfe8d5; }
+    .cd.lh { background: #eef4fc; border-color: #d3e1f4; }
+    .cd.lh > h3 { color: #2c5d94; } .cd.lh > h3::before { background: #5b8fd1; }
+    .cd.kd { background: #fff7e8; border-color: #f2dfb6; }
+    .cd.kd > h3 { color: #8a5a00; } .cd.kd > h3::before { background: #e0911c; }
+    .cd.gc { background: #f5f3fb; border-color: #dfdaf0; }
+    .cd.gc > h3 { color: #5a45a3; } .cd.gc > h3::before { background: #7b5cc4; }
+    .cd input:not([type=checkbox]), .cd select, .cd textarea { background-color: #fff; }
     .cd > h3 { margin: 0 0 12px; font-size: 13px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #0f5a2a; display: flex; align-items: center; gap: 8px; }
     .cd > h3::before { content: ''; width: 4px; height: 14px; border-radius: 2px; background: #19a05a; }
     .g { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; }
@@ -31,7 +39,7 @@ type F = Exclude<keyof KhachHang, 'id' | 'chamSoc'>;
     @media (max-width: 560px) { .g .s2, .g .s3, .g .s4 { grid-column: span 6; } }
     .field > label, .field > .lbl { font-size: 12.5px; font-weight: 600; color: var(--ink-2); }
     .chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
-    .chip-row button { border: 1.5px solid var(--line-2); background: var(--surf); border-radius: 999px; padding: 5px 13px; font-size: 13px; font-weight: 600; color: var(--ink-2); cursor: pointer; }
+    .chip-row button { border: 1.5px solid var(--line-2); background: #fff; border-radius: 999px; padding: 5px 13px; font-size: 13px; font-weight: 600; color: var(--ink-2); cursor: pointer; }
     .chip-row button:hover { background: var(--surf-2); }
     .chip-row button.on { background: #0f5a2a; border-color: #0f5a2a; color: #fff; }
     .chip-row button.on.bad { background: #c0392b; border-color: #c0392b; }
@@ -57,7 +65,7 @@ type F = Exclude<keyof KhachHang, 'id' | 'chamSoc'>;
 
       <div class="cols">
         <div class="col">
-          <section class="cd">
+          <section class="cd dn">
             <h3>Thông tin doanh nghiệp</h3>
             <div class="g">
               <div class="field s4">
@@ -98,7 +106,7 @@ type F = Exclude<keyof KhachHang, 'id' | 'chamSoc'>;
             </div>
           </section>
 
-          <section class="cd">
+          <section class="cd lh">
             <h3>Người liên hệ</h3>
             <div class="g">
               <div class="field s3">
@@ -122,7 +130,7 @@ type F = Exclude<keyof KhachHang, 'id' | 'chamSoc'>;
         </div>
 
         <div class="col">
-          <section class="cd">
+          <section class="cd kd">
             <h3>Theo dõi kinh doanh</h3>
             <div class="g">
               <div class="field s6">
@@ -202,7 +210,7 @@ type F = Exclude<keyof KhachHang, 'id' | 'chamSoc'>;
             </div>
           </section>
 
-          <section class="cd">
+          <section class="cd gc">
             <h3>Ghi chú</h3>
             <div class="field">
               <textarea id="khf-gc" rows="3" aria-label="Ghi chú" [value]="k.ghiChu" (input)="set('ghiChu', $any($event.target).value)"></textarea>

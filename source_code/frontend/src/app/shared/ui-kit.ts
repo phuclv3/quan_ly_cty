@@ -36,8 +36,8 @@ import { fold, money, parseMoney, pct } from '../core/util';
   host: { '(document:keydown.escape)': 'esc()' },
   template: `
     @if (open()) {
-      <div class="modal-back" (click)="tryClose()">
-        <section class="modal" [class]="'modal ' + size()" role="dialog" aria-modal="true" [attr.aria-label]="title()" (click)="$event.stopPropagation()">
+      <div class="modal-back" (click)="$event.target === $event.currentTarget && tryClose()">
+        <section class="modal" [class]="'modal ' + size()" role="dialog" aria-modal="true" [attr.aria-label]="title()">
           <header class="modal-head">
             <h2>{{ title() }}</h2>
             @if (sub()) { <span class="sub">{{ sub() }}</span> }
