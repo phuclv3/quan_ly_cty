@@ -29,6 +29,7 @@ import vn.oxymecie.appoxy.domain.model.NhomQuyen;
 import vn.oxymecie.appoxy.domain.model.PhieuKho;
 import vn.oxymecie.appoxy.domain.model.PhieuThuChi;
 import vn.oxymecie.appoxy.domain.model.TaiKhoan;
+import vn.oxymecie.appoxy.domain.model.CanhBao;
 import vn.oxymecie.appoxy.domain.model.ViecGiao;
 import vn.oxymecie.appoxy.domain.perm.Level;
 import vn.oxymecie.appoxy.domain.perm.Perm;
@@ -242,6 +243,7 @@ public final class Ctx {
   public AnhXaTen anhXa(String id) { return find(db.getAnhXaTen(), AnhXaTen::getId, id); }
   public DeNghiVatTu deNghi(String id) { return find(db.getDeNghiVatTu(), DeNghiVatTu::getId, id); }
   public ViecGiao viec(String id) { return find(db.getViecGiao(), ViecGiao::getId, id); }
+  public CanhBao canhBao(String id) { return find(db.getCanhBao(), CanhBao::getId, id); }
   /** Tài khoản ẩn coi như không tồn tại với người khác (không sửa / khoá / gán nhóm / chọn làm người phụ trách được). */
   public TaiKhoan taiKhoan(String id) {
     if (TaiKhoan.laAn(id) && !TaiKhoan.laAn(meId)) return null;

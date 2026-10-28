@@ -66,6 +66,8 @@ public record Bang<D, E>(
       Repos::dongTienPT, DongTienPTEntity::new, (m, d, e, c, me, now) -> m.applyDongTienPT(d, e));
   public static final Bang<ViecGiao, ViecGiaoEntity> VIEC_GIAO = new Bang<>("viecGiao", Db::getViecGiao, ViecGiao::getId,
       Repos::viecGiao, ViecGiaoEntity::new, (m, d, e, c, me, now) -> m.applyViecGiao(d, e));
+  public static final Bang<CanhBao, CanhBaoEntity> CANH_BAO = new Bang<>("canhBao", Db::getCanhBao, CanhBao::getId,
+      Repos::canhBao, CanhBaoEntity::new, (m, d, e, c, me, now) -> m.applyCanhBao(d, e));
   public static final Bang<YeuCauXoa, YeuCauXoaEntity> YEU_CAU_XOA = new Bang<>("yeuCauXoa", Db::getYeuCauXoa, YeuCauXoa::getId,
       Repos::yeuCauXoa, YeuCauXoaEntity::new, (m, d, e, c, me, now) -> m.applyYeuCauXoa(d, e));
   public static final Bang<HoSo, HoSoEntity> HO_SO = new Bang<>("hoSo", Db::getHoSo, HoSo::getId,
@@ -76,5 +78,5 @@ public record Bang<D, E>(
   /** Thứ tự ghi: bảng được tham chiếu trước bảng tham chiếu (xem khoá ngoại ở V1__create_initial_schema.sql). */
   public static final List<Bang<?, ?>> ALL = List.of(NHOM_QUYEN, TAI_KHOAN, NGUON_TIEN, LOAI_CHI_PHI, KHO, LOAI_HANG, KHACH_HANG, NCC,
       PHIEU_THU_CHI, HOP_DONG_BAN, CHI_PHI_HD, DE_NGHI_VAT_TU, HOP_DONG_MUA, KIEM_KE, PHIEU_KHO, ANH_XA_TEN, HOP_DONG_PHU_TAI,
-      DONG_TIEN_PT, VIEC_GIAO, YEU_CAU_XOA, HO_SO, HOA_DON);
+      DONG_TIEN_PT, VIEC_GIAO, CANH_BAO, YEU_CAU_XOA, HO_SO, HOA_DON);
 }

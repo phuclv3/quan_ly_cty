@@ -43,6 +43,7 @@ public class Db {
   private List<AnhXaTen> anhXaTen = new ArrayList<>();
   private List<DeNghiVatTu> deNghiVatTu = new ArrayList<>();
   private List<ViecGiao> viecGiao = new ArrayList<>();
+  private List<CanhBao> canhBao = new ArrayList<>();
   private List<HopDongPhuTai> hopDongPhuTai = new ArrayList<>();
   private List<DongTienPT> dongTienPT = new ArrayList<>();
   /** Bộ đếm số chứng từ theo tiền tố + năm, VD { "TC26": 12 } — không tái dùng số đã xoá. */

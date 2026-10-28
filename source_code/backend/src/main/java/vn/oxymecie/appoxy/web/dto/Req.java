@@ -96,6 +96,20 @@ public final class Req {
                          @Pattern(regexp = NGAY, message = NGAY_MSG) String han, String gio, String mucUuTien,
                          List<vn.oxymecie.appoxy.domain.model.FileRef> files) {}
 
+  public record BaoRuiRo(@NotBlank(message = "Chọn mức cảnh báo") @Pattern(regexp = "^P[012]$", message = "Mức cảnh báo phải là P0, P1 hoặc P2") String muc,
+                         @NotBlank(message = "Nhập nội dung rủi ro") @Size(max = 4000) String noiDung,
+                         @NotBlank(message = "Nhập ảnh hưởng của rủi ro") @Size(max = 4000) String anhHuong,
+                         String theoDoi, String hdbId, String hdmId) {}
+
+  public record XuLyCanhBao(boolean xong, @Size(max = 1000) String ghiChu) {}
+
+  public record GiaoCanhBao(String nguoiPhuTrach) {}
+
+  public record CanhBaoHeThong(@NotBlank(message = "Thiếu khoá cảnh báo") @Size(max = 80) String khoa,
+                               @NotBlank(message = "Chọn mức cảnh báo") @Pattern(regexp = "^P[012]$", message = "Mức cảnh báo phải là P0, P1 hoặc P2") String muc,
+                               @NotBlank @Size(max = 4000) String noiDung, @NotBlank @Size(max = 4000) String anhHuong,
+                               String theoDoi, String hdbId, String hdmId, String nguoiPhuTrach, boolean xong, @Size(max = 1000) String ghiChu) {}
+
   public record YeuCauHan(@NotBlank(message = "Chọn hạn mới") @Pattern(regexp = NGAY, message = NGAY_MSG) String hanMoi, String gioMoi,
                           @NotBlank(message = "Nhập lý do đổi hạn") @Size(max = 2000) String lyDo,
                           List<vn.oxymecie.appoxy.domain.model.FileRef> files) {}

@@ -112,6 +112,7 @@ public class DbMapper {
     db.setAnhXaTen(list(r.anhXaTen().findAll(Sort.by("ten", "id")), this::anhXaTen));
     db.setDeNghiVatTu(list(r.deNghiVatTu().findAll(Sort.by(Sort.Direction.DESC, "ngay", "soPhieu")), this::deNghiVatTu));
     db.setViecGiao(list(r.viecGiao().findAll(Sort.by(Sort.Direction.DESC, "taoLuc")), this::viecGiao));
+    db.setCanhBao(list(r.canhBao().findAll(Sort.by(Sort.Direction.DESC, "taoLuc")), this::canhBao));
     db.setHopDongPhuTai(list(r.hopDongPhuTai().findAll(Sort.by(Sort.Direction.DESC, "createdAt")), this::hopDongPhuTai));
     db.setDongTienPT(list(r.dongTienPT().findAll(Sort.by(Sort.Direction.DESC, "ngay", "id")), this::dongTienPT));
     return db;
@@ -216,6 +217,40 @@ public class DbMapper {
     return new ViecGiao(e.getId(), e.getNoiDung(), e.getNguoiTao(), t(e.getTaoLuc()), new ArrayList<>(e.getNguoiNhan()), e.getHdbId(),
         d(e.getHan()), e.getGio(), e.isUuTien(), t(e.getXongLuc()), e.getNguoiXong(), ph, e.getMa(), e.getNhom(), d(e.getBatDau()),
         e.getMucUuTien(), e.getNguonLoai(), e.getHdmId(), yeuCauHan(e), new ArrayList<>(e.getFiles().stream().map(this::file).toList()));
+  }
+
+  CanhBao canhBao(CanhBaoEntity e) {
+    return new CanhBao(e.getId(), e.getMa(), e.getMuc(), e.getNoiDung(), e.getAnhHuong(), e.getTheoDoi(), e.getHdbId(), e.getHdmId(),
+        e.getNguoiTao(), t(e.getTaoLuc()), t(e.getXuLyLuc()), e.getNguoiXuLy(), e.getGhiChuXuLy(), e.getNguon(), e.getKhoaHeThong(),
+        e.getNguoiPhuTrach(), new ArrayList<>(e.getLichSu().stream().map(x -> new LichSuDuyet(t(x.getLuc()), x.getNguoi(), x.getHanhDong(), x.getGhiChu())).toList()));
+  }
+
+  public void applyCanhBao(CanhBao x, CanhBaoEntity e) {
+    e.setId(x.getId());
+    e.setMa(x.getMa());
+    e.setMuc(x.getMuc());
+    e.setNoiDung(x.getNoiDung());
+    e.setAnhHuong(x.getAnhHuong());
+    e.setTheoDoi(Texts.emptyToNull(x.getTheoDoi()));
+    e.setHdbId(Texts.emptyToNull(x.getHdbId()));
+    e.setHdmId(Texts.emptyToNull(x.getHdmId()));
+    e.setNguoiTao(x.getNguoiTao());
+    e.setTaoLuc(in(x.getTaoLuc()));
+    e.setXuLyLuc(in(x.getXuLyLuc()));
+    e.setNguoiXuLy(x.getNguoiXuLy());
+    e.setGhiChuXuLy(Texts.emptyToNull(x.getGhiChuXuLy()));
+    e.setNguon(x.getNguon() == null ? CanhBao.TAY : x.getNguon());
+    e.setKhoaHeThong(Texts.emptyToNull(x.getKhoaHeThong()));
+    e.setNguoiPhuTrach(Texts.emptyToNull(x.getNguoiPhuTrach()));
+    e.getLichSu().clear();
+    if (x.getLichSu() != null) for (LichSuDuyet l : x.getLichSu()) {
+      CanhBaoEntity.LichSu o = new CanhBaoEntity.LichSu();
+      o.setLuc(in(l.getLuc()));
+      o.setNguoi(Texts.nz(l.getNguoi()));
+      o.setHanhDong(l.getHanhDong());
+      o.setGhiChu(l.getGhiChu());
+      e.getLichSu().add(o);
+    }
   }
 
   private YeuCauHan yeuCauHan(ViecGiaoEntity e) {

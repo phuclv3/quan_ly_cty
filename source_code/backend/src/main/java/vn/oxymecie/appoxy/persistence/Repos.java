@@ -28,6 +28,7 @@ public record Repos(
     ChiPhiHDRepository chiPhiHD,
     HopDongBanRepository hopDongBan,
     ViecGiaoRepository viecGiao,
+    CanhBaoRepository canhBao,
     DeNghiVatTuRepository deNghiVatTu,
     HopDongMuaRepository hopDongMua,
     PhieuKhoRepository phieuKho,

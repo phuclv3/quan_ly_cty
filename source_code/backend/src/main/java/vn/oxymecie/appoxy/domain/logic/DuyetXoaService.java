@@ -281,11 +281,13 @@ public class DuyetXoaService {
         xoaHoSo(c, "HDB", id);
         // Việc được giao gắn HĐ: giữ việc, bỏ liên kết; đề nghị vật tư đã huỷ của HĐ: xoá theo.
         for (var v : d.getViecGiao()) if (id.equals(v.getHdbId())) v.setHdbId(null);
+        for (var cb : d.getCanhBao()) if (id.equals(cb.getHdbId())) cb.setHdbId(null);
         d.getDeNghiVatTu().removeIf(x -> id.equals(x.getHdbId()));
         Ctx.drop(d.getHopDongBan(), HopDongBan::getId, id);
       }
       case "HopDongMua" -> {
         xoaHoSo(c, "HDM", id);
+        for (var cb : d.getCanhBao()) if (id.equals(cb.getHdmId())) cb.setHdmId(null);
         Ctx.drop(d.getHopDongMua(), HopDongMua::getId, id);
       }
       case "HopDongPhuTai" -> {
