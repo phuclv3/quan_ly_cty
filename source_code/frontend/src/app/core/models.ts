@@ -239,7 +239,14 @@ export interface ChamSocKH {
   noiDung: string;
   /** Trạng thái cơ hội đổi sang ở lần ghi này (nếu có). */
   coHoi?: CoHoi;
+  /** Kênh tương tác (người dùng tự nhập). */
+  kenh?: KenhCS;
+  /** Kết quả buổi tương tác (người dùng tự nhập). */
+  ketQua?: string;
 }
+
+export const KENH_CS = ['Gọi điện', 'Gặp trực tiếp', 'Họp online', 'Email'] as const;
+export type KenhCS = (typeof KENH_CS)[number];
 
 /** Giai đoạn một cơ hội bán hàng. */
 export const GIAI_DOAN_CH = ['Mới', 'Đã báo giá', 'Đang đàm phán', 'Thắng', 'Thua'] as const;
@@ -507,6 +514,10 @@ export interface ViecGiao {
   yeuCauHan?: YeuCauHan;
   /** Tệp đính kèm khi giao việc. */
   files?: FileRef[];
+  /** Lịch chăm sóc khách hàng: mã KH, kênh, nhắc trước (ngày). Người tham gia = người tạo + nguoiNhan. */
+  khId?: string;
+  kenh?: KenhCS;
+  nhacTruoc?: number;
 }
 
 /**

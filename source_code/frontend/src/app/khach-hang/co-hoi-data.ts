@@ -1,9 +1,28 @@
 import { CoHoiKH, GiaiDoanCH, KhachHang } from '../core/models';
+import { TT } from '../core/trang-thai';
 
 /** Một cơ hội kèm khách hàng sở hữu. */
 export interface CoHoiRow {
   c: CoHoiKH;
   k: KhachHang;
+}
+
+/**
+ * Trạng thái cơ hội ở cấp khách hàng, hiển thị cùng 5 giai đoạn với tab Cơ hội:
+ * Mới / Đã báo giá / Đang đàm phán / Thắng / Thua. `v` là mã lưu trong KhachHang.coHoi.
+ */
+export const CO_HOI_KH = [
+  { v: TT.CHUA_TIEP_CAN, l: 'Mới', tone: 'mute' },
+  { v: TT.DA_BAO_GIA, l: 'Đã báo giá', tone: 'info' },
+  { v: TT.DANG_DAM_PHAN, l: 'Đang đàm phán', tone: 'warn' },
+  { v: TT.KY_HOP_DONG, l: 'Thắng', tone: 'ok' },
+  { v: TT.HUY, l: 'Thua', tone: 'bad' },
+] as const;
+
+/** Mã cũ Đã giao hàng / Hoàn thành tính là Thắng; trống = Mới. */
+export function loaiCoHoi(v?: string): (typeof CO_HOI_KH)[number] {
+  const ma = v === TT.DA_GIAO_HANG || v === TT.HOAN_THANH ? TT.KY_HOP_DONG : v;
+  return CO_HOI_KH.find((o) => o.v === ma) ?? CO_HOI_KH[0];
 }
 
 export const dangMo = (g: GiaiDoanCH) => g === 'Mới' || g === 'Đã báo giá' || g === 'Đang đàm phán';

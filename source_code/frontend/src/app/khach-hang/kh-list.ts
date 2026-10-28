@@ -1,7 +1,9 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal, viewChild } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { map } from 'rxjs';
 import { Store } from '../core/store';
-import { CO_HOI, KhachHang, LOAI_SP_KH, NGUON_KH, PHAN_LOAI_KH, TIEP_CAN, TINH_THANH } from '../core/models';
+import { KhachHang, LOAI_SP_KH, NGUON_KH, PHAN_LOAI_KH, TIEP_CAN, TINH_THANH } from '../core/models';
 import { nhoLoc } from '../core/ui';
 import { money, sum, vndShort, viDate } from '../core/util';
 import { Facet, FilterBar, LOC_RONG, Loc, khopQ, khopSel } from '../shared/filter-bar';
@@ -14,6 +16,8 @@ import { ImportDm } from '../shared/import-dm';
 import { Confirm } from '../shared/confirm';
 import { guiXoa, guiXoaNhieu } from '../shared/ho-so';
 import { KhForm } from './kh-form';
+import { KhDrawer } from './kh-drawer';
+import { CO_HOI_KH, loaiCoHoi } from './co-hoi-data';
 import { KhCoHoi } from './kh-co-hoi';
 import { KhBaoCao } from './kh-bao-cao';
 import { TT, ttNhan } from '../core/trang-thai';
@@ -36,7 +40,7 @@ const optsTT = (xs: readonly string[]) => xs.map((x) => ({ value: x, label: ttNh
   selector: 'app-kh-list',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'page' },
-  imports: [RouterLink, FilterBar, Kpi, TrangThai, Pager, SortTh, Icon, KhForm, ImportDm, KhCoHoi, KhBaoCao],
+  imports: [RouterLink, FilterBar, Kpi, TrangThai, Pager, SortTh, Icon, KhForm, ImportDm, KhCoHoi, KhBaoCao, KhDrawer],
   template: `
     <div class="page-head">
       <div>
@@ -60,12 +64,12 @@ const optsTT = (xs: readonly string[]) => xs.map((x) => ({ value: x, label: ttNh
 
     <div class="seg" role="tablist">
       <button type="button" role="tab" [class.on]="tab() === 'ds'" (click)="tab.set('ds')">Danh sách khách hàng</button>
-      <button type="button" role="tab" [class.on]="tab() === 'ch'" (click)="tab.set('ch')">Cơ hội</button>
+      <button type="button" role="tab" [class.on]="tab() === 'ch'" (click)="locKh.set(null); tab.set('ch')">Cơ hội</button>
       <button type="button" role="tab" [class.on]="tab() === 'bc'" (click)="tab.set('bc')">Báo cáo khách hàng</button>
     </div>
 
     @if (tab() === 'ch') {
-      <app-kh-co-hoi />
+      <app-kh-co-hoi [khLoc]="locKh()" />
     } @else if (tab() === 'bc') {
       <app-kh-bao-cao />
     } @else {
@@ -82,7 +86,7 @@ const optsTT = (xs: readonly string[]) => xs.map((x) => ({ value: x, label: ttNh
     <section class="panel">
     <div class="panel-h">
       <h2 class="panel-t">Danh sách khách hàng</h2>
-      <span class="hint-r">bấm tên khách hoặc biểu tượng <app-icon name="chat" [size]="14" /> để xem phân loại chăm sóc và lịch sử tương tác</span>
+      <span class="hint-r">bấm tên khách hoặc biểu tượng <app-icon name="chat" [size]="14" /> để xem chi tiết và lịch sử chăm sóc</span>
     </div>
     <app-filter [(loc)]="loc" memo="kh-list" [time]="false" [facets]="facets()" placeholder="Tìm mã, tên, MST, tỉnh, người liên hệ, điện thoại, ghi chú…" />
 
@@ -127,7 +131,7 @@ const optsTT = (xs: readonly string[]) => xs.map((x) => ({ value: x, label: ttNh
               @if (coChon()) {
                 <td (click)="$event.stopPropagation()"><input type="checkbox" [attr.aria-label]="'Chọn ' + r.k.ten" [checked]="chon().has(r.k.id)" (change)="flip(r.k.id)" /></td>
               }
-              <td class="c-ma"><a [routerLink]="['/khach-hang', r.k.id]" (click)="$event.stopPropagation()"><b>{{ r.k.id }}</b></a></td>
+              <td class="c-ma"><b>{{ r.k.id }}</b></td>
               <td class="c-vt">@if (r.k.tenVietTat) { <span class="vt" [attr.title]="r.k.tenVietTat">{{ r.k.tenVietTat }}</span> } @else { — }</td>
               <td class="c-ten">
                 <b class="ten">{{ r.k.ten }}</b>
@@ -137,7 +141,7 @@ const optsTT = (xs: readonly string[]) => xs.map((x) => ({ value: x, label: ttNh
               </td>
               <td class="lh-cell">{{ r.k.nguoiLienHe }}<div class="sub">{{ r.k.dienThoai }}</div></td>
               <td><app-tt [v]="r.k.tiepCan || TT.CHUA_LIEN_HE" /></td>
-              <td><app-tt [v]="r.k.coHoi || TT.CHUA_TIEP_CAN" /></td>
+              <td (click)="$event.stopPropagation()"><button type="button" class="tt-btn" title="Xem cơ hội của khách này" (click)="sangCoHoi(r.k.id)"><app-tt [v]="loaiCoHoi(r.k.coHoi).l" [t]="loaiCoHoi(r.k.coHoi).tone" /></button></td>
               <td class="num">{{ r.k.giaTriCoHoi ? money(r.k.giaTriCoHoi) : '—' }}</td>
               <td>
                 @if (r.k.phuTrach) {
@@ -148,7 +152,7 @@ const optsTT = (xs: readonly string[]) => xs.map((x) => ({ value: x, label: ttNh
               <td class="num">{{ r.soHD }}</td>
               <td (click)="$event.stopPropagation()">
                 <div class="row" style="flex-wrap:nowrap; gap:6px">
-                  <a class="ico-btn chat" [routerLink]="['/khach-hang', r.k.id]" title="Chăm sóc & lịch sử tương tác" aria-label="Chăm sóc & lịch sử tương tác"><app-icon name="chat" [size]="15" /></a>
+                  <button type="button" class="ico-btn chat" title="Chi tiết & lịch sử chăm sóc" aria-label="Chi tiết & lịch sử chăm sóc" (click)="mo(r.k.id)"><app-icon name="chat" [size]="15" /></button>
                   @if (store.canEditKH(r.k) && !r.xoa) {
                     <button type="button" class="ico-btn" title="Sửa" aria-label="Sửa" (click)="sua.set(r.k.id)"><app-icon name="edit" [size]="15" /></button>
                     @let vuong = store.lyDoKhongXoa('DM_KhachHang', r.k.id);
@@ -169,6 +173,9 @@ const optsTT = (xs: readonly string[]) => xs.map((x) => ({ value: x, label: ttNh
 
     <!-- Thêm / sửa khách hàng: popup như các danh mục khác -->
     <app-kh-form [khId]="sua()" (closed)="sua.set(null)" />
+
+    <!-- Chi tiết khách hàng + lịch sử chăm sóc: ngăn bên phải -->
+    <app-kh-drawer [khId]="xem()" (closed)="dong()" (sua)="sua.set($event)" (coHoi)="sangCoHoi($event)" />
   `,
   styles: `
     .bulk { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 12px; }
@@ -195,6 +202,7 @@ const optsTT = (xs: readonly string[]) => xs.map((x) => ({ value: x, label: ttNh
     .ico-btn { display: inline-grid; place-items: center; width: 30px; height: 30px; border: 0; border-radius: 8px; background: var(--surf-2); color: var(--ink-2); cursor: pointer; text-decoration: none; }
     .ico-btn:hover { background: var(--surf-3); }
     .ico-btn.chat { background: #e3f1e3; color: #0f5a2a; }
+    .tt-btn { border: 0; background: none; padding: 0; cursor: pointer; }
     .ico-btn.bad { color: var(--bad-fg); }
 
     /* Đầu trang: tiêu đề + nút bo tròn */
@@ -247,13 +255,19 @@ const optsTT = (xs: readonly string[]) => xs.map((x) => ({ value: x, label: ttNh
 })
 export class KhList {
   protected readonly TT = TT;
+  protected readonly loaiCoHoi = loaiCoHoi;
   protected readonly store = inject(Store);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
+  /** Khách đang xem chi tiết (?kh=mã), null = đóng. */
+  protected readonly xem = toSignal(this.route.queryParamMap.pipe(map((q) => q.get('kh'))), { initialValue: this.route.snapshot.queryParamMap.get('kh') });
   private readonly confirm = inject(Confirm);
   protected readonly money = money;
   protected readonly viDate = viDate;
   protected readonly short = vndShort;
   protected readonly tab = signal<'ds' | 'ch' | 'bc'>('ds');
+  /** Sang tab Cơ hội từ một khách: chỉ lọc cơ hội của khách đó. */
+  protected readonly locKh = signal<string | null>(null);
   protected readonly coHoi = viewChild(KhCoHoi);
   protected readonly baoCaoKH = viewChild(KhBaoCao);
   /** Hai chữ cái đầu của tên (avatar). */
@@ -295,7 +309,7 @@ export class KhList {
     const phuTrach = [...new Set(ks.map((k) => k.phuTrach).filter((x): x is string => !!x))];
     return [
       { key: 'tiepCan', label: 'Tiếp cận', options: optsTT(TIEP_CAN) },
-      { key: 'coHoi', label: 'Cơ hội', options: optsTT(CO_HOI) },
+      { key: 'coHoi', label: 'Cơ hội', options: CO_HOI_KH.map((o) => ({ value: o.v, label: o.l })) },
       {
         key: 'phuTrach',
         label: 'Phụ trách',
@@ -317,7 +331,7 @@ export class KhList {
     ten: (r) => r.k.ten,
     tinh: (r) => r.k.tinh,
     tiepCan: (r) => TIEP_CAN.indexOf(r.k.tiepCan ?? TT.CHUA_LIEN_HE),
-    coHoi: (r) => CO_HOI.indexOf(r.k.coHoi ?? TT.CHUA_TIEP_CAN),
+    coHoi: (r) => CO_HOI_KH.findIndex((o) => o.v === loaiCoHoi(r.k.coHoi).v),
     giaTri: (r) => r.k.giaTriCoHoi ?? 0,
     phuTrach: (r) => (r.k.phuTrach ? this.store.userName(r.k.phuTrach) : ''),
     cs: (r) => r.csCuoi,
@@ -331,7 +345,7 @@ export class KhList {
         ({ k }) =>
           khopQ(l, k.id, k.ten, k.tenVietTat, k.mst, k.tinh, k.diaChi, k.nguoiLienHe, k.dienThoai, k.email, k.ghiChu) &&
           khopSel(l, 'tiepCan', k.tiepCan ?? TT.CHUA_LIEN_HE) &&
-          khopSel(l, 'coHoi', k.coHoi ?? TT.CHUA_TIEP_CAN) &&
+          khopSel(l, 'coHoi', loaiCoHoi(k.coHoi).v) &&
           khopSel(l, 'phuTrach', k.phuTrach || CHUA_PB) &&
           khopSel(l, 'tinh', k.tinh) &&
           khopSel(l, 'nguon', k.nguon) &&
@@ -361,7 +375,16 @@ export class KhList {
   });
 
   protected mo(id: string): void {
-    void this.router.navigate(['/khach-hang', id]);
+    void this.router.navigate([], { relativeTo: this.route, queryParams: { kh: id }, queryParamsHandling: 'merge' });
+  }
+  protected dong(): void {
+    void this.router.navigate([], { relativeTo: this.route, queryParams: { kh: null }, queryParamsHandling: 'merge' });
+  }
+  /** "+ Cơ hội" trong ngăn chi tiết: sang tab Cơ hội (danh sách khách đang ở trạng thái cơ hội). */
+  protected sangCoHoi(khId: string): void {
+    this.dong();
+    this.locKh.set(khId);
+    this.tab.set('ch');
   }
   protected flip(id: string): void {
     this.chon.update((s) => {
@@ -399,7 +422,7 @@ export class KhList {
     ];
     const body = this.rows().map(({ k, soHD, csCuoi }) => [
       k.id, k.ten, k.tenVietTat ?? '', k.mst, k.diaChi, k.tinh ?? '', k.nguoiLienHe, k.chucVu ?? '', k.dienThoai, k.email, k.phanLoai ?? '',
-      k.nguon ?? '', k.loaiSP ?? '', k.hinhThucHD ?? '', ttNhan(k.tiepCan), ttNhan(k.coHoi), k.giaTriCoHoi ?? '',
+      k.nguon ?? '', k.loaiSP ?? '', k.hinhThucHD ?? '', ttNhan(k.tiepCan), loaiCoHoi(k.coHoi).l, k.giaTriCoHoi ?? '',
       k.phuTrach ? this.store.userName(k.phuTrach) : '', ttNhan(k.trangThaiData), viDate(k.ngayTiepNhan), viDate(k.ngayPhanBo),
       viDate(csCuoi), soHD, k.ghiChu,
     ]);

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Store } from '../core/store';
 import { GIAI_DOAN_CH, GiaiDoanCH, LOAI_SP_KH, LY_DO_THUA } from '../core/models';
@@ -8,6 +8,7 @@ import { Facet, FilterBar, LOC_RONG, Loc, khopQ, khopSel } from '../shared/filte
 import { Pager, paginate } from '../shared/pager';
 import { xuatExcel } from '../shared/export';
 import { CoHoiForm } from './co-hoi-form';
+import { CoHoiTrangThai } from './co-hoi-trang-thai';
 import { CoHoiRow, chenhLech, dangMo, diemSpark, layCoHoi } from './co-hoi-data';
 
 const opts = (xs: readonly string[]) => xs.map((x) => ({ value: x, label: x }));
@@ -17,7 +18,7 @@ const GD_CLASS: Record<GiaiDoanCH, string> = { 'Mới': 'moi', 'Đã báo giá':
 @Component({
   selector: 'app-kh-co-hoi',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, FilterBar, Pager, CoHoiForm],
+  imports: [RouterLink, FilterBar, Pager, CoHoiForm, CoHoiTrangThai],
   template: `
     <div class="kpis">
       <div class="k hero">
@@ -63,7 +64,7 @@ const GD_CLASS: Record<GiaiDoanCH, string> = { 'Mới': 'moi', 'Đã báo giá':
           </thead>
           <tbody>
             @for (r of pg.items(); track r.c.id) {
-              <tr class="click" (click)="sua.set(r.c.id)">
+              <tr class="click" (click)="tt.set(r.c.id)">
                 <td class="mono"><b>{{ r.c.id }}</b></td>
                 <td>
                   <a class="kh-ten" [routerLink]="['/khach-hang', r.k.id]" (click)="$event.stopPropagation()"><b>{{ r.k.ten }}</b></a>
@@ -90,6 +91,7 @@ const GD_CLASS: Record<GiaiDoanCH, string> = { 'Mới': 'moi', 'Đã báo giá':
       <app-pager [pager]="pg" />
     </section>
 
+    <app-co-hoi-trang-thai [ma]="tt()" (closed)="tt.set(null)" (sua)="tt.set(null); sua.set($event)" />
     <app-co-hoi-form [ma]="sua()" (closed)="sua.set(null)" />
   `,
   styles: `
@@ -143,8 +145,19 @@ export class KhCoHoi {
   protected readonly loc = signal<Loc>(nhoLoc('kh-co-hoi', LOC_RONG));
   protected readonly gd = signal<'' | GiaiDoanCH>('');
   protected readonly taiTiep = signal(false);
+  /** Lọc theo một khách (từ ngăn chi tiết khách hàng). */
+  readonly khLoc = input<string | null>(null);
+  /** Dialog trạng thái: mã CH đang xem, null = đóng. */
+  protected readonly tt = signal<string | null>(null);
   /** null = đóng · '' = tạo mới · mã CH = sửa. */
   protected readonly sua = signal<string | null>(null);
+
+  constructor() {
+    effect(() => {
+      const id = this.khLoc();
+      if (id) untracked(() => this.loc.update((l) => ({ ...l, sel: { ...l.sel, kh: [id] } })));
+    });
+  }
 
   tao(): void {
     this.sua.set('');

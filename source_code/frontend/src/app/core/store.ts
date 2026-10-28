@@ -30,6 +30,7 @@ import {
   HopDongPhuTai,
   KHO_CHUYEN_THANG,
   KhachHang,
+  KenhCS,
   ChamSocKH,
   DeNghiVatTu,
   ViecGiao,
@@ -108,6 +109,14 @@ export interface CanhBaoHeThongIn extends BaoRuiRoIn {
   ghiChu?: string;
 }
 
+/** Thay đổi kèm một lần chăm sóc. */
+export interface DoiChamSoc {
+  tiepCan?: TiepCan;
+  coHoi?: CoHoi;
+  kenh?: KenhCS;
+  ketQua?: string;
+}
+
 /** Dữ liệu giao việc / đặt lịch. */
 export interface GiaoViecIn {
   noiDung: string;
@@ -121,6 +130,9 @@ export interface GiaoViecIn {
   gio?: string;
   mucUuTien?: MucUuTien;
   files?: FileRef[];
+  khId?: string;
+  kenh?: KenhCS;
+  nhacTruoc?: number;
 }
 
 const KEY = 'app-oxy:db';
@@ -533,7 +545,7 @@ export class Store {
   phanBoKH(ids: readonly string[], sale: string): Result {
     return this.exec(() => this.phanBoKH_(ids, sale), () => ['POST', '/khach-hang/phan-bo', { ids, sale }]);
   }
-  ghiChamSoc(id: string, noiDung: string, doi: { tiepCan?: TiepCan; coHoi?: CoHoi } = {}): Result {
+  ghiChamSoc(id: string, noiDung: string, doi: DoiChamSoc = {}): Result {
     return this.exec(() => this.ghiChamSoc_(id, noiDung, doi), () => ['POST', `/khach-hang/${e_(id)}/cham-soc`, { noiDung, ...doi }]);
   }
   saveNCC(n: NhaCungCap): Result {
@@ -794,7 +806,7 @@ export class Store {
   }
 
   /** Ghi một lần chăm sóc; đổi trạng thái tiếp cận / cơ hội cùng lúc nếu chọn. */
-  private ghiChamSoc_(id: string, noiDung: string, doi: { tiepCan?: TiepCan; coHoi?: CoHoi } = {}): Result {
+  private ghiChamSoc_(id: string, noiDung: string, doi: DoiChamSoc = {}): Result {
     const k = this.khById(id);
     if (!k) return 'Không tìm thấy khách hàng';
     const e = this.require('khachHang', 'edit', k.phuTrach || undefined);
@@ -804,7 +816,7 @@ export class Store {
     const tiepCan = doi.tiepCan && doi.tiepCan !== k.tiepCan ? doi.tiepCan : undefined;
     if (!nd && !coHoi && !tiepCan) return 'Chưa nhập nội dung chăm sóc';
     const doiChu = [tiepCan && `Tiếp cận → ${tiepCan}`, coHoi && `Cơ hội → ${coHoi}`].filter(Boolean).join(' · ');
-    const dong: ChamSocKH = { id: uid('CS'), luc: nowIso(), nguoi: this.meId() ?? '', noiDung: nd || doiChu, coHoi };
+    const dong: ChamSocKH = { id: uid('CS'), luc: nowIso(), nguoi: this.meId() ?? '', noiDung: nd || doiChu, coHoi, kenh: doi.kenh, ketQua: doi.ketQua?.trim() || undefined };
     this.upsert('khachHang', {
       ...k,
       tiepCan: tiepCan ?? k.tiepCan,
@@ -1461,6 +1473,9 @@ export class Store {
       gio: o.gio || undefined,
       mucUuTien: o.mucUuTien || 'Trung bình',
       files: o.files ?? [],
+      khId: o.khId || undefined,
+      kenh: o.kenh,
+      nhacTruoc: o.nhacTruoc,
       ma: `VIEC-${String(max + 1).padStart(4, '0')}`,
       uuTien: this.coToanQuyen(),
       phanHoi: [],

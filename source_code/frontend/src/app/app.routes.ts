@@ -22,12 +22,8 @@ export const routes: Routes = [
       },
       // Thêm khách hàng là popup ở danh sách — giữ đường dẫn cũ.
       { path: 'khach-hang/moi', redirectTo: '/khach-hang?them=1' },
-      {
-        path: 'khach-hang/:id',
-        title: T('Khách hàng'),
-        canActivate: [permGuard('khachHang')],
-        loadComponent: () => import('./khach-hang/kh-detail').then((m) => m.KhDetail),
-      },
+      // Chi tiết khách hàng là ngăn bên phải của danh sách (?kh=mã) — giữ đường dẫn cũ.
+      { path: 'khach-hang/:id', redirectTo: ({ params }) => `/khach-hang?kh=${encodeURIComponent(params['id'])}` },
       {
         path: 'hop-dong-ban',
         title: T('Hợp đồng bán'),

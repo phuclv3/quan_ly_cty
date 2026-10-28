@@ -1,11 +1,12 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, linkedSignal, output, viewChild } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Store } from '../core/store';
-import { CO_HOI, HINH_THUC_HD, KhachHang, LOAI_SP_KH, NGUON_KH, PHAN_LOAI_KH, TIEP_CAN, TINH_THANH } from '../core/models';
+import { HINH_THUC_HD, KhachHang, LOAI_SP_KH, LY_DO_THUA, NGUON_KH, PHAN_LOAI_KH, TIEP_CAN, TINH_THANH } from '../core/models';
 import { viDate } from '../core/util';
 import { Modal, MoneyInput, PickGo, PickOption } from '../shared/ui-kit';
 import { KetQuaMST, TraMst } from '../shared/tra-mst';
 import { TT, ttNhan } from '../core/trang-thai';
+import { CO_HOI_KH, loaiCoHoi } from './co-hoi-data';
 
 const BLANK: KhachHang = { id: '', ten: '', mst: '', diaChi: '', nguoiLienHe: '', dienThoai: '', email: '', ghiChu: '' };
 type F = Exclude<keyof KhachHang, 'id' | 'chamSoc'>;
@@ -19,8 +20,25 @@ type F = Exclude<keyof KhachHang, 'id' | 'chamSoc'>;
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterLink, Modal, PickGo, MoneyInput, TraMst],
   styles: `
-    h3.nhom { margin: 4px 0 10px; font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--brand); }
-    h3.nhom:not(:first-of-type) { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
+    .cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; align-items: start; }
+    @media (max-width: 860px) { .cols { grid-template-columns: minmax(0, 1fr); } }
+    .col { display: grid; gap: 14px; }
+    .cd { border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px 16px; background: var(--surf); }
+    .cd > h3 { margin: 0 0 12px; font-size: 13px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #0f5a2a; display: flex; align-items: center; gap: 8px; }
+    .cd > h3::before { content: ''; width: 4px; height: 14px; border-radius: 2px; background: #19a05a; }
+    .g { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; }
+    .g .s2 { grid-column: span 2; } .g .s3 { grid-column: span 3; } .g .s4 { grid-column: span 4; } .g .s6 { grid-column: span 6; }
+    @media (max-width: 560px) { .g .s2, .g .s3, .g .s4 { grid-column: span 6; } }
+    .field > label, .field > .lbl { font-size: 12.5px; font-weight: 600; color: var(--ink-2); }
+    .chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chip-row button { border: 1.5px solid var(--line-2); background: var(--surf); border-radius: 999px; padding: 5px 13px; font-size: 13px; font-weight: 600; color: var(--ink-2); cursor: pointer; }
+    .chip-row button:hover { background: var(--surf-2); }
+    .chip-row button.on { background: #0f5a2a; border-color: #0f5a2a; color: #fff; }
+    .chip-row button.on.bad { background: #c0392b; border-color: #c0392b; }
+    .chip-row button.on.ngung { background: #6b7280; border-color: #6b7280; }
+    .sub-box { grid-column: 1 / -1; border-radius: 12px; padding: 10px 12px; background: #f1faf3; border: 1px solid #bfe0c8; display: grid; gap: 10px; }
+    .sub-box.thua { background: #fdf0ee; border-color: #f0c4be; }
+    .ro-line { font-size: 13px; color: var(--ink-2); padding-top: 8px; }
   `,
   template: `
     <app-modal #m [open]="khId() !== null" size="lg" [title]="f().id ? 'Sửa khách hàng ' + f().id : 'Thêm khách hàng'"
@@ -37,130 +55,165 @@ type F = Exclude<keyof KhachHang, 'id' | 'chamSoc'>;
         </div>
       }
 
-      <div>
-        <h3 class="nhom">Thông tin doanh nghiệp</h3>
-        <div class="form-grid cols-3">
-          <div class="field span-2">
-            <label for="khf-ten">Tên công ty / đơn vị <span class="req">*</span></label>
-            <input id="khf-ten" [value]="k.ten" (input)="set('ten', $any($event.target).value)" />
-          </div>
-          <div class="field">
-            <label for="khf-vt">Tên viết tắt</label>
-            <input id="khf-vt" placeholder="VD KCN-A" [value]="k.tenVietTat ?? ''" (input)="set('tenVietTat', $any($event.target).value || undefined)" />
-          </div>
-          <div class="field">
-            <label for="khf-mst">Mã số thuế <span class="req">*</span></label>
-            <input id="khf-mst" class="mono" required placeholder="10 số, VD 0101248141" [value]="k.mst" (input)="set('mst', $any($event.target).value.trim())" />
-            <app-tra-mst [mst]="k.mst" (ketQua)="dienMST($event)" />
-          </div>
-          <div class="field span-2">
-            <label for="khf-dc">Địa chỉ</label>
-            <input id="khf-dc" [value]="k.diaChi" (input)="set('diaChi', $any($event.target).value)" />
-          </div>
-          <div class="field">
-            <label for="khf-tinh">Tỉnh / Thành phố</label>
-            <app-pick-go inputId="khf-tinh" [options]="tinhOpts" [value]="k.tinh ?? ''" placeholder="Gõ tên tỉnh…" (valueChange)="set('tinh', $event || undefined)" />
-          </div>
-          <div class="field">
-            <label for="khf-pl">Phân loại KH</label>
-            <select id="khf-pl" (change)="set('phanLoai', $any($event.target).value || undefined)">
-              <option value="">—</option>
-              @for (o of PHAN_LOAI_KH; track o) { <option [value]="o" [selected]="o === k.phanLoai">{{ o }}</option> }
-            </select>
-          </div>
-          <div class="field">
-            <label for="khf-tt">Trạng thái</label>
-            <select id="khf-tt" (change)="set('trangThai', $any($event.target).value)">
-              <option [value]="TT.DANG_DUNG" [selected]="k.trangThai !== TT.NGUNG">Đang dùng</option>
-              <option [value]="TT.NGUNG" [selected]="k.trangThai === TT.NGUNG">Ngưng</option>
-            </select>
-            <span class="hint">Ngưng: không chọn được cho HĐ bán mới.</span>
-          </div>
+      <div class="cols">
+        <div class="col">
+          <section class="cd">
+            <h3>Thông tin doanh nghiệp</h3>
+            <div class="g">
+              <div class="field s4">
+                <label for="khf-ten">Tên công ty / đơn vị <span class="req">*</span></label>
+                <input id="khf-ten" [value]="k.ten" (input)="set('ten', $any($event.target).value)" />
+              </div>
+              <div class="field s2">
+                <label for="khf-vt">Tên viết tắt</label>
+                <input id="khf-vt" placeholder="VD KCN-A" [value]="k.tenVietTat ?? ''" (input)="set('tenVietTat', $any($event.target).value || undefined)" />
+              </div>
+              <div class="field s3">
+                <label for="khf-mst">Mã số thuế <span class="req">*</span></label>
+                <input id="khf-mst" class="mono" required placeholder="10 số, VD 0101248141" [value]="k.mst" (input)="set('mst', $any($event.target).value.trim())" />
+                <app-tra-mst [mst]="k.mst" (ketQua)="dienMST($event)" />
+              </div>
+              <div class="field s3">
+                <label for="khf-tinh">Tỉnh / Thành phố</label>
+                <app-pick-go inputId="khf-tinh" [options]="tinhOpts" [value]="k.tinh ?? ''" placeholder="Gõ tên tỉnh…" (valueChange)="set('tinh', $event || undefined)" />
+              </div>
+              <div class="field s6">
+                <label for="khf-dc">Địa chỉ</label>
+                <input id="khf-dc" [value]="k.diaChi" (input)="set('diaChi', $any($event.target).value)" />
+              </div>
+              <div class="field s6">
+                <span class="lbl">Phân loại KH</span>
+                <div class="chip-row" role="group" aria-label="Phân loại KH">
+                  @for (o of PHAN_LOAI_KH; track o) { <button type="button" [class.on]="k.phanLoai === o" (click)="set('phanLoai', k.phanLoai === o ? undefined : o)">{{ o }}</button> }
+                </div>
+              </div>
+              <div class="field s6">
+                <span class="lbl">Trạng thái sử dụng</span>
+                <div class="chip-row" role="group" aria-label="Trạng thái sử dụng">
+                  <button type="button" [class.on]="k.trangThai !== TT.NGUNG" (click)="set('trangThai', TT.DANG_DUNG)">Đang dùng</button>
+                  <button type="button" class="ngung" [class.on]="k.trangThai === TT.NGUNG" (click)="set('trangThai', TT.NGUNG)">Ngưng</button>
+                </div>
+                <span class="hint">Ngưng: không chọn được cho HĐ bán mới.</span>
+              </div>
+            </div>
+          </section>
+
+          <section class="cd">
+            <h3>Người liên hệ</h3>
+            <div class="g">
+              <div class="field s3">
+                <label for="khf-lh">Họ tên</label>
+                <input id="khf-lh" [value]="k.nguoiLienHe" (input)="set('nguoiLienHe', $any($event.target).value)" />
+              </div>
+              <div class="field s3">
+                <label for="khf-cv">Chức vụ</label>
+                <input id="khf-cv" [value]="k.chucVu ?? ''" (input)="set('chucVu', $any($event.target).value || undefined)" />
+              </div>
+              <div class="field s3">
+                <label for="khf-dt">SĐT / Zalo</label>
+                <input id="khf-dt" inputmode="tel" [value]="k.dienThoai" (input)="set('dienThoai', $any($event.target).value)" />
+              </div>
+              <div class="field s3">
+                <label for="khf-em">Email</label>
+                <input id="khf-em" type="email" [value]="k.email" (input)="set('email', $any($event.target).value)" />
+              </div>
+            </div>
+          </section>
         </div>
 
-        <h3 class="nhom">Người liên hệ</h3>
-        <div class="form-grid cols-3">
-          <div class="field">
-            <label for="khf-lh">Người liên hệ</label>
-            <input id="khf-lh" [value]="k.nguoiLienHe" (input)="set('nguoiLienHe', $any($event.target).value)" />
-          </div>
-          <div class="field">
-            <label for="khf-cv">Chức vụ</label>
-            <input id="khf-cv" [value]="k.chucVu ?? ''" (input)="set('chucVu', $any($event.target).value || undefined)" />
-          </div>
-          <div class="field">
-            <label for="khf-em">Email</label>
-            <input id="khf-em" type="email" [value]="k.email" (input)="set('email', $any($event.target).value)" />
-          </div>
-          <div class="field span-3">
-            <label for="khf-dt">SĐT / Zalo</label>
-            <input id="khf-dt" [value]="k.dienThoai" (input)="set('dienThoai', $any($event.target).value)" />
-          </div>
-        </div>
+        <div class="col">
+          <section class="cd">
+            <h3>Theo dõi kinh doanh</h3>
+            <div class="g">
+              <div class="field s6">
+                <span class="lbl">Trạng thái tiếp cận</span>
+                <div class="chip-row" role="group" aria-label="Trạng thái tiếp cận">
+                  @for (o of TIEP_CAN; track o) { <button type="button" [class.on]="o === (k.tiepCan ?? TT.CHUA_LIEN_HE)" (click)="set('tiepCan', o)">{{ ttNhan(o) }}</button> }
+                </div>
+              </div>
+              <div class="field s6">
+                <span class="lbl">Trạng thái cơ hội</span>
+                <div class="chip-row" role="group" aria-label="Trạng thái cơ hội">
+                  @for (o of CO_HOI_KH; track o.v) { <button type="button" [class.on]="o.v === loaiCoHoi(k.coHoi).v" [class.bad]="o.v === TT.HUY" (click)="set('coHoi', o.v)">{{ o.l }}</button> }
+                </div>
+              </div>
+              @if (doiThua()) {
+                <div class="sub-box thua">
+                  <div class="field">
+                    <label for="khf-ldt">Lý do thua <span class="req">*</span></label>
+                    <select id="khf-ldt" (change)="lyDo.set($any($event.target).value)">
+                      <option value="" [selected]="!lyDo()">— Chọn lý do —</option>
+                      @for (o of LY_DO_THUA; track o) { <option [value]="o" [selected]="o === lyDo()">{{ o }}</option> }
+                    </select>
+                  </div>
+                  @if (lyDo() === 'Khác') {
+                    <div class="field">
+                      <label for="khf-ldk">Ghi rõ lý do khác <span class="req">*</span></label>
+                      <input id="khf-ldk" [value]="lyDoKhac()" (input)="lyDoKhac.set($any($event.target).value)" />
+                    </div>
+                  }
+                </div>
+              }
+              @if (doiThang()) {
+                <div class="sub-box">
+                  <div class="field">
+                    <label for="khf-ldw">Lý do thắng <span class="req">*</span></label>
+                    <input id="khf-ldw" placeholder="VD Giá tốt, giao hàng nhanh" [value]="lyDo()" (input)="lyDo.set($any($event.target).value)" />
+                  </div>
+                </div>
+              }
+              <div class="field s3">
+                <label for="khf-gt">Giá trị cơ hội (VNĐ, chưa VAT)</label>
+                <app-money inputId="khf-gt" [value]="k.giaTriCoHoi ?? 0" (valueChange)="set('giaTriCoHoi', $event || undefined)" />
+              </div>
+              <div class="field s3">
+                <label for="khf-pt">Người phụ trách</label>
+                <app-pick-go inputId="khf-pt" [options]="saleOpts()" [value]="k.phuTrach ?? ''" placeholder="Chưa phân bổ — gõ tên Sale…"
+                  [disabled]="!store.canEdit('phanBoKH')" (valueChange)="set('phuTrach', $event || undefined)" />
+                @if (!store.canEdit('phanBoKH')) { <span class="hint">Cần quyền "Phân bổ data khách hàng" để đổi.</span> }
+              </div>
+              <div class="field s6">
+                <span class="lbl">Nguồn KH</span>
+                <div class="chip-row" role="group" aria-label="Nguồn KH">
+                  @for (o of NGUON_KH; track o) { <button type="button" [class.on]="k.nguon === o" (click)="set('nguon', k.nguon === o ? undefined : o)">{{ o }}</button> }
+                </div>
+              </div>
+              <div class="field s3">
+                <label for="khf-sp">Loại hình sản phẩm</label>
+                <select id="khf-sp" (change)="set('loaiSP', $any($event.target).value || undefined)">
+                  <option value="">—</option>
+                  @for (o of LOAI_SP_KH; track o) { <option [value]="o" [selected]="o === k.loaiSP">{{ o }}</option> }
+                </select>
+              </div>
+              <div class="field s3">
+                <span class="lbl">Hình thức HĐ</span>
+                <div class="chip-row" role="group" aria-label="Hình thức HĐ">
+                  @for (o of HINH_THUC_HD; track o) { <button type="button" [class.on]="k.hinhThucHD === o" (click)="set('hinhThucHD', k.hinhThucHD === o ? undefined : o)">{{ o }}</button> }
+                </div>
+              </div>
+              <div class="field s3">
+                <label for="khf-ntn">Ngày tiếp nhận</label>
+                <input id="khf-ntn" type="date" [value]="k.ngayTiepNhan ?? ''" (input)="set('ngayTiepNhan', $any($event.target).value || undefined)" />
+              </div>
+              <div class="field s3">
+                <span class="lbl">Trạng thái data</span>
+                <div class="ro-line">{{ ttNhan(k.phuTrach ? TT.DA_PHAN_BO : TT.CHUA_PHAN_BO) }}{{ k.ngayPhanBo ? ' · ' + viDate(k.ngayPhanBo) : '' }}</div>
+              </div>
+            </div>
+          </section>
 
-        <h3 class="nhom">Theo dõi kinh doanh</h3>
-        <div class="form-grid cols-3">
-          <div class="field">
-            <label for="khf-tc">Trạng thái tiếp cận</label>
-            <select id="khf-tc" (change)="set('tiepCan', $any($event.target).value)">
-              @for (o of TIEP_CAN; track o) { <option [value]="o" [selected]="o === (k.tiepCan ?? TT.CHUA_LIEN_HE)">{{ ttNhan(o) }}</option> }
-            </select>
-          </div>
-          <div class="field">
-            <label for="khf-ch">Trạng thái cơ hội</label>
-            <select id="khf-ch" (change)="set('coHoi', $any($event.target).value)">
-              @for (o of CO_HOI; track o) { <option [value]="o" [selected]="o === (k.coHoi ?? TT.CHUA_TIEP_CAN)">{{ ttNhan(o) }}</option> }
-            </select>
-          </div>
-          <div class="field">
-            <label for="khf-gt">Giá trị cơ hội (VNĐ, chưa VAT)</label>
-            <app-money inputId="khf-gt" [value]="k.giaTriCoHoi ?? 0" (valueChange)="set('giaTriCoHoi', $event || undefined)" />
-          </div>
-          <div class="field">
-            <label for="khf-ng">Nguồn KH</label>
-            <select id="khf-ng" (change)="set('nguon', $any($event.target).value || undefined)">
-              <option value="">—</option>
-              @for (o of NGUON_KH; track o) { <option [value]="o" [selected]="o === k.nguon">{{ o }}</option> }
-            </select>
-          </div>
-          <div class="field">
-            <label for="khf-sp">Loại hình sản phẩm</label>
-            <select id="khf-sp" (change)="set('loaiSP', $any($event.target).value || undefined)">
-              <option value="">—</option>
-              @for (o of LOAI_SP_KH; track o) { <option [value]="o" [selected]="o === k.loaiSP">{{ o }}</option> }
-            </select>
-          </div>
-          <div class="field">
-            <label for="khf-ht">Hình thức HĐ</label>
-            <select id="khf-ht" (change)="set('hinhThucHD', $any($event.target).value || undefined)">
-              <option value="">—</option>
-              @for (o of HINH_THUC_HD; track o) { <option [value]="o" [selected]="o === k.hinhThucHD">{{ o }}</option> }
-            </select>
-          </div>
-          <div class="field">
-            <label for="khf-pt">Người phụ trách</label>
-            <app-pick-go inputId="khf-pt" [options]="saleOpts()" [value]="k.phuTrach ?? ''" placeholder="Chưa phân bổ — gõ tên Sale…"
-              [disabled]="!store.canEdit('phanBoKH')" (valueChange)="set('phuTrach', $event || undefined)" />
-            @if (!store.canEdit('phanBoKH')) { <span class="hint">Cần quyền "Phân bổ data khách hàng" để đổi.</span> }
-          </div>
-          <div class="field">
-            <label for="khf-ntn">Ngày tiếp nhận</label>
-            <input id="khf-ntn" type="date" [value]="k.ngayTiepNhan ?? ''" (input)="set('ngayTiepNhan', $any($event.target).value || undefined)" />
-          </div>
-          <div class="field">
-            <span class="lbl">Trạng thái data</span>
-            <div class="ro">{{ ttNhan(k.phuTrach ? TT.DA_PHAN_BO : TT.CHUA_PHAN_BO) }}{{ k.ngayPhanBo ? ' · ' + viDate(k.ngayPhanBo) : '' }}</div>
-          </div>
-          <div class="field span-3">
-            <label for="khf-gc">Ghi chú</label>
-            <textarea id="khf-gc" rows="2" [value]="k.ghiChu" (input)="set('ghiChu', $any($event.target).value)"></textarea>
-          </div>
+          <section class="cd">
+            <h3>Ghi chú</h3>
+            <div class="field">
+              <textarea id="khf-gc" rows="3" aria-label="Ghi chú" [value]="k.ghiChu" (input)="set('ghiChu', $any($event.target).value)"></textarea>
+            </div>
+          </section>
         </div>
       </div>
 
       <ng-container foot>
         <button type="button" class="btn quiet" (click)="m.tryClose()">Huỷ</button>
-        <button type="button" class="btn" [disabled]="!dirty()" (click)="luu(false)">Lưu</button>
+        <button type="button" class="btn" [disabled]="!dirty()" (click)="luu(false)">{{ f().id ? 'Lưu thay đổi' : 'Thêm khách hàng' }}</button>
       </ng-container>
     </app-modal>
   `,
@@ -171,8 +224,10 @@ export class KhForm {
   protected readonly store = inject(Store);
   private readonly m = viewChild<Modal>('m');
   protected readonly viDate = viDate;
+  protected readonly LY_DO_THUA = LY_DO_THUA;
   protected readonly TIEP_CAN = TIEP_CAN;
-  protected readonly CO_HOI = CO_HOI;
+  protected readonly CO_HOI_KH = CO_HOI_KH;
+  protected readonly loaiCoHoi = loaiCoHoi;
   protected readonly PHAN_LOAI_KH = PHAN_LOAI_KH;
   protected readonly NGUON_KH = NGUON_KH;
   protected readonly LOAI_SP_KH = LOAI_SP_KH;
@@ -193,6 +248,11 @@ export class KhForm {
   });
   protected readonly f = linkedSignal(() => this.goc());
   protected readonly dirty = computed(() => this.khId() !== null && JSON.stringify(this.f()) !== JSON.stringify(this.goc()));
+  /** Sửa KH đang có sang Thua (Huỷ) / Thắng (Ký hợp đồng) thì bắt nhập lý do; lý do ghi vào lịch sử chăm sóc. */
+  protected readonly doiThua = computed(() => !!this.f().id && loaiCoHoi(this.f().coHoi).v === TT.HUY && loaiCoHoi(this.goc().coHoi).v !== TT.HUY);
+  protected readonly doiThang = computed(() => !!this.f().id && loaiCoHoi(this.f().coHoi).v === TT.KY_HOP_DONG && loaiCoHoi(this.goc().coHoi).v !== TT.KY_HOP_DONG);
+  protected readonly lyDo = linkedSignal(() => (this.khId(), ''));
+  protected readonly lyDoKhac = linkedSignal(() => (this.khId(), ''));
   protected readonly saleOpts = computed<PickOption[]>(() => this.store.saleOpts(this.f().phuTrach));
   protected readonly trung = linkedSignal<KhachHang | null>(() => (this.khId(), null));
   protected readonly err = linkedSignal(() => (this.khId(), ''));
@@ -222,12 +282,22 @@ export class KhForm {
       }
     }
     const moi = !draft.id;
+    let lyDoGhi = '';
+    if (this.doiThua()) {
+      if (!this.lyDo()) return this.err.set('Chọn lý do thua');
+      if (this.lyDo() === 'Khác' && !this.lyDoKhac().trim()) return this.err.set('Ghi rõ lý do thua');
+      lyDoGhi = 'Lý do thua: ' + (this.lyDo() === 'Khác' ? this.lyDoKhac().trim() : this.lyDo());
+    } else if (this.doiThang()) {
+      if (!this.lyDo().trim()) return this.err.set('Nhập lý do thắng');
+      lyDoGhi = 'Lý do thắng: ' + this.lyDo().trim();
+    }
     const err = this.store.saveKhachHang(draft);
     if (err) {
       this.err.set(err);
       return;
     }
     this.trung.set(null);
+    if (lyDoGhi) this.store.ghiChamSoc(draft.id, lyDoGhi);
     this.store.say(moi ? 'Đã thêm khách hàng ' + draft.id : 'Đã lưu khách hàng');
     this.daLuu.emit(draft.id);
     this.closed.emit();
