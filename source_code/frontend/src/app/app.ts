@@ -1,6 +1,5 @@
 import { afterNextRender, ChangeDetectionStrategy, Component, computed, DestroyRef, effect, inject, signal, untracked, viewChild } from '@angular/core';
-import { NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
-import { Icon } from './shared/icon';
+import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { ConfirmHost } from './shared/confirm';
 import { Modal } from './shared/ui-kit';
 import { dangTaoTep } from './shared/export';
@@ -16,23 +15,8 @@ import { MAT_KHAU_TOI_THIEU } from './core/crypto';
 @Component({
   selector: 'app-root',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, RouterLink, Icon, ConfirmHost, Modal],
+  imports: [RouterOutlet, ConfirmHost, Modal],
   template: `
-    @if (auth.me(); as me) {
-      <header class="topbar">
-        <button type="button" class="burger" aria-label="Mở / thu gọn menu" (click)="ui.toggleNav()"><app-icon name="menu" [size]="26" /></button>
-        <a class="brand" routerLink="/" aria-label="Về trang chủ">
-          <span class="brand-logo wide"><img src="brand/logo-oxymecie.png" alt="Oxy Mecie" width="399" height="160" /></span>
-          <span class="brand-name"><small>Quản lý nội bộ</small></span>
-        </a>
-        <span class="spacer"></span>
-        <div class="user-chip">
-          <span class="avatar" aria-hidden="true">{{ initial() }}</span>
-          <span class="who"><b>{{ me.hoTen }}</b><small>{{ vaiTro() }}</small></span>
-        </div>
-      </header>
-    }
-
     @if (store.ready() && auth.mustChange()) {
       <!-- NT-02: bắt buộc đổi mật khẩu — chưa vào app, không hiện dữ liệu phía sau. -->
       <main class="main empty">Đổi mật khẩu để tiếp tục.</main>

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { Icon, IconName } from './shared/icon';
 import { Store } from './core/store';
@@ -32,6 +32,10 @@ interface NavItem {
     <div class="shell" [class.collapsed]="ui.sideCollapsed()" [class.drawer-open]="ui.drawerOpen()">
       <button type="button" class="scrim" aria-label="Đóng menu" tabindex="-1" (click)="ui.closeDrawer()"></button>
       <nav class="side" aria-label="Menu chính">
+        <a class="side-brand" routerLink="/" aria-label="Về trang chủ">
+          <img src="brand/logo-oxymecie.png" alt="Oxy Mecie" width="399" height="160" />
+          <span>Quản trị nội bộ</span>
+        </a>
         @for (it of items(); track it.path) {
           @if (it.group) { <div class="grp-label">{{ it.group }}</div> }
           <a [routerLink]="it.path" routerLinkActive="on" [routerLinkActiveOptions]="{ exact: !!it.exact }" [attr.title]="it.label">
@@ -45,6 +49,34 @@ interface NavItem {
           <button type="button" class="nav" title="Đăng xuất" (click)="auth.logout()"><app-icon name="logout" [size]="24" /><span class="lb">Đăng xuất</span></button>
         </div>
       </nav>
+      <div class="col">
+      <header class="topbar">
+        <button type="button" class="burger" aria-label="Mở / thu gọn menu" (click)="ui.toggleNav()"><app-icon name="menu" [size]="24" /></button>
+        <a class="brand m-brand" routerLink="/" aria-label="Về trang chủ"><img src="brand/logo-oxymecie.png" alt="Oxy Mecie" height="40" /></a>
+        <div class="search">
+          <app-icon name="search" [size]="18" />
+          <input type="search" placeholder="Tìm số HĐ, khách hàng, NCC…" aria-label="Tìm nhanh" autocomplete="off"
+                 [value]="q()" (input)="q.set($any($event.target).value)" (keydown.escape)="q.set('')" />
+          @if (ketQua().length) {
+            <ul class="search-res">
+              @for (r of ketQua(); track r.link) {
+                <li><a [routerLink]="r.link" (click)="q.set('')"><b>{{ r.nhan }}</b><span class="sub">{{ r.loai }} · {{ r.phu }}</span></a></li>
+              }
+            </ul>
+          }
+        </div>
+        <span class="spacer"></span>
+        @if (store.canView('viec')) {
+          <a class="bell" routerLink="/viec" [attr.aria-label]="'Việc được giao: ' + store.viecCuaToi()">
+            <app-icon name="bell" [size]="20" />
+            @if (store.viecCuaToi() > 0) { <i class="bell-n">{{ store.viecCuaToi() }}</i> }
+          </a>
+        }
+        <div class="user-chip">
+          <span class="avatar" aria-hidden="true">{{ initial() }}</span>
+          <span class="who"><b>{{ store.tenNhom(auth.me()) }}</b><small>{{ auth.me()?.email }}</small></span>
+        </div>
+      </header>
       <main class="main">
         @if (chuaCapQuyen()) {
           <!-- Spec 00 §3.3: tài khoản không còn nhóm quyền nào đang hoạt động. -->
@@ -57,6 +89,7 @@ interface NavItem {
           <router-outlet />
         }
       </main>
+      </div>
 
       <!-- Điện thoại: thanh tab đáy — 4 mục hay dùng (theo quyền) + Menu mở toàn bộ danh sách. -->
       <nav class="tabbar" aria-label="Lối tắt">
@@ -104,22 +137,41 @@ export class Shell {
     return this.items().filter((x) => !tren.has(x.path)).reduce((s, x) => s + (x.count ?? 0), 0);
   });
 
+  protected readonly q = signal('');
+  protected readonly initial = computed(() => {
+    const p = (this.auth.me()?.hoTen ?? '?').replace(/\(.*?\)/g, '').trim().split(/\s+/);
+    return (p.length > 1 ? p[0][0] + p[p.length - 1][0] : p[0].slice(0, 2)).toUpperCase();
+  });
+  /** Tìm nhanh HĐ bán / HĐ mua / khách hàng theo số HĐ, tên, MST (tối đa 8 kết quả). */
+  protected readonly ketQua = computed(() => {
+    const k = this.q().trim().toLowerCase();
+    if (k.length < 2) return [];
+    const out: { nhan: string; loai: string; phu: string; link: string }[] = [];
+    if (this.store.canView('hdb'))
+      for (const h of this.store.hdbVisible())
+        if (`${h.soHD} ${h.tenKH} ${h.mst}`.toLowerCase().includes(k)) out.push({ nhan: h.soHD || '(báo giá)', loai: 'HĐ bán', phu: h.tenKH, link: `/hop-dong-ban/${h.id}` });
+    if (this.store.canView('hdm'))
+      for (const m of this.store.hdmVisible())
+        if (`${m.soHD} ${m.tenNCC}`.toLowerCase().includes(k)) out.push({ nhan: m.soHD || '(chưa số)', loai: 'HĐ mua', phu: m.tenNCC, link: `/hop-dong-mua/${m.id}` });
+    return out.slice(0, 8);
+  });
+
   protected readonly items = computed<NavItem[]>(() => {
     const all: NavItem[] = [
-      { path: '/', label: 'Trang chủ', icon: 'home', perms: null, exact: true, group: '' },
-      { path: '/viec', label: 'Việc được giao', short: 'Việc', icon: 'list', perms: ['viec'], count: this.store.viecCuaToi(), group: '' },
-      { path: '/khach-hang', label: 'Khách hàng', short: 'Khách', icon: 'contact', perms: ['khachHang'], group: 'Kinh doanh' },
-      { path: '/hop-dong-ban', label: 'Hợp đồng bán', short: 'HĐ bán', icon: 'sell', perms: ['hdb'], group: 'Kinh doanh' },
-      { path: '/hop-dong-mua', label: 'Hợp đồng mua', short: 'HĐ mua', icon: 'buy', perms: ['hdm'], group: 'Kinh doanh' },
-      { path: '/nha-cung-cap', label: 'Nhà cung cấp', short: 'NCC', icon: 'truck', perms: ['ncc'], group: 'Kinh doanh' },
-      { path: '/kho', label: 'Kho', icon: 'box', perms: ['khoTon'], group: 'Vận hành' },
-      { path: '/in-tem', label: 'In tem bình khí', short: 'Tem', icon: 'box', perms: ['inTem'], group: 'Vận hành' },
-      { path: '/ke-toan', label: 'Kế toán', icon: 'wallet', perms: ['soQuy', 'congNo', 'cpHD', 'nguonTien'], count: this.choDuyetKT(), group: 'Vận hành' },
-      { path: '/phu-tai', label: 'Phú Tài', icon: 'handshake', perms: ['phuTai'], group: 'Vận hành' },
-      { path: '/bao-cao', label: 'Báo cáo', icon: 'chart', perms: ['baoCao'], group: 'Vận hành' },
-      { path: '/duyet-xoa', label: 'Duyệt xoá', icon: 'trash', perms: ['duyetXoa', 'duyetXoaKT'], count: this.choXoa(), group: 'Hệ thống' },
-      { path: '/tai-khoan', label: 'Tài khoản & phân quyền', icon: 'users', perms: ['taiKhoan'], group: 'Hệ thống' },
-      { path: '/cau-hinh', label: 'Cấu hình', icon: 'settings', perms: ['cauHinh'], group: 'Hệ thống' },
+      { path: '/', label: 'Trang chủ', icon: 'home', perms: null, exact: true, group: 'Điều hành' },
+      { path: '/viec', label: 'Công việc & Cảnh báo', short: 'Việc', icon: 'list', perms: ['viec'], count: this.store.viecCuaToi(), group: 'Điều hành' },
+      { path: '/khach-hang', label: 'Khách hàng', short: 'Khách', icon: 'contact', perms: ['khachHang'], group: 'Nghiệp vụ' },
+      { path: '/hop-dong-ban', label: 'Hợp đồng bán', short: 'HĐ bán', icon: 'sell', perms: ['hdb'], group: 'Nghiệp vụ' },
+      { path: '/nha-cung-cap', label: 'Nhà cung cấp', short: 'NCC', icon: 'truck', perms: ['ncc'], group: 'Nghiệp vụ' },
+      { path: '/hop-dong-mua', label: 'Hợp đồng mua', short: 'HĐ mua', icon: 'buy', perms: ['hdm'], group: 'Nghiệp vụ' },
+      { path: '/kho', label: 'Kho & Giao hàng', short: 'Kho', icon: 'box', perms: ['khoTon'], group: 'Nghiệp vụ' },
+      { path: '/in-tem', label: 'In tem bình khí', short: 'Tem', icon: 'box', perms: ['inTem'], group: 'Nghiệp vụ' },
+      { path: '/ke-toan', label: 'Tài chính – Kế toán', short: 'Kế toán', icon: 'wallet', perms: ['soQuy', 'congNo', 'cpHD', 'nguonTien'], count: this.choDuyetKT(), group: 'Nghiệp vụ' },
+      { path: '/phu-tai', label: 'Phú Tài', icon: 'chart', perms: ['phuTai'], group: 'Nghiệp vụ' },
+      { path: '/bao-cao', label: 'Báo cáo', icon: 'chart', perms: ['baoCao'], group: 'Nghiệp vụ' },
+      { path: '/duyet-xoa', label: 'Phê duyệt', icon: 'check', perms: ['duyetXoa', 'duyetXoaKT'], count: this.choXoa(), group: 'Quản trị hệ thống' },
+      { path: '/tai-khoan', label: 'Người dùng & Phân quyền', icon: 'users', perms: ['taiKhoan'], group: 'Quản trị hệ thống' },
+      { path: '/cau-hinh', label: 'Cài đặt', icon: 'settings', perms: ['cauHinh'], group: 'Quản trị hệ thống' },
     ];
     let shown = '';
     return all
