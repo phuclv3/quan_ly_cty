@@ -136,7 +136,6 @@ public final class Visibility {
   private Object viec(ViecGiao v) {
     Level l = c.level(Perm.viec);
     if (l == Level.none) return null;
-    if (l == Level.own && !c.me().equals(v.getNguoiTao()) && !v.getNguoiNhan().contains(c.me())) return null;
     return v;
   }
 

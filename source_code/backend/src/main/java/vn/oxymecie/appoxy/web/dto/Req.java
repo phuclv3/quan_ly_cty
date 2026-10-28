@@ -91,7 +91,16 @@ public final class Req {
                             @NotBlank(message = "Dòng điều chỉnh tay cần lý do") @Size(max = 1000) String ghiChu) {}
 
   public record GiaoViec(@NotBlank(message = "Nhập nội dung việc") @Size(max = 4000) String noiDung, List<String> nguoiNhan,
-                         String hdbId, @Pattern(regexp = NGAY, message = NGAY_MSG) String han, String gio) {}
+                         String hdbId, String hdmId, String nguonLoai, String nhom,
+                         @Pattern(regexp = "^(\\d{4}-\\d{2}-\\d{2})?$", message = NGAY_MSG) String batDau,
+                         @Pattern(regexp = NGAY, message = NGAY_MSG) String han, String gio, String mucUuTien,
+                         List<vn.oxymecie.appoxy.domain.model.FileRef> files) {}
+
+  public record YeuCauHan(@NotBlank(message = "Chọn hạn mới") @Pattern(regexp = NGAY, message = NGAY_MSG) String hanMoi, String gioMoi,
+                          @NotBlank(message = "Nhập lý do đổi hạn") @Size(max = 2000) String lyDo,
+                          List<vn.oxymecie.appoxy.domain.model.FileRef> files) {}
+
+  public record DuyetHan(boolean duyet) {}
 
   public record PhanHoi(@NotBlank(message = "Nhập nội dung phản hồi") @Size(max = 4000) String noiDung) {}
 

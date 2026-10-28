@@ -214,7 +214,14 @@ public class DbMapper {
     List<PhanHoiViec> ph = new ArrayList<>(e.getPhanHoi().stream()
         .map(x -> new PhanHoiViec(x.getNguoi(), t(x.getLuc()), x.getNoiDung(), x.getHeThong())).toList());
     return new ViecGiao(e.getId(), e.getNoiDung(), e.getNguoiTao(), t(e.getTaoLuc()), new ArrayList<>(e.getNguoiNhan()), e.getHdbId(),
-        d(e.getHan()), e.getGio(), e.isUuTien(), t(e.getXongLuc()), e.getNguoiXong(), ph);
+        d(e.getHan()), e.getGio(), e.isUuTien(), t(e.getXongLuc()), e.getNguoiXong(), ph, e.getMa(), e.getNhom(), d(e.getBatDau()),
+        e.getMucUuTien(), e.getNguonLoai(), e.getHdmId(), yeuCauHan(e), new ArrayList<>(e.getFiles().stream().map(this::file).toList()));
+  }
+
+  private YeuCauHan yeuCauHan(ViecGiaoEntity e) {
+    if (e.getYcTrangThai() == null) return null;
+    return new YeuCauHan(e.getYcNguoi(), t(e.getYcLuc()), d(e.getYcHanMoi()), e.getYcGioMoi(), e.getYcLyDo(),
+        new ArrayList<>(e.getYcFiles().stream().map(this::file).toList()), e.getYcTrangThai());
   }
 
   DeNghiVatTu deNghiVatTu(DeNghiVatTuEntity e) {
@@ -623,6 +630,23 @@ public class DbMapper {
     e.setUuTien(Boolean.TRUE.equals(x.getUuTien()));
     e.setXongLuc(in(x.getXongLuc()));
     e.setNguoiXong(x.getNguoiXong());
+    e.setMa(x.getMa());
+    e.setNhom(Texts.emptyToNull(x.getNhom()));
+    e.setBatDau(ld(x.getBatDau()));
+    e.setMucUuTien(Texts.emptyToNull(x.getMucUuTien()));
+    e.setNguonLoai(Texts.emptyToNull(x.getNguonLoai()));
+    e.setHdmId(Texts.emptyToNull(x.getHdmId()));
+    YeuCauHan y = x.getYeuCauHan();
+    e.setYcNguoi(y == null ? null : y.getNguoi());
+    e.setYcLuc(y == null ? null : in(y.getLuc()));
+    e.setYcHanMoi(y == null ? null : ld(y.getHanMoi()));
+    e.setYcGioMoi(y == null ? null : Texts.emptyToNull(y.getGioMoi()));
+    e.setYcLyDo(y == null ? null : y.getLyDo());
+    e.setYcTrangThai(y == null ? null : y.getTrangThai());
+    e.getFiles().clear();
+    e.getFiles().addAll(tepRefs(x.getFiles()));
+    e.getYcFiles().clear();
+    if (y != null) e.getYcFiles().addAll(tepRefs(y.getFiles()));
     if (!e.getNguoiNhan().equals(x.getNguoiNhan())) {
       e.getNguoiNhan().clear();
       e.getNguoiNhan().addAll(x.getNguoiNhan());

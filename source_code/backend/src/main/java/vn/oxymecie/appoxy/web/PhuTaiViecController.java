@@ -110,7 +110,7 @@ public class PhuTaiViecController {
   @PostMapping("/viec")
   public CommandResponse<ViecGiao> giao(@Valid @RequestBody Req.GiaoViec r) {
     return cmd.run("VIEC.giao", c -> {
-      ViecGiao v = viec.giaoViec(c, r.noiDung(), r.nguoiNhan(), r.hdbId(), r.han(), r.gio());
+      ViecGiao v = viec.giaoViec(c, new ViecService.Moi(r.noiDung(), r.nguoiNhan(), r.nguonLoai(), r.hdbId(), r.hdmId(), r.nhom(), r.batDau(), r.han(), r.gio(), r.mucUuTien(), r.files()));
       c.nhatKy("ViecGiao", v.getId(), null);
       return v;
     });
@@ -121,6 +121,26 @@ public class PhuTaiViecController {
     return cmd.run("VIEC.phanHoi", c -> {
       viec.phanHoiViec(c, id, r.noiDung());
       c.nhatKy("ViecGiao", id, null);
+      return null;
+    });
+  }
+
+  @Operation(summary = "Người nhận đề nghị đổi hạn việc", description = "Kèm lý do và tệp; người giao duyệt trong 1 giờ.")
+  @PostMapping("/viec/{id}/yeu-cau-han")
+  public CommandResponse<Void> yeuCauHan(@PathVariable String id, @Valid @RequestBody Req.YeuCauHan r) {
+    return cmd.run("VIEC.yeuCauHan", c -> {
+      viec.yeuCauDoiHan(c, id, r.hanMoi(), r.gioMoi(), r.lyDo(), r.files());
+      c.nhatKy("ViecGiao", id, "Đề nghị đổi hạn");
+      return null;
+    });
+  }
+
+  @Operation(summary = "Người giao duyệt / từ chối đổi hạn")
+  @PostMapping("/viec/{id}/duyet-han")
+  public CommandResponse<Void> duyetHan(@PathVariable String id, @RequestBody Req.DuyetHan r) {
+    return cmd.run("VIEC.duyetHan", c -> {
+      viec.duyetDoiHan(c, id, r.duyet());
+      c.nhatKy("ViecGiao", id, r.duyet() ? "Duyệt đổi hạn" : "Từ chối đổi hạn");
       return null;
     });
   }

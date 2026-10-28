@@ -127,6 +127,8 @@ public class HoSoController {
     return d.getHoSo().stream().anyMatch(h -> h.getFiles().stream().anyMatch(f -> f.getId().equals(id)))
         || d.getPhieuThuChi().stream().anyMatch(p -> p.getFiles().stream().anyMatch(f -> f.getId().equals(id)))
         || d.getChiPhiHD().stream().anyMatch(p -> p.getFiles().stream().anyMatch(f -> f.getId().equals(id)))
+        || d.getViecGiao().stream().anyMatch(v -> v.getFiles().stream().anyMatch(f -> f.getId().equals(id)))
+        || d.getViecGiao().stream().anyMatch(v -> v.getYeuCauHan() != null && v.getYeuCauHan().getFiles().stream().anyMatch(f -> f.getId().equals(id)))
         || d.getHoaDon().stream().anyMatch(h -> id.equals(h.getFileId()));
   }
 

@@ -7,6 +7,8 @@ import jakarta.persistence.Embeddable;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OrderColumn;
 import jakarta.persistence.Table;
 import java.time.Instant;
@@ -50,6 +52,51 @@ public class ViecGiaoEntity {
 
   @Column(name = "nguoi_xong")
   private String nguoiXong;
+
+  private String ma;
+
+  private String nhom;
+
+  @Column(name = "bat_dau")
+  private LocalDate batDau;
+
+  @Column(name = "muc_uu_tien")
+  private String mucUuTien;
+
+  @Column(name = "nguon_loai")
+  private String nguonLoai;
+
+  @Column(name = "hdm_id")
+  private String hdmId;
+
+  @Column(name = "yc_nguoi")
+  private String ycNguoi;
+
+  @Column(name = "yc_luc")
+  private Instant ycLuc;
+
+  @Column(name = "yc_han_moi")
+  private LocalDate ycHanMoi;
+
+  @Column(name = "yc_gio_moi")
+  private String ycGioMoi;
+
+  @Column(name = "yc_ly_do")
+  private String ycLyDo;
+
+  @Column(name = "yc_trang_thai")
+  private String ycTrangThai;
+
+  @ManyToMany
+  @JoinTable(name = "cv_viec_tep", joinColumns = @JoinColumn(name = "viec_id"), inverseJoinColumns = @JoinColumn(name = "tep_id"))
+  @OrderColumn(name = "thu_tu")
+  private List<TepTinEntity> files = new ArrayList<>();
+
+  @ManyToMany
+  @JoinTable(name = "cv_viec_yc_tep", joinColumns = @JoinColumn(name = "viec_id"), inverseJoinColumns = @JoinColumn(name = "tep_id"))
+  @OrderColumn(name = "thu_tu")
+  private List<TepTinEntity> ycFiles = new ArrayList<>();
+
   @ElementCollection
   @CollectionTable(name = "cv_viec_nguoi_nhan", joinColumns = @JoinColumn(name = "viec_id"))
   @OrderColumn(name = "thu_tu")
