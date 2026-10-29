@@ -125,6 +125,58 @@ public final class Calc {
   }
 
   /** HĐ mua có phục vụ HĐ bán này: gắn cả HĐ (hdbId) hoặc có dòng mua cho HĐ bán này. */
+  /**
+   * Số còn phải giao theo mã hàng của HĐ bán: cơ sở là dòng hàng HĐ bán, chưa có thì dòng của các HĐ mua liên quan;
+   * trừ các phiếu Xuất Hiệu lực. Trả null khi không có cơ sở nào để giới hạn (HĐ dịch vụ / dữ liệu cũ).
+   */
+  public static java.util.Map<String, Double> hdbGioiHanGiao(HopDongBan h, Db db) {
+    java.util.Map<String, Double> con = new java.util.LinkedHashMap<>();
+    if (h.getDongHang() != null && !h.getDongHang().isEmpty()) {
+      for (var d : h.getDongHang()) if (d.getLoaiHang() != null && !d.getLoaiHang().isBlank()) con.merge(d.getLoaiHang(), d.getSoLuong(), Double::sum);
+    } else {
+      for (HopDongMua m : db.getHopDongMua()) {
+        if (TrangThai.HUY.equals(m.getTrangThai()) || !hdmChoHdb(m, h.getId())) continue;
+        for (var d : dongMuaChoHdb(m, h.getId())) if (d.getLoaiHang() != null && !d.getLoaiHang().isBlank()) con.merge(d.getLoaiHang(), d.getSoLuong(), Double::sum);
+      }
+    }
+    if (con.isEmpty()) return null;
+    for (var p : db.getPhieuKho()) {
+      if (!"Xuất".equals(p.getLoai()) || !h.getId().equals(p.getHdId()) || !TrangThai.HIEU_LUC.equals(p.getTrangThai())) continue;
+      for (var d : p.getDong()) con.computeIfPresent(d.getLoaiHang(), (k, v) -> v - d.getSoLuong());
+    }
+    return con;
+  }
+
+  /** Một đợt thanh toán để kiểm tra ràng buộc (dùng chung HĐ bán / HĐ mua). */
+  public record DotRow(Double tyLe, long soTien, String han) {}
+
+  /**
+   * Ràng buộc các đợt thanh toán: tỷ lệ mỗi đợt 0–100%, Σ tỷ lệ ≤ 100%, Σ số tiền ≤ giá trị HĐ (khi đã có giá trị),
+   * hạn đợt sau không trước hạn đợt trước. Trả thông báo lỗi đầu tiên, null = hợp lệ.
+   */
+  public static String loiDotTT(java.util.List<DotRow> ds, double tong) {
+    double tyLe = 0;
+    long tien = 0;
+    String hanTruoc = null;
+    for (int i = 0; i < ds.size(); i++) {
+      DotRow d = ds.get(i);
+      String ten = "Đợt " + (i + 1);
+      if (d.tyLe() != null) {
+        if (d.tyLe() < 0 || d.tyLe() > 100) return ten + ": tỷ lệ phải từ 0 đến 100%";
+        tyLe += d.tyLe();
+      }
+      tien += d.soTien();
+      if (d.han() != null && !d.han().isBlank()) {
+        if (hanTruoc != null && d.han().compareTo(hanTruoc) < 0) return ten + ": hạn thanh toán không được trước hạn đợt trước";
+        hanTruoc = d.han();
+      }
+    }
+    if (tyLe > 100.05) return "Tổng tỷ lệ các đợt " + String.format("%.1f", tyLe) + "% vượt 100%";
+    if (tong > 0 && tien > Math.round(tong) + 1)
+      return "Tổng số tiền các đợt (" + Money.vnd(tien) + ") vượt giá trị hợp đồng (" + Money.vnd(Math.round(tong)) + ")";
+    return null;
+  }
+
   public static boolean hdmChoHdb(HopDongMua m, String hdbId) {
     if (Objects.equals(m.getHdbId(), hdbId)) return true;
     for (DongHangMua d : m.getChiTiet()) if (Objects.equals(d.getHdbId(), hdbId)) return true;

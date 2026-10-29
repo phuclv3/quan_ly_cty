@@ -85,6 +85,9 @@ public class HdbService {
     chuanHoaDong(c, h);
     chuanHoaDot(c, h, cu);
     Calc.apDungTuDongHdb(h);
+    String loiDot = Calc.loiDotTT(h.getDotTT().stream().map(d -> new Calc.DotRow(d.getTyLe(), d.getSoTien(), d.getHan())).toList(),
+        Calc.sauVAT(h.getTruocVAT(), h.getVat()));
+    if (loiDot != null) throw ApiException.invalid(loiDot);
     boolean baoGia = cu == null || TrangThai.BAO_GIA.equals(cu.getTrangThai());
     String soHD = Texts.trim(h.getSoHD());
     if (soHD.isEmpty() && !baoGia) throw ApiException.invalid("Số HĐ bán là bắt buộc");
@@ -212,6 +215,10 @@ public class HdbService {
     h.setTrangThai(TrangThai.HOAN_THANH);
   }
 
+  private static String so(double v) {
+    return v == Math.rint(v) ? String.valueOf((long) v) : String.valueOf(v);
+  }
+
   /** HDB-04: ghi nhận một lần giao → sinh 1 phiếu Xuất kho trừ theo lô (giá vốn = đơn giá lô). */
   public PhieuKho ghiNhanGiaoHang(Ctx c, String hdbId, String ngay, String khoId, List<KhoService.DongXuat> dong, String ghiChu) {
     HopDongBan h = c.hdb(hdbId);
@@ -223,6 +230,19 @@ public class HdbService {
     if (Texts.blank(khoId)) throw ApiException.invalid("Chưa chọn Vị trí kho");
     if (c.kho(khoId) == null) throw ApiException.invalid("Vị trí kho không tồn tại");
     if (Texts.blank(ngay)) throw ApiException.invalid("Chưa chọn Ngày");
+    // Chỉ giao đúng mã hàng trong Sản phẩm & giá của HĐ, tổng đã giao không vượt số lượng HĐ.
+    java.util.Map<String, Double> con = Calc.hdbGioiHanGiao(h, c.db());
+    if (con != null) {
+      java.util.Map<String, Double> moi = new java.util.LinkedHashMap<>();
+      for (KhoService.DongXuat d : dong == null ? List.<KhoService.DongXuat>of() : dong)
+        if (!Texts.blank(d.loaiHang()) && d.soLuong() > 0) moi.merge(d.loaiHang(), d.soLuong(), Double::sum);
+      for (var e : moi.entrySet()) {
+        Double r = con.get(e.getKey());
+        if (r == null) throw ApiException.invalid("Mã hàng " + e.getKey() + " không có trong Sản phẩm & giá của HĐ bán");
+        if (e.getValue() > r + 1e-9)
+          throw ApiException.invalid("Mã hàng " + e.getKey() + ": giao " + so(e.getValue()) + " vượt số còn phải giao " + so(Math.max(0, r)));
+      }
+    }
     List<DongPhieuKho> ds = kho.dongXuatTheoLo(c, khoId, hdbId, dong, ngay);
     if (ds.isEmpty()) throw ApiException.invalid("Cần ít nhất 1 dòng hàng có số lượng > 0");
     PhieuKho p = new PhieuKho(c.uid("PK"), c.nextSo(c.cauHinh().getTienToXK(), ngay), ngay, "Xuất", "Tự động HĐ Bán", hdbId, khoId,

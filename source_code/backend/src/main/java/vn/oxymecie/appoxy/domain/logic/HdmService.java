@@ -144,6 +144,8 @@ public class HdmService {
       }
     }
     Calc.apDungTuDongHdm(m);
+    String loiDot = Calc.loiDotTT(m.getDotTT().stream().map(d -> new Calc.DotRow(d.getTyLe(), d.getSoTien(), d.getHan())).toList(), Calc.hdmTong(m));
+    if (loiDot != null) throw ApiException.invalid(loiDot);
     if (isNew) m.setId(Ids.safe(m.getId()) && c.hdm(m.getId()) == null ? m.getId() : c.uid("HDM"));
     Ctx.upsert(c.db().getHopDongMua(), m, HopDongMua::getId);
     final String hdmId = m.getId();
