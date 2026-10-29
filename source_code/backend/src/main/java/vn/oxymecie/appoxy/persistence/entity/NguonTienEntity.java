@@ -20,6 +20,9 @@ public class NguonTienEntity {
   @Column(nullable = false)
   private String ten;
 
+  @Column(name = "cong_ty", nullable = false)
+  private String congTy;
+
   @Column(nullable = false)
   private String loai;
 

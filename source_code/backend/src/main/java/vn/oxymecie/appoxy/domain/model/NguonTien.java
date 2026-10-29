@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 public class NguonTien {
   private String id;
   private String ten;
+  private String congTy;
   private String loai;
   private String soTaiKhoan;
   private String nganHang;

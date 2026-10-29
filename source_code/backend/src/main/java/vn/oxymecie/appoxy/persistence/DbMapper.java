@@ -150,7 +150,7 @@ public class DbMapper {
   }
 
   NguonTien nguonTien(NguonTienEntity e) {
-    return new NguonTien(e.getId(), e.getTen(), e.getLoai(), e.getSoTaiKhoan(), e.getNganHang(), e.getSoDuDauKy(), d(e.getNgayDauKy()),
+    return new NguonTien(e.getId(), e.getTen(), e.getCongTy(), e.getLoai(), e.getSoTaiKhoan(), e.getNganHang(), e.getSoDuDauKy(), d(e.getNgayDauKy()),
         e.getTrangThai());
   }
 
@@ -425,6 +425,7 @@ public class DbMapper {
   public void applyNguonTien(NguonTien x, NguonTienEntity e) {
     e.setId(x.getId());
     e.setTen(x.getTen());
+    e.setCongTy(x.getCongTy());
     e.setLoai(x.getLoai());
     e.setSoTaiKhoan(Texts.emptyToNull(x.getSoTaiKhoan()));
     e.setNganHang(Texts.emptyToNull(x.getNganHang()));

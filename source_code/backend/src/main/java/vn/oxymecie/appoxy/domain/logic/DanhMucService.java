@@ -159,6 +159,7 @@ public class DanhMucService {
     NguonTien cu = c.nguon(n.getId());
     if (isNew && cu != null) throw ApiException.conflict("Mã nguồn " + n.getId() + " đã có");
     if (!isNew && cu == null) throw ApiException.notFound("Không tìm thấy nguồn tiền");
+    if (n.getCongTy() == null || !List.of("OXY", "KOXY").contains(n.getCongTy())) throw ApiException.invalid("Công ty không hợp lệ");
     if (n.getLoai() == null || !List.of("Tiền mặt", "Ngân hàng").contains(n.getLoai())) throw ApiException.invalid("Loại nguồn tiền không hợp lệ");
     if (n.getTrangThai() == null || !List.of(TrangThai.DANG_DUNG, TrangThai.NGUNG).contains(n.getTrangThai())) throw ApiException.invalid("Trạng thái không hợp lệ");
     if (cu != null && nguonDaPhatSinh(c, n.getId())

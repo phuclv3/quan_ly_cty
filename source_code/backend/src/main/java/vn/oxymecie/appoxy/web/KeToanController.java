@@ -36,9 +36,12 @@ public class KeToanController {
   private final Cmd cmd;
   private final KeToanService svc;
 
-  public KeToanController(Cmd cmd, KeToanService svc) {
+  private final vn.oxymecie.appoxy.domain.logic.BaoCaoKtService baoCao;
+
+  public KeToanController(Cmd cmd, KeToanService svc, vn.oxymecie.appoxy.domain.logic.BaoCaoKtService baoCao) {
     this.cmd = cmd;
     this.svc = svc;
+    this.baoCao = baoCao;
   }
 
   // ── Sổ quỹ ───────────────────────────────────────────────────────────
@@ -200,6 +203,20 @@ public class KeToanController {
       out.add(Map.of("nguonTien", n.getId(), "ten", n.getTen(), "chiTiet", s));
     }
     return out;
+  }
+
+  @Operation(summary = "Báo cáo tổng quan kế toán",
+      description = "Lợi nhuận gộp, công nợ (kèm tuổi nợ), dòng tiền theo tháng, dự báo tiền 30 ngày, số dư theo nguồn, thu chi theo danh mục, chi phí cố định, "
+          + "kết quả kinh doanh tóm tắt. Cần quyền xem nguồn tiền (KT-01) và công nợ (KT-17). phapNhan: TAT_CA / OXY / KOXY / PHU_TAI; soSanh: khong / cungKy.")
+  @GetMapping("/bao-cao/ke-toan")
+  public vn.oxymecie.appoxy.domain.logic.BaoCaoKtService.Dto baoCaoKeToan(@RequestParam(defaultValue = "0") int nam,
+      @RequestParam(required = false) Integer quy, @RequestParam(required = false) Integer thang,
+      @RequestParam(defaultValue = "TAT_CA") String phapNhan, @RequestParam(defaultValue = "khong") String soSanh) {
+    Db raw = cmd.raw();
+    var ctx = new vn.oxymecie.appoxy.domain.logic.Ctx(raw, Cmd.user().id(), java.time.Clock.systemUTC(), null, null);
+    if (!ctx.canView(Perm.nguonTien) || !ctx.canView(Perm.congNo)) throw ApiException.forbidden("Cần quyền xem nguồn tiền (KT-01) và công nợ (KT-17)");
+    return baoCao.tao(raw, new vn.oxymecie.appoxy.domain.logic.BaoCaoKtService.Loc(nam, quy, thang, phapNhan, soSanh),
+        java.time.LocalDate.now(vn.oxymecie.appoxy.common.Dates.VN));
   }
 
   public record CongNoDong(String id, String soHD, String doiTac, double giaTri, double daThanhToan, double conLai) {}
