@@ -21,7 +21,7 @@ class TemBinhKhiPdfTest {
 
   private static TemBinhKhiReq mau(String seri, String khi, List<ThanhPhan> tp, int soLuong) {
     return new TemBinhKhiReq("10L", "QF-2", "Thép", "15 MPa", seri, "UN 1066", "1.5 m3", "Việt Nam", BIEN_PHAP, HUONG_DAN,
-        "23/10/2026", "23/10/2027", khi, tp, soLuong, false);
+        "23/10/2026", "23/10/2027", khi, tp, soLuong, false, null);
   }
 
   @Test
@@ -52,7 +52,7 @@ class TemBinhKhiPdfTest {
 
   @Test
   void xemTruocChoPhepNhapDo() throws Exception {
-    var r = new TemBinhKhiReq("", "", "", "", "", "", "", "", List.of(), List.of(), "", "", "", List.of(), 1, true);
+    var r = new TemBinhKhiReq("", "", "", "", "", "", "", "", List.of(), List.of(), "", "", "", List.of(), 1, true, null);
     assertEquals("%PDF", new String(new TemBinhKhiPdf().render(r), 0, 4, StandardCharsets.US_ASCII));
   }
 }

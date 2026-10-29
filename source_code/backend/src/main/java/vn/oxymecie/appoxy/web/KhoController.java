@@ -25,6 +25,7 @@ import vn.oxymecie.appoxy.domain.calc.Calc;
 import vn.oxymecie.appoxy.domain.logic.Ctx;
 import vn.oxymecie.appoxy.domain.logic.KhoService;
 import vn.oxymecie.appoxy.domain.logic.PhieuKhoPdf;
+import vn.oxymecie.appoxy.domain.model.BinhKhi;
 import vn.oxymecie.appoxy.domain.model.KiemKe;
 import vn.oxymecie.appoxy.domain.model.PhieuKho;
 import vn.oxymecie.appoxy.domain.perm.Perm;
@@ -98,6 +99,28 @@ public class KhoController {
       int n = svc.suaLo(c, id, i, r.thuocTinh(), r.donGia(), r.vat(), r.ghiChu());
       c.nhatKy("PhieuKho", id, "Sửa lô dòng " + (i + 1));
       return n;
+    });
+  }
+
+  // ── Bình khí theo serial ─────────────────────────────────────────────
+
+  @Operation(summary = "Thêm bình khí theo số serial", description = "Cần quyền Phiếu nhập / xuất điều chỉnh (KHO-06) mức Sửa.")
+  @PostMapping("/binh-khi")
+  public CommandResponse<BinhKhi> themBinhKhi(@RequestBody BinhKhi b) {
+    return cmd.run("BK.them", c -> {
+      BinhKhi out = svc.themBinhKhi(c, b);
+      c.nhatKy("BinhKhi", out.getId(), out.getLoaiHang());
+      return out;
+    });
+  }
+
+  @Operation(summary = "Ghi nhận đã in tem cho các bình", description = "Mỗi bình +1 lần in; cần quyền In tem bình khí (KHO-10).")
+  @PostMapping("/binh-khi/da-in-tem")
+  public CommandResponse<Void> daInTem(@Valid @RequestBody Req.Ids r) {
+    return cmd.run("BK.daIn", c -> {
+      svc.daInTem(c, r.ids());
+      c.nhatKy("BinhKhi", String.join(",", r.ids()), "In tem");
+      return null;
     });
   }
 

@@ -41,6 +41,7 @@ public class Db {
   private List<PhieuKho> phieuKho = new ArrayList<>();
   private List<KiemKe> kiemKe = new ArrayList<>();
   private List<AnhXaTen> anhXaTen = new ArrayList<>();
+  private List<BinhKhi> binhKhi = new ArrayList<>();
   private List<DeNghiVatTu> deNghiVatTu = new ArrayList<>();
   private List<ViecGiao> viecGiao = new ArrayList<>();
   private List<CanhBao> canhBao = new ArrayList<>();

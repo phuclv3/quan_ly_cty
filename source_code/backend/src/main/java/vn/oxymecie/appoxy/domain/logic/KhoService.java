@@ -14,12 +14,14 @@ import vn.oxymecie.appoxy.common.Money;
 import vn.oxymecie.appoxy.common.Texts;
 import vn.oxymecie.appoxy.domain.calc.Calc;
 import vn.oxymecie.appoxy.domain.calc.Calc.DongLo;
+import vn.oxymecie.appoxy.domain.model.BinhKhi;
 import vn.oxymecie.appoxy.domain.model.DongKiemKe;
 import vn.oxymecie.appoxy.domain.model.DongPhieuKho;
 import vn.oxymecie.appoxy.domain.model.HopDongBan;
 import vn.oxymecie.appoxy.domain.model.HopDongMua;
 import vn.oxymecie.appoxy.domain.model.KiemKe;
 import vn.oxymecie.appoxy.domain.model.PhieuKho;
+import vn.oxymecie.appoxy.domain.perm.Level;
 import vn.oxymecie.appoxy.domain.perm.Perm;
 
 /** Kho (KHO-01…10): phiếu nhập / xuất tay, kiểm kê, sửa phiếu, sửa lô; trừ kho theo lô dùng chung cho HĐ bán / mua. */
@@ -161,6 +163,39 @@ public class KhoService {
     }
     return out;
   }
+
+  // ── Bình khí theo serial (tab "Bình & tem") ─────────────────────────
+
+  public BinhKhi themBinhKhi(Ctx c, BinhKhi b) {
+    c.require(Perm.khoPhieuTay, Level.edit);
+    String seri = Texts.nz(b.getId()).trim().toUpperCase();
+    if (seri.isEmpty()) throw ApiException.invalid("Chưa nhập số serial");
+    if (seri.length() > 40) throw ApiException.invalid("Số serial tối đa 40 ký tự");
+    if (c.db().getBinhKhi().stream().anyMatch(x -> x.getId().equalsIgnoreCase(seri))) throw ApiException.conflict("Số serial " + seri + " đã có");
+    if (c.loaiHang(b.getLoaiHang()) == null) throw ApiException.invalid("Chọn mã hàng của bình");
+    if (c.kho(b.getKho()) == null || Calc.KHO_CHUYEN_THANG.equals(b.getKho())) throw ApiException.invalid("Chọn một kho thường");
+    if (Texts.blank(b.getXuatXu())) throw ApiException.invalid("Chưa nhập xuất xứ");
+    if (Texts.blank(b.getNgaySX()) || Texts.blank(b.getHanSD())) throw ApiException.invalid("Chưa nhập Ngày SX / Hạn sử dụng");
+    if (b.getHanSD().compareTo(b.getNgaySX()) < 0) throw ApiException.invalid("Hạn sử dụng phải sau Ngày sản xuất");
+    BinhKhi out = new BinhKhi(seri, b.getLoaiHang(), b.getXuatXu().trim(), b.getNgaySX(), b.getHanSD(), b.getKho(), 0, null, null, Texts.trimToNull(b.getGhiChu()));
+    Ctx.upsert(c.db().getBinhKhi(), out, BinhKhi::getId);
+    return out;
+  }
+
+  /** Ghi nhận đã in tem: mỗi bình +1 lần, lưu ngày và người in. Chỉ bình xuất xứ Việt Nam dùng tem nội bộ. */
+  public void daInTem(Ctx c, List<String> ids) {
+    c.require(Perm.inTem);
+    for (String id : ids) {
+      BinhKhi b = c.db().getBinhKhi().stream().filter(x -> x.getId().equals(id)).findFirst()
+          .orElseThrow(() -> ApiException.notFound("Không tìm thấy bình " + id));
+      if (!VIET_NAM.equalsIgnoreCase(Texts.nz(b.getXuatXu()).trim())) throw ApiException.invalid("Bình " + id + " không xuất xứ Việt Nam — dùng tem của nhà sản xuất");
+      b.setSoLanIn(b.getSoLanIn() + 1);
+      b.setLanInCuoi(c.today());
+      b.setNguoiIn(c.me());
+    }
+  }
+
+  static final String VIET_NAM = "Việt Nam";
 
   // ── Kiểm kê ──────────────────────────────────────────────────────────
 

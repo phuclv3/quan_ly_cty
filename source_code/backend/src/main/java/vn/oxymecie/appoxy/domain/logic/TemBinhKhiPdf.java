@@ -62,7 +62,9 @@ public class TemBinhKhiPdf {
 
   public byte[] render(TemBinhKhiReq r) {
     kiemTra(r);
-    int soTem = r.soLuong() == null ? 1 : r.soLuong();
+    // soSeris: mỗi số serial một tem (in nhiều bình cùng mã một lần); không có thì in soLuong bản của soSeri.
+    List<String> seris = r.soSeris() == null ? List.of() : r.soSeris().stream().map(TemBinhKhiPdf::s).filter(x -> !x.isEmpty()).toList();
+    int soTem = seris.isEmpty() ? (r.soLuong() == null ? 1 : r.soLuong()) : seris.size();
     try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
       BaseFont thuong = BaseFont.createFont("Carlito-Regular.ttf", BaseFont.IDENTITY_H, BaseFont.EMBEDDED, true, fontThuong, null);
       BaseFont dam = BaseFont.createFont("Carlito-Bold.ttf", BaseFont.IDENTITY_H, BaseFont.EMBEDDED, true, fontDam, null);
@@ -77,7 +79,7 @@ public class TemBinhKhiPdf {
         bg.scaleAbsolute(338.5f * PT, 190.0f * PT);
         bg.setAbsolutePosition(0, (TRANG_CAO - 0.4f - 190.0f) * PT);
         doc.add(bg);
-        ve(w.getDirectContent(), thuong, dam, r);
+        ve(w.getDirectContent(), thuong, dam, seris.isEmpty() ? r : voiSeri(r, seris.get(i)));
       }
       doc.close();
       return out.toByteArray();
@@ -86,6 +88,11 @@ public class TemBinhKhiPdf {
     } catch (Exception e) {
       throw ApiException.invalid("Không dựng được PDF tem: " + e.getMessage());
     }
+  }
+
+  private static TemBinhKhiReq voiSeri(TemBinhKhiReq r, String seri) {
+    return new TemBinhKhiReq(r.loai(), r.quyCachVan(), r.vatLieu(), r.apSuat(), seri, r.maUn(), r.dinhLuong(), r.xuatXu(), r.bienPhap(), r.huongDan(),
+        r.ngaySanXuat(), r.hanSuDung(), r.tenKhiChuan(), r.thanhPhan(), r.soLuong(), r.xemTruoc(), r.soSeris());
   }
 
   private void ve(PdfContentByte cb, BaseFont thuong, BaseFont dam, TemBinhKhiReq r) {
@@ -199,6 +206,7 @@ public class TemBinhKhiPdf {
     if (r == null) throw ApiException.invalid("Thiếu thông tin tem");
     boolean xem = Boolean.TRUE.equals(r.xemTruoc());
     if (!xem) batBuoc(r);
+    if (r.soSeris() != null && r.soSeris().size() > TOI_DA_TEM) throw ApiException.invalid("Số tem in từ 1 đến " + TOI_DA_TEM);
     if (r.soLuong() != null && (r.soLuong() < 1 || r.soLuong() > TOI_DA_TEM)) throw ApiException.invalid("Số tem in từ 1 đến " + TOI_DA_TEM);
     if (r.thanhPhan() != null && r.thanhPhan().size() > TOI_DA_THANH_PHAN) throw ApiException.invalid("Bảng thành phần khí tối đa " + TOI_DA_THANH_PHAN + " dòng");
     if (r.bienPhap() != null && r.bienPhap().size() > TOI_DA_DONG) throw ApiException.invalid("Biện pháp phòng ngừa tối đa " + TOI_DA_DONG + " dòng");

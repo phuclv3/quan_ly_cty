@@ -110,6 +110,7 @@ public class DbMapper {
     db.setPhieuKho(list(r.phieuKho().findAll(Sort.by(Sort.Direction.DESC, "ngay", "soPhieu")), this::phieuKho));
     db.setKiemKe(list(r.kiemKe().findAll(Sort.by(Sort.Direction.DESC, "ngay", "soPhieu")), this::kiemKe));
     db.setAnhXaTen(list(r.anhXaTen().findAll(Sort.by("ten", "id")), this::anhXaTen));
+    db.setBinhKhi(list(r.binhKhi().findAll(Sort.by("id")), this::binhKhi));
     db.setDeNghiVatTu(list(r.deNghiVatTu().findAll(Sort.by(Sort.Direction.DESC, "ngay", "soPhieu")), this::deNghiVatTu));
     db.setViecGiao(list(r.viecGiao().findAll(Sort.by(Sort.Direction.DESC, "taoLuc")), this::viecGiao));
     db.setCanhBao(list(r.canhBao().findAll(Sort.by(Sort.Direction.DESC, "taoLuc")), this::canhBao));
@@ -293,6 +294,11 @@ public class DbMapper {
         x.getXuatXu(), x.getNongDo(), x.getGhiChu())).toList());
     return new KiemKe(e.getId(), e.getSoPhieu(), d(e.getNgay()), e.getKho(), e.getNguoiThucHien(), e.getGhiChu(), dong,
         orNull(new ArrayList<>(e.getPhieuDieuChinh())));
+  }
+
+  BinhKhi binhKhi(BinhKhiEntity e) {
+    return new BinhKhi(e.getId(), e.getLoaiHang(), e.getXuatXu(), d(e.getNgaySX()), d(e.getHanSD()), e.getKho(), e.getSoLanIn(), d(e.getLanInCuoi()),
+        e.getNguoiIn(), e.getGhiChu());
   }
 
   AnhXaTen anhXaTen(AnhXaTenEntity e) {
@@ -890,6 +896,19 @@ public class DbMapper {
       e.getPhieuDieuChinh().clear();
       e.getPhieuDieuChinh().addAll(dc);
     }
+  }
+
+  public void applyBinhKhi(BinhKhi x, BinhKhiEntity e) {
+    e.setId(x.getId());
+    e.setLoaiHang(x.getLoaiHang());
+    e.setXuatXu(x.getXuatXu());
+    e.setNgaySX(ld(x.getNgaySX()));
+    e.setHanSD(ld(x.getHanSD()));
+    e.setKho(x.getKho());
+    e.setSoLanIn(x.getSoLanIn());
+    e.setLanInCuoi(ld(x.getLanInCuoi()));
+    e.setNguoiIn(Texts.emptyToNull(x.getNguoiIn()));
+    e.setGhiChu(Texts.emptyToNull(x.getGhiChu()));
   }
 
   public void applyAnhXaTen(AnhXaTen x, AnhXaTenEntity e) {

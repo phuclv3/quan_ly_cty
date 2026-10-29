@@ -34,5 +34,6 @@ public record Repos(
     PhieuKhoRepository phieuKho,
     KiemKeRepository kiemKe,
     AnhXaTenRepository anhXaTen,
+    BinhKhiRepository binhKhi,
     HopDongPhuTaiRepository hopDongPhuTai,
     DongTienPTRepository dongTienPT) {}

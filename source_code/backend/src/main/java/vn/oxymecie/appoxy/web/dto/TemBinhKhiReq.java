@@ -22,7 +22,8 @@ public record TemBinhKhiReq(
     String tenKhiChuan,
     List<ThanhPhan> thanhPhan,
     Integer soLuong,
-    Boolean xemTruoc) {
+    Boolean xemTruoc,
+    List<String> soSeris) {
 
   /** 1 dòng bảng "Thành phần khí": tên khí, kí hiệu (chữ số đi sau chữ cái in dạng chỉ số dưới: N2 → N₂), nồng độ. */
   public record ThanhPhan(String ten, String kyHieu, String nongDo) {}
