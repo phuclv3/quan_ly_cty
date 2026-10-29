@@ -39,11 +39,13 @@ public class HopDongController {
   private final Cmd cmd;
   private final HdbService hdb;
   private final HdmService hdm;
+  private final vn.oxymecie.appoxy.domain.logic.BaoCaoHdbService baoCao;
 
-  public HopDongController(Cmd cmd, HdbService hdb, HdmService hdm) {
+  public HopDongController(Cmd cmd, HdbService hdb, HdmService hdm, vn.oxymecie.appoxy.domain.logic.BaoCaoHdbService baoCao) {
     this.cmd = cmd;
     this.hdb = hdb;
     this.hdm = hdm;
+    this.baoCao = baoCao;
   }
 
   // ═══════════════════════════ HĐ BÁN ════════════════════════════════
@@ -60,6 +62,20 @@ public class HopDongController {
             && (maKH == null || maKH.equals(h.getMaKH())) && PageResult.trongKhoang(h.getNgayKy(), tuNgay, denNgay),
         sort, Map.of("ngayKy", HopDongBan::getNgayKy, "soHD", HopDongBan::getSoHD, "tenKH", HopDongBan::getTenKH,
             "truocVAT", HopDongBan::getTruocVAT, "taoLuc", HopDongBan::getTaoLuc), page, size);
+  }
+
+  @Operation(summary = "Báo cáo kinh doanh HĐ bán",
+      description = "KPI kèm so sánh cùng kỳ, giá trị ký theo tháng (OXY / Phú Tài), trạng thái, người phụ trách, tiến độ giao hàng / thu tiền, nhóm hàng, top HĐ. "
+          + "Chỉ tính HĐ người dùng được xem; cần quyền xem giá trị HĐ (HDB-07). phapNhan: TAT_CA / OXY / PHU_TAI; soSanh: khong / cungKy.")
+  @GetMapping("/bao-cao/hop-dong-ban")
+  public vn.oxymecie.appoxy.domain.logic.BaoCaoHdbService.Dto baoCaoHdb(@RequestParam(defaultValue = "0") int nam,
+      @RequestParam(required = false) Integer quy, @RequestParam(required = false) Integer thang,
+      @RequestParam(defaultValue = "TAT_CA") String phapNhan, @RequestParam(defaultValue = "khong") String soSanh) {
+    var raw = cmd.raw();
+    var ctx = new vn.oxymecie.appoxy.domain.logic.Ctx(raw, Cmd.user().id(), java.time.Clock.systemUTC(), null, null);
+    if (!ctx.canView(vn.oxymecie.appoxy.domain.perm.Perm.hdbTab3)) throw ApiException.forbidden("Bạn không có quyền xem giá trị HĐ bán");
+    return baoCao.tao(cmd.snapshot(), raw, new vn.oxymecie.appoxy.domain.logic.BaoCaoHdbService.Loc(nam, quy, thang, phapNhan, soSanh),
+        LocalDate.now(Dates.VN));
   }
 
   public record HdbChiTiet(HopDongBan hopDong, Calc.HdbCalc tinhToan, String trangThaiKeTiep) {}
