@@ -12,6 +12,7 @@ import { guiXoa, guiXoaNhieu } from '../shared/ho-so';
 import { ChonNhieu } from '../shared/chon-nhieu';
 import { Pager, paginate } from '../shared/pager';
 import { Modal, TrangThai } from '../shared/ui-kit';
+import { TepDinhKem } from '../shared/tep-dinh-kem';
 import { nhomOpts } from './kho-util';
 import { thuocTinhTheoNhom } from '../core/seed';
 
@@ -51,7 +52,7 @@ import { ImportDm } from '../shared/import-dm';
   selector: 'app-kho-loai-hang',
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `.bulk { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 12px; }`,
-  imports: [Modal, TrangThai, FilterBar, Pager, ImportDm],
+  imports: [Modal, TrangThai, FilterBar, Pager, ImportDm, TepDinhKem],
   template: `
     <div class="note info">
       <b>Mã hàng là cố định</b> (VD KC-NO-8L = Khí chuẩn · NO · 8L · Bình). Nồng độ khách đặt và đơn giá <b>không</b> nằm ở mã —
@@ -128,15 +129,60 @@ import { ImportDm } from '../shared/import-dm';
               @for (n of nhoms; track n) { <option [value]="n" [selected]="n === x.l.nhom">{{ n }}</option> }
             </select>
           </div>
+          @if (x.l.nhom === 'Vỏ bình') {
+            <div class="field">
+              <label for="lh-vl">Vật liệu</label>
+              <select id="lh-vl" (change)="doiVatLieu($any($event.target).value)">
+                <option value="" [selected]="!vatLieuHt(x.l)">— Chọn —</option>
+                @for (v of VAT_LIEU_OPT; track v) { <option [value]="v" [selected]="v === vatLieuHt(x.l)">{{ v }}</option> }
+              </select>
+            </div>
+          } @else {
           <div class="field">
-            <label for="lh-khi">{{ x.l.nhom === 'Vỏ bình' ? 'Vật liệu' : 'Loại khí / chỉ tiêu' }}</label>
-            <input id="lh-khi" [placeholder]="x.l.nhom === 'Vỏ bình' ? 'NHOM, THEP' : 'NO, SO2/NO/CO, COD…'" [value]="x.l.loaiKhi ?? ''" [disabled]="!x.isNew" (input)="set({ loaiKhi: $any($event.target).value.trim() || undefined })" />
+            <label for="lh-khi">Loại khí / chỉ tiêu</label>
+            <input id="lh-khi" placeholder="NO, SO2/NO/CO, COD…" [value]="x.l.loaiKhi ?? ''" [disabled]="!x.isNew" (input)="set({ loaiKhi: $any($event.target).value.trim() || undefined })" />
           </div>
+          }
           <div class="field">
             <label for="lh-tt">Thể tích</label>
             <input id="lh-tt" placeholder="8L, 10L, 500ml" [value]="x.l.theTich ?? ''" [disabled]="!x.isNew" (input)="set({ theTich: $any($event.target).value.trim() || undefined })" />
           </div>
           <div class="field"><label for="lh-dvt">Đơn vị tính <span class="req">*</span></label><input id="lh-dvt" placeholder="Bình, Chai, Bộ…" [value]="x.l.dvt" (input)="set({ dvt: $any($event.target).value })" /></div>
+          @if (x.l.nhom !== 'Vỏ bình') {
+          <div class="field">
+            <label for="lh-vl">Vật liệu</label>
+            <select id="lh-vl" (change)="doiVatLieu($any($event.target).value)">
+              <option value="" [selected]="!vatLieuHt(x.l)">— Chọn —</option>
+              @for (v of VAT_LIEU_OPT; track v) { <option [value]="v" [selected]="v === vatLieuHt(x.l)">{{ v }}</option> }
+            </select>
+          </div>
+          }
+          <div class="field">
+            <label for="lh-ttr">Phân loại vỏ</label>
+            <select id="lh-ttr" (change)="set({ tinhTrang: $any($event.target).value || undefined })">
+              <option value="" [selected]="!x.l.tinhTrang">— Chọn —</option>
+              @for (v of TINH_TRANG_OPT; track v) { <option [value]="v" [selected]="v === x.l.tinhTrang">{{ v }}</option> }
+            </select>
+          </div>
+          <div class="field">
+            <label for="lh-hq">Hợp quy</label>
+            <select id="lh-hq" (change)="set({ hopQuy: $any($event.target).value || undefined })">
+              <option value="" [selected]="!x.l.hopQuy">— Chọn —</option>
+              @for (v of CO_KHONG; track v) { <option [value]="v" [selected]="v === x.l.hopQuy">{{ v }}</option> }
+            </select>
+          </div>
+          <div class="field">
+            <label for="lh-kd">Kiểm định</label>
+            <select id="lh-kd" (change)="doiKiemDinh($any($event.target).value)">
+              <option value="" [selected]="!x.l.kiemDinh">— Chọn —</option>
+              @for (v of CO_KHONG; track v) { <option [value]="v" [selected]="v === x.l.kiemDinh">{{ v }}</option> }
+            </select>
+          </div>
+          @if (x.l.kiemDinh === 'Có') {
+            <div class="field full">
+              <app-tep-dinh-kem nhan="File kiểm định vỏ bình" goiY="Ảnh hoặc PDF giấy kiểm định, mỗi tệp ≤ 20MB. Tệp được ghi khi bấm Lưu." [edit]="true" [files]="x.l.fileKiemDinh ?? []" (filesChange)="set({ fileKiemDinh: $event })" />
+            </div>
+          }
           <div class="field">
             <label for="lh-ma">Mã hàng <span class="req">*</span></label>
             @if (x.isNew) { <input id="lh-ma" [value]="x.l.id" (input)="setMa($any($event.target).value)" /> } @else { <div class="ro">{{ x.l.id }}</div> }
@@ -175,6 +221,9 @@ export class DmLoaiHangTab {
   protected readonly TT = TT;
   private readonly confirm = inject(Confirm);
   protected readonly nhoms = NHOM_HANG;
+  protected readonly VAT_LIEU_OPT = ['Nhôm', 'Thép'] as const;
+  protected readonly CO_KHONG = ['Có', 'Không'] as const;
+  protected readonly TINH_TRANG_OPT = ['Mới', 'Cũ'] as const;
   protected readonly money = money;
   protected readonly edit = computed(() => this.store.canEdit('khoDanhMuc'));
   protected readonly loc = signal<Loc>(nhoLoc('kho-loai-hang', LOC_RONG));
@@ -238,6 +287,20 @@ export class DmLoaiHangTab {
       if (x.isNew && !x.tenTay) l.ten = goiYTen(l);
       return { ...x, l };
     });
+  }
+  /** Vật liệu hiển thị: trường mới; mã cũ chưa có thì suy từ loaiKhi của vỏ bình (NHOM / THEP). */
+  protected vatLieuHt(l: LoaiHang): string | undefined {
+    return l.vatLieu ?? (l.nhom === 'Vỏ bình' ? (l.loaiKhi?.toUpperCase() === 'NHOM' ? 'Nhôm' : l.loaiKhi?.toUpperCase() === 'THEP' ? 'Thép' : undefined) : undefined);
+  }
+  /** Vỏ bình: vật liệu là một phần của mã (VO-NHOM-10L) → mã mới thì đổi loaiKhi theo để gợi ý mã đúng. */
+  protected doiVatLieu(v: string): void {
+    const vl = (v || undefined) as LoaiHang['vatLieu'];
+    const x = this.f();
+    this.set({ vatLieu: vl, ...(x?.isNew && x.l.nhom === 'Vỏ bình' ? { loaiKhi: vl === 'Nhôm' ? 'NHOM' : vl === 'Thép' ? 'THEP' : undefined } : {}) });
+  }
+  /** Kiểm định đổi sang Không / bỏ chọn → bỏ tệp đã gắn (khớp backend). */
+  protected doiKiemDinh(v: string): void {
+    this.set({ kiemDinh: (v || undefined) as LoaiHang['kiemDinh'], ...(v === 'Có' ? {} : { fileKiemDinh: undefined }) });
   }
   protected setMa(v: string): void {
     this.f.update((x) => (x ? { ...x, maTay: true, l: { ...x.l, id: v.toUpperCase().replace(/\s+/g, '') } } : x));

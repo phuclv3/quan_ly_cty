@@ -546,6 +546,15 @@ export class Store {
   }
 
   /** Số phiếu thu chi: {tiền tố}{yyMM}-{nnn}, đánh số lại từ 001 mỗi tháng của ngày chứng từ. */
+  /** Tiền tố số phiếu theo loại: Thu → PT, Chi / Tạm ứng → PC, Quyết toán tạm ứng → PQ, Luân chuyển → PL (khớp backend). */
+  private tienToPhieu(loai: PhieuThuChi['loai']): string {
+    return loai === 'Thu' ? 'PT' : loai === 'Chi' || loai === 'Tạm ứng' ? 'PC' : loai === 'Quyết toán tạm ứng' ? 'PQ' : loai === 'Luân chuyển' ? 'PL' : this.cauHinh().TIEN_TO_TC;
+  }
+  /** Số phiếu còn đúng tháng của Ngày lập và đúng tiền tố loại (hoặc tiền tố cấu hình cũ của phiếu đã có). */
+  private soPhieuHopLe(so: string, tienTo: string, ngay: string): boolean {
+    const thang = `${yy(ngay)}${ngay.slice(5, 7)}-`;
+    return so.startsWith(tienTo + thang) || so.startsWith(this.cauHinh().TIEN_TO_TC + thang);
+  }
   private nextSoThang(prefix: string, ngay: string): string {
     const iso = ngay || todayIso();
     const k = prefix + yy(iso) + iso.slice(5, 7);
@@ -989,12 +998,13 @@ export class Store {
       clean.phieuTamUngGoc = undefined;
       clean.soTienThucChi = undefined;
     }
+    const tienTo = this.tienToPhieu(clean.loai);
     if (!clean.id) {
       clean.id = uid('PTC');
-      clean.soPhieu = this.nextSoThang(this.cauHinh().TIEN_TO_TC, clean.ngayLap);
-    } else if (!clean.soPhieu.startsWith(`${this.cauHinh().TIEN_TO_TC}${yy(clean.ngayLap)}${clean.ngayLap.slice(5, 7)}-`)) {
-      // Phiếu chưa duyệt đổi sang tháng khác: cấp số mới của tháng đó (số cũ không tái dùng).
-      clean.soPhieu = this.nextSoThang(this.cauHinh().TIEN_TO_TC, clean.ngayLap);
+      clean.soPhieu = this.nextSoThang(tienTo, clean.ngayLap);
+    } else if (!this.soPhieuHopLe(clean.soPhieu, tienTo, clean.ngayLap)) {
+      // Phiếu chưa duyệt đổi sang tháng / loại khác: cấp số mới (số cũ không tái dùng).
+      clean.soPhieu = this.nextSoThang(tienTo, clean.ngayLap);
     }
     const truoc = clean.trangThai;
     clean.trangThai = gui ? TT.CHO_DUYET : TT.NHAP;
@@ -1470,7 +1480,7 @@ export class Store {
     p.lichSu = this.ghiLichSu(cu?.lichSu, 'Gửi duyệt', cu ? 'Sửa ghi nhận thực thu' : 'Sinh từ ghi nhận thực thu');
     if (!p.id) {
       p.id = uid('PTC');
-      p.soPhieu = this.nextSoThang(this.cauHinh().TIEN_TO_TC, p.ngayLap);
+      p.soPhieu = this.nextSoThang(this.tienToPhieu(p.loai), p.ngayLap);
     }
     phieuThuId = p.id;
     this.upsert('phieuThuChi', p);
@@ -2046,7 +2056,7 @@ export class Store {
     p.lichSu = this.ghiLichSu(cu?.lichSu, 'Gửi duyệt', cu ? 'Sửa ghi nhận trả NCC' : 'Sinh từ ghi nhận trả NCC');
     if (!p.id) {
       p.id = uid('PTC');
-      p.soPhieu = this.nextSoThang(this.cauHinh().TIEN_TO_TC, p.ngayLap);
+      p.soPhieu = this.nextSoThang(this.tienToPhieu(p.loai), p.ngayLap);
     }
     this.upsert('phieuThuChi', p);
     this.upsert('hopDongMua', {

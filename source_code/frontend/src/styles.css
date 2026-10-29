@@ -660,6 +660,10 @@ app-money input { width: 100%; }
 /* contain: độ rộng ô chọn không tính theo chữ đang chọn → cột không giãn mỗi lần chọn; chữ dài cắt "…" (xem đủ ở title). */
 .tbl td > .pick { min-width: 220px; contain: inline-size; }
 .tbl td > .ro { min-width: 80px; }
+/* Bảng vừa khít khung (không cuộn ngang): chia cột theo <colgroup>, bỏ độ rộng tối thiểu của ô nhập, tiêu đề cột tự xuống dòng. */
+.tbl.fit { table-layout: fixed; }
+.tbl.fit th { white-space: normal; }
+.tbl.fit td > input:not([type='checkbox']):not([type='radio']), .tbl.fit td > select, .tbl.fit td > textarea, .tbl.fit td > .pick, .tbl.fit td > app-money { min-width: 0; width: 100%; }
 .tbl th.w-sm { min-width: 100px; }
 .tbl th.w-md { min-width: 130px; }
 .tbl th.w-lg { min-width: 200px; }
@@ -707,6 +711,9 @@ app-money input { width: 100%; }
 .modal-body { padding: 16px; display: grid; gap: 14px; }
 .modal-foot { padding: 12px 16px; border-top: 1px solid var(--line); display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
 .modal-foot:empty { display: none; }
+/* Chân popup viết <div foot> (không có .btn-row): xếp hàng, có khoảng cách; "Xoá" bên trái nhờ <span style="flex:1">, Huỷ / Lưu bên phải. */
+.modal-foot > div[foot] { flex: 1 1 auto; display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 12px; }
+.modal-foot > div[foot] > .btn:not(.danger) { min-width: 88px; }
 
 /* Hộp thoại xác nhận (shared/confirm.ts) — luôn nằm trên mọi popup */
 .dlg-back {
@@ -1255,7 +1262,9 @@ input.ngay:not(:disabled):not([readonly]) { cursor: text; }
 /* Popup: chỉ cuộn phần nội dung bên trong, đầu và chân popup đứng yên, trang phía sau không cuộn */
 .modal-back { overflow: hidden; grid-template-rows: minmax(0, 1fr); overscroll-behavior: contain; }
 .modal { max-height: 100%; min-height: 0; overflow: hidden; }
-.modal-body { min-height: 0; overflow-y: auto; overscroll-behavior: contain; align-content: start; }
+/* minmax(0,1fr): cột lưới không phình theo bề rộng tối thiểu của bảng → bảng cuộn trong .tbl-wrap, popup không có thanh cuộn ngang. */
+.modal-body { min-height: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; align-content: start; grid-template-columns: minmax(0, 1fr); }
+.modal-body > * { min-width: 0; }
 .modal-head, .modal-foot { flex: 0 0 auto; }
 
 /* Thẻ yêu cầu đổi hạn đang chờ duyệt (viec.ts) */
@@ -1420,6 +1429,9 @@ input.ngay:not(:disabled):not([readonly]) { cursor: text; }
 /* Chuẩn chung theo form Thêm khách hàng: tiêu đề khối có vạch nhấn gradient, nhãn đậm vừa, chip chọn nhanh. */
 .blk > .blk-t, .blk > .section-title, .blk > h3 { display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #0f5a2a; }
 .blk > .blk-t { grid-column: 1 / -1; margin: 0 0 2px; }
+/* Tiêu đề khối có nút (VD "Lô nhập" + "+ Thêm dòng"): chữ sát vạch nhấn bên trái, nút đẩy sang phải. */
+.blk > .section-title { justify-content: flex-start; }
+.blk > .section-title > .btn { margin-left: auto; }
 .blk > .blk-t::before, .blk > .section-title::before, .blk > h3::before { content: ''; width: 4px; height: 14px; border-radius: 2px; background: linear-gradient(180deg, #4bb04f, #7ccf5b); flex: 0 0 auto; }
 .blk .field > label, .blk .field > .lbl, .form-sec .field > label, .form-sec .field > .lbl { font-size: 12.5px; font-weight: 600; color: var(--ink-2); }
 .chip-row { display: flex; flex-wrap: wrap; gap: 6px; }

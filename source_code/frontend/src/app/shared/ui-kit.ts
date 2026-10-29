@@ -243,6 +243,8 @@ export interface PickOption {
   value: string;
   label: string;
   hint?: string;
+  /** Tooltip (title) khi rê chuột; bỏ trống thì dùng nhãn + hint. */
+  title?: string;
   /** Chữ thêm để tìm (không hiển thị), VD tên tham chiếu của mã hàng. */
   tim?: string;
 }
@@ -253,7 +255,7 @@ export interface PickOption {
   imports: [Icon],
   host: { class: 'pick', '[attr.data-trong]': "value() ? null : ''", '(document:click)': 'outside($event)' },
   template: `
-    <button type="button" class="pick-btn" [id]="inputId()" [disabled]="disabled()" (click)="toggle()" [attr.aria-expanded]="open()" [attr.title]="current() ? current()!.label + (current()!.hint ? ' · ' + current()!.hint : '') : null">
+    <button type="button" class="pick-btn" [id]="inputId()" [disabled]="disabled()" (click)="toggle()" [attr.aria-expanded]="open()" [attr.title]="current() ? (current()!.title ?? current()!.label + (current()!.hint ? ' · ' + current()!.hint : '')) : null">
       <span class="pick-val" [class.muted]="!current()">{{ current()?.label || placeholder() }}</span>
       @if (current()?.hint) { <small class="muted">{{ current()?.hint }}</small> }
       <app-icon name="chevron" [size]="16" />
@@ -265,7 +267,7 @@ export interface PickOption {
           @if (allowEmpty()) { <li><button type="button" (click)="choose('')" class="muted">— Bỏ chọn —</button></li> }
           @for (o of filtered(); track o.value) {
             <li>
-              <button type="button" [class.on]="o.value === value()" (click)="choose(o.value)">
+              <button type="button" [class.on]="o.value === value()" [attr.title]="o.title ?? (o.hint ? o.label + ' · ' + o.hint : null)" (click)="choose(o.value)">
                 <span>{{ o.label }}</span>
                 @if (o.hint) { <small class="muted">{{ o.hint }}</small> }
               </button>

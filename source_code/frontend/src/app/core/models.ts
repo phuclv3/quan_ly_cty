@@ -366,6 +366,13 @@ export interface LoaiHang {
   theTich?: string;
   /** Tên đang ghi trên hoá đơn / hợp đồng → mã này (tìm kiếm, gợi ý khi lập HĐ). */
   bietDanh?: string[];
+  /** Vỏ bình: vật liệu / hợp quy / kiểm định / tình trạng. */
+  vatLieu?: 'Nhôm' | 'Thép';
+  hopQuy?: 'Có' | 'Không';
+  kiemDinh?: 'Có' | 'Không';
+  tinhTrang?: 'Mới' | 'Cũ';
+  /** Tệp kiểm định vỏ bình (chỉ khi kiemDinh = Có). */
+  fileKiemDinh?: FileRef[];
 }
 
 // ── Kế toán ─────────────────────────────────────────────────────────────
