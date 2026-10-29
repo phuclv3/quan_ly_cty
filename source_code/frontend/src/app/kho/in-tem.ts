@@ -1,6 +1,5 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, effect, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
-import { RouterLink } from '@angular/router';
 import { Store } from '../core/store';
 import { TemBinhKhiReq, xemTemBinhKhi, xuatTemBinhKhi } from '../shared/export';
 
@@ -74,14 +73,23 @@ const trong = (): Form => {
   };
 };
 
+/** Thông tin điền sẵn khi mở từ danh sách bình: các số serial cùng mã hàng, cùng xuất xứ. */
+export interface TemKhoiTao {
+  soSeris: string[];
+  xuatXu: string;
+  /** yyyy-mm-dd */
+  ngaySX: string;
+  hanSD: string;
+  /** Thể tích / loại bình, VD "10L". */
+  loai: string;
+}
+
 const dongChu = (s: string) => s.split('\n').map((x) => x.trim()).filter(Boolean);
 
-/** In tem dán bình khí: nhập thông tin → backend dựng PDF (không lưu dữ liệu). */
+/** Tab "Bình & tem" của Kho (KHO-10): nhập thông tin → backend dựng PDF (không lưu dữ liệu). */
 @Component({
-  selector: 'app-in-tem',
+  selector: 'app-kho-in-tem',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'page' },
-  imports: [RouterLink],
   styles: [
     `
       .tem-bo-cuc { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; align-items: start; }
@@ -106,9 +114,6 @@ const dongChu = (s: string) => s.split('\n').map((x) => x.trim()).filter(Boolean
     `,
   ],
   template: `
-    <div class="page-head">
-      <div><div class="crumbs"><a routerLink="/">Trang chủ</a> › Kho › In tem bình khí</div><h1>In tem bình khí</h1></div>
-    </div>
     @if (f(); as v) {
       <div class="tem-bo-cuc">
       <div class="tem-form">
@@ -118,7 +123,12 @@ const dongChu = (s: string) => s.split('\n').map((x) => x.trim()).filter(Boolean
         <div class="tem-luoi">
           <div class="field" [class.thieu]="thieu(v.soSeri)" data-loi="Bắt buộc">
             <label for="t-soSeri">Số seri <span class="req">*</span></label>
-            <input id="t-soSeri" autocomplete="off" [value]="v.soSeri" (input)="set({ soSeri: val($event) })" />
+            @if (nhieu()) {
+              <input id="t-soSeri" readonly [value]="khoiTao()!.soSeris.join(', ')" />
+              <span class="hint">{{ khoiTao()!.soSeris.length }} bình — mỗi số serial một tem</span>
+            } @else {
+              <input id="t-soSeri" autocomplete="off" [value]="v.soSeri" (input)="set({ soSeri: val($event) })" />
+            }
           </div>
           <div class="field" [class.thieu]="thieu(v.loai)" data-loi="Bắt buộc">
             <label for="t-loai">Loại <span class="req">*</span></label>
@@ -158,10 +168,12 @@ const dongChu = (s: string) => s.split('\n').map((x) => x.trim()).filter(Boolean
             <input id="t-hanSuDung" type="date" [value]="v.hanSuDung" (input)="set({ hanSuDung: val($event) })" />
             <span class="hint">Mặc định = ngày sản xuất + 12 tháng, sửa được</span>
           </div>
-          <div class="field" [class.thieu]="soLuongSai(v.soLuong)" data-loi="Từ 1 đến 100">
-            <label for="t-soLuong">Số tem in <span class="req">*</span></label>
-            <input id="t-soLuong" type="number" min="1" max="100" [value]="v.soLuong" (input)="set({ soLuong: +val($event) })" />
-          </div>
+          @if (!nhieu()) {
+            <div class="field" [class.thieu]="soLuongSai(v.soLuong)" data-loi="Từ 1 đến 100">
+              <label for="t-soLuong">Số tem in <span class="req">*</span></label>
+              <input id="t-soLuong" type="number" min="1" max="100" [value]="v.soLuong" (input)="set({ soLuong: +val($event) })" />
+            </div>
+          }
           <div class="field wide" [class.thieu]="thieu(v.bienPhap)" data-loi="Bắt buộc">
             <label for="t-bienPhap">Biện pháp phòng ngừa <span class="req">*</span></label>
             <textarea id="t-bienPhap" rows="4" [value]="v.bienPhap" (input)="set({ bienPhap: val($event) })"></textarea>
@@ -213,17 +225,24 @@ const dongChu = (s: string) => s.split('\n').map((x) => x.trim()).filter(Boolean
           @if (xemLoi()) { <div class="note bad">{{ xemLoi() }}</div> }
         </div>
         <div class="tem-chinh">
+          @if (khoiTao()) { <button type="button" class="btn quiet" (click)="quayLai.emit()">← Quay lại danh sách</button> }
           <button type="button" class="btn quiet" (click)="lamLai()">Nhập lại</button>
           <button type="button" class="btn quiet" (click)="xemThu()">Xem thử</button>
-          <button type="button" class="btn lon" [disabled]="dangXuat()" (click)="inTem()">Tải PDF{{ v.soLuong > 1 ? ' (' + v.soLuong + ' tem)' : '' }}</button>
+          <button type="button" class="btn lon" [disabled]="dangXuat()" (click)="inTem()">Tải PDF{{ soTemIn() > 1 ? ' (' + soTemIn() + ' tem)' : '' }}</button>
         </div>
       </aside>
       </div>
     }
   `,
 })
-export class InTemPage {
+export class InTemTab {
   private readonly store = inject(Store);
+  /** Mở từ danh sách bình: điền sẵn serial / xuất xứ / ngày; in xong ghi nhận số lần in cho các bình. */
+  readonly khoiTao = input<TemKhoiTao | null>(null);
+  readonly quayLai = output<void>();
+  readonly daIn = output<void>();
+  protected readonly nhieu = computed(() => (this.khoiTao()?.soSeris.length ?? 0) > 1);
+  protected readonly soTemIn = computed(() => (this.nhieu() ? this.khoiTao()!.soSeris.length : this.f().soLuong));
   protected readonly max = TOI_DA_THANH_PHAN;
   protected readonly f = signal<Form>(trong());
   protected readonly dangXuat = signal(false);
@@ -240,6 +259,14 @@ export class InTemPage {
   private lanXem = 0;
 
   constructor() {
+    effect(() => {
+      const k = this.khoiTao();
+      if (!k) return;
+      untracked(() => {
+        this.hsdTaySua = true;
+        this.f.set({ ...trong(), soSeri: k.soSeris[0] ?? '', xuatXu: k.xuatXu, ngaySanXuat: k.ngaySX, hanSuDung: k.hanSD, loai: k.loai, soLuong: 1 });
+      });
+    });
     // Xem trực tiếp: mỗi lần form đổi, chờ 0,5 s không sửa tiếp rồi nhờ backend dựng lại PDF.
     effect((onCleanup) => {
       const req = this.taoReq(true);
@@ -296,8 +323,9 @@ export class InTemPage {
       hanSuDung: ngayVi(v.hanSuDung),
       tenKhiChuan: v.tenKhiChuan.trim(),
       thanhPhan,
-      soLuong: xem ? 1 : v.soLuong,
+      soLuong: xem || this.nhieu() ? 1 : v.soLuong,
       xemTruoc: xem,
+      soSeris: !xem && this.nhieu() ? this.khoiTao()!.soSeris : undefined,
     };
   }
 
@@ -321,7 +349,7 @@ export class InTemPage {
       ['Hướng dẫn sử dụng, bảo quản', v.huongDan], ['Ngày sản xuất', v.ngaySanXuat], ['Hạn sử dụng', v.hanSuDung], ['Khí chuẩn', v.tenKhiChuan],
     ];
     const thieu = o.filter(([, g]) => !g.trim()).map(([t]) => t);
-    if (this.soLuongSai(v.soLuong)) thieu.push('Số tem in (1–100)');
+    if (!this.nhieu() && this.soLuongSai(v.soLuong)) thieu.push('Số tem in (1–100)');
     if (v.thanhPhan.some((d) => !d.ten.trim() || !d.kyHieu.trim() || !d.nongDo.trim())) thieu.push('Thành phần khí (mỗi dòng đủ 3 ô)');
     return thieu.length ? `Cần nhập: ${thieu.join(', ')}` : '';
   }
@@ -362,7 +390,15 @@ export class InTemPage {
     const req = this.taoReq(false);
     this.dangXuat.set(true);
     try {
-      if ((await xuatTemBinhKhi(req)) !== null) this.store.say(`Đã tạo PDF tem ${req.soSeri}`);
+      if ((await xuatTemBinhKhi(req)) !== null) {
+        this.store.say(this.nhieu() ? `Đã tạo PDF ${req.soSeris!.length} tem` : `Đã tạo PDF tem ${req.soSeri}`);
+        const k = this.khoiTao();
+        if (k) {
+          const e = this.store.daInTem(k.soSeris);
+          if (e) this.store.say(e, 'bad');
+          else this.daIn.emit();
+        }
+      }
     } finally {
       this.dangXuat.set(false);
     }

@@ -180,7 +180,6 @@ export class Shell {
       { path: '/nha-cung-cap', label: 'Nhà cung cấp', short: 'NCC', icon: 'truck', perms: ['ncc'], group: 'Nghiệp vụ' },
       { path: '/hop-dong-mua', label: 'Hợp đồng mua', short: 'HĐ mua', icon: 'buy', perms: ['hdm'], group: 'Nghiệp vụ' },
       { path: '/kho', label: 'Kho & Giao hàng', short: 'Kho', icon: 'box', perms: ['khoTon'], group: 'Nghiệp vụ' },
-      { path: '/in-tem', label: 'In tem bình khí', short: 'Tem', icon: 'box', perms: ['inTem'], group: 'Nghiệp vụ' },
       { path: '/ke-toan', label: 'Tài chính – Kế toán', short: 'Kế toán', icon: 'wallet', perms: ['soQuy', 'congNo', 'cpHD', 'nguonTien'], count: this.choDuyetKT(), group: 'Nghiệp vụ' },
       { path: '/phu-tai', label: 'Phú Tài', icon: 'chart', perms: ['phuTai'], group: 'Nghiệp vụ' },
       { path: '/duyet-xoa', label: 'Phê duyệt', icon: 'check', perms: ['duyetXoa', 'duyetXoaKT'], count: this.choXoa(), group: 'Quản trị hệ thống' },

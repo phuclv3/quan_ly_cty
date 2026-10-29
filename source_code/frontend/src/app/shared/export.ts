@@ -109,6 +109,8 @@ export interface TemBinhKhiReq {
   soLuong: number;
   /** true = xem trực tiếp khi đang nhập dở: backend bỏ qua kiểm tra bắt buộc. */
   xemTruoc?: boolean;
+  /** In nhiều bình cùng mã một lần: mỗi số serial một tem (bỏ qua soLuong). */
+  soSeris?: string[];
 }
 
 /** PDF tem dán bình khí (mỗi tem 1 trang) — backend dựng theo mẫu tem. */

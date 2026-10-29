@@ -45,6 +45,8 @@ import {
   CoHoi,
   TiepCan,
   AnhXaTen,
+  BinhKhi,
+  XUAT_XU_VN,
   Kho,
   KiemKe,
   LCP_HOA_HONG,
@@ -367,6 +369,7 @@ export class Store {
   readonly phieuKho = computed(() => this.db().phieuKho);
   readonly kiemKe = computed(() => this.db().kiemKe);
   readonly anhXaTen = computed(() => this.db().anhXaTen);
+  readonly binhKhi = computed(() => this.db().binhKhi);
   readonly deNghiVatTu = computed(() => this.db().deNghiVatTu);
   /** Việc được giao: "Sửa của mình" chỉ thấy việc mình giao hoặc được giao. */
   /** Danh sách công việc toàn công ty: ai có quyền vào chức năng đều xem được (sửa / phản hồi vẫn chỉ người liên quan). */
@@ -711,6 +714,13 @@ export class Store {
   }
   themAnhXa(o: Pick<AnhXaTen, 'ten' | 'theTich' | 'nongDo' | 'loaiHang' | 'lo' | 'ghiChu'>): Result {
     return this.exec(() => this.themAnhXa_(o), () => ['POST', '/anh-xa-ten', o]);
+  }
+  themBinhKhi(b: BinhKhi): Result {
+    return this.exec(() => this.themBinhKhi_(b), () => ['POST', '/binh-khi', b]);
+  }
+  /** Ghi nhận đã in tem cho các bình (mỗi bình +1 lần). */
+  daInTem(ids: string[]): Result {
+    return this.exec(() => this.daInTem_(ids), () => ['POST', '/binh-khi/da-in-tem', { ids }]);
   }
   savePt(p: HopDongPhuTai, lyDoTyLe?: string): Result {
     const moi = !p.id;
@@ -2285,6 +2295,29 @@ export class Store {
     return null;
   }
 
+  private themBinhKhi_(b: BinhKhi): Result {
+    if (!this.canEdit('khoPhieuTay')) return 'Bạn không có quyền thêm bình';
+    const id = b.id.trim().toUpperCase();
+    if (!id) return 'Chưa nhập số serial';
+    if (this.db().binhKhi.some((x) => x.id === id)) return `Số serial ${id} đã có`;
+    if (!this.loaiHangById(b.loaiHang)) return 'Chọn mã hàng của bình';
+    if (!this.khoById(b.kho) || b.kho === KHO_CHUYEN_THANG) return 'Chọn một kho thường';
+    if (!b.xuatXu.trim()) return 'Chưa nhập xuất xứ';
+    if (!b.ngaySX || !b.hanSD) return 'Chưa nhập Ngày SX / Hạn sử dụng';
+    if (b.hanSD < b.ngaySX) return 'Hạn sử dụng phải sau Ngày sản xuất';
+    this.upsert('binhKhi', { ...b, id, xuatXu: b.xuatXu.trim(), soLanIn: 0, lanInCuoi: undefined, nguoiIn: undefined, ghiChu: b.ghiChu?.trim() || undefined });
+    return null;
+  }
+  private daInTem_(ids: string[]): Result {
+    if (!this.canView('inTem')) return 'Bạn không có quyền in tem';
+    const ds = ids.map((id) => this.db().binhKhi.find((x) => x.id === id));
+    if (ds.some((b) => !b)) return 'Không tìm thấy bình';
+    const sai = ds.find((b) => b!.xuatXu !== XUAT_XU_VN);
+    if (sai) return `Bình ${sai.id} không xuất xứ Việt Nam — dùng tem của nhà sản xuất`;
+    for (const b of ds) this.upsert('binhKhi', { ...b!, soLanIn: b!.soLanIn + 1, lanInCuoi: todayIso(), nguoiIn: this.me()?.id });
+    return null;
+  }
+
   /** Gán tên hàng HĐ bán → mã hàng / lô hay dùng (sheet "5. AnhXaTenBan"). */
   private saveAnhXa_(id: string, o: Pick<AnhXaTen, 'loaiHang' | 'lo' | 'ghiChu'>): Result {
     const e = this.require('khoDanhMuc');
@@ -2901,7 +2934,7 @@ export function dbRong(): Db {
     version: 0, taiKhoan: [], nhomQuyen: [], phien: [],
     cauHinh: { TNDN_NGUONG: 0.2, TNDN_MUC1: 0.25, TNDN_MUC2: 0.5, PT_THUE: 0.2, PT_GIU: 0.1, PT_CACH_CHIA: 'Nhân', SO_DOT_TOI_DA: 3, TIEN_TO_TC: 'TC', TIEN_TO_CP: 'CP', TIEN_TO_NK: 'NK', TIEN_TO_XK: 'XK' },
     cauHinhLog: [], yeuCauXoa: [], hoSo: [], hoaDon: [], nguonTien: [], loaiChiPhi: [], khachHang: [], ncc: [], kho: [], loaiHang: [],
-    phieuThuChi: [], chiPhiHD: [], hopDongBan: [], hopDongMua: [], phieuKho: [], kiemKe: [], anhXaTen: [], deNghiVatTu: [], viecGiao: [], canhBao: [],
+    phieuThuChi: [], chiPhiHD: [], hopDongBan: [], hopDongMua: [], phieuKho: [], kiemKe: [], anhXaTen: [], binhKhi: [], deNghiVatTu: [], viecGiao: [], canhBao: [],
     hopDongPhuTai: [], dongTienPT: [], boDem: {},
   };
 }

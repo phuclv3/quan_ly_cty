@@ -1,4 +1,5 @@
-import { Routes } from '@angular/router';
+import { inject } from '@angular/core';
+import { Router, Routes } from '@angular/router';
 import { guestGuard, permGuard, signedInGuard } from './core/guard';
 import { unsavedGuard } from './shared/unsaved';
 
@@ -57,7 +58,7 @@ export const routes: Routes = [
         loadComponent: () => import('./hdm/hdm-detail').then((m) => m.HdmDetail),
       },
       { path: 'kho', title: T('Kho'), canActivate: [permGuard('khoTon')], loadComponent: () => import('./kho/kho').then((m) => m.KhoPage) },
-      { path: 'in-tem', title: T('In tem bình khí'), canActivate: [permGuard('inTem')], loadComponent: () => import('./kho/in-tem').then((m) => m.InTemPage) },
+      { path: 'in-tem', redirectTo: () => inject(Router).parseUrl('/kho?tab=binh-tem') },
       {
         path: 'ke-toan',
         title: T('Kế toán'),

@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { DongLo, DongTon, lechKiemKe, tonKho, tonTheoLo } from '../core/calc';
+import { DongLo, daGiuTheoMa, lechKiemKe, tonKho, tonTheoLo } from '../core/calc';
 import { KHO_CHUYEN_THANG, KiemKe } from '../core/models';
 import { Store } from '../core/store';
 import { nhoLoc } from '../core/ui';
@@ -8,10 +8,12 @@ import { money, sum, viDate, vndShort } from '../core/util';
 import { xuatExcel } from '../shared/export';
 import { Facet, FilterBar, LOC_RONG, Loc, khopQ, khopSel } from '../shared/filter-bar';
 import { Pager, paginate } from '../shared/pager';
-import { Kpi, Modal } from '../shared/ui-kit';
+import { Modal } from '../shared/ui-kit';
 import { hdCuaPhieu, khoOpts, nhomOpts, theKho } from './kho-util';
 
 type Che = 'ma' | 'lo';
+type Chip = '' | 'con' | 'het';
+type Canh = 'Âm kho' | 'Lệch' | 'Thiếu hồ sơ' | 'Sắp hết' | 'Chờ QC' | 'Đủ hàng' | 'Hết hàng';
 
 interface Chon {
   loaiHang?: string;
@@ -20,128 +22,177 @@ interface Chon {
   ten: string;
 }
 
-const CON_HANG_OPTS = [
-  { value: 'con', label: 'Còn hàng' },
-  { value: 'het', label: 'Hết hàng' },
-  { value: 'am', label: 'Xuất quá tồn' },
-];
-const tinhTrang = (ton: number) => (ton > 0 ? 'con' : ton < 0 ? 'am' : 'het');
+/** Một dòng bảng kiểm soát: gộp theo mã hàng (mọi kho thường). */
+interface Ma {
+  loaiHang: string;
+  /** Tên các kho / vị trí còn hàng. */
+  khos: string[];
+  ton: number;
+  daGiu: number;
+  /** Tồn của lô nhập từ HĐ mua chưa kiểm định xong. */
+  choQC: number;
+  /** Tồn của lô chưa có số hoá đơn / chứng từ nhập. */
+  thieuHS: number;
+  khaDung: number;
+  soLo: number;
+  loChoQC: number;
+  loThieuHS: number;
+  giaTri: number;
+  /** Chênh lệch kiểm kê gần nhất (thực tế − sổ), cộng các kho. */
+  lech: number;
+  canh: Canh;
+}
+
+const CANH_OPTS: { value: Canh; label: string }[] = (['Âm kho', 'Lệch', 'Thiếu hồ sơ', 'Sắp hết', 'Chờ QC', 'Đủ hàng', 'Hết hàng'] as Canh[]).map((c) => ({ value: c, label: c }));
+const CANH_MAU: Record<Canh, string> = { 'Âm kho': 'bad', Lệch: 'warn', 'Thiếu hồ sơ': 'warn', 'Sắp hết': 'bad', 'Chờ QC': 'info', 'Đủ hàng': 'ok', 'Hết hàng': 'mute' };
+/** Khả dụng không quá số này (và còn tồn) thì cảnh báo "Sắp hết" — chưa có ngưỡng tồn tối thiểu theo mã. */
+const NGUONG_SAP_HET = 2;
 
 /**
- * KHO-09 Tồn kho — theo Mã hàng (sheet "3b. TonTheoMaHang") và theo LÔ (sheet "3. TonTheoLo").
- * Giá trị tồn = Σ tồn lô × đơn giá lô. KHO-07 Chuyển thẳng tách riêng.
+ * KHO-09 Tồn kho — bảng kiểm soát hàng hoá theo mã (Khả dụng = Tồn sổ − Đã giữ − Cách ly/chờ QC − Thiếu hồ sơ)
+ * và bảng theo LÔ (sheet "3. TonTheoLo"). Giá trị tồn = Σ tồn lô × đơn giá lô. KHO-07 Chuyển thẳng tách riêng.
  */
 @Component({
   selector: 'app-kho-ton',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FilterBar, Pager, Kpi, Modal, RouterLink],
+  imports: [FilterBar, Pager, Modal, RouterLink],
+  styles: `
+    .kpis { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); margin-bottom: 14px; }
+    .k { display: flex; flex-direction: column; gap: 4px; background: var(--surf); border-radius: 14px; padding: 12px 14px; min-width: 0; min-height: 104px; }
+    .k.hero { background: linear-gradient(135deg, #0f7a3d, #4bb04f); color: #fff; }
+    .k .l { font-size: 12.5px; font-weight: 600; color: var(--ink-2); }
+    .k.hero .l, .k.hero .s { color: #fff; }
+    .k .v { font-size: 26px; line-height: 1.2; font-weight: 700; white-space: nowrap; }
+    .k .s { font-size: 11px; color: var(--ink-3); line-height: 1.4; margin-top: auto; }
+
+    .panel { background: var(--surf); border-radius: 18px; padding: 14px 16px 16px; }
+    .head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+    .head h3 { margin: 0; font-size: 16px; }
+    .chips { display: inline-flex; gap: 4px; padding: 3px; border-radius: 999px; background: var(--panel); }
+    .chip-f { border: 0; border-radius: 999px; padding: 6px 14px; background: none; font-size: 12.5px; font-weight: 600; color: var(--ink-2); cursor: pointer; }
+    .chip-f.on { background: var(--surf); color: var(--ink); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12); }
+    .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 12px; }
+    .bar .sp { flex: 1 1 auto; }
+    .panel ::ng-deep .filters { gap: 10px; flex: 1 1 420px; margin: 0; }
+    .panel ::ng-deep .filters .search { height: 40px; border-radius: 999px; background: var(--panel); border: 0; box-shadow: none; max-width: 320px; }
+    .panel ::ng-deep .filters .fsel select, .panel ::ng-deep .filters .pick-btn { height: 40px; border-radius: 999px; background: var(--panel); border: 0; font-weight: 600; font-size: 13.5px; padding-inline: 16px; }
+    .panel ::ng-deep .filters .f-clear { background: none; border: 0; color: var(--ink-3); font-size: 13px; }
+
+    .tbl-wrap { border-radius: 0; border: 0; box-shadow: none; overflow: auto; background: none; }
+    .tbl { font-size: 12.5px; font-family: var(--font); }
+    .tbl thead th { background: var(--panel); font-size: 11.5px; white-space: nowrap; border-radius: 0; }
+    .tbl thead th:first-child { border-top-left-radius: 10px; } .tbl thead th:last-child { border-top-right-radius: 10px; }
+    .tbl tbody td { padding-block: 10px; vertical-align: top; }
+    .tbl .z { color: var(--ink-3); }
+    .tbl .qc { color: #8a5a00; } .tbl .hs { color: #a3261d; font-weight: 600; }
+    .ma-ten { display: block; font-size: 11px; color: var(--ink-3); margin-top: 2px; max-width: 180px; }
+    .lo-link { border: 0; background: none; padding: 0; color: var(--brand); font-weight: 600; font-size: 12px; cursor: pointer; text-align: left; }
+    .st { display: inline-block; padding: 1px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; white-space: nowrap; background: var(--mute-bg); color: var(--mute-fg); }
+    .st.info { background: #dce9f8; color: #2c5d94; }
+    .st.ok { background: #dff3e4; color: #17663f; }
+    .st.warn { background: #fbf0d6; color: #8a5a00; }
+    .st.bad { background: #fbe4e1; color: #a3261d; }
+    .legend { margin: 8px 0 0; font-size: 11.5px; color: var(--ink-3); }
+  `,
   template: `
     <div class="kpis">
-      <app-kpi label="Giá trị tồn" [value]="vndShort(kpi().giaTri)" sub="Σ tồn lô × đơn giá lô (chưa VAT)" />
-      <app-kpi label="Mã hàng còn hàng" [value]="money(kpi().soMa)" [sub]="'trên ' + money(store.loaiHang().length) + ' mã trong danh mục'" />
-      <app-kpi label="Lô còn hàng" [value]="money(kpi().soLo)" [sub]="'SL tồn ' + money(kpi().sl)" />
-      <app-kpi label="Lô xuất quá tồn" [value]="money(kpi().am)" [tone]="kpi().am ? 'bad' : 'ok'" sub="Cần kiểm tra phiếu xuất" />
+      <div class="k hero"><span class="l">Giá trị tồn kho</span><b class="v">{{ vndShort(kpi().giaTri) }}</b><span class="s">Σ tồn lô × đơn giá lô (chưa VAT) · {{ kpi().soMa }} mã còn hàng</span></div>
+      <div class="k"><span class="l">Mã sắp hết hàng</span><b class="v">{{ kpi().sapHet.length }}</b><span class="s">@if (kpi().sapHet[0]; as r) { {{ r.loaiHang }} · khả dụng {{ r.khaDung }} / tồn {{ r.ton }} } @else { Khả dụng ≤ {{ nguong }} }</span></div>
+      <div class="k"><span class="l">Lô chờ QC / thiếu hồ sơ</span><b class="v">{{ kpi().loCanXuLy }}</b><span class="s">{{ kpi().slCachLy }} SL đang cách ly hoặc thiếu chứng từ</span></div>
+      <div class="k"><span class="l">Chênh lệch kiểm kê</span><b class="v">{{ kpi().lech.length }}</b><span class="s">@if (kpi().lech[0]; as r) { {{ r.loaiHang }} lệch {{ r.lech > 0 ? '+' : '' }}{{ r.lech }} } @else { Đợt kiểm kê gần nhất khớp sổ }</span></div>
     </div>
-    <div class="section-title">
-      <div class="tabs" role="tablist" style="position:static;margin:0">
-        <button type="button" role="tab" [class.on]="che() === 'ma'" [attr.aria-selected]="che() === 'ma'" (click)="che.set('ma')">Theo mã hàng</button>
-        <button type="button" role="tab" [class.on]="che() === 'lo'" [attr.aria-selected]="che() === 'lo'" (click)="che.set('lo')">Theo lô</button>
+
+    <section class="panel">
+      <div class="head">
+        <h3>Bảng kiểm soát hàng hoá <span class="sub">theo {{ che() === 'ma' ? 'mã hàng' : 'lô' }}</span></h3>
+        <div class="chips">
+          <button type="button" class="chip-f" [class.on]="che() === 'ma'" (click)="che.set('ma')">Theo mã hàng</button>
+          <button type="button" class="chip-f" [class.on]="che() === 'lo'" (click)="che.set('lo')">Theo lô</button>
+        </div>
       </div>
-      <div class="btn-row">
+
+      <div class="bar">
         @if (che() === 'ma') {
-          <label class="check-row"><input type="checkbox" [checked]="duMa()" (change)="duMa.set($any($event.target).checked)" /> Hiện cả mã chưa phát sinh</label>
+          <div class="chips">
+            <button type="button" class="chip-f" [class.on]="chip() === ''" (click)="chip.set('')">Tất cả mã ({{ dem('') }})</button>
+            <button type="button" class="chip-f" [class.on]="chip() === 'con'" (click)="chip.set('con')">Còn hàng ({{ dem('con') }})</button>
+            <button type="button" class="chip-f" [class.on]="chip() === 'het'" (click)="chip.set('het')">Hết hàng ({{ dem('het') }})</button>
+          </div>
         }
+        <app-filter [(loc)]="loc" memo="kho-ton" [time]="false" [facets]="facets()" placeholder="Tìm mã hàng, vị trí, lô, serial, số hoá đơn…" />
         <button type="button" class="btn sm quiet" (click)="xuatExcel()">Xuất Excel</button>
       </div>
-    </div>
-    <app-filter [(loc)]="loc" memo="kho-ton" [time]="false" [facets]="facets()" placeholder="Tìm mã hàng, tên, mã lô, nồng độ, số hoá đơn…" />
 
-    @if (che() === 'ma') {
-      <div class="tbl-wrap">
-        <table class="tbl freeze">
-          <thead>
-            <tr><th>Mã hàng</th><th>Mô tả</th><th>Tên trên hoá đơn</th><th>Nhóm</th><th>Thể tích</th><th>ĐVT</th><th>Vị trí kho</th><th class="num">Tổng nhập</th><th class="num">Tổng xuất</th><th class="num">Tồn</th><th class="num">Số lô còn</th><th class="num">Giá trị tồn</th><th class="num" title="Số đếm của đợt kiểm kê gần nhất tại kho">Kiểm kê{{ ngayKK() ? ' ' + ngayKK() : '' }}</th><th class="num" title="Thực tế − tồn sổ tại ngày kiểm kê">Lệch</th></tr>
-          </thead>
-          <tbody>
-            @for (r of pgMa.items(); track r.loaiHang + r.kho) {
-              <tr class="click" (click)="moMa(r)">
-                <td><b>{{ r.loaiHang }}</b> <span class="sub">{{ store.loaiHangTen(r.loaiHang) }}</span></td>
-                <td class="sub" style="max-width:240px">{{ store.loaiHangById(r.loaiHang)?.moTa || '—' }}</td>
-                @let tm = tenHD(r.loaiHang);
-                <td class="sub" style="max-width:260px" [title]="tm.join('
-')">@if (tm.length) { {{ tm[0] }}@if (tm.length > 1) { <span class="tag mute">+{{ tm.length - 1 }}</span> } } @else { — }</td>
-                <td>{{ store.loaiHangById(r.loaiHang)?.nhom ?? '—' }}</td>
-                <td>{{ store.loaiHangById(r.loaiHang)?.theTich || '—' }}</td>
-                <td>{{ store.loaiHangById(r.loaiHang)?.dvt ?? '' }}</td>
-                <td>{{ store.khoTen(r.kho) }}</td>
-                <td class="num">{{ money(r.nhap) }}</td>
-                <td class="num">{{ money(r.xuat) }}</td>
-                <td class="num" [class.neg]="r.ton < 0"><b>{{ money(r.ton) }}</b></td>
-                <td class="num">{{ r.soLo }}</td>
-                <td class="num">{{ money(r.giaTri) }}</td>
-                @if (kk(r); as k) {
-                  <td class="num" [title]="'Kiểm kê ' + viDate(k.ngay)">{{ money(k.thucTe) }}</td>
-                  <td class="num" [class.neg]="k.lech < 0">@if (k.lech) { <b>{{ k.lech > 0 ? '+' : '' }}{{ money(k.lech) }}</b> } @else { 0 }</td>
-                } @else {
-                  <td class="num muted">—</td><td class="num muted">—</td>
-                }
-              </tr>
-            } @empty {
-              <tr><td colspan="14" class="empty">Không có mã hàng nào khớp bộ lọc</td></tr>
+      @if (che() === 'ma') {
+        <div class="tbl-wrap">
+          <table class="tbl freeze">
+            <thead>
+              <tr><th>Mã hàng</th><th>Kho · vị trí</th><th class="num">Tồn sổ</th><th class="num">Đã giữ</th><th class="num" title="Lô nhập từ HĐ mua chưa kiểm định xong">Cách ly / chờ QC</th><th class="num" title="Lô chưa có số hoá đơn / chứng từ">Thiếu hồ sơ</th><th class="num">Khả dụng</th><th>Lô · chứng từ</th><th class="num">Giá trị tồn</th><th>Cảnh báo</th></tr>
+            </thead>
+            <tbody>
+              @for (r of pgMa.items(); track r.loaiHang) {
+                <tr>
+                  <td>
+                    <b>{{ r.loaiHang }}</b>
+                    <span class="ma-ten">{{ moTa(r.loaiHang) }}</span>
+                  </td>
+                  <td>{{ r.khos.join(' / ') || '—' }}</td>
+                  <td class="num" [class.neg]="r.ton < 0"><b>{{ money(r.ton) }}</b></td>
+                  <td class="num" [class.z]="!r.daGiu">{{ money(r.daGiu) }}</td>
+                  <td class="num" [class.z]="!r.choQC" [class.qc]="r.choQC">{{ money(r.choQC) }}</td>
+                  <td class="num" [class.z]="!r.thieuHS" [class.hs]="r.thieuHS">{{ money(r.thieuHS) }}</td>
+                  <td class="num"><b>{{ money(r.khaDung) }}</b></td>
+                  <td>
+                    <button type="button" class="lo-link" (click)="moMa(r)">{{ r.soLo }} lô@if (r.loChoQC) { · {{ r.loChoQC }} chờ QC }@if (r.loThieuHS) { · {{ r.loThieuHS }} thiếu hồ sơ } ›</button>
+                  </td>
+                  <td class="num">{{ r.giaTri ? vndShort(r.giaTri) : '—' }}</td>
+                  <td><span class="st" [class]="'st ' + mau(r.canh)">{{ r.canh }}{{ r.canh === 'Lệch' ? ' ' + (r.lech > 0 ? '+' : '') + r.lech : '' }}</span></td>
+                </tr>
+              } @empty {
+                <tr><td colspan="10" class="empty">Không có mã hàng nào khớp bộ lọc</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <app-pager [pager]="pgMa" />
+        <p class="legend"><b>Khả dụng = Tồn sổ − Đã giữ − Cách ly / chờ QC − Thiếu hồ sơ.</b> Đã giữ: hàng đang giữ cho HĐ bán Hiệu lực / Đang giao. Cách ly / chờ QC: lô nhập từ HĐ mua chưa tích Kiểm định. Thiếu hồ sơ: lô chưa có số hoá đơn. Hàng của HĐ mua thuộc Phú Tài không nhập kho nên không có ở đây. Bấm "lô" để xem thẻ kho.</p>
+      } @else {
+        <div class="tbl-wrap">
+          <table class="tbl freeze">
+            <thead>
+              <tr><th>Mã lô</th><th>Ngày nhập</th><th>Số hoá đơn</th><th>NCC</th><th>Mã hàng</th><th>Quy cách / nồng độ</th><th class="num">SL nhập</th><th class="num">Đã xuất</th><th class="num">Tồn</th><th class="num">Đơn giá</th><th class="num">Giá trị tồn</th><th>Cảnh báo</th></tr>
+            </thead>
+            <tbody>
+              @for (l of pgLo.items(); track l.lo) {
+                <tr class="click" (click)="moLo(l)">
+                  <td><b>{{ l.lo }}</b></td>
+                  <td>{{ viDate(l.ngay) }}</td>
+                  <td>{{ l.soHoaDon || '—' }}</td>
+                  <td>{{ l.ncc ? store.nccById(l.ncc)?.ten ?? l.ncc : '—' }}</td>
+                  <td><b>{{ l.loaiHang }}</b></td>
+                  <td class="sub" style="max-width:320px">{{ l.quyCach || '—' }}</td>
+                  <td class="num">{{ money(l.nhap) }}</td>
+                  <td class="num">{{ money(l.xuat) }}</td>
+                  <td class="num" [class.neg]="l.ton < 0"><b>{{ money(l.ton) }}</b></td>
+                  <td class="num">{{ money(l.donGia) }}</td>
+                  <td class="num">{{ money(l.giaTriTon) }}</td>
+                  <td>@if (l.ton < 0) { <span class="tag bad">Xuất quá tồn {{ -l.ton }}</span> } @else if (!l.donGia) { <span class="tag warn">Chưa có đơn giá</span> }</td>
+                </tr>
+              } @empty {
+                <tr><td colspan="12" class="empty">Không có lô nào khớp bộ lọc</td></tr>
+              }
+            </tbody>
+            @if (rowsLo().length) {
+              <tfoot>
+                <tr><td colspan="6">Tổng ({{ rowsLo().length }} lô)</td><td class="num">{{ money(tongLo().nhap) }}</td><td class="num">{{ money(tongLo().xuat) }}</td><td class="num">{{ money(tongLo().ton) }}</td><td></td><td class="num">{{ money(tongLo().giaTri) }}</td><td></td></tr>
+              </tfoot>
             }
-          </tbody>
-          @if (rowsMa().length) {
-            <tfoot>
-              <tr><td colspan="7">Tổng ({{ rowsMa().length }} dòng)</td><td class="num">{{ money(tongMa().nhap) }}</td><td class="num">{{ money(tongMa().xuat) }}</td><td class="num" [class.neg]="tongMa().ton < 0">{{ money(tongMa().ton) }}</td><td></td><td class="num">{{ money(tongMa().giaTri) }}</td><td colspan="2"></td></tr>
-            </tfoot>
-          }
-        </table>
-      </div>
-      <app-pager [pager]="pgMa" />
-    } @else {
-      <div class="tbl-wrap">
-        <table class="tbl freeze">
-          <thead>
-            <tr><th>Mã lô</th><th>Ngày nhập</th><th>Số hoá đơn</th><th>NCC</th><th>Mã hàng</th><th>Mô tả</th><th>Tên trên hoá đơn</th><th>Quy cách / nồng độ</th><th class="num">SL nhập</th><th class="num">Đã xuất</th><th class="num">Tồn</th><th class="num">Đơn giá</th><th class="num">Giá trị tồn</th><th>Cảnh báo</th></tr>
-          </thead>
-          <tbody>
-            @for (l of pgLo.items(); track l.lo) {
-              <tr class="click" (click)="moLo(l)">
-                <td><b>{{ l.lo }}</b></td>
-                <td>{{ viDate(l.ngay) }}</td>
-                <td>{{ l.soHoaDon || '—' }}</td>
-                <td>{{ l.ncc ? store.nccById(l.ncc)?.ten ?? l.ncc : '—' }}</td>
-                <td><b>{{ l.loaiHang }}</b></td>
-                <td class="sub" style="max-width:240px">{{ store.loaiHangById(l.loaiHang)?.moTa || '—' }}</td>
-                @let tl = tenHD(l.loaiHang, l.lo);
-                <td class="sub" style="max-width:260px" [title]="tl.join('
-')">@if (tl.length) { {{ tl[0] }}@if (tl.length > 1) { <span class="tag mute">+{{ tl.length - 1 }}</span> } } @else { — }</td>
-                <td class="sub" style="max-width:320px">{{ l.quyCach || '—' }}</td>
-                <td class="num">{{ money(l.nhap) }}</td>
-                <td class="num">{{ money(l.xuat) }}</td>
-                <td class="num" [class.neg]="l.ton < 0"><b>{{ money(l.ton) }}</b></td>
-                <td class="num">{{ money(l.donGia) }}</td>
-                <td class="num">{{ money(l.giaTriTon) }}</td>
-                <td>@if (l.ton < 0) { <span class="tag bad">Xuất quá tồn {{ -l.ton }}</span> } @else if (!l.donGia) { <span class="tag warn">Chưa có đơn giá</span> }</td>
-              </tr>
-            } @empty {
-              <tr><td colspan="14" class="empty">Không có lô nào khớp bộ lọc</td></tr>
-            }
-          </tbody>
-          @if (rowsLo().length) {
-            <tfoot>
-              <tr><td colspan="8">Tổng ({{ rowsLo().length }} lô)</td><td class="num">{{ money(tongLo().nhap) }}</td><td class="num">{{ money(tongLo().xuat) }}</td><td class="num">{{ money(tongLo().ton) }}</td><td></td><td class="num">{{ money(tongLo().giaTri) }}</td><td></td></tr>
-            </tfoot>
-          }
-        </table>
-      </div>
-      <app-pager [pager]="pgLo" />
-    }
-    <p class="hint muted">
-      Mỗi dòng phiếu nhập là một LÔ có đơn giá riêng; xuất kho trừ đúng lô → giá vốn lấy đúng đơn giá lô (không bình quân).
-      Không tính phiếu Đã huỷ và kho Chuyển thẳng. Cột Kiểm kê / Lệch lấy đợt kiểm kê gần nhất của từng kho (Lệch = thực tế − tồn sổ tại ngày kiểm kê).
-      Bấm dòng để xem thẻ kho.
-    </p>
+          </table>
+        </div>
+        <app-pager [pager]="pgLo" />
+        <p class="legend">Mỗi dòng phiếu nhập là một LÔ có đơn giá riêng; xuất kho trừ đúng lô → giá vốn lấy đúng đơn giá lô (không bình quân). Không tính phiếu Đã huỷ và kho Chuyển thẳng. Bấm dòng để xem thẻ kho.</p>
+      }
+    </section>
 
     @if (ct().length) {
       <h3 class="section-title">Chuyển thẳng (chỉ tham khảo)</h3>
@@ -197,34 +248,25 @@ export class TonKhoTab {
   protected readonly money = money;
   protected readonly viDate = viDate;
   protected readonly vndShort = vndShort;
+  protected readonly nguong = NGUONG_SAP_HET;
+  protected readonly mau = (c: Canh) => CANH_MAU[c];
   protected readonly che = signal<Che>('ma');
+  protected readonly chip = signal<Chip>('');
   protected readonly loc = signal<Loc>(nhoLoc('kho-ton', LOC_RONG));
   protected readonly chon = signal<Chon | null>(null);
-  protected readonly duMa = signal(false);
 
-  /** Đợt kiểm kê gần nhất mỗi kho → số đếm / lệch theo mã (sheet "3b", cột "Kiểm kê 19/08", "Lệch"). */
-  private readonly kkKho = computed(() => {
+  /** Đợt kiểm kê gần nhất mỗi kho → lệch theo mã. */
+  private readonly lechMa = computed(() => {
     const ganNhat = new Map<string, KiemKe>();
     for (const k of this.store.kiemKe()) {
       const c = ganNhat.get(k.kho);
       if (!c || c.ngay < k.ngay) ganNhat.set(k.kho, k);
     }
-    const out = new Map<string, { ngay: string; theoMa: Map<string, { thucTe: number; lech: number }> }>();
-    for (const [kho, k] of ganNhat)
-      out.set(kho, { ngay: k.ngay, theoMa: new Map(lechKiemKe(this.store.db(), k).map((r) => [r.loaiHang, { thucTe: r.thucTe, lech: r.lech }])) });
+    const out = new Map<string, number>();
+    for (const k of ganNhat.values()) for (const r of lechKiemKe(this.store.db(), k)) out.set(r.loaiHang, (out.get(r.loaiHang) ?? 0) + r.lech);
     return out;
   });
-  /** Ngày kiểm kê hiện ở tiêu đề cột khi mọi kho cùng một ngày. */
-  protected readonly ngayKK = computed(() => {
-    const ds = new Set([...this.kkKho().values()].map((x) => x.ngay));
-    return ds.size === 1 ? viDate([...ds][0]).slice(0, 5) : '';
-  });
-  protected kk(r: DongTon): { ngay: string; thucTe: number; lech: number } | null {
-    const k = this.kkKho().get(r.kho);
-    if (!k) return null;
-    const x = k.theoMa.get(r.loaiHang) ?? { thucTe: 0, lech: 0 };
-    return { ngay: k.ngay, ...x };
-  }
+
   /** Tên hàng trên hoá đơn theo tab Ánh xạ tên bán: mã hàng → các tên đã gán (kèm lô hay dùng). */
   private readonly anhXa = computed(() => {
     const m = new Map<string, { ten: string; lo?: string }[]>();
@@ -236,7 +278,6 @@ export class TonKhoTab {
     }
     return m;
   });
-  /** Tên trên hoá đơn của mã hàng; xem theo lô thì ưu tiên tên gán đúng lô đó. */
   protected tenHD(loaiHang: string, lo?: string): string[] {
     const ds = this.anhXa().get(loaiHang) ?? [];
     const dungLo = lo ? ds.filter((x) => x.lo === lo) : [];
@@ -245,51 +286,93 @@ export class TonKhoTab {
   /** Thứ tự theo danh mục mã hàng (nhóm → loại khí → thể tích), như file kho. */
   private readonly thuTu = computed(() => new Map(this.store.loaiHang().map((l, i) => [l.id, i])));
 
-  private readonly allMa = computed(() => {
-    const rows = tonKho(this.store.db()).filter((r) => r.kho !== KHO_CHUYEN_THANG);
-    const co = new Set(rows.map((r) => `${r.loaiHang}\u0001${r.kho}`));
-    const them = (loaiHang: string, kho: string) => {
-      if (co.has(`${loaiHang}\u0001${kho}`)) return;
-      co.add(`${loaiHang}\u0001${kho}`);
-      rows.push({ loaiHang, kho, nhap: 0, xuat: 0, ton: 0, giaTri: 0, soLo: 0 });
-    };
-    // Mã đếm được khi kiểm kê nhưng chưa có trên sổ → vẫn hiện để thấy lệch.
-    for (const [kho, k] of this.kkKho()) for (const ma of k.theoMa.keys()) them(ma, kho);
-    if (this.duMa()) {
-      const kho = this.store.khoDangDung().find((k) => k.id !== KHO_CHUYEN_THANG)?.id ?? '';
-      const daCo = new Set(rows.map((r) => r.loaiHang));
-      for (const l of this.store.loaiHang()) if (!daCo.has(l.id)) them(l.id, kho);
-    }
-    return rows;
-  });
+  protected moTa(id: string): string {
+    const l = this.store.loaiHangById(id);
+    return l ? [l.moTa || l.ten, l.dvt].filter(Boolean).join(' · ') : '';
+  }
+
   private readonly allLo = computed(() => tonTheoLo(this.store.db()).filter((l) => l.kho !== KHO_CHUYEN_THANG));
+
+  /** Lô nhập từ HĐ mua mà HĐ mua chưa tích "Kiểm định" → cách ly / chờ QC. */
+  private choKiemDinh(l: DongLo): boolean {
+    const p = this.store.db().phieuKho.find((x) => x.id === l.phieuId);
+    const m = p?.hdId ? this.store.hdmById(p.hdId) : undefined;
+    return !!m && m.checklist.some((c) => c.ten === 'Kiểm định') && !m.checklist.find((c) => c.ten === 'Kiểm định')?.xong;
+  }
+
+  private readonly allMa = computed<Ma[]>(() => {
+    const db = this.store.db();
+    const theoMa = new Map<string, Ma>();
+    const row = (id: string): Ma => {
+      let r = theoMa.get(id);
+      if (!r) {
+        r = { loaiHang: id, khos: [], ton: 0, daGiu: 0, choQC: 0, thieuHS: 0, khaDung: 0, soLo: 0, loChoQC: 0, loThieuHS: 0, giaTri: 0, lech: this.lechMa().get(id) ?? 0, canh: 'Đủ hàng' };
+        theoMa.set(id, r);
+      }
+      return r;
+    };
+    for (const t of tonKho(db)) {
+      if (t.kho === KHO_CHUYEN_THANG) continue;
+      const r = row(t.loaiHang);
+      r.ton += t.ton;
+      r.giaTri += t.giaTri;
+      if (t.ton !== 0) r.khos.push(this.store.khoTen(t.kho));
+    }
+    // Mã đếm được khi kiểm kê nhưng chưa có trên sổ → vẫn hiện để thấy lệch.
+    for (const id of this.lechMa().keys()) row(id);
+    for (const l of this.allLo()) {
+      if (l.ton <= 0) continue;
+      const r = row(l.loaiHang);
+      r.soLo++;
+      if (this.choKiemDinh(l)) {
+        r.choQC += l.ton;
+        r.loChoQC++;
+      } else if (!l.soHoaDon) {
+        r.thieuHS += l.ton;
+        r.loThieuHS++;
+      }
+    }
+    for (const r of theoMa.values()) {
+      r.daGiu = daGiuTheoMa(db, r.loaiHang);
+      r.khaDung = Math.max(0, r.ton - r.daGiu - r.choQC - r.thieuHS);
+      r.canh =
+        r.ton < 0 ? 'Âm kho'
+        : r.lech !== 0 ? 'Lệch'
+        : r.thieuHS > 0 ? 'Thiếu hồ sơ'
+        : r.ton > 0 && r.khaDung <= NGUONG_SAP_HET ? 'Sắp hết'
+        : r.choQC > 0 ? 'Chờ QC'
+        : r.ton === 0 ? 'Hết hàng'
+        : 'Đủ hàng';
+    }
+    return [...theoMa.values()].sort((a, b) => (this.thuTu().get(a.loaiHang) ?? 1e9) - (this.thuTu().get(b.loaiHang) ?? 1e9) || a.loaiHang.localeCompare(b.loaiHang));
+  });
+
   protected readonly facets = computed<Facet[]>(() => [
     { key: 'kho', label: 'Kho', options: khoOpts(this.store.db(), false) },
     { key: 'nhom', label: 'Nhóm hàng', options: nhomOpts() },
-    { key: 'tt', label: 'Tình trạng', options: CON_HANG_OPTS },
+    ...(this.che() === 'ma' ? [{ key: 'canh', label: 'Cảnh báo', options: CANH_OPTS }] : []),
   ]);
 
-  protected readonly rowsMa = computed<DongTon[]>(() => {
+  /** Sau ô tìm và bộ lọc chọn, trước chip Còn / Hết hàng — để số trên chip khớp bảng. */
+  private readonly locSan = computed<Ma[]>(() => {
     const l = this.loc();
-    return this.allMa()
-      .filter((r) => {
-        const lh = this.store.loaiHangById(r.loaiHang);
-        return (
-          khopQ(l, r.loaiHang, lh?.ten, lh?.moTa, ...this.tenHD(r.loaiHang), lh?.loaiKhi, ...(lh?.bietDanh ?? [])) &&
-          khopSel(l, 'nhom', lh?.nhom) &&
-          khopSel(l, 'kho', r.kho) &&
-          khopSel(l, 'tt', tinhTrang(r.ton))
-        );
-      })
-      .sort((a, b) => (this.thuTu().get(a.loaiHang) ?? 1e9) - (this.thuTu().get(b.loaiHang) ?? 1e9) || a.loaiHang.localeCompare(b.loaiHang) || a.kho.localeCompare(b.kho));
+    const khoDuocChon = l.sel['kho'] ?? [];
+    const tenKho = new Set(khoDuocChon.map((k) => this.store.khoTen(k)));
+    return this.allMa().filter((r) => {
+      const lh = this.store.loaiHangById(r.loaiHang);
+      return (
+        khopQ(l, r.loaiHang, lh?.ten, lh?.moTa, ...r.khos, ...this.tenHD(r.loaiHang), lh?.loaiKhi, ...(lh?.bietDanh ?? [])) &&
+        khopSel(l, 'nhom', lh?.nhom) &&
+        khopSel(l, 'canh', r.canh) &&
+        (!tenKho.size || r.khos.some((k) => tenKho.has(k)))
+      );
+    });
   });
+  protected dem(c: Chip): number {
+    return this.locSan().filter((r) => !c || (c === 'con' ? r.ton > 0 : r.ton <= 0)).length;
+  }
+  protected readonly rowsMa = computed(() => this.locSan().filter((r) => !this.chip() || (this.chip() === 'con' ? r.ton > 0 : r.ton <= 0)));
   protected readonly pgMa = paginate(this.rowsMa);
-  protected readonly tongMa = computed(() => ({
-    nhap: sum(this.rowsMa(), (r) => r.nhap),
-    xuat: sum(this.rowsMa(), (r) => r.xuat),
-    ton: sum(this.rowsMa(), (r) => r.ton),
-    giaTri: sum(this.rowsMa(), (r) => r.giaTri),
-  }));
 
   protected readonly rowsLo = computed<DongLo[]>(() => {
     const l = this.loc();
@@ -297,8 +380,7 @@ export class TonKhoTab {
       (r) =>
         khopQ(l, r.lo, r.loaiHang, this.store.loaiHangTen(r.loaiHang), this.store.loaiHangById(r.loaiHang)?.moTa, ...this.tenHD(r.loaiHang, r.lo), r.quyCach, r.soHoaDon) &&
         khopSel(l, 'nhom', this.store.loaiHangById(r.loaiHang)?.nhom) &&
-        khopSel(l, 'kho', r.kho) &&
-        khopSel(l, 'tt', tinhTrang(r.ton)),
+        khopSel(l, 'kho', r.kho),
     );
   });
   protected readonly pgLo = paginate(this.rowsLo);
@@ -310,13 +392,14 @@ export class TonKhoTab {
   }));
 
   protected readonly kpi = computed(() => {
-    const lo = this.allLo();
+    const ma = this.allMa();
     return {
-      giaTri: sum(lo, (l) => l.giaTriTon),
-      soMa: new Set(this.allMa().filter((r) => r.ton > 0).map((r) => r.loaiHang)).size,
-      soLo: lo.filter((l) => l.ton > 0).length,
-      sl: sum(lo.filter((l) => l.ton > 0), (l) => l.ton),
-      am: lo.filter((l) => l.ton < 0).length,
+      giaTri: sum(this.allLo(), (l) => l.giaTriTon),
+      soMa: ma.filter((r) => r.ton > 0).length,
+      sapHet: ma.filter((r) => r.canh === 'Sắp hết'),
+      loCanXuLy: sum(ma, (r) => r.loChoQC + r.loThieuHS),
+      slCachLy: sum(ma, (r) => r.choQC + r.thieuHS),
+      lech: ma.filter((r) => r.lech !== 0),
     };
   });
 
@@ -334,8 +417,8 @@ export class TonKhoTab {
     return c ? theKho(this.store.db(), c) : [];
   });
 
-  protected moMa(r: DongTon): void {
-    this.chon.set({ loaiHang: r.loaiHang, kho: r.kho, ten: `${r.loaiHang} · ${this.store.loaiHangTen(r.loaiHang)}` });
+  protected moMa(r: Ma): void {
+    this.chon.set({ loaiHang: r.loaiHang, ten: `${r.loaiHang} · ${this.store.loaiHangTen(r.loaiHang)}` });
   }
   protected moLo(l: DongLo): void {
     this.chon.set({ lo: l.lo, kho: l.kho, ten: `Lô ${l.lo} · ${l.loaiHang}` });
@@ -346,11 +429,10 @@ export class TonKhoTab {
 
   protected xuatExcel(): void {
     if (this.che() === 'ma') {
-      const rows: (string | number)[][] = [['Mã hàng', 'Tên', 'Mô tả', 'Tên trên hoá đơn', 'Nhóm', 'Thể tích', 'ĐVT', 'Vị trí kho', 'Tổng nhập', 'Tổng xuất', 'Tồn', 'Số lô còn', 'Giá trị tồn', 'Ngày kiểm kê', 'Kiểm kê', 'Lệch']];
+      const rows: (string | number)[][] = [['Mã hàng', 'Tên', 'Mô tả', 'Tên trên hoá đơn', 'Nhóm', 'ĐVT', 'Vị trí kho', 'Tồn sổ', 'Đã giữ', 'Cách ly / chờ QC', 'Thiếu hồ sơ', 'Khả dụng', 'Số lô', 'Giá trị tồn', 'Lệch kiểm kê', 'Cảnh báo']];
       for (const r of this.rowsMa()) {
         const lh = this.store.loaiHangById(r.loaiHang);
-        const k = this.kk(r);
-        rows.push([r.loaiHang, lh?.ten ?? '', lh?.moTa ?? '', this.tenHD(r.loaiHang).join('; '), lh?.nhom ?? '', lh?.theTich ?? '', lh?.dvt ?? '', this.store.khoTen(r.kho), r.nhap, r.xuat, r.ton, r.soLo, Math.round(r.giaTri), k ? viDate(k.ngay) : '', k?.thucTe ?? '', k?.lech ?? '']);
+        rows.push([r.loaiHang, lh?.ten ?? '', lh?.moTa ?? '', this.tenHD(r.loaiHang).join('; '), lh?.nhom ?? '', lh?.dvt ?? '', r.khos.join(' / '), r.ton, r.daGiu, r.choQC, r.thieuHS, r.khaDung, r.soLo, Math.round(r.giaTri), r.lech, r.canh]);
       }
       void xuatExcel('ton-kho-theo-ma', rows);
       return;

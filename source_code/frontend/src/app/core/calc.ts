@@ -318,6 +318,15 @@ export function tonDanhCho(db: Db, h: HopDongBan, loaiHang: string): { ton: numb
   return { ton, khaDung: con, daGiuKhac };
 }
 
+/** Tổng SL của một mã đang bị các HĐ bán giữ (cùng cách chia như tonDanhCho): tồn − khả dụng sau khi mọi HĐ đã giữ. */
+export function daGiuTheoMa(db: Db, loaiHang: string): number {
+  const ton = Math.max(tonTai(db, loaiHang), 0);
+  let con = ton;
+  for (const x of db.hopDongBan.filter((h) => giuHang(h) && h.dongHang!.some((d) => d.loaiHang === loaiHang)))
+    con -= Math.min(conPhaiGiaoTheoMa(db, x).get(loaiHang) ?? 0, con);
+  return ton - con;
+}
+
 export type TrangThaiKhoDong = 'Đủ hàng' | 'Đã đề nghị mua' | 'Cần mua';
 
 /**

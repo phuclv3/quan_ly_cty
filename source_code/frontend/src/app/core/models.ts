@@ -827,6 +827,21 @@ export interface AnhXaTen {
   ghiChu?: string;
 }
 
+/** Bình khí theo số serial (id = số serial) và tình trạng in tem. Chỉ bình xuất xứ Việt Nam dùng tem nội bộ. */
+export interface BinhKhi {
+  id: string;
+  loaiHang: string;
+  xuatXu: string;
+  ngaySX: string;
+  hanSD: string;
+  kho: string;
+  soLanIn: number;
+  lanInCuoi?: string;
+  nguoiIn?: string;
+  ghiChu?: string;
+}
+export const XUAT_XU_VN = 'Việt Nam';
+
 // ── Phú Tài ─────────────────────────────────────────────────────────────
 
 export type TrangThaiPT = typeof TT.BAO_GIA | typeof TT.HIEU_LUC | typeof TT.DANG_THUC_HIEN | typeof TT.HOAN_THANH | typeof TT.DA_TAT_TOAN | typeof TT.HUY;
@@ -952,6 +967,7 @@ export interface Db {
   phieuKho: PhieuKho[];
   kiemKe: KiemKe[];
   anhXaTen: AnhXaTen[];
+  binhKhi: BinhKhi[];
   deNghiVatTu: DeNghiVatTu[];
   viecGiao: ViecGiao[];
   /** Cảnh báo rủi ro nhập tay — bảng riêng, không lẫn với việc được giao. */
