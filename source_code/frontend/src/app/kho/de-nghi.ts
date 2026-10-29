@@ -48,13 +48,15 @@ const TT_OPTS = ['Chờ mua', 'Đang mua một phần', 'Đã lên HĐ mua', TT.
               </td>
               <td>@for (m of r.t.hdm; track m.id) { <a [routerLink]="['/hop-dong-mua', m.id]">{{ m.soHD || '(nháp)' }}</a> } @empty { — }</td>
               <td><app-tt [v]="r.t.trangThai" />@if (r.dn.lyDoHuy) { <div class="sub">{{ r.dn.lyDoHuy }}</div> }</td>
-              <td class="btn-row">
+              <td>
+                <div class="btn-row">
                 @if ((r.t.trangThai === 'Chờ mua' || r.t.trangThai === 'Đang mua một phần') && store.canEdit('hdm')) {
                   <a class="btn sm" routerLink="/hop-dong-mua/moi" [queryParams]="{ dnvt: r.dn.id }">Tạo HĐ mua</a>
                 }
                 @if (r.t.trangThai === 'Chờ mua' && store.canEdit('hdb', store.hdbById(r.dn.hdbId)?.sale)) {
                   <button type="button" class="btn sm quiet" (click)="huy(r.dn.id, r.dn.soPhieu)">Huỷ</button>
                 }
+                </div>
               </td>
             </tr>
           } @empty {

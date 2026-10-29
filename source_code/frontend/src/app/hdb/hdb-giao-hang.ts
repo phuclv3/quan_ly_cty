@@ -33,11 +33,11 @@ const dongRong = (): DongNhap => ({ loaiHang: '', lo: '', soLuong: 0, tenTrenHD:
     <section class="card">
       <div class="section-title">
         <h2>Giao hàng <small class="sub">Có hàng trong kho → phiếu xuất kho → giao (ngày giao = ngày phiếu)</small></h2>
-        @if (coTheGiao()) {
-          <button type="button" class="btn sm" (click)="mo()"><app-icon name="truck" [size]="16" /> Ghi nhận giao hàng</button>
+        @if (store.canEdit('hdbGiaoHang', h().sale)) {
+          <button type="button" class="btn sm" [disabled]="!coTheGiao()" [attr.title]="lyDoKhongGiao()" (click)="mo()"><app-icon name="truck" [size]="16" /> Ghi nhận giao hàng</button>
         }
-        @if (coTheBaoSuCo()) {
-          <button type="button" class="btn sm quiet" (click)="moSuCo()"><app-icon name="alert" [size]="16" /> Phát sinh</button>
+        @if (store.canEdit('viec')) {
+          <button type="button" class="btn sm quiet" [disabled]="!coTheBaoSuCo()" [attr.title]="lyDoKhongSuCo()" (click)="moSuCo()"><app-icon name="alert" [size]="16" /> Phát sinh</button>
         }
       </div>
       @if (h().trangThai === TT.BAO_GIA) { <p class="sub">HĐ chưa Hiệu lực — chưa ghi nhận giao hàng được.</p> }
@@ -70,7 +70,7 @@ const dongRong = (): DongNhap => ({ loaiHang: '', lo: '', soLuong: 0, tenTrenHD:
       </div>
     </section>
 
-    @if (suCos().length || coTheBaoSuCo()) {
+    @if (suCos().length || store.canEdit('viec')) {
       <section class="card">
         <div class="section-title">
           <h2>Sổ sự cố <small class="sub">Người chịu trách nhiệm tự tích xong · hiện trên Trang chủ đến khi xử lý</small></h2>
@@ -221,8 +221,20 @@ export class HdbGiaoHang {
   protected readonly coTheGiao = computed(
     () => !this.khoa() && this.h().trangThai !== TT.BAO_GIA && this.h().trangThai !== TT.HOAN_THANH && this.store.canEdit('hdbGiaoHang', this.h().sale),
   );
+  /** Lý do nút Ghi nhận giao hàng đang mờ (null = bấm được). */
+  protected readonly lyDoKhongGiao = computed(() => {
+    if (this.coTheGiao()) return null;
+    if (this.khoa()) return 'HĐ đã khoá (Đã tất toán / đang chờ xoá) — không ghi nhận giao hàng được';
+    if (this.h().trangThai === TT.BAO_GIA) return 'HĐ phải chuyển sang Hiệu lực trước khi ghi nhận giao hàng';
+    return 'HĐ đã Hoàn thành giao hàng — không ghi nhận thêm lần giao';
+  });
+  protected readonly lyDoKhongSuCo = computed(() => {
+    if (this.coTheBaoSuCo()) return null;
+    if (this.khoa()) return 'HĐ đã khoá (Đã tất toán / đang chờ xoá)';
+    return 'Chỉ ghi nhận phát sinh khi HĐ đang ở trạng thái "Đang giao hàng" (sau lần ghi nhận giao hàng đầu tiên)';
+  });
   /** Chỉ báo sự cố khi HĐ đang giao hàng (ghi nhận giao đầu tiên đã chuyển trạng thái). */
-  protected readonly coTheBaoSuCo = computed(() => !this.khoa() && this.h().trangThai === TT.DANG_GIAO_HANG && this.store.canEdit('viec'));
+  protected readonly coTheBaoSuCo = computed(() => !this.khoa() && this.h().trangThai === TT.DANG_GIAO_HANG);
   protected readonly daysFromToday = daysFromToday;
   protected readonly suCos = computed(() =>
     this.store

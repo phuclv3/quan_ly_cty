@@ -256,7 +256,7 @@ interface ThuNhap {
                 </td>
                 <td>
                   <div class="btn-row">
-                    @if (thuSua(d)) { <button type="button" class="btn sm" (click)="ghiThu(d.dot)">Ghi thực thu</button> }
+                    @if (store.canEdit('hdbThucThu')) { <button type="button" class="btn sm" [disabled]="!thuSua(d)" [attr.title]="lyDoKhongThu(d)" (click)="ghiThu(d.dot)">Ghi thực thu</button> }
                     @if (edit() && last && !d.soTienThu && !d.phieuThuId) {
                       <button type="button" class="icon-btn sm" aria-label="Xoá đợt" (click)="xoaDot(i)"><app-icon name="trash" [size]="16" /></button>
                     }
@@ -269,8 +269,8 @@ interface ThuNhap {
           </tbody>
         </table>
       </div>
-      @if (edit() && f().dotTT.length < max() && (f().dotTT.length === 0 || f().dotTT[f().dotTT.length - 1].soTien > 0)) {
-        <button type="button" class="btn sm quiet" (click)="themDot()"><app-icon name="plus" [size]="16" /> Thêm đợt {{ f().dotTT.length + 1 }}</button>
+      @if (edit()) {
+        <button type="button" class="btn sm quiet" [disabled]="!themDotDuoc()" [attr.title]="lyDoKhongThemDot()" (click)="themDot()"><app-icon name="plus" [size]="16" /> Thêm đợt {{ f().dotTT.length + 1 }}</button>
       }
       @if (store.canEdit('hdbThucThu') && chuaLuuDot()) {
         <p class="sub">Lưu HĐ trước khi ghi thực thu cho đợt mới / đợt vừa sửa.</p>
@@ -482,6 +482,24 @@ export class HdbTab3 {
   protected readonly chuaLuuDot = computed(() => this.f().dotTT.some((d) => !this.dotLuu(d.dot)));
   /** Số phiếu Thu bấm được (mở popup ở Sổ quỹ) khi có quyền xem Sổ quỹ. */
   protected readonly xemPhieu = computed(() => this.store.canView('soQuy') && this.store.level('soQuy') !== 'draft');
+  protected readonly themDotDuoc = computed(() => {
+    const ds = this.f().dotTT;
+    return ds.length < this.max() && (ds.length === 0 || ds[ds.length - 1].soTien > 0);
+  });
+  protected lyDoKhongThemDot(): string | null {
+    if (this.themDotDuoc()) return null;
+    return this.f().dotTT.length >= this.max() ? `Đã đủ ${this.max()} đợt thanh toán (tối đa)` : 'Đợt cuối chưa có Số tiền — nhập số tiền đợt cuối trước khi thêm đợt mới';
+  }
+  /** Lý do nút Ghi thực thu đang mờ (null = bấm được). */
+  protected lyDoKhongThu(d: DotTTBan): string | null {
+    if (this.thuSua(d)) return null;
+    if (this.khoa()) return 'HĐ đã khoá (Đã tất toán / đang chờ xoá)';
+    const s = this.saved();
+    if (!s) return 'Lưu HĐ trước khi ghi thực thu';
+    if (s.trangThai === TT.BAO_GIA && !(s.coTamUng && d.dot === 1)) return 'Báo giá chưa thu tiền — chỉ ghi thực thu khi HĐ Hiệu lực (hoặc đợt 1 nếu HĐ có tạm ứng)';
+    if (!this.dotLuu(d.dot)) return 'Lưu HĐ trước khi ghi thực thu cho đợt mới / đợt vừa sửa';
+    return 'Đợt này đã có phiếu Thu được duyệt — muốn ghi lại phải gửi yêu cầu xoá phiếu';
+  }
   protected thuSua(d: DotTTBan): boolean {
     if (this.khoa() || !this.store.canEdit('hdbThucThu')) return false;
     const s = this.saved();

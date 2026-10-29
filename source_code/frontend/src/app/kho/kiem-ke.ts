@@ -116,7 +116,7 @@ const dongRong = (loaiHang = ''): DongForm => ({ loaiHang, soLuong: 0, tenHang: 
           @if (edit() && !daDieuChinh(k)) {
             <button type="button" class="btn quiet danger" (click)="xoa(k)">Xoá đợt</button>
             <button type="button" class="btn quiet" (click)="sua(k)">Sửa số đếm</button>
-            @if (soLech(k)) { <button type="button" class="btn" (click)="dieuChinh(k)">Sinh phiếu điều chỉnh theo lệch</button> }
+            <button type="button" class="btn" [disabled]="!soLech(k)" [attr.title]="soLech(k) ? null : 'Không có dòng lệch giữa số đếm và tồn sổ sách — không cần phiếu điều chỉnh'" (click)="dieuChinh(k)">Sinh phiếu điều chỉnh theo lệch</button>
           }
         }
         <button type="button" class="btn quiet" (click)="xem.set(null)">Đóng</button>

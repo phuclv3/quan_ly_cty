@@ -84,7 +84,7 @@ export class BuocBar {
   imports: [Icon],
   styles: `
     .hs-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); }
-    .hs-card { display: grid; gap: 10px; align-content: start; }
+    .hs-card { display: grid; gap: 10px; align-content: start; margin: 0; }
     .hs-card h3 { display: flex; align-items: center; gap: 8px; }
     ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
     li { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; }

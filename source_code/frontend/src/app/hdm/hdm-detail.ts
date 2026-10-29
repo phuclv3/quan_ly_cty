@@ -104,7 +104,12 @@ interface TraForm {
             </div>
           </div>
           @if (!locked() && store.canEdit('hdm') && keTiep() && thieuKeTiep().length) {
-            <p class="note warn">Còn thiếu để chuyển "{{ ttNhan(keTiep()) }}": {{ thieuKeTiep().join(' · ') }}</p>
+            <div class="note warn thieu-ds" role="alert">
+              <span>Còn thiếu để chuyển "{{ ttNhan(keTiep()) }}":</span>
+              @for (x of thieuLink(); track x.text) {
+                <button type="button" class="thieu-lk" [attr.title]="'Bấm để sang ' + x.tenTab + ' và xử lý'" (click)="setTab(x.tab)">{{ x.text }} ›</button>
+              }
+            </div>
           }
         </section>
       }
@@ -251,8 +256,8 @@ interface TraForm {
           <div class="section-title">
             <span class="muted">Thành tiền VNĐ = SL × Đơn giá × Tỷ giá (VNĐ: tỷ giá = 1).</span>
             <div class="btn-row">
-              @if (nhapDuoc() && chon().length) {
-                <button type="button" class="btn" (click)="moNhap(chon())"><app-icon name="box" [size]="16" /> Nhập kho {{ chon().length }} dòng chọn</button>
+              @if (!m.thuocPhuTai && store.canEdit('hdmNhapKho') && !isNew()) {
+                <button type="button" class="btn" [disabled]="!nhapDuoc() || !chon().length" [attr.title]="!nhapDuoc() ? 'Chưa nhập kho được — HĐ cần ở trạng thái Đã ký trở lên và NCC đã xuất hoá đơn' : !chon().length ? 'Tích chọn dòng hàng cần nhập kho' : null" (click)="moNhap(chon())"><app-icon name="box" [size]="16" /> Nhập kho {{ chon().length }} dòng chọn</button>
               }
               @if (edit()) {
                 <button type="button" class="btn" (click)="moDN()"><app-icon name="truck" [size]="16" /> Lấy từ đề nghị cấp vật tư @if (dnCho().length) { ({{ dnCho().length }}) }</button>
@@ -400,7 +405,7 @@ interface TraForm {
 
           <div class="section-title">
             <h3>Đợt thanh toán NCC</h3>
-            @if (edit4() && m.dotTT.length < soDotToiDa()) { <button type="button" class="btn sm quiet" (click)="themDot()"><app-icon name="plus" [size]="16" /> Thêm đợt {{ m.dotTT.length + 1 }}</button> }
+            @if (edit4()) { <button type="button" class="btn sm quiet" [disabled]="m.dotTT.length >= soDotToiDa()" [attr.title]="m.dotTT.length >= soDotToiDa() ? 'Đã đủ ' + soDotToiDa() + ' đợt thanh toán (tối đa)' : null" (click)="themDot()"><app-icon name="plus" [size]="16" /> Thêm đợt {{ m.dotTT.length + 1 }}</button> }
           </div>
           @if (m.thuocPhuTai) { <div class="note info">Phú Tài trả NCC — đây là <b>nơi ghi chuẩn</b> các lần Phú Tài trả cho HĐ mua này (HĐ Phú Tài Tab 3 tổng hợp từ đây). Không tạo phiếu chi Oxy; đợt tính đã trả theo Số tiền trả ghi nhận.</div> }
           <div class="tbl-wrap">
@@ -452,12 +457,14 @@ interface TraForm {
                     <td class="num">{{ money(daTra) }}</td>
                     <td><input [value]="d.ghiChu ?? ''" [disabled]="!edit4()" (input)="setDot(i, { ghiChu: $any($event.target).value })" aria-label="Ghi chú đợt" /></td>
                     <td>
-                      @if (edit4() && !isNew() && phieu?.trangThai !== TT.DA_DUYET) {
-                        <button type="button" class="btn sm" (click)="moTra(d)">{{ d.ngayTra ? 'Sửa ghi nhận' : 'Ghi nhận đã trả' }}</button>
-                      }
-                      @if (edit4() && $last && !d.phieuChiId && !d.soTienTra) {
-                        <button type="button" class="icon-btn sm" aria-label="Xoá đợt" (click)="xoaDot()"><app-icon name="trash" [size]="16" /></button>
-                      }
+                      <div class="btn-row">
+                        @if (edit4()) {
+                          <button type="button" class="btn sm" [disabled]="isNew() || phieu?.trangThai === TT.DA_DUYET" [attr.title]="isNew() ? 'Lưu HĐ trước khi ghi nhận đã trả' : phieu?.trangThai === TT.DA_DUYET ? 'Phiếu chi đã duyệt — muốn sửa phải gửi yêu cầu xoá phiếu chi' : null" (click)="moTra(d)">{{ d.ngayTra ? 'Sửa ghi nhận' : 'Ghi nhận đã trả' }}</button>
+                        }
+                        @if (edit4() && $last && !d.phieuChiId && !d.soTienTra) {
+                          <button type="button" class="icon-btn sm" aria-label="Xoá đợt" (click)="xoaDot()"><app-icon name="trash" [size]="16" /></button>
+                        }
+                      </div>
                     </td>
                   </tr>
                 } @empty {
@@ -880,6 +887,14 @@ export class HdmDetail {
     if (!s.chiTiet.length && hdmCalc(s, this.store.db()).tong <= 0) out.push('Chưa có dòng hàng / tổng giá trị');
     return out;
   });
+  /** Mỗi điều kiện còn thiếu kèm tab để bấm sang xử lý ngay. */
+  protected readonly thieuLink = computed(() =>
+    this.thieuKeTiep().map((text) => {
+      const tab: Tab = /^Thiếu hồ sơ/.test(text) ? '2' : /^Chưa nhận đủ hàng|dòng hàng/.test(text) ? '3' : /^Còn phải trả|hoá đơn/.test(text) ? '4' : '1';
+      const tenTab = { '1': 'Tab 1. Thông tin chung', '2': 'Tab 2. Lưu trữ hồ sơ', '3': 'Tab 3. Chi tiết hàng hoá', '4': 'Tab 4. Thanh toán NCC' }[tab];
+      return { text, tab, tenTab };
+    }),
+  );
   /** Điều kiện còn thiếu để tất toán — hiện trước khi bấm (như HĐ bán). */
   protected readonly thieuTatToan = computed(() => {
     const s = this.saved();

@@ -99,7 +99,7 @@ const TABS = [
                   <button type="button" class="btn sm" [disabled]="thieu().length > 0" [attr.title]="thieu().length ? 'Chưa chuyển được — còn thiếu: ' + thieu().join(' · ') : null" (click)="chuyen()">Chuyển → {{ ttNhan(keTiep()) }}</button>
                 }
               }
-              @if (huyDuoc()) { <button type="button" class="btn sm danger quiet" (click)="huyHd()">Huỷ HĐ</button> }
+              @if (store.canEdit('hdb', s.sale)) { <button type="button" class="btn sm danger quiet" [disabled]="!huyDuoc()" [attr.title]="lyDoKhongHuy()" (click)="huyHd()">Huỷ HĐ</button> }
             </div>
           </div>
           @if (s.trangThai !== TT.DA_TAT_TOAN && s.trangThai !== TT.HUY && keTiep() !== TT.DANG_GIAO_HANG && thieu().length) {
@@ -197,11 +197,13 @@ const TABS = [
                       <td class="sub">@for (x of r.dn.dong; track x.id) { {{ x.loaiHang }}@if (x.tenHang) { ({{ x.tenHang }}) } × {{ x.soLuong }}@if (r.t.daMua.get(x.id)) { (mua {{ r.t.daMua.get(x.id) }}) } ; }</td>
                       <td>@for (m of r.t.hdm; track m.id) { <a [routerLink]="['/hop-dong-mua', m.id]">{{ m.soHD }}</a> } @empty { — }</td>
                       <td><app-tt [v]="r.t.trangThai" /> @if (r.dn.lyDoHuy) { <span class="sub">{{ r.dn.lyDoHuy }}</span> }</td>
-                      <td class="btn-row">
+                      <td>
+                        <div class="btn-row">
                         @if (r.t.trangThai === 'Chờ mua' || r.t.trangThai === 'Đang mua một phần') {
                           @if (store.canEdit('hdm')) { <a class="btn sm" routerLink="/hop-dong-mua/moi" [queryParams]="{ dnvt: r.dn.id }"><app-icon name="plus" [size]="14" /> Tạo HĐ mua</a> }
                           @if (r.t.trangThai === 'Chờ mua' && store.canEdit('hdb', saved()!.sale) && !khoa()) { <button type="button" class="btn sm quiet" (click)="huyDN(r.dn.id, r.dn.soPhieu)">Huỷ</button> }
                         }
+                        </div>
                       </td>
                     </tr>
                   } @empty {
@@ -464,6 +466,13 @@ export class HdbDetail {
   protected readonly huyDuoc = computed(() => {
     const s = this.saved();
     return !!s && s.trangThai !== TT.DA_TAT_TOAN && s.trangThai !== TT.HUY && !this.choXoa() && this.store.canEdit('hdb', s.sale);
+  });
+  protected readonly lyDoKhongHuy = computed(() => {
+    const s = this.saved();
+    if (!s || this.huyDuoc()) return null;
+    if (s.trangThai === TT.HUY) return 'HĐ đã huỷ';
+    if (s.trangThai === TT.DA_TAT_TOAN) return 'HĐ đã tất toán — không huỷ được';
+    return 'HĐ đang có yêu cầu xoá chờ duyệt';
   });
   protected async huyHd(): Promise<void> {
     const s = this.saved();

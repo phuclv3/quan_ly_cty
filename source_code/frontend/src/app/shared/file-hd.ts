@@ -164,6 +164,7 @@ export class XemFileHd {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [Icon, XemFileHd],
   styles: `
+    :host { display: block; margin-top: 14px; }
     .ds { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
     .ds li { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; }
     .ds li > button.linkish { flex: 1 1 auto; min-width: 0; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

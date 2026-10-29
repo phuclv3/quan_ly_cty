@@ -652,7 +652,7 @@ export class Store {
     return this.exec(() => this.themTienTraKhach_(hdbId, o), () => ['POST', `/hop-dong-ban/${e_(hdbId)}/tien-tra-khach`, o]);
   }
   setHoSoCo(chu: ChuHoSo, chuId: string, loai: LoaiHoSo, co: { daLuu?: boolean; daScan?: boolean; ghiChu?: string }): Result {
-    return this.exec(() => this.setHoSoCo_(chu, chuId, loai, co), () => ['PATCH', `/ho-so/${chu}/${e_(chuId)}/${e_(loai)}`, co]);
+    return this.exec(() => this.setHoSoCo_(chu, chuId, loai, co), () => ['PATCH', `/ho-so/${chu}/${e_(chuId)}/${loaiHs_(loai)}`, co]);
   }
   saveHoaDon(x: HoaDon): Result {
     return this.exec(() => this.saveHoaDon_(x), () => ['POST', '/hoa-don', x]);
@@ -1770,7 +1770,7 @@ export class Store {
         this.upsert('hoSo', h);
         return null;
       },
-      () => ['POST', `/ho-so/${chu}/${e_(chuId)}/${e_(loai)}/tep`, { fileIds: refs.map((r) => r.id) }],
+      () => ['POST', `/ho-so/${chu}/${e_(chuId)}/${loaiHs_(loai)}/tep`, { fileIds: refs.map((r) => r.id) }],
     );
   }
 
@@ -2872,6 +2872,8 @@ export interface ChangeSet {
 }
 
 const e_ = (s: string) => encodeURIComponent(s);
+/** Loại hồ sơ trên đường dẫn: dấu "/" của "BBGH/BBNT" đổi thành "~" (Tomcat từ chối %2F trong path). */
+const loaiHs_ = (loai: string) => e_(loai.replace('/', '~'));
 
 /** Db rỗng (trước đăng nhập). */
 export function dbRong(): Db {

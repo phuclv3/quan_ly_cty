@@ -401,6 +401,7 @@ a.kpi:hover, button.kpi:hover { border-color: var(--brand); }
 .icon-btn:hover { background: var(--surf-3); color: var(--ink); }
 .icon-btn.sm { width: 28px; height: 28px; }
 .btn-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.tbl td > .btn-row { flex-wrap: nowrap; align-items: center; }
 .linkish { border: 0; background: none; padding: 0; color: var(--brand); cursor: pointer; text-align: left; font-weight: 700; }
 .linkish:hover { text-decoration: underline; }
 
@@ -760,6 +761,7 @@ tr.hilite > td { background: var(--warn-bg) !important; }
 
 /* ── Hồ sơ ─────────────────────────────────────────────────────────── */
 .hoso-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); margin: 12px 0; }
+.hoso-grid > .card { margin: 0; }
 .hoso { box-shadow: none; display: grid; gap: 8px; align-content: start; }
 .hoso.missing { border-color: color-mix(in srgb, var(--bad-fg) 40%, var(--line)); }
 .hoso .flags { display: flex; gap: 14px; }
