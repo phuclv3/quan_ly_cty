@@ -132,13 +132,13 @@ public class HoSoController {
         || d.getHoaDon().stream().anyMatch(h -> id.equals(h.getFileId()));
   }
 
-  @Operation(summary = "Gắn tệp đã tải lên vào hồ sơ một loại của hợp đồng", description = "chu: HDB / HDM / HDPT; hồ sơ tự tích \"Đã lưu\".")
+  @Operation(summary = "Gắn tệp đã tải lên vào hồ sơ một loại của hợp đồng", description = "chu: HDB / HDM / HDPT; loai: \"BBGH/BBNT\" viết \"BBGH~BBNT\" trên đường dẫn; hồ sơ tự tích \"Đã lưu\".")
   @PostMapping("/ho-so/{chu}/{chuId}/{loai}/tep")
   public CommandResponse<HoSo> ganTep(@PathVariable String chu, @PathVariable String chuId, @PathVariable String loai,
       @Valid @RequestBody Req.GanTep r) {
     return cmd.run("HS.ganTep", c -> {
-      HoSo h = svc.uploadHoSo(c, chu, chuId, loai, r.fileIds());
-      c.nhatKy("HoSo", h.getId(), chu + " " + chuId + " — " + loai);
+      HoSo h = svc.uploadHoSo(c, chu, chuId, loai.replace('~', '/'), r.fileIds());
+      c.nhatKy("HoSo", h.getId(), chu + " " + chuId + " — " + loai.replace('~', '/'));
       return h;
     });
   }
@@ -148,8 +148,8 @@ public class HoSoController {
   public CommandResponse<HoSo> danhDau(@PathVariable String chu, @PathVariable String chuId, @PathVariable String loai,
       @Valid @RequestBody Req.HoSoCo r) {
     return cmd.run("HS.danhDau", c -> {
-      HoSo h = svc.setHoSoCo(c, chu, chuId, loai, r.daLuu(), r.daScan(), r.ghiChu());
-      c.nhatKy("HoSo", h.getId(), chu + " " + chuId + " — " + loai);
+      HoSo h = svc.setHoSoCo(c, chu, chuId, loai.replace('~', '/'), r.daLuu(), r.daScan(), r.ghiChu());
+      c.nhatKy("HoSo", h.getId(), chu + " " + chuId + " — " + loai.replace('~', '/'));
       return h;
     });
   }
