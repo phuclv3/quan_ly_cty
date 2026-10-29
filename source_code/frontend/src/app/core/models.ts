@@ -180,6 +180,8 @@ export interface HoaDon {
   /** Sau VAT. */
   giaTri: number;
   fileId?: string;
+  /** Hoá đơn do Phú Tài xuất cho khách (không phải hoá đơn Oxy). */
+  thuocPhuTai?: boolean;
 }
 
 // ── Danh mục ────────────────────────────────────────────────────────────
@@ -518,6 +520,8 @@ export interface ViecGiao {
   khId?: string;
   kenh?: KenhCS;
   nhacTruoc?: number;
+  /** Sự cố phát sinh khi giao hàng: gắn HĐ bán Đang giao hàng; người nhận tự tích xong, `files` = bằng chứng. */
+  suCo?: boolean;
 }
 
 /**
@@ -634,6 +638,8 @@ export interface HopDongBan {
   /** Lý do huỷ HĐ (trạng thái Huỷ). */
   lyDoHuy?: string;
   ghiChuHoSoThieu?: string;
+  /** Phân loại: HĐ bán thuộc Phú Tài. */
+  thuocPhuTai?: boolean;
   taoLuc: string;
   import?: boolean;
 }

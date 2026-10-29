@@ -254,11 +254,13 @@ interface ThuNhap {
                     }
                   } @else { <span class="muted">—</span> }
                 </td>
-                <td class="btn-row">
-                  @if (thuSua(d)) { <button type="button" class="btn sm" (click)="ghiThu(d.dot)">Ghi thực thu</button> }
-                  @if (edit() && last && !d.soTienThu && !d.phieuThuId) {
-                    <button type="button" class="icon-btn sm" aria-label="Xoá đợt" (click)="xoaDot(i)"><app-icon name="trash" [size]="16" /></button>
-                  }
+                <td>
+                  <div class="btn-row">
+                    @if (thuSua(d)) { <button type="button" class="btn sm" (click)="ghiThu(d.dot)">Ghi thực thu</button> }
+                    @if (edit() && last && !d.soTienThu && !d.phieuThuId) {
+                      <button type="button" class="icon-btn sm" aria-label="Xoá đợt" (click)="xoaDot(i)"><app-icon name="trash" [size]="16" /></button>
+                    }
+                  </div>
                 </td>
               </tr>
             } @empty {

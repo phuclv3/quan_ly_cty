@@ -84,8 +84,17 @@ import { viDate } from '../core/util';
       </fieldset>
 
       <fieldset class="form-sec">
-      <legend>Ghi chú</legend>
+      <legend>Phân loại &amp; ghi chú</legend>
       <div class="form-grid">
+        <div class="field full">
+          <label class="check-card" [class.on]="f().thuocPhuTai" [class.off]="!edit()">
+            <input type="checkbox" [checked]="!!f().thuocPhuTai" [disabled]="!edit()" (change)="set('thuocPhuTai', $any($event.target).checked)" />
+            <span>
+              <b>Thuộc Phú Tài</b>
+              <span class="hint">Đánh dấu HĐ bán này thuộc Phú Tài.</span>
+            </span>
+          </label>
+        </div>
         <div class="field full">
           <label for="hdb-gc">Ghi chú</label>
           <textarea id="hdb-gc" rows="2" [value]="f().ghiChu" [disabled]="!edit()" (input)="set('ghiChu', $any($event.target).value)"></textarea>
@@ -116,8 +125,8 @@ export class HdbTab1 {
           .join(' · '),
       })),
   );
-  /** Danh mục Sale = Tài khoản có quyền HĐ bán (Store.saleOpts). */
-  protected readonly saleOpts = computed<PickOption[]>(() => this.store.saleOpts(this.f().sale));
+  /** Danh mục Sale = mọi tài khoản đang hoạt động (Store.nguoiOpts). */
+  protected readonly saleOpts = computed<PickOption[]>(() => this.store.nguoiOpts(this.f().sale));
   protected readonly lechDM = computed(() => {
     const h = this.f();
     const k = this.store.khById(h.maKH);

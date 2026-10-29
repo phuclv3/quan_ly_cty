@@ -256,7 +256,7 @@ export class Dashboard {
     const lop = (loai: string) => (loai === 'HĐ MUA' ? 'mua' : loai === 'CÔNG NỢ' || loai === 'CHI PHÍ' ? 'no' : loai === 'PHÊ DUYỆT' ? 'pd' : 'ban');
     const viecs = this.store
       .viecVisible()
-      .filter((v) => !v.xongLuc && (v.nguoiNhan.includes(me) || (!v.nguoiNhan.length && v.nguoiTao === me)) && (v.han ?? homNay) <= homNay)
+      .filter((v) => !v.xongLuc && (v.nguoiNhan.includes(me) || (!v.nguoiNhan.length && v.nguoiTao === me)) && (v.suCo || (v.han ?? homNay) <= homNay))
       .map((v) => {
         const tre = -daysFromToday(v.han ?? homNay);
         const cuoi = [...v.phanHoi].reverse().find((m) => !m.heThong);
@@ -265,7 +265,7 @@ export class Dashboard {
           key: v.id,
           viecId: v.id as string | null,
           p0: !!v.uuTien || tre > 0,
-          text: v.noiDung,
+          text: v.suCo ? `⚠ Sự cố: ${v.noiDung}` : v.noiDung,
           sub: cuoi ? `${this.store.userName(cuoi.nguoi)}: ${cuoi.noiDung}` : `Giao bởi ${this.store.userName(v.nguoiTao)}${tre > 0 ? ` · quá hạn ${tre} ngày` : ''}`,
           loai: 'HĐ BÁN',
           ma: hd ? hd.soHD || '(báo giá)' : '',

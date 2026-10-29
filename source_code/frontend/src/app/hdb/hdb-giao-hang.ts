@@ -1,13 +1,15 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal, viewChild } from '@angular/core';
 import { Store } from '../core/store';
 import { TT } from '../core/trang-thai';
-import { HopDongBan, KHO_CHUYEN_THANG, PhieuKho } from '../core/models';
+import { FileRef, HopDongBan, KHO_CHUYEN_THANG, PhieuKho, ViecGiao } from '../core/models';
 import { DongLo, dongMuaChoHdb, hdmChoHdb, loConHang, tonTai, tongSL } from '../core/calc';
-import { num, todayIso, viDate } from '../core/util';
+import { daysFromToday, num, todayIso, viDate } from '../core/util';
 import { Confirm } from '../shared/confirm';
 import { guiXoa } from '../shared/ho-so';
 import { Modal, Pick, PickOption, TrangThai } from '../shared/ui-kit';
 import { Icon } from '../shared/icon';
+import { NguoiThem } from '../shared/nguoi-them';
+import { TepDinhKem } from '../shared/tep-dinh-kem';
 import { RouterLink } from '@angular/router';
 import { linkPhieuKho, maHangOpts } from '../kho/kho-util';
 
@@ -25,13 +27,17 @@ const dongRong = (): DongNhap => ({ loaiHang: '', lo: '', soLuong: 0, tenTrenHD:
 @Component({
   selector: 'app-hdb-giao-hang',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Modal, Pick, TrangThai, Icon, RouterLink],
+  imports: [Modal, Pick, TrangThai, Icon, RouterLink, NguoiThem, TepDinhKem],
+  styles: [`:host { display: block; }`],
   template: `
     <section class="card">
       <div class="section-title">
         <h2>Giao hàng <small class="sub">Có hàng trong kho → phiếu xuất kho → giao (ngày giao = ngày phiếu)</small></h2>
         @if (coTheGiao()) {
           <button type="button" class="btn sm" (click)="mo()"><app-icon name="truck" [size]="16" /> Ghi nhận giao hàng</button>
+        }
+        @if (coTheBaoSuCo()) {
+          <button type="button" class="btn sm quiet" (click)="moSuCo()"><app-icon name="alert" [size]="16" /> Phát sinh</button>
         }
       </div>
       @if (h().trangThai === TT.BAO_GIA) { <p class="sub">HĐ chưa Hiệu lực — chưa ghi nhận giao hàng được.</p> }
@@ -63,6 +69,66 @@ const dongRong = (): DongNhap => ({ loaiHang: '', lo: '', soLuong: 0, tenTrenHD:
         </table>
       </div>
     </section>
+
+    @if (suCos().length || coTheBaoSuCo()) {
+      <section class="card">
+        <div class="section-title">
+          <h2>Sổ sự cố <small class="sub">Người chịu trách nhiệm tự tích xong · hiện trên Trang chủ đến khi xử lý</small></h2>
+          <span class="sub">{{ dangMo() }} sự cố đang mở</span>
+        </div>
+        <div class="tbl-wrap">
+          <table class="tbl compact">
+            <thead><tr><th>Mã</th><th>Sự cố</th><th>Chịu trách nhiệm</th><th>Hạn</th><th>Trạng thái</th><th>Bằng chứng</th><th>Xong</th></tr></thead>
+            <tbody>
+              @for (v of suCos(); track v.id) {
+                <tr>
+                  <td><a routerLink="/viec" [queryParams]="{ id: v.id }"><b>{{ v.ma }}</b></a></td>
+                  <td>{{ v.noiDung }}</td>
+                  <td>{{ nguoiPT(v) }}</td>
+                  <td>{{ viDate(v.han) }}</td>
+                  <td>
+                    @if (v.xongLuc) { <span class="tag ok">Đã xử lý</span> }
+                    @else if (daysFromToday(v.han) < 0) { <span class="tag bad">Quá hạn {{ -daysFromToday(v.han) }} ngày</span> }
+                    @else { <span class="tag warn">Đang xử lý</span> }
+                  </td>
+                  <td>{{ v.files?.length ? v.files!.length + ' tệp' : 'Chưa có' }}</td>
+                  <td>
+                    <input type="checkbox" [checked]="!!v.xongLuc" [disabled]="!store.lienQuanViec(v)" [attr.aria-label]="'Đã xử lý ' + v.ma" (change)="tichXong(v, $any($event.target).checked)" />
+                  </td>
+                </tr>
+              } @empty {
+                <tr><td colspan="7" class="muted">Chưa có sự cố phát sinh</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+    }
+
+    <app-modal [open]="moSC()" title="Ghi nhận sự cố phát sinh" [sub]="'HĐ ' + h().soHD" size="lg" [dirty]="dirtySC()" (closed)="moSC.set(false)">
+      <div class="form-grid blk xanh">
+        <h3 class="blk-t">Công việc phát sinh</h3>
+        <div class="field wide">
+          <label for="sc-nd">Sự cố phát sinh <span class="req">*</span></label>
+          <textarea id="sc-nd" rows="2" placeholder="VD Thiếu COA, chưa ký được BBNT" [value]="scNoiDung()" (input)="scNoiDung.set($any($event.target).value)"></textarea>
+        </div>
+        <div class="field">
+          <label for="sc-han">Hạn xử lý <span class="req">*</span></label>
+          <input id="sc-han" type="date" [value]="scHan()" (input)="scHan.set($any($event.target).value)" />
+        </div>
+        <div class="field wide">
+          <app-nguoi-them nhan="Người chịu trách nhiệm *" placeholder="Thêm người chịu trách nhiệm — gõ tên hoặc email" [coBan]="false" [(ids)]="scNguoi" />
+        </div>
+        <div class="field wide">
+          <app-tep-dinh-kem nhan="Bằng chứng (tuỳ chọn)" [edit]="true" [(files)]="scFiles" />
+        </div>
+      </div>
+      @if (scLoi()) { <p class="note bad">{{ scLoi() }}</p> }
+      <div foot class="btn-row">
+        <button type="button" class="btn quiet" (click)="moSC.set(false)">Huỷ</button>
+        <button type="button" class="btn" (click)="luuSuCo()">Giao xử lý</button>
+      </div>
+    </app-modal>
 
     <app-modal #mGH [open]="open()" title="Ghi nhận giao hàng" [sub]="'HĐ ' + h().soHD" size="lg" [dirty]="dirty()" (closed)="open.set(false)">
       <div class="form-grid blk xanh">
@@ -155,6 +221,23 @@ export class HdbGiaoHang {
   protected readonly coTheGiao = computed(
     () => !this.khoa() && this.h().trangThai !== TT.BAO_GIA && this.h().trangThai !== TT.HOAN_THANH && this.store.canEdit('hdbGiaoHang', this.h().sale),
   );
+  /** Chỉ báo sự cố khi HĐ đang giao hàng (ghi nhận giao đầu tiên đã chuyển trạng thái). */
+  protected readonly coTheBaoSuCo = computed(() => !this.khoa() && this.h().trangThai === TT.DANG_GIAO_HANG && this.store.canEdit('viec'));
+  protected readonly daysFromToday = daysFromToday;
+  protected readonly suCos = computed(() =>
+    this.store
+      .viecVisible()
+      .filter((v) => v.suCo && v.hdbId === this.h().id)
+      .sort((a, b) => Number(!!a.xongLuc) - Number(!!b.xongLuc) || (a.han ?? '').localeCompare(b.han ?? '')),
+  );
+  protected readonly dangMo = computed(() => this.suCos().filter((v) => !v.xongLuc).length);
+  protected readonly moSC = signal(false);
+  protected readonly scNoiDung = signal('');
+  protected readonly scHan = signal(todayIso());
+  protected readonly scNguoi = signal<string[]>([]);
+  protected readonly scFiles = signal<FileRef[]>([]);
+  protected readonly scLoi = signal('');
+  protected readonly dirtySC = computed(() => this.moSC() && !!(this.scNoiDung() || this.scNguoi().length || this.scFiles().length));
   protected readonly phieus = computed(() =>
     this.store
       .phieuKho()
@@ -171,6 +254,43 @@ export class HdbGiaoHang {
 
   protected moTaDong(p: PhieuKho): string {
     return p.dong.map((d) => `${d.loaiHang}${d.lo ? ' (lô ' + d.lo + ')' : ''} × ${num(d.soLuong)}`).join('; ');
+  }
+
+  protected nguoiPT(v: ViecGiao): string {
+    return (v.nguoiNhan.length ? v.nguoiNhan : [v.nguoiTao]).map((id) => this.store.userName(id)).join(', ');
+  }
+
+  protected moSuCo(): void {
+    this.scNoiDung.set('');
+    this.scHan.set(todayIso());
+    this.scNguoi.set([]);
+    this.scFiles.set([]);
+    this.scLoi.set('');
+    this.moSC.set(true);
+  }
+
+  protected luuSuCo(): void {
+    if (!this.scNoiDung().trim()) return this.scLoi.set('Nhập sự cố phát sinh');
+    if (!this.scNguoi().length) return this.scLoi.set('Chọn người chịu trách nhiệm');
+    if (!this.scHan()) return this.scLoi.set('Chọn hạn xử lý');
+    const err = this.store.giaoViec({
+      noiDung: this.scNoiDung(),
+      nguoiNhan: this.scNguoi(),
+      nguonLoai: 'HDB',
+      hdbId: this.h().id,
+      han: this.scHan(),
+      mucUuTien: 'Cao',
+      files: this.scFiles(),
+      suCo: true,
+    });
+    if (err) return this.scLoi.set(err);
+    this.moSC.set(false);
+    this.store.say('Đã ghi nhận sự cố — việc đã giao cho người chịu trách nhiệm');
+  }
+
+  protected tichXong(v: ViecGiao, xong: boolean): void {
+    const err = this.store.xongViec(v.id, xong);
+    if (err) this.store.say(err);
   }
 
   protected ton(lh: string): number {

@@ -133,6 +133,7 @@ export interface GiaoViecIn {
   khId?: string;
   kenh?: KenhCS;
   nhacTruoc?: number;
+  suCo?: boolean;
 }
 
 const KEY = 'app-oxy:db';
@@ -1465,6 +1466,7 @@ export class Store {
     const loai: NguonViec = o.nguonLoai || (o.hdbId ? 'HDB' : o.hdmId ? 'HDM' : 'NOI_BO');
     if (loai === 'HDB' && o.hdbId && !this.hdbById(o.hdbId)) return 'HĐ bán không tồn tại';
     if (loai === 'HDM' && o.hdmId && !this.db().hopDongMua.some((m) => m.id === o.hdmId)) return 'HĐ mua không tồn tại';
+    if (o.suCo && this.hdbById(o.hdbId)?.trangThai !== TT.DANG_GIAO_HANG) return 'Chỉ ghi nhận sự cố phát sinh khi HĐ bán đang giao hàng';
     const han = o.han || todayIso();
     const batDau = o.batDau || todayIso();
     if (batDau > han) return 'Ngày bắt đầu phải trước hoặc bằng ngày kết thúc';
@@ -1487,6 +1489,7 @@ export class Store {
       khId: o.khId || undefined,
       kenh: o.kenh,
       nhacTruoc: o.nhacTruoc,
+      suCo: o.suCo || undefined,
       ma: `VIEC-${String(max + 1).padStart(4, '0')}`,
       uuTien: this.coToanQuyen(),
       phanHoi: [],

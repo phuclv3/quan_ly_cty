@@ -67,7 +67,7 @@ import { KiemTra } from './kiem-tra';
               <tbody>
                 @for (x of hoaDons(); track x.id) {
                   <tr>
-                    <td>{{ x.soHoaDon }}</td><td>{{ viDate(x.ngayHoaDon) }}</td><td class="num">{{ money(x.giaTri) }}</td>
+                    <td>{{ x.soHoaDon }} @if (x.thuocPhuTai) { <app-tt v="Thuộc Phú Tài" /> }</td><td>{{ viDate(x.ngayHoaDon) }}</td><td class="num">{{ money(x.giaTri) }}</td>
                     <td>@if (edit()) { <button type="button" class="icon-btn sm" aria-label="Xoá hoá đơn" (click)="xoaHD(x)"><app-icon name="trash" [size]="16" /></button> }</td>
                   </tr>
                 } @empty {
@@ -86,6 +86,7 @@ import { KiemTra } from './kiem-tra';
                 <div class="field"><label for="hd-so">Số hoá đơn <span class="req">*</span></label><input id="hd-so" [value]="hd().soHoaDon" (input)="hd.set({ ...hd(), soHoaDon: $any($event.target).value })" /></div>
                 <div class="field"><label for="hd-ngay">Ngày hoá đơn <span class="req">*</span></label><input id="hd-ngay" type="date" [value]="hd().ngayHoaDon" (input)="hd.set({ ...hd(), ngayHoaDon: $any($event.target).value })" /></div>
                 <div class="field"><label for="hd-gt">Giá trị (sau VAT)</label><app-money inputId="hd-gt" [value]="hd().giaTri" (valueChange)="hd.set({ ...hd(), giaTri: $event })" /></div>
+                <label class="check-row"><input type="checkbox" [checked]="!!hd().thuocPhuTai" (change)="hd.set({ ...hd(), thuocPhuTai: $any($event.target).checked })" /> Thuộc Phú Tài (Phú Tài xuất cho khách)</label>
               </div>
               <div class="btn-row" style="margin-top:8px"><button type="button" class="btn sm" (click)="themHD()"><app-icon name="plus" [size]="16" /> Thêm hoá đơn</button></div>
             }

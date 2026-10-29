@@ -12,7 +12,7 @@ import { HoSoPanel, guiXoa } from '../shared/ho-so';
 import { TrangThai } from '../shared/ui-kit';
 import { Icon } from '../shared/icon';
 import { xemThuToTrinhHdb } from '../shared/export';
-import { FileHd, ThongTinHd, XemFileHd, taiFileCho } from '../shared/file-hd';
+import { ThongTinHd, XemFileHd, taiFileCho } from '../shared/file-hd';
 import { HdbTab1 } from './hdb-tab1';
 import { HdbGiaoHang } from './hdb-giao-hang';
 import { HdbTab3 } from './hdb-tab3';
@@ -37,8 +37,8 @@ const TABS = [
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'page' },
   hostDirectives: [KiemTra],
-  imports: [RouterLink, TrangThai, Icon, FileHd, XemFileHd, HoSoPanel, HdbTab1, HdbGiaoHang, HdbTab3, HdbTab4, HdbTaoMoi],
-  styles: [`@media print { :host-context(body.in-qt) > :not(app-hdb-tab4) { display: none !important; } }`],
+  imports: [RouterLink, TrangThai, Icon, XemFileHd, HoSoPanel, HdbTab1, HdbGiaoHang, HdbTab3, HdbTab4, HdbTaoMoi],
+  styles: [`app-hdb-tab1, app-hdb-giao-hang { display: block; } app-hdb-tab1 + app-hdb-giao-hang, app-hdb-giao-hang + section { margin-top: 14px; } @media print { :host-context(body.in-qt) > :not(app-hdb-tab4) { display: none !important; } }`],
   template: `
     @if (!coQuyen()) {
       <div class="page-head"><div><div class="crumbs"><a routerLink="/">Trang chủ</a> › <a routerLink="/hop-dong-ban">Hợp đồng bán</a></div><h1>Không tìm thấy hợp đồng</h1></div></div>
@@ -52,6 +52,7 @@ const TABS = [
             @if (saved()) { <app-tt [v]="saved()!.trangThai" /> }
             @if (choXoa()) { <app-tt v="Chờ xoá" /> }
             @if (saved()?.import) { <app-tt v="Import" /> }
+            @if (saved()?.thuocPhuTai) { <app-tt v="Thuộc Phú Tài" /> }
           </h1>
           @if (saved()) { <p class="sub">{{ saved()!.tenKH }} · Sale: {{ store.userName(saved()!.sale) }}</p> }
           @else { <p class="sub">Tạo theo từng bước — lưu xong mở HĐ để theo dõi giao hàng, thu tiền, chi phí.</p> }
@@ -135,7 +136,6 @@ const TABS = [
       @switch (tab()) {
         @case ('1') {
           <app-hdb-tab1 [(draft)]="f" [edit]="edit1()" [khoaDinhDanh]="!!saved() && saved()!.trangThai !== TT.BAO_GIA" />
-          <app-file-hd chu="HDB" [chuId]="saved()?.id ?? ''" [edit]="edit1()" [info]="infoFile()" [(pending)]="fileCho" />
           @if (saved(); as s) {
             <app-hdb-giao-hang [h]="s" [khoa]="khoa()" />
             @if (store.canView('viec')) {
@@ -357,7 +357,7 @@ export class HdbDetail {
   });
   protected readonly viecHD = computed(() => {
     const id = this.saved()?.id;
-    return id ? this.store.viecVisible().filter((v) => v.hdbId === id).sort((a, b) => Number(!!a.xongLuc) - Number(!!b.xongLuc) || (a.han ?? '').localeCompare(b.han ?? '')) : [];
+    return id ? this.store.viecVisible().filter((v) => v.hdbId === id && !v.suCo).sort((a, b) => Number(!!a.xongLuc) - Number(!!b.xongLuc) || (a.han ?? '').localeCompare(b.han ?? '')) : [];
   });
   protected readonly ten = (id: string) => this.store.userName(id);
   protected readonly dnvts = computed(() => {
