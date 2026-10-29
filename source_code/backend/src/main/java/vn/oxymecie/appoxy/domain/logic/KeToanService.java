@@ -134,8 +134,8 @@ public class KeToanService {
       List<String> loi = loiPhieu(c, clean);
       if (!loi.isEmpty()) throw ApiException.invalid(String.join(" · ", loi));
     }
-    if (isNew) clean.setSoPhieu(c.nextSoThang(c.cauHinh().getTienToTC(), clean.getNgayLap()));
-    else clean.setSoPhieu(soPhieuTheoThang(c, cu.getSoPhieu(), clean.getNgayLap()));
+    if (isNew) clean.setSoPhieu(c.nextSoThang(tienToPhieu(c, clean.getLoai()), clean.getNgayLap()));
+    else clean.setSoPhieu(soPhieuTheoThang(c, cu.getSoPhieu(), clean.getNgayLap(), clean.getLoai()));
     String truoc = cu == null ? TrangThai.NHAP : cu.getTrangThai();
     clean.setTrangThai(gui ? TrangThai.CHO_DUYET : TrangThai.NHAP);
     clean.setLyDoTuChoi(gui ? null : cu == null ? null : cu.getLyDoTuChoi());
@@ -145,10 +145,28 @@ public class KeToanService {
     return clean;
   }
 
-  /** Số phiếu mang yyMM của Ngày lập: phiếu chưa duyệt đổi sang tháng khác thì cấp số mới của tháng đó (số cũ không tái dùng). */
-  private static String soPhieuTheoThang(Ctx c, String soCu, String ngayLap) {
-    String tienTo = c.cauHinh().getTienToTC() + vn.oxymecie.appoxy.common.Dates.yy(ngayLap) + ngayLap.substring(5, 7) + "-";
-    return soCu.startsWith(tienTo) ? soCu : c.nextSoThang(c.cauHinh().getTienToTC(), ngayLap);
+  /** Tiền tố số phiếu theo loại: Thu → PT, Chi / Tạm ứng → PC, Quyết toán tạm ứng → PQ, Luân chuyển → PL; loại lạ dùng tiền tố cấu hình (TIEN_TO_TC). */
+  static String tienToPhieu(String loai, String macDinh) {
+    if ("Thu".equals(loai)) return "PT";
+    if ("Chi".equals(loai) || "Tạm ứng".equals(loai)) return "PC";
+    if ("Quyết toán tạm ứng".equals(loai)) return "PQ";
+    if ("Luân chuyển".equals(loai)) return "PL";
+    return macDinh;
+  }
+
+  static String tienToPhieu(Ctx c, String loai) {
+    return tienToPhieu(loai, c.cauHinh().getTienToTC());
+  }
+
+  /**
+   * Số phiếu mang yyMM của Ngày lập và tiền tố đúng loại: phiếu chưa duyệt đổi tháng / đổi loại thì cấp số mới (số cũ không tái dùng).
+   * Số cũ theo tiền tố cấu hình (TC…) của phiếu đã có vẫn được giữ khi tháng không đổi.
+   */
+  private static String soPhieuTheoThang(Ctx c, String soCu, String ngayLap, String loai) {
+    String thang = vn.oxymecie.appoxy.common.Dates.yy(ngayLap) + ngayLap.substring(5, 7) + "-";
+    String tienTo = tienToPhieu(c, loai);
+    if (soCu.startsWith(tienTo + thang) || soCu.startsWith(c.cauHinh().getTienToTC() + thang)) return soCu;
+    return c.nextSoThang(tienTo, ngayLap);
   }
 
   static void kiemThamChieu(Ctx c, String nguon, String nguonDen, String lcp) {

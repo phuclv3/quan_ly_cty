@@ -285,7 +285,7 @@ public class HdmService {
     p.setLichSu(KeToanService.ghiLichSu(c, cu == null ? null : cu.getLichSu(), "Gửi duyệt", cu != null ? "Sửa ghi nhận trả NCC" : "Sinh từ ghi nhận trả NCC"));
     if (p.getId() == null) {
       p.setId(c.uid("PTC"));
-      p.setSoPhieu(c.nextSoThang(c.cauHinh().getTienToTC(), p.getNgayLap()));
+      p.setSoPhieu(c.nextSoThang(KeToanService.tienToPhieu(c, p.getLoai()), p.getNgayLap()));
     }
     Ctx.upsert(c.db().getPhieuThuChi(), p, PhieuThuChi::getId);
     d.setNgayTra(ngayTra);

@@ -21,4 +21,14 @@ public class LoaiHang {
   private String loaiKhi;
   private String theTich;
   private List<String> bietDanh;
+  /** Vỏ bình: Nhôm | Thép. */
+  private String vatLieu;
+  /** Có | Không. */
+  private String hopQuy;
+  /** Có | Không. */
+  private String kiemDinh;
+  /** Mới | Cũ. */
+  private String tinhTrang;
+  /** Tệp kiểm định vỏ bình (chỉ có khi kiemDinh = Có). */
+  private List<FileRef> fileKiemDinh = new ArrayList<>();
 }

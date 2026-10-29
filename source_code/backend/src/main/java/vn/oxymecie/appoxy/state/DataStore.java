@@ -302,7 +302,8 @@ public class DataStore {
       Integer dung = jdbc.queryForObject("""
           SELECT (SELECT COUNT(*) FROM ht_ho_so_tep WHERE tep_id = ?) + (SELECT COUNT(*) FROM kt_phieu_thu_chi_tep WHERE tep_id = ?)
                + (SELECT COUNT(*) FROM kt_chi_phi_hd_tep WHERE tep_id = ?) + (SELECT COUNT(*) FROM ht_hoa_don WHERE tep_id = ?)
-          """, Integer.class, id, id, id, id);
+               + (SELECT COUNT(*) FROM kho_loai_hang_tep_kiem_dinh WHERE tep_id = ?)
+          """, Integer.class, id, id, id, id, id);
       if (dung != null && dung > 0) continue;
       TepTinEntity t = repos.tepTin().findById(id).orElse(null);
       if (t == null) continue;

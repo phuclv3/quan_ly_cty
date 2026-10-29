@@ -336,6 +336,8 @@ public class DuyetXoaService {
           a.setLoaiHang(null);
           a.setLo(null);
         }
+        LoaiHang lh = c.loaiHang(id);
+        if (lh != null && lh.getFileKiemDinh() != null) for (FileRef f : lh.getFileKiemDinh()) c.xoaTep(f.getId());
         Ctx.drop(d.getLoaiHang(), LoaiHang::getId, id);
       }
       default -> throw ApiException.invalid("Loại đối tượng không hợp lệ");

@@ -6,6 +6,8 @@ import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OrderColumn;
 import jakarta.persistence.Table;
 import java.util.ArrayList;
@@ -42,6 +44,24 @@ public class LoaiHangEntity {
 
   @Column(name = "the_tich")
   private String theTich;
+
+  @Column(name = "vat_lieu")
+  private String vatLieu;
+
+  @Column(name = "hop_quy")
+  private String hopQuy;
+
+  @Column(name = "kiem_dinh")
+  private String kiemDinh;
+
+  @Column(name = "tinh_trang")
+  private String tinhTrang;
+
+  @ManyToMany
+  @JoinTable(name = "kho_loai_hang_tep_kiem_dinh", joinColumns = @JoinColumn(name = "loai_hang_id"), inverseJoinColumns = @JoinColumn(name = "tep_id"))
+  @OrderColumn(name = "thu_tu")
+  private List<TepTinEntity> fileKiemDinh = new ArrayList<>();
+
   @ElementCollection
   @CollectionTable(name = "kho_loai_hang_thuoc_tinh", joinColumns = @JoinColumn(name = "loai_hang_id"))
   @OrderColumn(name = "thu_tu")

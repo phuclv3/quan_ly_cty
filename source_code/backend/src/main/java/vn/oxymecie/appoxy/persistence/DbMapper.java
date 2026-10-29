@@ -181,7 +181,8 @@ public class DbMapper {
 
   LoaiHang loaiHang(LoaiHangEntity e) {
     return new LoaiHang(e.getId(), e.getTen(), e.getMoTa(), e.getNhom(), e.getDvt(), new ArrayList<>(e.getThuocTinh()), e.isDangDung(),
-        e.getLoaiKhi(), e.getTheTich(), orNull(new ArrayList<>(e.getBietDanh())));
+        e.getLoaiKhi(), e.getTheTich(), orNull(new ArrayList<>(e.getBietDanh())),
+        e.getVatLieu(), e.getHopQuy(), e.getKiemDinh(), e.getTinhTrang(), new ArrayList<>(e.getFileKiemDinh().stream().map(this::file).toList()));
   }
 
   PhieuThuChi phieuThuChi(PhieuThuChiEntity e) {
@@ -546,6 +547,12 @@ public class DbMapper {
     e.setDangDung(x.isDangDung());
     e.setLoaiKhi(Texts.emptyToNull(x.getLoaiKhi()));
     e.setTheTich(Texts.emptyToNull(x.getTheTich()));
+    e.setVatLieu(Texts.emptyToNull(x.getVatLieu()));
+    e.setHopQuy(Texts.emptyToNull(x.getHopQuy()));
+    e.setKiemDinh(Texts.emptyToNull(x.getKiemDinh()));
+    e.setTinhTrang(Texts.emptyToNull(x.getTinhTrang()));
+    e.getFileKiemDinh().clear();
+    e.getFileKiemDinh().addAll(tepRefs(x.getFileKiemDinh()));
     List<String> tt = x.getThuocTinh() == null ? List.of() : x.getThuocTinh();
     if (!e.getThuocTinh().equals(tt)) {
       e.getThuocTinh().clear();

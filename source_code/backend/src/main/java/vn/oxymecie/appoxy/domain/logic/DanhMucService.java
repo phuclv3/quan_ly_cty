@@ -200,6 +200,13 @@ public class DanhMucService {
     Ctx.upsert(c.db().getKho(), k, Kho::getId);
   }
 
+  /** Giá trị chọn từ danh sách cố định: rỗng → null; ngoài danh sách → lỗi. */
+  private static String chonTrong(String v, String ten, String... hopLe) {
+    if (Texts.blank(v)) return null;
+    for (String h : hopLe) if (h.equals(v)) return v;
+    throw ApiException.invalid(ten + " không hợp lệ");
+  }
+
   public void saveLoaiHang(Ctx c, LoaiHang l, boolean isNew) {
     c.require(Perm.khoDanhMuc);
     if (Texts.blank(l.getId()) || Texts.blank(l.getTen())) throw ApiException.invalid("Cần nhập Mã hàng và Tên");
@@ -209,6 +216,12 @@ public class DanhMucService {
     if (!isNew && c.loaiHang(l.getId()) == null) throw ApiException.notFound("Không có mã " + l.getId());
     if (l.getNhom() == null || !NHOM_HANG.contains(l.getNhom())) throw ApiException.invalid("Nhóm hàng không hợp lệ");
     if (l.getThuocTinh() == null) l.setThuocTinh(new ArrayList<>());
+    l.setVatLieu(chonTrong(l.getVatLieu(), "Vật liệu", "Nhôm", "Thép"));
+    l.setHopQuy(chonTrong(l.getHopQuy(), "Hợp quy", "Có", "Không"));
+    l.setKiemDinh(chonTrong(l.getKiemDinh(), "Kiểm định", "Có", "Không"));
+    l.setTinhTrang(chonTrong(l.getTinhTrang(), "Tình trạng", "Mới", "Cũ"));
+    // Tệp kiểm định chỉ giữ khi Kiểm định = Có; đổi sang Không thì bỏ tệp đã gắn.
+    l.setFileKiemDinh("Có".equals(l.getKiemDinh()) ? KeToanService.tepHopLe(c, l.getFileKiemDinh()) : new ArrayList<>());
     Ctx.upsert(c.db().getLoaiHang(), l, LoaiHang::getId);
   }
 
@@ -265,3 +278,4 @@ public class DanhMucService {
     Ctx.upsert(c.db().getAnhXaTen(), a, AnhXaTen::getId);
   }
 }
+
