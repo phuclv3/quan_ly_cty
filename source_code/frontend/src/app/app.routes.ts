@@ -69,7 +69,7 @@ export const routes: Routes = [
         path: 'phu-tai',
         title: T('Phú Tài'),
         canActivate: [permGuard('phuTai')],
-        loadComponent: () => import('./phu-tai/pt-list').then((m) => m.PtList),
+        loadComponent: () => import('./phu-tai/pt-shell').then((m) => m.PtShell),
       },
       {
         path: 'phu-tai/:id',

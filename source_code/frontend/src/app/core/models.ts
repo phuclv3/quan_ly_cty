@@ -644,6 +644,8 @@ export interface HopDongBan {
   ghiChuHoSoThieu?: string;
   /** Phân loại: HĐ bán thuộc Phú Tài. */
   thuocPhuTai?: boolean;
+  /** HĐ Phú Tài: tỷ lệ % LN trước thuế OXY được hưởng (trống = 70). */
+  ptTyLeOxy?: number;
   taoLuc: string;
   import?: boolean;
 }

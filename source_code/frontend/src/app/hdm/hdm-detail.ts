@@ -875,7 +875,7 @@ export class HdmDetail {
         });
     }
     // Tạo từ HĐ Phú Tài (?pt=<id>): bật sẵn cờ "Thuộc Phú Tài".
-    if (this.ptVe()) m.thuocPhuTai = true;
+    if (this.ptVe() || this.route.snapshot.queryParamMap.get('phuTai') === '1') m.thuocPhuTai = true;
     return m;
   }
 

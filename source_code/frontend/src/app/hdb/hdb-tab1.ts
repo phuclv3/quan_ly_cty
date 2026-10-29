@@ -95,6 +95,13 @@ import { viDate } from '../core/util';
             </span>
           </label>
         </div>
+        @if (f().thuocPhuTai) {
+          <div class="field">
+            <label for="hdb-pt-ty">Tỷ lệ OXY được hưởng (%)</label>
+            <input id="hdb-pt-ty" type="number" min="0" max="100" step="0.5" placeholder="70" [value]="f().ptTyLeOxy ?? ''" [disabled]="!edit()" (input)="set('ptTyLeOxy', $any($event.target).value === '' ? undefined : +$any($event.target).value)" />
+            <span class="hint">Tính trên lợi nhuận trước thuế của HĐ Phú Tài; để trống = 70%.</span>
+          </div>
+        }
         <div class="field full">
           <label for="hdb-gc">Ghi chú</label>
           <textarea id="hdb-gc" rows="2" [value]="f().ghiChu" [disabled]="!edit()" (input)="set('ghiChu', $any($event.target).value)"></textarea>
