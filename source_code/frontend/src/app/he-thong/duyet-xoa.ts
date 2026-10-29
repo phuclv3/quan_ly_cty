@@ -248,6 +248,8 @@ export class DuyetXoaPage {
         return s.khoById(id) ? { path: '/kho', query: { tab: 'dm-kho' } } : null;
       case 'DM_LoaiHang':
         return s.loaiHangById(id) ? { path: '/kho', query: { tab: 'loai-hang' } } : null;
+      case 'BinhKhi':
+        return s.binhKhi().some((x) => x.id === id) ? { path: '/kho', query: { tab: 'binh-tem' } } : null;
       default:
         return null;
     }

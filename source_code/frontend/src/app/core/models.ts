@@ -103,7 +103,8 @@ export type DoiTuong =
   | 'DM_NguonTien'
   | 'DM_LoaiChiPhi'
   | 'DM_Kho'
-  | 'DM_LoaiHang';
+  | 'DM_LoaiHang'
+  | 'BinhKhi';
 
 export const DOI_TUONG_LABEL: Record<DoiTuong, string> = {
   PhieuThuChi: 'Phiếu thu chi',
@@ -121,6 +122,7 @@ export const DOI_TUONG_LABEL: Record<DoiTuong, string> = {
   DM_LoaiChiPhi: 'Loại chi phí',
   DM_Kho: 'Kho',
   DM_LoaiHang: 'Mã hàng',
+  BinhKhi: 'Bình khí',
 };
 
 export type TrangThaiYC = typeof TT.CHO_DUYET | typeof TT.DA_DUYET | typeof TT.TU_CHOI | typeof TT.DA_RUT;

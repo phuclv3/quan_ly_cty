@@ -4,6 +4,9 @@ import { Store } from '../core/store';
 import { nhoLoc } from '../core/ui';
 import { todayIso, viDate } from '../core/util';
 import { Facet, FilterBar, LOC_RONG, Loc, khopQ, khopSel } from '../shared/filter-bar';
+import { ChonNhieu } from '../shared/chon-nhieu';
+import { Confirm } from '../shared/confirm';
+import { guiXoa, guiXoaNhieu } from '../shared/ho-so';
 import { Pager, paginate } from '../shared/pager';
 import { Modal } from '../shared/ui-kit';
 import { InTemTab, TemKhoiTao } from './in-tem';
@@ -97,22 +100,24 @@ interface Form {
 
         @if (daChon().length) {
           <div class="chon">
-            <span><b>Đã chọn {{ daChon().length }} bình</b> · cùng mã {{ maDangChon() }}</span>
-            <button type="button" class="btn pill" (click)="inChon()">In tem ({{ daChon().length }})</button>
+            <span><b>Đã chọn {{ daChon().length }} bình</b>@if (maDangChon()) { · mã {{ maDangChon() }} }</span>
+            <span class="btn-row">
+              <button type="button" class="btn pill" (click)="inChon()">In tem ({{ daChon().length }})</button>
+              @if (xoaDuoc()) { <button type="button" class="btn sm danger" (click)="xoaNhieu()">Xoá {{ daChon().length }} đã chọn</button> }
+              <button type="button" class="btn sm quiet" (click)="cn.xoa()">Bỏ chọn</button>
+            </span>
           </div>
         }
 
         <div class="tbl-wrap">
           <table class="tbl freeze">
-            <thead><tr><th style="width:32px"></th><th>Số serial · mã hàng</th><th>Xuất xứ</th><th>Ngày SX · HSD</th><th>Kho</th><th>Tem</th><th></th></tr></thead>
+            <thead><tr><th style="width:32px">@if (xoaDuoc()) { <input type="checkbox" aria-label="Chọn cả trang" [checked]="cn.du(idTrang())" (change)="cn.chonTat(idTrang(), $any($event.target).checked)" /> }</th><th>Số serial · mã hàng</th><th>Xuất xứ</th><th>Ngày SX · HSD</th><th>Kho</th><th>Tem</th><th></th></tr></thead>
             <tbody>
               @for (b of pg.items(); track b.id) {
                 @let tt = tinhTrang(b);
                 <tr>
                   <td>
-                    @if (tt !== 'khongAD') {
-                      <input type="checkbox" [attr.aria-label]="'Chọn ' + b.id" [checked]="daChon().includes(b.id)" [disabled]="!chonDuoc(b)" [title]="chonDuoc(b) ? '' : 'Chỉ chọn cùng một mã hàng'" (change)="lat(b.id)" />
-                    } @else { <input type="checkbox" disabled aria-label="Không áp dụng" /> }
+                    @if (xoaDuoc() && !choXoa(b)) { <input type="checkbox" [attr.aria-label]="'Chọn ' + b.id" [checked]="cn.co(b.id)" (change)="cn.flip(b.id)" /> }
                   </td>
                   <td>
                     <span class="seri">{{ b.id }}</span>
@@ -132,9 +137,13 @@ interface Form {
                     }
                   </td>
                   <td>
-                    @if (tt === 'chua') { <button type="button" class="btn pill" (click)="inMot(b)">In tem</button> }
-                    @else if (tt === 'da') { <button type="button" class="btn pill out" (click)="inMot(b)">In lại</button> }
-                    @else { <span class="sub2">—</span> }
+                    <div class="btn-row" style="justify-content:flex-start">
+                      @if (tt === 'chua') { <button type="button" class="btn pill" (click)="inMot(b)">In tem</button> }
+                      @else if (tt === 'da') { <button type="button" class="btn pill out" (click)="inMot(b)">In lại</button> }
+                      @if (choXoa(b)) { <span class="st">Chờ xoá</span> }
+                      @else if (xoaDuoc()) { <button type="button" class="btn sm quiet danger" (click)="xoa(b)">Xoá</button> }
+                      @if (tt === 'khongAD' && !xoaDuoc()) { <span class="sub2">—</span> }
+                    </div>
                   </td>
                 </tr>
               } @empty {
@@ -182,7 +191,6 @@ export class BinhTemTab {
   protected readonly tinhTrang = tinhTrang;
   protected readonly thangNay = new Date().getMonth() + 1;
   protected readonly loc = signal<Loc>(nhoLoc('kho-binh-tem', LOC_RONG));
-  protected readonly daChon = signal<string[]>([]);
   protected readonly khoiTao = signal<TemKhoiTao | null>(null);
   protected readonly them = signal(false);
   protected readonly f = signal<Form>(this.trong());
@@ -236,13 +244,25 @@ export class BinhTemTab {
     return iso ? viDate(iso).slice(0, 5) : '';
   }
 
-  // ── Chọn nhiều bình (cùng mã hàng) ──
-  protected readonly maDangChon = computed(() => this.store.binhKhi().find((b) => b.id === this.daChon()[0])?.loaiHang ?? '');
-  protected chonDuoc(b: BinhKhi): boolean {
-    return !this.daChon().length || this.maDangChon() === b.loaiHang;
+  // ── Chọn nhiều bình (in tem: cùng mã hàng; xoá: gửi yêu cầu xoá hàng loạt) ──
+  protected readonly cn = new ChonNhieu();
+  private readonly confirm = inject(Confirm);
+  protected readonly daChon = computed(() => this.store.binhKhi().filter((b) => this.cn.co(b.id)).map((b) => b.id));
+  protected readonly maDangChon = computed(() => {
+    const ma = new Set(this.store.binhKhi().filter((b) => this.cn.co(b.id)).map((b) => b.loaiHang));
+    return ma.size === 1 ? [...ma][0] : '';
+  });
+  protected readonly xoaDuoc = computed(() => this.store.canEdit('khoPhieuTay') && this.store.level('duyetXoa') !== 'none');
+  protected choXoa(b: BinhKhi): boolean {
+    return this.store.dangChoXoa('BinhKhi', b.id);
   }
-  protected lat(id: string): void {
-    this.daChon.update((d) => (d.includes(id) ? d.filter((x) => x !== id) : [...d, id]));
+  protected readonly idTrang = computed(() => this.pg.items().filter((b) => !this.choXoa(b)).map((b) => b.id));
+  protected async xoaNhieu(): Promise<void> {
+    const ds = this.store.binhKhi().filter((b) => this.cn.co(b.id) && !this.choXoa(b)).map((b) => ({ id: b.id, ten: b.id, moTa: `Bình ${b.id}` }));
+    if (await guiXoaNhieu(this.confirm, this.store, 'BinhKhi', ds, 'bình')) this.cn.xoa();
+  }
+  protected async xoa(b: BinhKhi): Promise<void> {
+    await guiXoa(this.confirm, this.store, 'BinhKhi', b.id, `Bình ${b.id}`);
   }
 
   // ── In tem ──
@@ -254,11 +274,14 @@ export class BinhTemTab {
     this.moIn([b]);
   }
   protected inChon(): void {
-    const bs = this.store.binhKhi().filter((b) => this.daChon().includes(b.id));
+    const bs = this.store.binhKhi().filter((b) => this.cn.co(b.id));
+    const vn = bs.filter((b) => tinhTrang(b) !== 'khongAD');
+    if (vn.length < bs.length) return this.store.say('Bình nhập khẩu dùng tem nhà sản xuất — bỏ chọn bình không áp dụng trước khi in tem', 'bad');
+    if (new Set(bs.map((b) => b.loaiHang)).size > 1) return this.store.say('In tem chỉ chọn cùng một mã hàng', 'bad');
     if (bs.length) this.moIn(bs);
   }
   protected xongIn(): void {
-    this.daChon.set([]);
+    this.cn.xoa();
     this.khoiTao.set(null);
   }
 

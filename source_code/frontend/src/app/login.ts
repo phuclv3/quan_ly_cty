@@ -10,6 +10,20 @@ import { KiemTra } from './shared/kiem-tra';
   selector: 'app-login',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [Icon, KiemTra],
+  styles: `
+    .btn-login { display: inline-flex; align-items: center; justify-content: center; gap: 10px; }
+    .btn-login:disabled { opacity: 1; cursor: progress; filter: saturate(0.85); }
+    /* Vòng xoay gradient: conic-gradient + mask khoét giữa, đầu vòng mờ dần. */
+    .spin {
+      width: 18px; height: 18px; flex: none; border-radius: 50%;
+      background: conic-gradient(from 0deg, rgb(255 255 255 / 0) 0%, currentColor 100%);
+      -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2.5px), #000 calc(100% - 2px));
+      mask: radial-gradient(farthest-side, transparent calc(100% - 2.5px), #000 calc(100% - 2px));
+      animation: lg-xoay 0.75s cubic-bezier(0.5, 0.15, 0.5, 0.85) infinite;
+    }
+    @keyframes lg-xoay { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) { .spin { animation-duration: 2s; } }
+  `,
   template: `
     <div class="login-wrap">
       <form class="card login-card" appKiemTra #ktLg="kiemTra" (submit)="$event.preventDefault(); go()">
@@ -33,7 +47,10 @@ import { KiemTra } from './shared/kiem-tra';
           </div>
         </div>
         @if (err()) { <div class="note bad" role="alert">{{ err() }}</div> }
-        <button class="btn" type="submit" [disabled]="busy()">{{ busy() ? 'Đang đăng nhập…' : 'Đăng nhập' }}</button>
+        <button class="btn btn-login" type="submit" [disabled]="busy()" [attr.aria-busy]="busy()">
+          @if (busy()) { <span class="spin" aria-hidden="true"></span> }
+          <span>{{ busy() ? 'Đang đăng nhập…' : 'Đăng nhập' }}</span>
+        </button>
       </form>
       <footer class="login-ct">
         <b>{{ congTy.ten }}</b>
@@ -60,9 +77,9 @@ export class Login {
     if (this.ktLg()?.hopLe() === false) return;
     this.busy.set(true);
     const err = await this.auth.login(this.email(), this.pw());
-    this.busy.set(false);
     this.err.set(err);
-    if (!err) {
+    if (err) this.busy.set(false);
+    else {
       const next = this.route.snapshot.queryParamMap.get('next');
       await this.router.navigateByUrl(next && next.startsWith('/') ? next : '/');
     }

@@ -1495,7 +1495,12 @@ export class Store {
     const loai: NguonViec = o.nguonLoai || (o.hdbId ? 'HDB' : o.hdmId ? 'HDM' : 'NOI_BO');
     if (loai === 'HDB' && o.hdbId && !this.hdbById(o.hdbId)) return 'HĐ bán không tồn tại';
     if (loai === 'HDM' && o.hdmId && !this.db().hopDongMua.some((m) => m.id === o.hdmId)) return 'HĐ mua không tồn tại';
-    if (o.suCo && this.hdbById(o.hdbId)?.trangThai !== TT.DANG_GIAO_HANG) return 'Chỉ ghi nhận sự cố phát sinh khi HĐ bán đang giao hàng';
+    if (o.suCo) {
+      if (loai === 'HDM') {
+        const tt = this.db().hopDongMua.find((m) => m.id === o.hdmId)?.trangThai;
+        if (tt !== TT.DA_KY && tt !== TT.DANG_NHAN_HANG) return 'Chỉ ghi nhận sự cố phát sinh khi HĐ mua đã ký hoặc đang nhận hàng';
+      } else if (this.hdbById(o.hdbId)?.trangThai !== TT.DANG_GIAO_HANG) return 'Chỉ ghi nhận sự cố phát sinh khi HĐ bán đang giao hàng';
+    }
     const han = o.han || todayIso();
     const batDau = o.batDau || todayIso();
     if (batDau > han) return 'Ngày bắt đầu phải trước hoặc bằng ngày kết thúc';
@@ -2787,6 +2792,8 @@ export class Store {
         return this.drop('kho', id);
       case 'DM_LoaiHang':
         return this.drop('loaiHang', id);
+      case 'BinhKhi':
+        return this.drop('binhKhi', id);
     }
   }
 

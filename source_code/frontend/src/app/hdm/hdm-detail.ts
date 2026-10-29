@@ -13,6 +13,7 @@ import { Confirm } from '../shared/confirm';
 import { Icon } from '../shared/icon';
 import { ThongTinHd, XemFileHd, taiFileCho } from '../shared/file-hd';
 import { COT_DONG_HANG, parseDanExcel, parseDongHang } from './hdm-util';
+import { HdmSuCo } from './hdm-su-co';
 import { docBang } from '../shared/excel';
 import { xuatXlsx } from '../shared/export';
 import { ThemDoiTac } from '../shared/them-doi-tac';
@@ -46,7 +47,7 @@ interface TraForm {
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'page' },
   hostDirectives: [KiemTra],
-  imports: [RouterLink, Kpi, Modal, MoneyInput, Pick, PickGo, TrangThai, HoSoPanel, Icon, XemFileHd, ThemDoiTac, BuocBar, HoSoChoPanel],
+  imports: [RouterLink, Kpi, Modal, MoneyInput, Pick, PickGo, TrangThai, HoSoPanel, Icon, XemFileHd, ThemDoiTac, BuocBar, HoSoChoPanel, HdmSuCo],
   template: `
     @if (!isNew() && !saved()) {
       <div class="page-head"><div><div class="crumbs"><a routerLink="/">Trang chủ</a> › <a routerLink="/hop-dong-mua">Hợp đồng mua</a></div><h1>Không tìm thấy HĐ mua</h1></div></div>
@@ -378,6 +379,7 @@ interface TraForm {
               </table>
             </div>
           }
+          @if (!isNew()) { <app-hdm-su-co [m]="m" [khoa]="store.dangChoXoa('HopDongMua', m.id)" /> }
         }
 
         @case ('4') {
@@ -777,7 +779,25 @@ export class HdmDetail {
         hint: [n.mst ? 'MST ' + n.mst : n.id, n.quocGia, n.trangThai === TT.NGUNG ? ttNhan(TT.NGUNG) : ''].filter(Boolean).join(' · '),
       })),
   );
-  protected readonly hdbOpts = computed<PickOption[]>(() => this.store.hopDongBan().map((h) => ({ value: h.id, label: h.soHD, hint: h.tenKH })));
+  /**
+   * HĐ bán gắn được. HĐ bán chưa có số (báo giá) vẫn hiện — nhãn rỗng làm ô chọn trông như chưa gắn.
+   * Khi HĐ mua "Thuộc Phú Tài": HĐ bán Phú Tài lên đầu danh sách (không chặn HĐ bán khác); luôn giữ HĐ đang gắn.
+   */
+  protected readonly hdbOpts = computed<PickOption[]>(() => {
+    const pt = this.f().thuocPhuTai;
+    const gan = this.f().hdbId;
+    return this.store
+      .hopDongBan()
+      .filter((h) => h.trangThai !== TT.HUY || h.id === gan)
+      .map((h) => ({ h, uu: pt && !!h.thuocPhuTai }))
+      .sort((a, b) => Number(b.uu) - Number(a.uu))
+      .map(({ h }) => ({
+        value: h.id,
+        label: h.soHD || '(HĐ chưa có số)',
+        hint: [h.tenKH, h.thuocPhuTai ? 'Thuộc Phú Tài' : '', h.trangThai === TT.BAO_GIA ? 'Báo giá' : ''].filter(Boolean).join(' · '),
+        tim: h.thuocPhuTai ? 'phu tai' : undefined,
+      }));
+  });
   protected readonly lhOpts = computed<PickOption[]>(() =>
     maHangOpts(this.store.loaiHang().filter((l) => l.dangDung || this.f().chiTiet.some((d) => d.loaiHang === l.id))),
   );
