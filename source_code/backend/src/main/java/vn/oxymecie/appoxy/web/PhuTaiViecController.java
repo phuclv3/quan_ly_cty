@@ -89,7 +89,7 @@ public class PhuTaiViecController {
   @PostMapping("/dong-tien-pt")
   public CommandResponse<DongTienPT> dongTien(@Valid @RequestBody Req.DongTienTay r) {
     return cmd.run("PT.dongTienTay", c -> {
-      DongTienPT d = pt.themDongTienTay(c, new DongTienPT(null, r.ngay(), r.chieu(), r.hdptId(), r.soTien(), null, null, r.ghiChu()));
+      DongTienPT d = pt.themDongTienTay(c, new DongTienPT(null, r.ngay(), r.chieu(), r.hdptId(), r.soTien(), null, null, r.ghiChu(), null, null, null));
       c.nhatKy("DongTienPhuTai", d.getId(), r.chieu());
       return d;
     });

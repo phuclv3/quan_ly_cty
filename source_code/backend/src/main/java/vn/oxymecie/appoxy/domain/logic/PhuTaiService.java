@@ -150,7 +150,7 @@ public class PhuTaiService {
     for (DoiChieuPT d : p.getDoiChieu()) {
       if (!(d.getSoTienVND() > 0) || Texts.blank(d.getNgayOxyChuyen())) continue;
       auto.add(new DongTienPT("DT-" + d.getId(), d.getNgayOxyChuyen(), "Thu về PT", p.getId(), d.getSoTienVND(), "Tự động", d.getId(),
-          "Oxy chuyển Phú Tài — " + p.getSoHD()));
+          "Oxy chuyển Phú Tài — " + p.getSoHD(), null, null, null));
     }
     List<DongTienPT> out = new ArrayList<>(auto);
     out.addAll(giu);
@@ -167,7 +167,7 @@ public class PhuTaiService {
     HopDongPhuTai pt = hdptId == null ? null : c.pt(hdptId);
     if (hdptId != null && pt == null) throw ApiException.invalid("HĐ Phú Tài không tồn tại");
     if (pt != null && ptKhoa(c, pt)) throw ApiException.conflict("HĐ " + pt.getSoHD() + " đã khoá — không ghi thêm dòng tiền");
-    DongTienPT out = new DongTienPT(c.uid("DT"), d.getNgay(), d.getChieu(), hdptId, d.getSoTien(), "Nhập tay", null, d.getGhiChu());
+    DongTienPT out = new DongTienPT(c.uid("DT"), d.getNgay(), d.getChieu(), hdptId, d.getSoTien(), "Nhập tay", null, d.getGhiChu(), null, null, null);
     Ctx.upsert(c.db().getDongTienPT(), out, DongTienPT::getId);
     return out;
   }

@@ -17,4 +17,8 @@ public class DongTienPT {
   private String nguon;
   private String refId;
   private String ghiChu;
+  /** Dòng nhập tay ở Sổ quỹ Phú Tài: HĐ bán liên quan, loại ("Số dư đầu kỳ" / "Chuyển OXY") và chứng từ. */
+  private String hdbId;
+  private String loai;
+  private String tep;
 }

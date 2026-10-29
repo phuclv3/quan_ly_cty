@@ -212,7 +212,8 @@ public class DbMapper {
     return new HopDongBan(e.getId(), Texts.nz(e.getSoHD()), e.getMaKH(), e.getTenKH(), e.getMst(), e.getDiaChi(), d(e.getNgayKy()),
         d(e.getNgayHieuLuc()), e.getTrangThai(), Texts.nz(e.getSale()), Texts.nz(e.getGhiChu()), e.getTruocVAT(), e.getVat(),
         e.getThucTeTruocVAT(), new ThamSoThue(e.getTsNguong(), e.getTsMuc1(), e.getTsMuc2()), dot, orNull(dong), e.getCoTamUng(),
-        e.getPhatHD(), e.getLyDoPhat(), e.getLyDoHuy(), e.getGhiChuHoSoThieu(), t(e.getTaoLuc()), trueOrNull(e.isLaImport()), trueOrNull(e.isThuocPhuTai()));
+        e.getPhatHD(), e.getLyDoPhat(), e.getLyDoHuy(), e.getGhiChuHoSoThieu(), t(e.getTaoLuc()), trueOrNull(e.isLaImport()), trueOrNull(e.isThuocPhuTai()),
+        e.getPtTyLeOxy());
   }
 
   ViecGiao viecGiao(ViecGiaoEntity e) {
@@ -344,7 +345,8 @@ public class DbMapper {
   }
 
   DongTienPT dongTienPT(DongTienPTEntity e) {
-    return new DongTienPT(e.getId(), d(e.getNgay()), e.getChieu(), e.getHdptId(), e.getSoTien(), e.getNguon(), e.getRefId(), e.getGhiChu());
+    return new DongTienPT(e.getId(), d(e.getNgay()), e.getChieu(), e.getHdptId(), e.getSoTien(), e.getNguon(), e.getRefId(), e.getGhiChu(),
+        e.getHdbId(), e.getLoai(), e.getTep());
   }
 
   // ═════════════════════════════ GHI ═════════════════════════════════
@@ -655,6 +657,7 @@ public class DbMapper {
     e.setLyDoHuy(x.getLyDoHuy());
     e.setGhiChuHoSoThieu(x.getGhiChuHoSoThieu());
     e.setThuocPhuTai(Boolean.TRUE.equals(x.getThuocPhuTai()));
+    e.setPtTyLeOxy(x.getThuocPhuTai() != null && x.getThuocPhuTai() ? x.getPtTyLeOxy() : null);
     e.setTaoLuc(in(x.getTaoLuc()));
     e.setLaImport(Boolean.TRUE.equals(x.getLaImport()));
     e.getDotTT().clear();
@@ -1016,5 +1019,8 @@ public class DbMapper {
     e.setNguon(x.getNguon());
     e.setRefId(x.getRefId());
     e.setGhiChu(x.getGhiChu());
+    e.setHdbId(Texts.emptyToNull(x.getHdbId()));
+    e.setLoai(Texts.emptyToNull(x.getLoai()));
+    e.setTep(Texts.emptyToNull(x.getTep()));
   }
 }

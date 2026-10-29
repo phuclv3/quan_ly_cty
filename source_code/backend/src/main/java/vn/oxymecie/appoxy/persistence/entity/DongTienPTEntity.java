@@ -37,4 +37,11 @@ public class DongTienPTEntity {
 
   @Column(name = "ghi_chu")
   private String ghiChu;
+
+  @Column(name = "hdb_id")
+  private String hdbId;
+
+  private String loai;
+
+  private String tep;
 }
