@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import vn.oxymecie.appoxy.common.ApiException;
 import vn.oxymecie.appoxy.common.Texts;
 import vn.oxymecie.appoxy.domain.calc.Calc;
+import vn.oxymecie.appoxy.domain.model.BinhKhi;
 import vn.oxymecie.appoxy.domain.model.ChiPhiHD;
 import vn.oxymecie.appoxy.domain.model.DongTienPT;
 import vn.oxymecie.appoxy.domain.model.FileRef;
@@ -36,7 +37,7 @@ import vn.oxymecie.appoxy.domain.perm.Quyen;
 @Service
 public class DuyetXoaService {
   public static final Set<String> LOAI = Set.of("PhieuThuChi", "ChiPhiThucHienHD", "HopDongBan", "HopDongMua", "PhieuKho", "HopDongPhuTai",
-      "HoaDon", "HoSo", "DongTienPhuTai", "DM_KhachHang", "DM_NCC", "DM_NguonTien", "DM_LoaiChiPhi", "DM_Kho", "DM_LoaiHang");
+      "HoaDon", "HoSo", "DongTienPhuTai", "DM_KhachHang", "DM_NCC", "DM_NguonTien", "DM_LoaiChiPhi", "DM_Kho", "DM_LoaiHang", "BinhKhi");
 
   private final HdmService hdm;
 
@@ -126,6 +127,7 @@ public class DuyetXoaService {
       case "DM_LoaiChiPhi" -> c.lcp(id) != null;
       case "DM_Kho" -> c.kho(id) != null;
       case "DM_LoaiHang" -> c.loaiHang(id) != null;
+      case "BinhKhi" -> c.db().getBinhKhi().stream().anyMatch(x -> x.getId().equals(id));
       default -> false;
     };
   }
@@ -328,6 +330,7 @@ public class DuyetXoaService {
       case "DM_NguonTien" -> Ctx.drop(d.getNguonTien(), NguonTien::getId, id);
       case "DM_LoaiChiPhi" -> Ctx.drop(d.getLoaiChiPhi(), LoaiChiPhi::getId, id);
       case "DM_Kho" -> Ctx.drop(d.getKho(), Kho::getId, id);
+      case "BinhKhi" -> Ctx.drop(d.getBinhKhi(), BinhKhi::getId, id);
       case "DM_LoaiHang" -> {
         for (var a : d.getAnhXaTen()) if (id.equals(a.getLoaiHang())) {
           a.setLoaiHang(null);

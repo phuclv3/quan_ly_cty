@@ -75,7 +75,7 @@ public class HeThongController {
   }
 
   @Operation(summary = "Gửi yêu cầu xoá", description = "loai: PhieuThuChi, ChiPhiThucHienHD, HopDongBan, HopDongMua, PhieuKho, HopDongPhuTai, HoaDon, "
-      + "HoSo (maDoiTuong = hoSoId:fileId), DongTienPhuTai, DM_KhachHang, DM_NCC, DM_NguonTien, DM_LoaiChiPhi, DM_Kho, DM_LoaiHang.")
+      + "HoSo (maDoiTuong = hoSoId:fileId), DongTienPhuTai, DM_KhachHang, DM_NCC, DM_NguonTien, DM_LoaiChiPhi, DM_Kho, DM_LoaiHang, BinhKhi.")
   @PostMapping("/yeu-cau-xoa")
   public CommandResponse<YeuCauXoa> gui(@Valid @RequestBody Req.YeuCauXoa r) {
     return cmd.run("YCX.gui", c -> {

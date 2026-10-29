@@ -57,8 +57,13 @@ public class ViecService {
     }
     boolean suCo = Boolean.TRUE.equals(o.suCo());
     if (suCo) {
-      HopDongBan h = hd == null ? null : c.hdb(hd);
-      if (h == null || !TrangThai.DANG_GIAO_HANG.equals(h.getTrangThai())) throw ApiException.invalid("Chỉ ghi nhận sự cố phát sinh khi HĐ bán đang giao hàng");
+      if (hm != null) {
+        String tt = c.hdm(hm).getTrangThai();
+        if (!TrangThai.DA_KY.equals(tt) && !TrangThai.DANG_NHAN_HANG.equals(tt)) throw ApiException.invalid("Chỉ ghi nhận sự cố phát sinh khi HĐ mua đã ký hoặc đang nhận hàng");
+      } else {
+        HopDongBan h = hd == null ? null : c.hdb(hd);
+        if (h == null || !TrangThai.DANG_GIAO_HANG.equals(h.getTrangThai())) throw ApiException.invalid("Chỉ ghi nhận sự cố phát sinh khi HĐ bán đang giao hàng");
+      }
     }
     String khId = Texts.emptyToNull(o.khId());
     if (khId != null && c.kh(khId) == null) throw ApiException.invalid("Khách hàng không tồn tại");
