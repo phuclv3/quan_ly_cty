@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, input, signal, vi
 import { Store } from '../core/store';
 import { TT } from '../core/trang-thai';
 import { FileRef, HopDongBan, KHO_CHUYEN_THANG, PhieuKho, ViecGiao } from '../core/models';
-import { DongLo, dongMuaChoHdb, hdmChoHdb, loConHang, tonTai, tongSL } from '../core/calc';
+import { DongLo, dongMuaChoHdb, hdbGioiHanGiao, hdmChoHdb, loConHang, tonTai, tongSL } from '../core/calc';
 import { daysFromToday, num, todayIso, viDate } from '../core/util';
 import { Confirm } from '../shared/confirm';
 import { guiXoa } from '../shared/ho-so';
@@ -28,17 +28,19 @@ const dongRong = (): DongNhap => ({ loaiHang: '', lo: '', soLuong: 0, tenTrenHD:
   selector: 'app-hdb-giao-hang',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [Modal, Pick, TrangThai, Icon, RouterLink, NguoiThem, TepDinhKem],
-  styles: [`:host { display: block; }`],
+  styles: [`:host { display: block; } .gh-tbl td { vertical-align: top; } .gh-tbl td > select, .gh-tbl td > input, .gh-tbl td > textarea.keo-gian { height: 40px; min-height: 40px; width: 100%; } .gh-tbl td > textarea.keo-gian { height: auto; } .gh-tbl td:last-child { padding-top: 12px; } .them-dong { justify-self: start; align-self: flex-start; width: auto; } .sc-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 24px; align-items: start; } .sc-grid .full { grid-column: 1 / -1; } .sc-grid .field { min-width: 0; } @media (max-width: 720px) { .sc-grid { grid-template-columns: minmax(0, 1fr); } }`],
   template: `
     <section class="card">
       <div class="section-title">
         <h2>Giao hàng <small class="sub">Có hàng trong kho → phiếu xuất kho → giao (ngày giao = ngày phiếu)</small></h2>
-        @if (store.canEdit('hdbGiaoHang', h().sale)) {
-          <button type="button" class="btn sm" [disabled]="!coTheGiao()" [attr.title]="lyDoKhongGiao()" (click)="mo()"><app-icon name="truck" [size]="16" /> Ghi nhận giao hàng</button>
-        }
-        @if (store.canEdit('viec')) {
-          <button type="button" class="btn sm quiet" [disabled]="!coTheBaoSuCo()" [attr.title]="lyDoKhongSuCo()" (click)="moSuCo()"><app-icon name="alert" [size]="16" /> Phát sinh</button>
-        }
+        <div class="btn-row">
+          @if (store.canEdit('hdbGiaoHang', h().sale)) {
+            <button type="button" class="btn sm" [disabled]="!coTheGiao()" [attr.title]="lyDoKhongGiao()" (click)="mo()"><app-icon name="truck" [size]="16" /> Ghi nhận giao hàng</button>
+          }
+          @if (store.canEdit('viec')) {
+            <button type="button" class="btn sm quiet" [disabled]="!coTheBaoSuCo()" [attr.title]="lyDoKhongSuCo()" (click)="moSuCo()"><app-icon name="alert" [size]="16" /> Phát sinh</button>
+          }
+        </div>
       </div>
       @if (h().trangThai === TT.BAO_GIA) { <p class="sub">HĐ chưa Hiệu lực — chưa ghi nhận giao hàng được.</p> }
       <div class="tbl-wrap">
@@ -106,21 +108,22 @@ const dongRong = (): DongNhap => ({ loaiHang: '', lo: '', soLuong: 0, tenTrenHD:
     }
 
     <app-modal [open]="moSC()" title="Ghi nhận sự cố phát sinh" [sub]="'HĐ ' + h().soHD" size="lg" [dirty]="dirtySC()" (closed)="moSC.set(false)">
-      <div class="form-grid blk xanh">
-        <h3 class="blk-t">Công việc phát sinh</h3>
-        <div class="field wide">
+      <div class="sc-grid blk xanh">
+        <h3 class="blk-t full">Công việc phát sinh</h3>
+        <div class="field full">
           <label for="sc-nd">Sự cố phát sinh <span class="req">*</span></label>
-          <textarea id="sc-nd" rows="2" placeholder="VD Thiếu COA, chưa ký được BBNT" [value]="scNoiDung()" (input)="scNoiDung.set($any($event.target).value)"></textarea>
+          <textarea id="sc-nd" rows="3" placeholder="VD Thiếu COA, chưa ký được BBNT" [value]="scNoiDung()" (input)="scNoiDung.set($any($event.target).value)"></textarea>
+        </div>
+        <div class="field">
+          <span class="lbl">Người chịu trách nhiệm <span class="req">*</span></span>
+          <app-nguoi-them placeholder="Thêm người — gõ tên hoặc email" [coBan]="false" [boxTruoc]="true" [(ids)]="scNguoi" />
         </div>
         <div class="field">
           <label for="sc-han">Hạn xử lý <span class="req">*</span></label>
           <input id="sc-han" type="date" [value]="scHan()" (input)="scHan.set($any($event.target).value)" />
         </div>
-        <div class="field wide">
-          <app-nguoi-them nhan="Người chịu trách nhiệm *" placeholder="Thêm người chịu trách nhiệm — gõ tên hoặc email" [coBan]="false" [(ids)]="scNguoi" />
-        </div>
-        <div class="field wide">
-          <app-tep-dinh-kem nhan="Bằng chứng (tuỳ chọn)" [edit]="true" [(files)]="scFiles" />
+        <div class="field full">
+          <app-tep-dinh-kem nhan="Bằng chứng (tuỳ chọn)" goiY="Ảnh hoặc PDF, mỗi tệp ≤ 20MB. Có thể bổ sung sau." [edit]="true" [(files)]="scFiles" />
         </div>
       </div>
       @if (scLoi()) { <p class="note bad">{{ scLoi() }}</p> }
@@ -147,7 +150,7 @@ const dongRong = (): DongNhap => ({ loaiHang: '', lo: '', soLuong: 0, tenTrenHD:
         </div>
         <div class="field wide">
           <label for="gh-gc">Ghi chú</label>
-          <input id="gh-gc" [value]="ghiChu()" (input)="ghiChu.set($any($event.target).value)" />
+          <textarea id="gh-gc" rows="2" [value]="ghiChu()" (input)="ghiChu.set($any($event.target).value)"></textarea>
         </div>
       </div>
       @if (goiY()) { <p class="note info">Đã gợi ý sẵn các dòng {{ h().dongHang?.length ? 'sản phẩm của HĐ' : 'từ HĐ Mua liên quan' }} (trừ phần đã giao) — chỉ những dòng kho còn hàng. Sửa / xoá dòng nếu cần.</p> }
@@ -155,34 +158,35 @@ const dongRong = (): DongNhap => ({ loaiHang: '', lo: '', soLuong: 0, tenTrenHD:
         <p class="note warn">Chưa có trong kho: {{ chuaCoHang().join('; ') }} → cần đề nghị cấp vật tư → mua hàng → nhập kho rồi mới giao (Tab 3 / Tab 5).</p>
       }
       <div class="tbl-wrap">
-      <table class="tbl compact">
-        <thead><tr><th style="width:34%">Mã hàng</th><th>Lô</th><th class="num w-sm">Số lượng</th><th>Tên hàng trên HĐ</th><th style="width:40px"></th></tr></thead>
+      <table class="tbl compact gh-tbl">
+        <thead><tr><th style="width:28%">Mã hàng</th><th style="width:22%">Lô</th><th class="num w-sm">Số lượng</th><th>Tên hàng trên HĐ</th><th style="width:40px"></th></tr></thead>
         <tbody>
           @for (d of dong(); track $index; let i = $index) {
             <tr>
               <td>
                 <app-pick [options]="lhOpts()" [value]="d.loaiHang" (valueChange)="setDong(i, { loaiHang: $event, lo: '' })" />
                 @if (d.loaiHang && kho() !== KHO_CT) { <span class="hint" [class.neg]="ton(d.loaiHang) < d.soLuong">Tồn tại kho: {{ num(ton(d.loaiHang)) }}</span> }
+                @if (conLai(d.loaiHang, i) !== null) { <span class="hint" [class.neg]="d.soLuong > conLai(d.loaiHang, i)!">Còn phải giao: {{ num(conLai(d.loaiHang, i)!) }}</span> }
               </td>
               <td>
                 @if (kho() === KHO_CT) { <span class="muted">Không theo lô</span> } @else {
                   <select (change)="setDong(i, { lo: $any($event.target).value })" aria-label="Lô" [disabled]="!d.loaiHang">
-                    <option value="" [selected]="!d.lo">Tự chọn lô nhập trước</option>
+                    <option value="" [selected]="!d.lo">Tự chọn (nhập trước)</option>
                     @for (l of lots(d.loaiHang); track l.lo) {
                       <option [value]="l.lo" [selected]="l.lo === d.lo">{{ l.lo }} · tồn {{ l.ton }}{{ l.quyCach ? ' · ' + l.quyCach.slice(0, 40) : '' }}</option>
                     }
                   </select>
                 }
               </td>
-              <td><input class="num" type="number" min="0" [value]="d.soLuong" (input)="setDong(i, { soLuong: +$any($event.target).value || 0 })" /></td>
-              <td><input [value]="d.tenTrenHD" placeholder="VD Bình khí chuẩn NO2 200ppm" (input)="setDong(i, { tenTrenHD: $any($event.target).value })" /></td>
+              <td><input class="num" type="number" min="0" [attr.max]="conLai(d.loaiHang, i)" [value]="d.soLuong" (input)="setDong(i, { soLuong: +$any($event.target).value || 0 })" /></td>
+              <td><textarea class="keo-gian" rows="1" [value]="d.tenTrenHD" placeholder="VD Bình khí chuẩn NO2 200ppm" (input)="setDong(i, { tenTrenHD: $any($event.target).value })"></textarea></td>
               <td><button type="button" class="icon-btn sm" aria-label="Xoá dòng" (click)="xoaDong(i)"><app-icon name="trash" [size]="16" /></button></td>
             </tr>
           }
         </tbody>
       </table>
       </div>
-      <button type="button" class="btn sm quiet" (click)="themDong()"><app-icon name="plus" [size]="16" /> Thêm dòng</button>
+      <button type="button" class="btn sm quiet them-dong" (click)="themDong()"><app-icon name="plus" [size]="16" /> Thêm dòng</button>
       @if (loi()) {
         <p class="note bad">{{ loi() }}</p>
       }
@@ -256,7 +260,21 @@ export class HdbGiaoHang {
       .filter((p) => p.loai === 'Xuất' && p.hdId === this.h().id)
       .sort((a, b) => (a.ngay < b.ngay ? 1 : -1)),
   );
-  protected readonly lhOpts = computed<PickOption[]>(() => maHangOpts(this.store.loaiHang().filter((l) => l.dangDung)));
+  /** Số còn phải giao theo mã (null = HĐ không có cơ sở để giới hạn → cho chọn mọi mã). */
+  protected readonly gioiHan = computed(() => hdbGioiHanGiao(this.h(), this.store.db()));
+  /** Chỉ các mã trong Sản phẩm & giá của HĐ (còn phải giao > 0), kèm số còn lại. */
+  protected readonly lhOpts = computed<PickOption[]>(() => {
+    const con = this.gioiHan();
+    const ds = this.store.loaiHang().filter((l) => l.dangDung && (!con || (con.get(l.id) ?? 0) > 0));
+    return maHangOpts(ds).map((o) => (con ? { ...o, hint: `Còn phải giao ${num(con.get(o.value) ?? 0)}${o.hint ? ' · ' + o.hint : ''}` } : o));
+  });
+  /** Còn phải giao của mã trừ phần đang nhập ở các dòng khác của popup. */
+  protected conLai(lh: string, boQuaDong: number): number | null {
+    const con = this.gioiHan();
+    if (!con || !lh || !con.has(lh)) return null;
+    const dangNhap = this.dong().reduce((s, d, i) => (i !== boQuaDong && d.loaiHang === lh ? s + (d.soLuong || 0) : s), 0);
+    return Math.max(0, (con.get(lh) ?? 0) - dangNhap);
+  }
   /** Xuất quá tồn lô / thiếu tồn → báo ngay, xác nhận sẽ bị chặn. */
   protected readonly loi = computed(() =>
     this.open() ? (this.store.loiXuat(this.kho(), this.h().id, this.dong().map((d) => ({ ...d, lo: d.lo || undefined })), this.ngay()) ?? '') : '',

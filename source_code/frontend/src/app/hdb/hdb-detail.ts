@@ -79,29 +79,38 @@ const TABS = [
       @else if (saved()?.trangThai === TT.DA_TAT_TOAN) { <p class="note info"><app-icon name="lock" [size]="16" /> HĐ đã tất toán — khoá toàn bộ. Mở lại cần quyền "Mở lại HĐ đã tất toán" (HDB-03-ML).</p> }
 
       @if (saved(); as s) {
-        <section class="card no-print">
-          <div class="between">
-            <div class="flow" aria-label="Luồng trạng thái">
-              @for (t of flow; track t; let last = $last) {
-                <span class="st" [class.done]="s.trangThai !== TT.HUY && idx(t) < idx(s.trangThai)" [class.cur]="t === s.trangThai">{{ ttNhan(t) }}</span>
-                @if (!last) { <span class="sep">›</span> }
+        <section class="card no-print tt-card">
+          <div class="between tt-top">
+            <ol class="stepper" aria-label="Luồng trạng thái hợp đồng">
+              @for (t of flow; track t; let i = $index) {
+                @let xong = s.trangThai !== TT.HUY && idx(t) < idx(s.trangThai);
+                <li class="stp" [class.done]="xong" [class.cur]="t === s.trangThai" [class.next]="t === keTiep() && s.trangThai !== TT.HUY" [attr.aria-current]="t === s.trangThai ? 'step' : null" [attr.title]="moTaBuoc(t)">
+                  <span class="stp-dot">@if (xong) { ✓ } @else { {{ i + 1 }} }</span>
+                  <span class="stp-lb">{{ ttNhan(t) }}</span>
+                </li>
               }
-              @if (s.trangThai === TT.HUY) { <span class="sep">·</span> <app-tt [v]="TT.HUY" /> }
-            </div>
+              @if (s.trangThai === TT.HUY) { <li class="stp-huy"><app-tt [v]="TT.HUY" /></li> }
+            </ol>
             <div class="btn-row">
               @if (s.trangThai === TT.DA_TAT_TOAN) {
-                @if (store.canEdit('moLaiHdb') && !choXoa()) { <button type="button" class="btn sm quiet" (click)="moLai()">Mở lại</button> }
+                @if (store.canEdit('moLaiHdb') && !choXoa()) { <button type="button" class="btn sm quiet" title="Mở lại HĐ đã tất toán: HĐ quay về Hoàn thành và được sửa lại" (click)="moLai()">Mở lại</button> }
               } @else if (s.trangThai === TT.HUY) {
               } @else if (keTiep() && canFlow()) {
                 @if (keTiep() === TT.DANG_GIAO_HANG) {
-                  <span class="sub">Tự chuyển "Đang giao hàng" khi ghi nhận lần giao đầu tiên. HĐ không giao hàng (không có HĐ mua liên quan) chuyển thẳng "Hoàn thành".</span>
+                  <button type="button" class="btn sm" disabled title='Bước này không chuyển bằng tay — HĐ tự sang "Đang giao hàng" khi bạn ghi nhận lần giao hàng đầu tiên (nút "Ghi nhận giao hàng" ở Tab 1)'>Chuyển → {{ ttNhan(keTiep()) }}</button>
                 } @else {
-                  <button type="button" class="btn sm" [disabled]="thieu().length > 0" [attr.title]="thieu().length ? 'Chưa chuyển được — còn thiếu: ' + thieu().join(' · ') : null" (click)="chuyen()">Chuyển → {{ ttNhan(keTiep()) }}</button>
+                  <button type="button" class="btn sm" [disabled]="thieu().length > 0" [attr.title]="tipChuyen()" (click)="chuyen()">Chuyển → {{ ttNhan(keTiep()) }}</button>
                 }
               }
-              @if (store.canEdit('hdb', s.sale)) { <button type="button" class="btn sm danger quiet" [disabled]="!huyDuoc()" [attr.title]="lyDoKhongHuy()" (click)="huyHd()">Huỷ HĐ</button> }
+              @if (store.canEdit('hdb', s.sale)) { <button type="button" class="btn sm danger quiet" [disabled]="!huyDuoc()" [attr.title]="lyDoKhongHuy() ?? 'Huỷ HĐ: chỉ huỷ được khi chưa thu tiền, chưa xuất kho, không còn chi phí / đề nghị vật tư. HĐ huỷ bị khoá.'" (click)="huyHd()">Huỷ HĐ</button> }
             </div>
           </div>
+          <p class="tt-goi-y">
+            <b>{{ ttNhan(s.trangThai) }}</b> — {{ goiYBuoc() }}
+            @if (s.trangThai === TT.HIEU_LUC && keTiep() === TT.DANG_GIAO_HANG || s.trangThai === TT.DANG_GIAO_HANG) {
+              @if (tab() !== '1') { <button type="button" class="linkish" (click)="setTab('1')">Mở mục Giao hàng ›</button> }
+            }
+          </p>
           @if (s.trangThai !== TT.DA_TAT_TOAN && s.trangThai !== TT.HUY && keTiep() !== TT.DANG_GIAO_HANG && thieu().length) {
             <div class="note warn thieu-ds" role="alert">
               <span>Còn thiếu để chuyển "{{ ttNhan(keTiep()) }}":</span>
@@ -113,6 +122,8 @@ const TABS = [
                 }
               }
             </div>
+          } @else if (s.trangThai !== TT.DA_TAT_TOAN && s.trangThai !== TT.HUY && keTiep() && keTiep() !== TT.DANG_GIAO_HANG) {
+            <p class="note ok">Đã đủ điều kiện — bấm "Chuyển → {{ ttNhan(keTiep()) }}" để sang bước tiếp theo.</p>
           }
           @if (keTiep() === TT.HOAN_THANH && c().hoSoThieu.length) {
             <p class="note warn">Lưu ý: thiếu hồ sơ {{ c().hoSoThieu.join(', ') }} — sẽ chặn bước "Đã tất toán".</p>
@@ -121,7 +132,7 @@ const TABS = [
       }
 
       @if (!saved()) {
-        <app-hdb-tao-moi [(draft)]="f" [edit1]="edit1()" [edit3]="edit3()" [xemTien]="xemTien()" [dangLuu]="dangLuu()" (tao)="taoMoi($event)" />
+        <app-hdb-tao-moi [(draft)]="f" [edit1]="edit1()" [edit3]="edit3()" [xemTien]="xemTien()" [dangLuu]="dangLuu()" (tao)="taoMoi($event)" (luuNhap)="luuNhap()" />
       } @else {
       <div class="tabs" role="tablist">
         @for (t of tabs(); track t.k) {
@@ -380,6 +391,52 @@ export class HdbDetail {
     this.store.say(e ?? `Đã huỷ đề nghị ${so}`);
   }
 
+  /** Tooltip của từng bước trong luồng trạng thái: ý nghĩa + điều kiện để tới bước đó. */
+  protected moTaBuoc(t: TrangThaiHDB): string {
+    switch (t) {
+      case TT.BAO_GIA:
+        return 'Báo giá: soạn cho khách, chưa ký. Sửa tự do, có thể để trống Số HĐ.';
+      case TT.HIEU_LUC:
+        return 'Hiệu lực: HĐ đã ký. Để chuyển cần Số HĐ, MST khách hàng, Ngày ký và Giá trị HĐ. Từ bước này Số HĐ và Khách hàng bị khoá.';
+      case TT.DANG_GIAO_HANG:
+        return 'Đang giao hàng: tự chuyển khi ghi nhận lần giao hàng đầu tiên ở mục Giao hàng (Tab 1) — không chuyển bằng tay.';
+      case TT.HOAN_THANH:
+        return 'Hoàn thành: đã giao đủ hàng cho khách. Bấm Chuyển khi giao xong. HĐ dịch vụ không giao hàng chuyển thẳng từ Hiệu lực.';
+      case TT.DA_TAT_TOAN:
+        return 'Đã tất toán: cần thu đủ tiền, đủ hồ sơ (Hợp đồng, BBGH/BBNT, Hoá đơn), không còn chi phí hoặc phiếu Thu chờ duyệt. Sau bước này HĐ bị khoá toàn bộ.';
+      default:
+        return ttNhan(t);
+    }
+  }
+  /** Tooltip nút Chuyển: còn thiếu gì, hoặc đủ điều kiện và bước sau nghĩa là gì. */
+  protected tipChuyen(): string {
+    const k = this.keTiep();
+    if (!k) return '';
+    if (this.thieu().length) return 'Chưa chuyển được — còn thiếu: ' + this.thieu().join(' · ');
+    return `Đủ điều kiện — bấm để chuyển sang "${ttNhan(k)}". ${this.moTaBuoc(k)}`;
+  }
+  /** Việc cần làm ở bước hiện tại, viết cho người dùng. */
+  protected goiYBuoc(): string {
+    const s = this.saved();
+    if (!s) return '';
+    switch (s.trangThai) {
+      case TT.BAO_GIA:
+        return 'Điền đủ thông tin rồi bấm "Chuyển → Hiệu lực" khi khách đã ký.';
+      case TT.HIEU_LUC:
+        return this.keTiep() === TT.HOAN_THANH
+          ? 'HĐ không giao hàng (dịch vụ) — bấm "Chuyển → Hoàn thành" khi thực hiện xong.'
+          : 'Ghi nhận giao hàng ở mục Giao hàng; HĐ sẽ tự chuyển sang "Đang giao hàng".';
+      case TT.DANG_GIAO_HANG:
+        return 'Giao đủ hàng cho khách rồi bấm "Chuyển → Hoàn thành". Có sự cố thì bấm "Phát sinh".';
+      case TT.HOAN_THANH:
+        return 'Thu đủ tiền và đủ hồ sơ rồi bấm "Chuyển → Đã tất toán".';
+      case TT.DA_TAT_TOAN:
+        return 'HĐ đã khoá toàn bộ. Cần quyền "Mở lại HĐ đã tất toán" để sửa.';
+      default:
+        return s.lyDoHuy ? `HĐ đã huỷ. Lý do: ${s.lyDoHuy}` : 'HĐ đã huỷ và bị khoá.';
+    }
+  }
+
   protected idx(t: TrangThaiHDB): number {
     return TRANG_THAI_HDB.indexOf(t);
   }
@@ -409,6 +466,18 @@ export class HdbDetail {
   }
 
   protected readonly dangLuu = signal(false);
+
+  /** Bấm Tiếp ở wizard: lưu nháp (Báo giá) ngay — lần đầu tạo HĐ, các lần sau cập nhật cùng HĐ. */
+  protected luuNhap(): void {
+    const out = ghepNhap(structuredClone(this.f()), null);
+    const err = this.store.saveHdb(out);
+    if (err) {
+      this.store.say(`Chưa lưu được bản nháp: ${err}`);
+      return;
+    }
+    this.f.update((h) => ({ ...h, id: out.id }));
+    this.store.say('Đã lưu nháp');
+  }
 
   /** Bước cuối wizard: tạo HĐ, tải các tệp hồ sơ đã chọn, rồi mở HĐ ở dạng 5 tab. */
   protected async taoMoi(cho: HoSoCho): Promise<void> {

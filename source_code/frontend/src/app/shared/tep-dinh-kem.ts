@@ -29,15 +29,15 @@ import { Icon } from './icon';
         }
       </ul>
       @if (edit()) {
-        <label class="btn sm quiet" [class.disabled]="dangTai()">
+        <button type="button" class="btn sm quiet" [disabled]="dangTai()" (click)="chon.click()">
           <app-icon name="plus" [size]="14" /> {{ dangTai() ? 'Đang lưu tệp…' : 'Thêm tệp' }}
-          <input type="file" multiple hidden [accept]="accept" [disabled]="dangTai()" (change)="them($event)" />
-        </label>
-        <span class="hint">Ảnh hoặc PDF, mỗi tệp ≤ 20MB. Tệp được ghi vào chứng từ khi bấm Lưu.</span>
+        </button>
+        <input #chon type="file" multiple class="an" [accept]="accept" tabindex="-1" aria-hidden="true" (change)="them($event)" />
+        <span class="hint">{{ goiY() }}</span>
       }
     </div>
   `,
-  styles: [`.tep-list { list-style: none; margin: 0 0 6px; padding: 0; display: grid; gap: 4px; } .tep-list li { display: flex; gap: 8px; align-items: center; }`],
+  styles: [`.field > .btn { justify-self: start; } input.an { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; overflow: hidden; } .tep-list { list-style: none; margin: 0 0 6px; padding: 0; display: grid; gap: 4px; } .tep-list li { display: flex; gap: 8px; align-items: center; }`],
 })
 export class TepDinhKem {
   private readonly store = inject(Store);
@@ -45,6 +45,8 @@ export class TepDinhKem {
   readonly edit = input(false);
   /** Nhãn phía trên danh sách; rỗng = không hiện (khi màn cha đã có tiêu đề). */
   readonly nhan = input('Chứng từ đính kèm');
+  /** Dòng gợi ý dưới nút Thêm tệp. */
+  readonly goiY = input('Ảnh hoặc PDF, mỗi tệp ≤ 20MB. Tệp được ghi vào chứng từ khi bấm Lưu.');
   protected readonly accept = HO_SO_ACCEPT;
   protected readonly viSize = viSize;
   protected readonly dangTai = signal(false);

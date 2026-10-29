@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, input, model, sig
 import { Store } from '../core/store';
 import { TT } from '../core/trang-thai';
 import { DongHangBan, DotTTBan, HopDongBan, LCP_HOA_HONG } from '../core/models';
-import { Buoc, apDungTuDongHdb, congNgay, dotBanDaThu, dotQuaHan, hdbCalc, kiemTraDongBan, loConHang, tongDongBan, tongDongBanTH } from '../core/calc';
+import { Buoc, apDungTuDongHdb, congNgay, dotBanDaThu, dotQuaHan, hdbCalc, kiemTraDongBan, loiDotTT, loConHang, tongDongBan, tongDongBanTH } from '../core/calc';
 import { xemThuToTrinhHdb } from '../shared/export';
 import { money, pct, sum, todayIso, uid, viDate } from '../core/util';
 import { BuocTable, Kpi, MoneyInput, Pick, TrangThai } from '../shared/ui-kit';
@@ -199,9 +199,10 @@ interface ThuNhap {
     <section class="card blk xanh">
       <div class="section-title">
         <h2>Đợt thanh toán</h2>
-        <span class="sub">Tối đa {{ max() }} đợt · Σ đợt {{ money(tongDot()) }} / {{ money(c().sauVAT) }}</span>
+        <span class="sub">Tối đa {{ max() }} đợt · Σ tỷ lệ {{ tongTyLe() }}% / 100% · Σ đợt {{ money(tongDot()) }} / {{ money(c().sauVAT) }}</span>
       </div>
-      @if (f().dotTT.length && tongDot() !== c().sauVAT) {
+      @if (loiDot(); as e) { <p class="note bad" role="alert">{{ e }}</p> }
+      @if (f().dotTT.length && !loiDot() && tongDot() !== c().sauVAT) {
         <p class="note warn">Tổng số tiền các đợt ({{ money(tongDot()) }}) lệch Tổng GTHĐ sau VAT ({{ money(c().sauVAT) }}) {{ money(tongDot() - c().sauVAT) }} đ.</p>
       }
       <div class="tbl-wrap">
@@ -216,20 +217,18 @@ interface ThuNhap {
             @for (d of f().dotTT; track d.dot; let i = $index, last = $last) {
               <tr [class.overdue]="quaHan(d)">
                 <td><b>{{ d.dot }}</b> @if (quaHan(d)) { <app-tt v="Quá hạn" /> }</td>
-                <td><input class="num" type="number" min="0" max="100" step="0.1" [value]="d.tyLe ?? ''" [disabled]="!edit()" (input)="setTyLe(i, $any($event.target).value)" /></td>
+                <td><input class="num" type="number" min="0" max="100" step="0.1" [value]="d.tyLe ?? ''" [disabled]="!edit()" (input)="setTyLe(i, $any($event.target))" /></td>
                 <td><app-money [value]="d.soTien" [disabled]="!edit()" (valueChange)="setSoTien(i, $event)" /></td>
                 <td>
                   <select [disabled]="!edit()" (change)="setHan(i, $any($event.target).value)" aria-label="Hạn thanh toán">
-                    @for (n of hanOpts; track n) { <option [value]="n" [selected]="d.hanNgay === n">{{ n }} ngày từ ngày hiệu lực</option> }
+                    @for (n of hanOpts; track n) { <option [value]="n" [selected]="d.hanNgay === n">{{ nhanHan(n) }}</option> }
                     <option value="" [selected]="d.hanNgay == null">Chọn ngày cụ thể…</option>
                   </select>
-                  @if (d.hanNgay != null) {
-                    <span class="hint">{{ f().ngayHieuLuc ? '→ ' + viDate(hanTinh(d)) : 'Tính khi có ngày hiệu lực' }}</span>
-                  } @else {
+                  @if (d.hanNgay == null) {
                     <input type="date" [value]="d.han ?? ''" [disabled]="!edit()" (input)="setDot(i, { han: $any($event.target).value || undefined })" aria-label="Hạn TT" />
                   }
                 </td>
-                <td><input [value]="d.ghiChu ?? ''" [disabled]="!edit()" (input)="setDot(i, { ghiChu: $any($event.target).value })" /></td>
+                <td><textarea rows="1" [value]="d.ghiChu ?? ''" [disabled]="!edit()" (input)="setDot(i, { ghiChu: $any($event.target).value })" aria-label="Ghi chú đợt"></textarea></td>
                 @if (thuSua(d)) {
                   <td><input type="date" [value]="thu(d).ngayThu" (input)="setThu(d.dot, { ngayThu: $any($event.target).value })" /></td>
                   <td><app-money [value]="thu(d).soTienThu" (valueChange)="setThu(d.dot, { soTienThu: $event })" /></td>
@@ -366,6 +365,9 @@ export class HdbTab3 {
   protected readonly khoaGiaTri = computed(() => !!this.saved() && this.store.hdbCoPhieuThu(this.saved()!));
   protected readonly max = computed(() => this.store.cauHinh().SO_DOT_TOI_DA);
   protected readonly tongDot = computed(() => sum(this.f().dotTT, (d) => d.soTien));
+  protected readonly tongTyLe = computed(() => Math.round(sum(this.f().dotTT, (d) => d.tyLe ?? 0) * 10) / 10);
+  /** Ràng buộc các đợt (tỷ lệ ≤ 100%, Σ tiền ≤ giá trị HĐ, hạn tăng dần) — cùng quy tắc Store / backend chặn khi lưu. */
+  protected readonly loiDot = computed(() => loiDotTT(this.f().dotTT, this.c().sauVAT));
 
   protected readonly buocThue = computed<Buoc[]>(() => {
     const h = this.f();
@@ -438,6 +440,11 @@ export class HdbTab3 {
     const n = raw === '' ? undefined : Number(raw);
     this.f.update((h) => apDungTuDongHdb({ ...h, dotTT: h.dotTT.map((d, j) => (j === i ? { ...d, hanNgay: n, han: n == null ? d.han : undefined } : d)) }));
   }
+  /** Nhãn hạn trong ô chọn: có ngày hiệu lực thì hiện luôn ngày hạn (ô không cao hơn các ô khác cùng hàng). */
+  protected nhanHan(n: number): string {
+    const hl = this.f().ngayHieuLuc;
+    return hl ? `${n} ngày → ${viDate(congNgay(hl, n))}` : `${n} ngày từ ngày hiệu lực`;
+  }
   protected hanTinh(d: DotTTBan): string | undefined {
     const hl = this.f().ngayHieuLuc;
     return d.hanNgay != null && hl ? congNgay(hl, d.hanNgay) : d.han;
@@ -445,12 +452,14 @@ export class HdbTab3 {
   protected setDot(i: number, p: Partial<DotTTBan>): void {
     this.f.update((h) => ({ ...h, dotTT: h.dotTT.map((d, j) => (j === i ? { ...d, ...p } : d)) }));
   }
-  protected setTyLe(i: number, raw: string): void {
-    if (raw === '') {
+  protected setTyLe(i: number, el: HTMLInputElement): void {
+    if (el.value === '') {
       this.setDot(i, { tyLe: undefined });
       return;
     }
-    const tyLe = Math.max(0, Number(raw) || 0);
+    // Tỷ lệ một đợt tối đa 100% — ô nhập trả về đúng giá trị đã chặn.
+    const tyLe = Math.min(100, Math.max(0, Number(el.value) || 0));
+    if (String(tyLe) !== el.value) el.value = String(tyLe);
     this.setDot(i, { tyLe, soTien: Math.round((tyLe / 100) * this.c().sauVAT) });
   }
   protected setSoTien(i: number, soTien: number): void {
@@ -484,11 +493,14 @@ export class HdbTab3 {
   protected readonly xemPhieu = computed(() => this.store.canView('soQuy') && this.store.level('soQuy') !== 'draft');
   protected readonly themDotDuoc = computed(() => {
     const ds = this.f().dotTT;
-    return ds.length < this.max() && (ds.length === 0 || ds[ds.length - 1].soTien > 0);
+    const sau = this.c().sauVAT;
+    return ds.length < this.max() && (ds.length === 0 || ds[ds.length - 1].soTien > 0) && !(sau > 0 && this.tongDot() >= sau);
   });
   protected lyDoKhongThemDot(): string | null {
     if (this.themDotDuoc()) return null;
-    return this.f().dotTT.length >= this.max() ? `Đã đủ ${this.max()} đợt thanh toán (tối đa)` : 'Đợt cuối chưa có Số tiền — nhập số tiền đợt cuối trước khi thêm đợt mới';
+    if (this.f().dotTT.length >= this.max()) return `Đã đủ ${this.max()} đợt thanh toán (tối đa)`;
+    if (this.c().sauVAT > 0 && this.tongDot() >= this.c().sauVAT) return 'Các đợt đã phân bổ đủ 100% giá trị hợp đồng — giảm số tiền một đợt trước khi thêm đợt mới';
+    return 'Đợt cuối chưa có Số tiền — nhập số tiền đợt cuối trước khi thêm đợt mới';
   }
   /** Lý do nút Ghi thực thu đang mờ (null = bấm được). */
   protected lyDoKhongThu(d: DotTTBan): string | null {

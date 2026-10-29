@@ -498,6 +498,7 @@ input:not([type='checkbox']):not([type='radio']):not([type='file']), select, tex
 }
 /* Một chiều cao chung cho mọi ô một dòng — các ô cùng hàng luôn thẳng nhau. */
 input:not([type='checkbox']):not([type='radio']):not([type='file']), select { height: 40px; }
+textarea { min-height: 40px; }
 textarea { resize: vertical; width: 100%; }
 input:disabled, select:disabled, textarea:disabled { background: var(--surf-2); color: var(--ink-2); }
 input.num { text-align: right; }
@@ -648,7 +649,13 @@ app-money input { width: 100%; }
 .tbl td > input.ngay { min-width: 130px; }
 .tbl td > select { min-width: 100px; }
 /* Ô chữ kéo giãn được trong bảng (VD Tên hàng trên HĐ): 1 dòng, tự xuống dòng khi dài, kéo góc để giãn cả 2 chiều. */
-.tbl td > textarea.keo-gian { display: block; resize: both; height: 40px; min-height: 40px; padding: 7px 12px; line-height: 1.5; vertical-align: middle; }
+.tbl td > textarea.keo-gian { display: block; resize: vertical; field-sizing: content; height: auto; min-height: 40px; max-height: 120px; padding: 7px 12px; line-height: 1.5; vertical-align: middle; overflow-y: auto; }
+/* Ô nhập trong bảng: input / select / số tiền / chọn mã / textarea cùng cao tối thiểu 40px, cùng padding, cùng căn giữa dòng. */
+.tbl td > input:not([type='checkbox']):not([type='radio']):not([type='file']), .tbl td > select, .tbl td > app-money > input, .tbl td > textarea, .tbl td .pick-btn {
+  box-sizing: border-box; min-height: 40px; padding: 6px 12px; border-radius: 8px; font-size: 15px; line-height: 1.5; vertical-align: middle;
+}
+.tbl td > input:not([type='checkbox']):not([type='radio']):not([type='file']), .tbl td > select, .tbl td > app-money > input, .tbl td .pick-btn { height: 40px; }
+.tbl td > textarea { display: block; height: auto; width: 100%; min-width: 180px; max-height: 120px; resize: vertical; field-sizing: content; overflow-y: auto; }
 .tbl td > app-money { display: block; min-width: 120px; }
 /* contain: độ rộng ô chọn không tính theo chữ đang chọn → cột không giãn mỗi lần chọn; chữ dài cắt "…" (xem đủ ở title). */
 .tbl td > .pick { min-width: 220px; contain: inline-size; }
@@ -1419,3 +1426,22 @@ input.ngay:not(:disabled):not([readonly]) { cursor: text; }
 .chip-row button { border: 1px solid transparent; background: #eef2ef; border-radius: 999px; padding: 6px 14px; font-size: 13px; font-weight: 600; color: var(--ink-2); cursor: pointer; }
 .chip-row button:hover { background: #e1e9e3; }
 .chip-row button.on { background: linear-gradient(135deg, #4bb04f, #7ccf5b); color: #fff; box-shadow: 0 2px 6px rgba(75, 176, 79, 0.35); }
+@media (max-width: 900px) {
+  .tbl td > input:not([type='checkbox']):not([type='radio']):not([type='file']), .tbl td > select, .tbl td > app-money > input, .tbl td > textarea, .tbl td .pick-btn { min-height: 44px; }
+  .tbl td > input:not([type='checkbox']):not([type='radio']):not([type='file']), .tbl td > select, .tbl td > app-money > input, .tbl td .pick-btn { height: 44px; }
+}
+/* Thanh trạng thái hợp đồng (HĐ bán / HĐ mua): các bước dạng viên thuốc nối nhau, tooltip giải thích từng bước. */
+.stepper { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 0; list-style: none; margin: 0; padding: 0; }
+.stp { display: inline-flex; align-items: center; gap: 8px; padding: 4px 14px 4px 4px; border-radius: 999px; background: var(--surf-3); color: var(--ink-3); font-size: 14px; cursor: help; }
+.stp + .stp { margin-left: 22px; position: relative; }
+.stp + .stp::before { content: ''; position: absolute; left: -20px; top: 50%; width: 18px; height: 2px; background: var(--line-2); }
+.stp-dot { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--surf); font-size: 12.5px; font-weight: 700; }
+.stp.done { background: var(--leaf-tint); color: var(--ok-fg); }
+.stp.done .stp-dot { background: var(--ok-fg); color: #fff; }
+.stp.cur { background: var(--brand); color: var(--on-brand); font-weight: 700; }
+.stp.cur .stp-dot { background: #fff; color: var(--brand); }
+.stp.next { outline: 2px dashed var(--brand); outline-offset: 1px; color: var(--ink-2); }
+.stp-huy { margin-left: 12px; list-style: none; }
+.tt-top { gap: 12px; flex-wrap: wrap; }
+.tt-goi-y { margin: 10px 0 0; color: var(--ink-2); font-size: 14.5px; }
+.tt-goi-y .linkish { margin-left: 8px; }

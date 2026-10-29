@@ -70,10 +70,15 @@ import { CHUC_NANG, KE_TOAN_DUYET_XOA, Level, Perm, atLeast, levelOf } from './p
 import { api, readToken, writeToken } from './api';
 import {
   apDungTuDongHdb,
+  apDungTuDongHdm,
+  hdmTong,
+  sauVAT,
   hdmChoHdb,
   donGiaChuyenThang,
   donGiaVND,
   hdbCalc,
+  hdbGioiHanGiao,
+  loiDotTT,
   hdbKhongGiaoHang,
   hdbThieuDeChuyen,
   hdmCalc,
@@ -1226,6 +1231,8 @@ export class Store {
       return 'HĐ đã có phiếu Thu — không đổi Giá trị trước VAT / VAT (xoá phiếu Thu trước nếu cần sửa)';
     if (h.ngayKy && h.ngayHieuLuc && h.ngayHieuLuc < h.ngayKy) return 'Ngày hiệu lực (ngày thu tạm ứng) phải ≥ Ngày ký';
     if (h.dotTT.length > this.cauHinh().SO_DOT_TOI_DA) return `Tối đa ${this.cauHinh().SO_DOT_TOI_DA} đợt thanh toán`;
+    const loiDot = loiDotTT(h.dotTT, sauVAT(h.truocVAT, h.vat));
+    if (loiDot) return loiDot;
     if (cu && cu.trangThai !== TT.BAO_GIA && h.trangThai === cu.trangThai) {
       const thieu = hdbThieuDeChuyen(h, TT.HIEU_LUC, this.db());
       if (thieu.length) return thieu.join(' · ');
@@ -1321,6 +1328,17 @@ export class Store {
     if (h.trangThai === TT.HOAN_THANH) return 'HĐ đã Hoàn thành — không ghi nhận giao thêm';
     if (this.hdbKhoa(h)) return 'HĐ đã khoá';
     if (!o.kho) return 'Chưa chọn Vị trí kho';
+    // Chỉ giao đúng mã hàng trong Sản phẩm & giá của HĐ, tổng đã giao không vượt số lượng HĐ.
+    const con = hdbGioiHanGiao(h, this.db());
+    if (con) {
+      const moi = new Map<string, number>();
+      for (const d of o.dong) if (d.loaiHang && d.soLuong > 0) moi.set(d.loaiHang, (moi.get(d.loaiHang) ?? 0) + d.soLuong);
+      for (const [ma, sl] of moi) {
+        const r = con.get(ma);
+        if (r === undefined) return `Mã hàng ${ma} không có trong Sản phẩm & giá của HĐ bán`;
+        if (sl > r + 1e-9) return `Mã hàng ${ma}: giao ${sl} vượt số còn phải giao ${Math.max(0, r)}`;
+      }
+    }
     const dong = this.dongXuatTheoLo(o.kho, hdbId, o.dong, o.ngay);
     if (typeof dong === 'string') return dong;
     if (dong.length === 0) return 'Cần ít nhất 1 dòng hàng có số lượng > 0';
@@ -1836,6 +1854,8 @@ export class Store {
     if (!m.maNCC) return 'Chưa chọn Nhà cung cấp';
     if (m.nhapTay && !m.lyDoNhapTay?.trim()) return 'Nhập tay tổng giá trị cần ghi lý do';
     if (m.dotTT.length > this.cauHinh().SO_DOT_TOI_DA) return `Tối đa ${this.cauHinh().SO_DOT_TOI_DA} đợt thanh toán`;
+    const loiDot = loiDotTT(apDungTuDongHdm(m).dotTT, hdmTong(m));
+    if (loiDot) return loiDot;
     for (const d of m.chiTiet) {
       if (!d.loaiHang) return 'Có dòng hàng chưa chọn Loại hàng';
       if (!(d.soLuong > 0)) return 'Số lượng mỗi dòng phải > 0';

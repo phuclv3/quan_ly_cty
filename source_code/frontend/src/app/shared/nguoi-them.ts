@@ -13,8 +13,10 @@ import { Icon } from './icon';
   selector: 'app-nguoi-them',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [Icon],
+  host: { '[class.box-truoc]': 'boxTruoc()' },
   styles: `
     :host { display: grid; gap: 6px; }
+    :host(.box-truoc) .chips { order: 3; }
     .chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
     .lb { font-size: 12.5px; font-weight: 600; color: var(--ink-2); }
     .av { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; color: #fff; font-size: 9px; font-weight: 700; flex: 0 0 auto; }
@@ -78,6 +80,8 @@ export class NguoiThem {
   readonly placeholder = input('Thêm người — gõ tên hoặc email');
   /** Hiện chip "(bạn)" của người đang đăng nhập. */
   readonly coBan = input(true);
+  /** Ô tìm đặt trên cùng, chip người đã chọn xuống dưới (VD canh hàng với ô bên cạnh). */
+  readonly boxTruoc = input(false);
 
   protected readonly q = signal('');
   protected readonly mo = signal(false);

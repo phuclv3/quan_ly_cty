@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, model, output, signal } from '@angular/core';
 import { Store } from '../core/store';
 import { TT, ttNhan } from '../core/trang-thai';
-import { hdbCalc } from '../core/calc';
+import { hdbCalc, loiDotTT } from '../core/calc';
 import { HopDongBan, LOAI_HO_SO } from '../core/models';
 import { money, viDate } from '../core/util';
 import { Icon } from '../shared/icon';
@@ -93,6 +93,8 @@ export class HdbTaoMoi {
   readonly xemTien = input(false);
   readonly dangLuu = input(false);
   readonly tao = output<HoSoCho>();
+  /** Bấm Tiếp (bước hiện tại đã hợp lệ) → màn cha lưu nháp HĐ trước khi sang bước sau. */
+  readonly luuNhap = output<void>();
 
   protected readonly buocs = computed<Buoc[]>(() => [
     { k: 'tt', t: 'Thông tin chung', mo: 'Khách hàng, ngày, Sale' },
@@ -121,6 +123,11 @@ export class HdbTaoMoi {
       const h = this.draft();
       if (!h.mst?.trim()) return this.store.say('Chưa có MST khách hàng — nhập MST (bấm "Tra MST" để điền địa chỉ)');
     }
+    if (this.hienTai().k === 'gt') {
+      const e = loiDotTT(this.draft().dotTT, this.tinh().sauVAT);
+      if (e) return this.store.say(e);
+    }
+    this.luuNhap.emit();
     this.den(this.buoc() + 1);
   }
 

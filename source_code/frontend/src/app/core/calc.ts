@@ -224,6 +224,31 @@ export const tongDongBanTH = (ds: DongHangBan[] | undefined) => sum(ds ?? [], (d
  *  - Ngày hiệu lực theo tạm ứng / ngày ký.
  *  - Hạn TT các đợt chọn "N ngày" = Ngày hiệu lực + N (chưa có ngày hiệu lực thì để trống).
  */
+/**
+ * Ràng buộc các đợt thanh toán (HĐ bán / HĐ mua): tỷ lệ mỗi đợt 0–100%, Σ tỷ lệ ≤ 100%, Σ số tiền ≤ giá trị HĐ
+ * (khi đã có giá trị), hạn đợt sau không trước hạn đợt trước. Trả lỗi đầu tiên, null = hợp lệ. Backend (Calc.loiDotTT) kiểm giống hệt.
+ */
+export function loiDotTT(ds: { tyLe?: number; soTien: number; han?: string }[], tong: number): string | null {
+  let tyLe = 0;
+  let tien = 0;
+  let hanTruoc: string | undefined;
+  for (const [i, d] of ds.entries()) {
+    const ten = `Đợt ${i + 1}`;
+    if (d.tyLe !== undefined) {
+      if (d.tyLe < 0 || d.tyLe > 100) return `${ten}: tỷ lệ phải từ 0 đến 100%`;
+      tyLe += d.tyLe;
+    }
+    tien += d.soTien;
+    if (d.han) {
+      if (hanTruoc && d.han < hanTruoc) return `${ten}: hạn thanh toán không được trước hạn đợt trước`;
+      hanTruoc = d.han;
+    }
+  }
+  if (tyLe > 100.05) return `Tổng tỷ lệ các đợt ${(Math.round(tyLe * 10) / 10).toLocaleString('vi-VN')}% vượt 100%`;
+  if (tong > 0 && tien > Math.round(tong) + 1) return `Tổng số tiền các đợt (${tien.toLocaleString('vi-VN')}) vượt giá trị hợp đồng (${Math.round(tong).toLocaleString('vi-VN')})`;
+  return null;
+}
+
 export function apDungTuDongHdb(h: HopDongBan): HopDongBan {
   const out: HopDongBan = { ...h };
   if (h.dongHang?.length) {
@@ -896,6 +921,24 @@ export function hdbConChuaGiao(h: HopDongBan, db: Db): { loaiHang: string; con: 
     if (d.soLuong - tru > 0) out.push({ loaiHang: d.loaiHang, con: d.soLuong - tru });
   }
   return out;
+}
+
+/**
+ * Số còn phải giao theo từng mã hàng của HĐ bán (có thể < 0 nếu đã giao lố dữ liệu cũ).
+ * Cơ sở: dòng Sản phẩm & giá; chưa có thì các HĐ mua liên quan. null = không có cơ sở để giới hạn.
+ */
+export function hdbGioiHanGiao(h: HopDongBan, db: Db): Map<string, number> | null {
+  const con = new Map<string, number>();
+  const can = h.dongHang?.length
+    ? h.dongHang.map((d) => ({ loaiHang: d.loaiHang, soLuong: d.soLuong }))
+    : db.hopDongMua.filter((m) => m.trangThai !== TT.HUY && hdmChoHdb(m, h.id)).flatMap((m) => dongMuaChoHdb(m, h.id));
+  for (const d of can) if (d.loaiHang) con.set(d.loaiHang, (con.get(d.loaiHang) ?? 0) + d.soLuong);
+  if (!con.size) return null;
+  for (const p of db.phieuKho) {
+    if (p.loai !== 'Xuất' || p.hdId !== h.id || p.trangThai !== TT.HIEU_LUC) continue;
+    for (const d of p.dong) if (con.has(d.loaiHang)) con.set(d.loaiHang, con.get(d.loaiHang)! - d.soLuong);
+  }
+  return con;
 }
 
 /** F-07: HĐ bán không giao hàng (dịch vụ) — không có HĐ mua liên quan và chưa có phiếu xuất: được chuyển thẳng Hiệu lực → Hoàn thành. */
