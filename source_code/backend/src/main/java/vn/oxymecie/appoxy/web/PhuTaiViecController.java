@@ -110,7 +110,7 @@ public class PhuTaiViecController {
   @PostMapping("/viec")
   public CommandResponse<ViecGiao> giao(@Valid @RequestBody Req.GiaoViec r) {
     return cmd.run("VIEC.giao", c -> {
-      ViecGiao v = viec.giaoViec(c, new ViecService.Moi(r.noiDung(), r.nguoiNhan(), r.nguonLoai(), r.hdbId(), r.hdmId(), r.nhom(), r.batDau(), r.han(), r.gio(), r.mucUuTien(), r.files(), r.khId(), r.kenh(), r.nhacTruoc()));
+      ViecGiao v = viec.giaoViec(c, new ViecService.Moi(r.noiDung(), r.nguoiNhan(), r.nguonLoai(), r.hdbId(), r.hdmId(), r.nhom(), r.batDau(), r.han(), r.gio(), r.mucUuTien(), r.files(), r.khId(), r.kenh(), r.nhacTruoc(), r.suCo()));
       c.nhatKy("ViecGiao", v.getId(), null);
       return v;
     });

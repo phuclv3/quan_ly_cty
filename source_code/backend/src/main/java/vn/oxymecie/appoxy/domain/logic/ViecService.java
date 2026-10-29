@@ -9,7 +9,9 @@ import org.springframework.stereotype.Service;
 import vn.oxymecie.appoxy.common.ApiException;
 import vn.oxymecie.appoxy.common.Texts;
 import vn.oxymecie.appoxy.domain.model.FileRef;
+import vn.oxymecie.appoxy.domain.model.HopDongBan;
 import vn.oxymecie.appoxy.domain.model.PhanHoiViec;
+import vn.oxymecie.appoxy.domain.model.TrangThai;
 import vn.oxymecie.appoxy.domain.model.ViecGiao;
 import vn.oxymecie.appoxy.domain.model.YeuCauHan;
 import vn.oxymecie.appoxy.domain.perm.Level;
@@ -24,7 +26,7 @@ public class ViecService {
 
   /** Dữ liệu giao việc. nguonLoai: HDB / HDM / NOI_BO (rỗng = suy từ hdbId / hdmId). */
   public record Moi(String noiDung, List<String> nguoiNhan, String nguonLoai, String hdbId, String hdmId, String nhom, String batDau,
-                    String han, String gio, String mucUuTien, List<FileRef> files, String khId, String kenh, Integer nhacTruoc) {}
+                    String han, String gio, String mucUuTien, List<FileRef> files, String khId, String kenh, Integer nhacTruoc, Boolean suCo) {}
 
   public ViecGiao giaoViec(Ctx c, Moi o) {
     c.require(Perm.viec, Level.own);
@@ -53,11 +55,16 @@ public class ViecService {
       if (c.taiKhoan(x) == null) throw ApiException.invalid("Người nhận không tồn tại");
       nhan.add(x);
     }
+    boolean suCo = Boolean.TRUE.equals(o.suCo());
+    if (suCo) {
+      HopDongBan h = hd == null ? null : c.hdb(hd);
+      if (h == null || !TrangThai.DANG_GIAO_HANG.equals(h.getTrangThai())) throw ApiException.invalid("Chỉ ghi nhận sự cố phát sinh khi HĐ bán đang giao hàng");
+    }
     String khId = Texts.emptyToNull(o.khId());
     if (khId != null && c.kh(khId) == null) throw ApiException.invalid("Khách hàng không tồn tại");
     ViecGiao v = new ViecGiao(c.uid("VG"), noiDung, c.me(), c.now(), new ArrayList<>(nhan), hd, han, Texts.emptyToNull(gio), c.isGD(), null, null,
         new ArrayList<>(), maTiep(c), nhom, batDau, muc, loai, hm, null, KeToanService.tepHopLe(c, o.files()),
-        khId, Texts.emptyToNull(o.kenh()), o.nhacTruoc());
+        khId, Texts.emptyToNull(o.kenh()), o.nhacTruoc(), suCo ? Boolean.TRUE : null);
     Ctx.upsert(c.db().getViecGiao(), v, ViecGiao::getId);
     return v;
   }

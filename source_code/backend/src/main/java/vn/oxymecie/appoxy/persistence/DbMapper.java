@@ -145,7 +145,7 @@ public class DbMapper {
   }
 
   HoaDon hoaDon(HoaDonEntity e) {
-    return new HoaDon(e.getId(), e.getChu(), e.getChuId(), e.getSoHoaDon(), d(e.getNgayHoaDon()), e.getGiaTri(), e.getTepId());
+    return new HoaDon(e.getId(), e.getChu(), e.getChuId(), e.getSoHoaDon(), d(e.getNgayHoaDon()), e.getGiaTri(), e.getTepId(), e.isThuocPhuTai());
   }
 
   NguonTien nguonTien(NguonTienEntity e) {
@@ -211,7 +211,7 @@ public class DbMapper {
     return new HopDongBan(e.getId(), Texts.nz(e.getSoHD()), e.getMaKH(), e.getTenKH(), e.getMst(), e.getDiaChi(), d(e.getNgayKy()),
         d(e.getNgayHieuLuc()), e.getTrangThai(), Texts.nz(e.getSale()), Texts.nz(e.getGhiChu()), e.getTruocVAT(), e.getVat(),
         e.getThucTeTruocVAT(), new ThamSoThue(e.getTsNguong(), e.getTsMuc1(), e.getTsMuc2()), dot, orNull(dong), e.getCoTamUng(),
-        e.getPhatHD(), e.getLyDoPhat(), e.getLyDoHuy(), e.getGhiChuHoSoThieu(), t(e.getTaoLuc()), trueOrNull(e.isLaImport()));
+        e.getPhatHD(), e.getLyDoPhat(), e.getLyDoHuy(), e.getGhiChuHoSoThieu(), t(e.getTaoLuc()), trueOrNull(e.isLaImport()), trueOrNull(e.isThuocPhuTai()));
   }
 
   ViecGiao viecGiao(ViecGiaoEntity e) {
@@ -220,7 +220,7 @@ public class DbMapper {
     return new ViecGiao(e.getId(), e.getNoiDung(), e.getNguoiTao(), t(e.getTaoLuc()), new ArrayList<>(e.getNguoiNhan()), e.getHdbId(),
         d(e.getHan()), e.getGio(), e.isUuTien(), t(e.getXongLuc()), e.getNguoiXong(), ph, e.getMa(), e.getNhom(), d(e.getBatDau()),
         e.getMucUuTien(), e.getNguonLoai(), e.getHdmId(), yeuCauHan(e), new ArrayList<>(e.getFiles().stream().map(this::file).toList()),
-        e.getKhId(), e.getKenh(), e.getNhacTruoc());
+        e.getKhId(), e.getKenh(), e.getNhacTruoc(), trueOrNull(e.isSuCo()));
   }
 
   CanhBao canhBao(CanhBaoEntity e) {
@@ -413,6 +413,7 @@ public class DbMapper {
     e.setNgayHoaDon(ld(x.getNgayHoaDon()));
     e.setGiaTri(x.getGiaTri());
     e.setTepId(Texts.emptyToNull(x.getFileId()));
+    e.setThuocPhuTai(x.isThuocPhuTai());
   }
 
   public void applyNguonTien(NguonTien x, NguonTienEntity e) {
@@ -646,6 +647,7 @@ public class DbMapper {
     e.setLyDoPhat(x.getLyDoPhat());
     e.setLyDoHuy(x.getLyDoHuy());
     e.setGhiChuHoSoThieu(x.getGhiChuHoSoThieu());
+    e.setThuocPhuTai(Boolean.TRUE.equals(x.getThuocPhuTai()));
     e.setTaoLuc(in(x.getTaoLuc()));
     e.setLaImport(Boolean.TRUE.equals(x.getLaImport()));
     e.getDotTT().clear();
@@ -706,6 +708,7 @@ public class DbMapper {
     e.setKhId(Texts.emptyToNull(x.getKhId()));
     e.setKenh(Texts.emptyToNull(x.getKenh()));
     e.setNhacTruoc(x.getNhacTruoc());
+    e.setSuCo(Boolean.TRUE.equals(x.getSuCo()));
     YeuCauHan y = x.getYeuCauHan();
     e.setYcNguoi(y == null ? null : y.getNguoi());
     e.setYcLuc(y == null ? null : in(y.getLuc()));

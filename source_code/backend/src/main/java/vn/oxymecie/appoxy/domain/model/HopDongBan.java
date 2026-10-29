@@ -37,4 +37,6 @@ public class HopDongBan {
   private String taoLuc;
   @JsonProperty("import")
   private Boolean laImport;
+  /** Phân loại: HĐ bán thuộc Phú Tài. */
+  private Boolean thuocPhuTai;
 }

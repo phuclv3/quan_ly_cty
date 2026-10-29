@@ -95,7 +95,7 @@ public final class Req {
                          @Pattern(regexp = "^(\\d{4}-\\d{2}-\\d{2})?$", message = NGAY_MSG) String batDau,
                          @Pattern(regexp = NGAY, message = NGAY_MSG) String han, String gio, String mucUuTien,
                          List<vn.oxymecie.appoxy.domain.model.FileRef> files,
-                         @Size(max = 20) String khId, @Size(max = 30) String kenh, Integer nhacTruoc) {}
+                         @Size(max = 20) String khId, @Size(max = 30) String kenh, Integer nhacTruoc, Boolean suCo) {}
 
   public record BaoRuiRo(@NotBlank(message = "Chọn mức cảnh báo") @Pattern(regexp = "^P[012]$", message = "Mức cảnh báo phải là P0, P1 hoặc P2") String muc,
                          @NotBlank(message = "Nhập nội dung rủi ro") @Size(max = 4000) String noiDung,

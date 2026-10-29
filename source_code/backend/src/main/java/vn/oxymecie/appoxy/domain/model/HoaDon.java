@@ -16,4 +16,6 @@ public class HoaDon {
   private String ngayHoaDon;
   private long giaTri;
   private String fileId;
+  /** Hoá đơn do Phú Tài xuất cho khách. */
+  private boolean thuocPhuTai;
 }

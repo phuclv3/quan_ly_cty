@@ -165,6 +165,7 @@ public final class Visibility {
     x.setGhiChu(h.getGhiChu());
     x.setCoTamUng(h.getCoTamUng());
     x.setLyDoHuy(h.getLyDoHuy());
+    x.setThuocPhuTai(h.getThuocPhuTai());
     x.setTaoLuc(h.getTaoLuc());
     x.setLaImport(h.getLaImport());
     if (h.getDongHang() != null)

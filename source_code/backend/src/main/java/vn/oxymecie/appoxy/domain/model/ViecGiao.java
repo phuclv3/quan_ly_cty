@@ -42,4 +42,6 @@ public class ViecGiao {
   private String khId;
   private String kenh;
   private Integer nhacTruoc;
+  /** Sự cố phát sinh khi giao hàng (gắn HĐ bán đang giao). */
+  private Boolean suCo;
 }

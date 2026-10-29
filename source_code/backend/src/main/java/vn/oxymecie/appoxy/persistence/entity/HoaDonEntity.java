@@ -34,4 +34,7 @@ public class HoaDonEntity {
 
   @Column(name = "tep_id")
   private String tepId;
+
+  @Column(name = "thuoc_phu_tai", nullable = false)
+  private boolean thuocPhuTai;
 }

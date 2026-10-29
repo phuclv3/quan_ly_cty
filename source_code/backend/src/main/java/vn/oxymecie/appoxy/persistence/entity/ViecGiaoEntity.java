@@ -78,6 +78,9 @@ public class ViecGiaoEntity {
   @Column(name = "nhac_truoc")
   private Integer nhacTruoc;
 
+  @Column(name = "su_co", nullable = false)
+  private boolean suCo;
+
   @Column(name = "yc_nguoi")
   private String ycNguoi;
 
