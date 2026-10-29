@@ -873,6 +873,7 @@ export class Store {
     if (e) return e;
     if (!n.id.trim() || !n.ten.trim()) return 'Cần nhập Mã nguồn và Tên';
     if (isNew && this.nguonById(n.id)) return `Mã nguồn ${n.id} đã có`;
+    if (n.congTy !== 'OXY' && n.congTy !== 'KOXY') return 'Chưa chọn Công ty';
     const cu = this.nguonById(n.id);
     if (cu && this.nguonDaPhatSinh(n.id) && (cu.soDuDauKy !== n.soDuDauKy || cu.ngayDauKy !== n.ngayDauKy))
       return 'Nguồn đã có phiếu được duyệt — không sửa Số dư đầu kỳ / Ngày đầu kỳ';

@@ -186,9 +186,13 @@ export interface HoaDon {
 
 // ── Danh mục ────────────────────────────────────────────────────────────
 
+/** Công ty sở hữu nguồn tiền: OXY = CTCP OXYMECIE Việt Nam, KOXY = CTCP Khí OXYMECIE. */
+export type CongTyNguon = 'OXY' | 'KOXY';
+
 export interface NguonTien {
   id: string;
   ten: string;
+  congTy: CongTyNguon;
   loai: 'Tiền mặt' | 'Ngân hàng';
   soTaiKhoan?: string;
   nganHang?: string;

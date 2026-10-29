@@ -172,16 +172,11 @@ export async function buildSeed(): Promise<Db> {
 
   // ── Danh mục cố định theo spec ──
   db.nguonTien.push(
-    { id: 'NT-TM', ten: 'Tiền mặt', loai: 'Tiền mặt', soDuDauKy: 50_000_000, ngayDauKy: '2026-01-01', trangThai: TT.DANG_DUNG },
-    {
-      id: 'NT-NH',
-      ten: 'Ngân hàng (UNC)',
-      loai: 'Ngân hàng',
-      nganHang: CXD,
-      soDuDauKy: 900_000_000,
-      ngayDauKy: '2026-01-01',
-      trangThai: TT.DANG_DUNG,
-    },
+    { id: 'MSB-OXY', ten: 'Ngân hàng MSB', congTy: 'OXY', loai: 'Ngân hàng', nganHang: 'MSB', soDuDauKy: 0, ngayDauKy: '2026-01-01', trangThai: TT.DANG_DUNG },
+    { id: 'MB-OXY', ten: 'Ngân hàng MB', congTy: 'OXY', loai: 'Ngân hàng', nganHang: 'MB', soDuDauKy: 900_000_000, ngayDauKy: '2026-01-01', trangThai: TT.DANG_DUNG },
+    { id: 'TM-OXY', ten: 'Tiền mặt', congTy: 'OXY', loai: 'Tiền mặt', soDuDauKy: 50_000_000, ngayDauKy: '2026-01-01', trangThai: TT.DANG_DUNG },
+    { id: 'MB-KOXY', ten: 'Ngân hàng MB', congTy: 'KOXY', loai: 'Ngân hàng', nganHang: 'MB', soDuDauKy: 0, ngayDauKy: '2026-01-01', trangThai: TT.DANG_DUNG },
+    { id: 'TM-KOXY', ten: 'Tiền mặt', congTy: 'KOXY', loai: 'Tiền mặt', soDuDauKy: 0, ngayDauKy: '2026-01-01', trangThai: TT.DANG_DUNG },
   );
   const lcp: LoaiChiPhi[] = [
     { id: 'VH-VP', ten: 'Văn phòng', nhom: 'Vận hành', dangDung: true },
@@ -313,7 +308,7 @@ export async function buildSeed(): Promise<Db> {
         soTien: d.soTien,
         ngayThu: d.daThu ? d.ngayThu : undefined,
         soTienThu: d.daThu ? d.soTien : undefined,
-        nguonTienNhan: d.daThu ? 'NT-NH' : undefined,
+        nguonTienNhan: d.daThu ? 'MB-OXY' : undefined,
       })),
       taoLuc: nowIso(),
       import: true,
@@ -404,13 +399,13 @@ export async function buildSeed(): Promise<Db> {
       const p = phieu(db, so, {
         ngayLap: d.ngayTra,
         loai: 'Chi',
-        nguonTien: 'NT-NH',
+        nguonTien: 'MB-OXY',
         loaiChiPhi: undefined,
         noiDung: `Trả NCC đợt ${i + 1} — HĐ mua ${r.soHD}`,
         soTienChi: Math.round(d.soTien),
         phatSinh: { loai: 'HDM-DotTT', hdId: m.id, dot: i + 1 },
       });
-      return { dot: i + 1, soTien: Math.round(d.soTien), ngayTra: d.ngayTra, soTienTra: Math.round(d.soTien), nguonTien: 'NT-NH', phieuChiId: p.id };
+      return { dot: i + 1, soTien: Math.round(d.soTien), ngayTra: d.ngayTra, soTienTra: Math.round(d.soTien), nguonTien: 'MB-OXY', phieuChiId: p.id };
     });
   }
 
@@ -557,9 +552,9 @@ export async function buildSeed(): Promise<Db> {
   // ── Sổ quỹ (Tiền Mặt OXY) ──
   const rows = [...RAW.phieuThuChi].sort((a, b) => (a.ngay < b.ngay ? -1 : 1));
   for (const r of rows) {
-    const nguon = r.nguon === 'Ngân hàng' ? 'NT-NH' : 'NT-TM';
+    const nguon = r.nguon === 'Ngân hàng' ? 'MB-OXY' : 'TM-OXY';
     if (r.loai === 'Thu' && /r[uú]t ti[eề]n/i.test(r.noiDung)) {
-      phieu(db, so, { ngayLap: r.ngay, loai: 'Luân chuyển', nguonTien: 'NT-NH', nguonTienDen: 'NT-TM', noiDung: r.noiDung, soTienChi: r.soTien });
+      phieu(db, so, { ngayLap: r.ngay, loai: 'Luân chuyển', nguonTien: 'MB-OXY', nguonTienDen: 'TM-OXY', noiDung: r.noiDung, soTienChi: r.soTien });
     } else if (r.loai === 'Thu') {
       phieu(db, so, { ngayLap: r.ngay, loai: 'Thu', nguonTien: nguon, noiDung: r.noiDung, soTienThu: r.soTien });
     } else {
@@ -592,7 +587,7 @@ export async function buildSeed(): Promise<Db> {
       loaiChiPhi: LCP_VAN_CHUYEN,
       noiDung: '',
       soTien: 0,
-      nguonTien: 'NT-TM',
+      nguonTien: 'TM-OXY',
       nguoiThucHien: ADMIN,
       trangThai: TT.CHO_DUYET,
       files: [],
@@ -609,7 +604,7 @@ export async function buildSeed(): Promise<Db> {
     soPhieu: so(db.cauHinh.TIEN_TO_TC, todayIso()),
     ngayLap: todayIso(),
     loai: 'Chi',
-    nguonTien: 'NT-TM',
+    nguonTien: 'TM-OXY',
     loaiChiPhi: 'VH-VP',
     noiDung: '[Demo] Mua văn phòng phẩm tháng này',
     soTienChi: 640_000,

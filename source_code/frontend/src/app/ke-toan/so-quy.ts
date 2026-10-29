@@ -67,10 +67,10 @@ export interface SqRow {
     </app-filter>
     <app-chon-bar [cn]="cn" ten="phiếu" (xoa)="xoaNhieu()" />
     <div class="tbl-wrap">
-      <table class="tbl freeze">
+      <table class="tbl freeze sq">
         <thead>
           <tr>
-            @if (chonDuoc()) { <th style="width:36px"><input type="checkbox" aria-label="Chọn cả trang" [checked]="cn.du(idTrang())" (change)="cn.chonTat(idTrang(), $any($event.target).checked)" /></th> }<th app-sort-th [sx]="sx" k="so">Số phiếu</th><th app-sort-th [sx]="sx" k="ngay">Ngày lập</th><th app-sort-th [sx]="sx" k="loai">Loại phiếu</th><th app-sort-th [sx]="sx" k="nguon">Nguồn tiền</th>@if (!laThu()) { <th>Loại chi phí</th> }<th>Nội dung</th>
+            @if (chonDuoc()) { <th style="width:36px"><input type="checkbox" aria-label="Chọn cả trang" [checked]="cn.du(idTrang())" (change)="cn.chonTat(idTrang(), $any($event.target).checked)" /></th> }<th app-sort-th [sx]="sx" k="so">Số phiếu</th><th app-sort-th [sx]="sx" k="ngay" class="c-ngay">Ngày lập</th><th app-sort-th [sx]="sx" k="loai">Loại phiếu</th><th app-sort-th [sx]="sx" k="nguon">Nguồn tiền</th>@if (!laThu()) { <th>Loại chi phí</th> }<th class="c-nd">Nội dung</th>
             <th app-sort-th [sx]="sx" k="thu" class="num">Thu</th>@if (!laThu()) { <th app-sort-th [sx]="sx" k="chi" class="num">Chi</th> }<th app-sort-th [sx]="sx" k="nguoi">Người đề nghị</th><th app-sort-th [sx]="sx" k="tt">Trạng thái</th><th style="width:70px"></th>
           </tr>
         </thead>
@@ -81,11 +81,11 @@ export interface SqRow {
                 <td (click)="$event.stopPropagation()">@if (xoaDuoc(r)) { <input type="checkbox" [attr.aria-label]="'Chọn ' + r.so" [checked]="cn.co(r.key)" (change)="cn.flip(r.key)" /> }</td>
               }
               <td><b>{{ r.so }}</b></td>
-              <td>{{ viDate(r.ngay) }}</td>
+              <td class="c-ngay">{{ viDate(r.ngay) }}</td>
               <td>@if (r.c) { <span class="tag info">CP HĐ</span> } @else { {{ r.loai }} }</td>
               <td>{{ r.nguon }}</td>
               @if (!laThu()) { <td>{{ r.lcp || '—' }}</td> }
-              <td>
+              <td class="c-nd">
                 {{ r.noiDung }}
                 @if (r.hdbId) { <a class="sub linkish" [routerLink]="['/hop-dong-ban', r.hdbId]" (click)="$event.stopPropagation()">HĐ {{ store.hdbById(r.hdbId)?.soHD }}</a> }
                 @if (r.p?.phatSinh) { <span class="sub muted">Sinh từ đợt thanh toán HĐ</span> }

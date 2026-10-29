@@ -7,8 +7,9 @@ import { daysFromToday, money, sum, todayIso, viDate } from '../core/util';
 import { MoneyInput, Pick, PickOption, TrangThai } from '../shared/ui-kit';
 import { donVi, esc, inGiay, kyTen } from './kt-print';
 import { TT, ttNhan } from '../core/trang-thai';
+import { BaoCaoTongQuan } from './bao-cao-tong-quan';
 
-type Muc = 'tam-ung' | 'so-du' | 'van-chuyen';
+type Muc = 'tong-quan' | 'tam-ung' | 'so-du' | 'van-chuyen';
 
 interface NhomTU {
   ten: string;
@@ -20,7 +21,7 @@ interface NhomTU {
 @Component({
   selector: 'app-kt-bao-cao',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MoneyInput, Pick, TrangThai, RouterLink],
+  imports: [MoneyInput, Pick, TrangThai, RouterLink, BaoCaoTongQuan],
   template: `
     <div class="btn-row" style="margin-bottom:12px">
       @for (m of mucs(); track m.k) {
@@ -29,6 +30,7 @@ interface NhomTU {
     </div>
 
     @switch (muc()) {
+      @case ('tong-quan') { <app-kt-tong-quan /> }
       @case ('tam-ung') {
         <h3 class="section-title">Tạm ứng chưa quyết toán</h3>
         <p class="sub muted">Phiếu Tạm ứng Đã duyệt chưa có Quyết toán Đã duyệt. Số ngày treo tính từ Ngày lập.</p>
@@ -58,10 +60,9 @@ interface NhomTU {
         </div>
       }
       @case ('so-du') {
-        <h3 class="section-title">Số dư theo nguồn tại ngày</h3>
         <div class="row" style="margin-bottom:10px">
-          <label for="sd-ngay">Tại ngày</label>
-          <input id="sd-ngay" type="date" [value]="ngay()" (input)="ngay.set($any($event.target).value || today)" />
+          <h3 class="section-title" style="margin:0">Số dư theo nguồn tại ngày</h3>
+          <input id="sd-ngay" type="date" aria-label="Tại ngày" [value]="ngay()" (input)="ngay.set($any($event.target).value || today)" />
         </div>
         <div class="tbl-wrap">
           <table class="tbl freeze">
@@ -94,8 +95,8 @@ interface NhomTU {
         }
       }
       @case ('van-chuyen') {
-        <h3 class="section-title">Quyết toán vận chuyển theo HĐ</h3>
         <div class="row" style="margin-bottom:10px">
+          <h3 class="section-title" style="margin:0">Quyết toán vận chuyển theo HĐ</h3>
           <app-pick [options]="hdOpts()" [value]="hdb()" (valueChange)="hdb.set($event)" placeholder="— Chọn Số HĐ bán —" style="min-width:280px" />
           @if (hd(); as h) {
             <a class="linkish" [routerLink]="['/hop-dong-ban', h.id]">Mở HĐ {{ h.soHD }}</a>
@@ -137,6 +138,7 @@ export class BaoCaoKtTab {
   protected readonly mucs = computed(() => {
     const out: { k: Muc; t: string }[] = [];
     const l = this.store.level('soQuy');
+    if (this.store.canView('nguonTien') && this.store.canView('congNo')) out.push({ k: 'tong-quan', t: 'Tổng quan' });
     if (l !== 'none' && l !== 'draft') out.push({ k: 'tam-ung', t: 'Tạm ứng chưa quyết toán' });
     if (this.store.canView('nguonTien')) out.push({ k: 'so-du', t: 'Số dư tại ngày' });
     if (this.store.canView('cpHD')) out.push({ k: 'van-chuyen', t: 'Quyết toán vận chuyển' });
