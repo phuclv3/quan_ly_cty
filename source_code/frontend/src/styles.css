@@ -119,6 +119,13 @@
 
 * { box-sizing: border-box; }
 html, body { margin: 0; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; overflow-x: clip; }
+body {
+  /* Điện thoại: không cuộn ngang cả trang, không "kéo giãn" nền khi vuốt quá mép; chừa tai thỏ / thanh trạng thái khi chạy PWA. */
+  overflow-x: clip; max-width: 100%; overscroll-behavior-y: none;
+  padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px);
+  -webkit-tap-highlight-color: transparent;
+}
 body {
   background: var(--bg);
   color: var(--ink);
@@ -851,6 +858,7 @@ tr.hilite > td { background: var(--warn-bg) !important; }
    ══════════════════════════════════════════════════════════════════ */
 @media (max-width: 900px) {
   .page-head { align-items: flex-start; }
+  .main { overflow-x: clip; }
   .page-head .actions { width: 100%; }
   .grid.c2, .grid.c3 { grid-template-columns: minmax(0, 1fr); }
 }
@@ -979,6 +987,40 @@ tr.hilite > td { background: var(--warn-bg) !important; }
   .tbl.freeze th:first-child, .tbl.freeze td:first-child { position: static; box-shadow: none; }
   .tbl td[colspan] { text-align: center; }
   .tbl td.empty { border: 0; padding: 20px 0; }
+
+  /* Ép ô trong thẻ co theo bề ngang màn hình (CSS riêng của từng trang hay đặt min-width/nowrap cho bảng rộng). */
+  /* :not(#_) nâng độ ưu tiên để thắng CSS riêng từng trang (Angular thêm thuộc tính _ngcontent vào từng phần tử chọn) */
+  .tbl:not(#_) tbody td, .tbl:not(#_) tfoot td { min-width: 0 !important; max-width: none !important; width: auto !important; padding-inline: 0 !important; }
+  .tbl-wrap:not(#_) { overflow: visible !important; }
+  .tbl:not(#_) tbody td:not(.num) { white-space: normal !important; }
+  .tbl tbody td .pt, .tbl tbody td .vt { white-space: normal; max-width: 100%; }
+  .tbl:not(#_) tbody td.ctr, .tbl:not(#_) tbody td.c-ma { text-align: left !important; }
+  .tbl tbody td::before { white-space: normal; overflow-wrap: anywhere; }
+  .tbl tbody td, .tbl tbody td > * { max-width: 100%; }
+  .tbl:not(#_) tbody td a, .tbl:not(#_) tbody td b, .tbl:not(#_) tbody td span { white-space: normal; overflow-wrap: anywhere; max-width: 100%; }
+  .tbl:not(#_) tbody td .tag, .tbl:not(#_) tbody td .st, .tbl:not(#_) tbody td .av { white-space: nowrap; }
+  .tbl tbody tr > td.chk-cell {
+    position: absolute !important; top: 12px; right: 14px; left: auto !important; width: auto !important; padding: 0 !important; border: 0 !important;
+    grid-column: auto !important; z-index: 2;
+  }
+  .tbl tbody tr > td.chk-cell::before { display: none !important; }
+  /* Ô kế tiếp checkbox làm tiêu đề thẻ (chừa chỗ cho checkbox bên phải) */
+  .tbl tbody tr:has(> td.chk-cell:first-child) > td:nth-child(2) {
+    grid-column: 1 / -1; padding: 0 36px 10px 0; border-bottom: 1px solid var(--line); font-size: 16.5px; font-weight: 700;
+  }
+  .tbl tbody tr:has(> td.chk-cell:first-child) > td:nth-child(2)::before { display: none; }
+
+  /* Thanh biểu đồ ngang của các trang báo cáo: cột nhãn hẹp lại để thanh còn chỗ */
+  .hb { grid-template-columns: minmax(70px, 38%) minmax(0, 1fr) auto !important; gap: 8px !important; }
+  /* Mọi lưới tự đặt cột cố định trong trang → 1 cột trên điện thoại hẹp */
+  .ky { grid-template-columns: minmax(0, 1fr) !important; }
+  .frm-g { grid-template-columns: minmax(0, 1fr) !important; }
+  .loc .q { min-width: 0 !important; flex: 1 1 100% !important; }
+  .main img, .main video, .main canvas { max-width: 100%; }
+  .main pre { overflow-x: auto; max-width: 100%; }
+
+  /* Thanh tab dạng viên thuốc khi xuống nhiều dòng: bo vừa phải, không thành khối tròn khổng lồ */
+  .page .seg:not(#_), .page .tabs:not(#_) { border-radius: 24px; }
 
   /* Popup → bottom-sheet toàn chiều ngang */
   .modal-back { padding: 0; place-items: end stretch; }
@@ -1177,14 +1219,21 @@ input.ngay:not(:disabled):not([readonly]) { cursor: text; }
   .shell, .shell.collapsed { grid-template-columns: minmax(0, 1fr); }
   .side { top: 0 !important; margin: 0; border-radius: 0; height: auto; }
   .topbar { top: 8px; margin: 8px 8px 0; height: 58px; border-radius: 18px; padding: 0 10px; }
-  .topbar { box-shadow: 0 0 0 8px var(--bg), var(--shadow); }
+  .topbar { box-shadow: 0 0 0 8px var(--bg), var(--shadow); gap: 8px; min-width: 0; }
+  .shell, .shell > .col { overflow-x: clip; }
+  .topbar > * { min-width: 0; }
+  .topbar .spacer { display: none; }
+  .topbar .bell, .topbar .avatar { width: 40px; height: 40px; }
+  .search { min-width: 0; padding: 0 12px; }
   .topbar .burger { display: none; }
   .topbar .m-brand { display: flex; }
-  .topbar .m-brand img { height: 34px; width: auto; }
+  .topbar .m-brand { flex: 0 1 auto; }
+  .topbar .m-brand img { height: 30px; width: auto; max-width: 100%; }
   .search { flex: 1; }
   .user-chip .who { display: none; }
   .main { margin: 8px; border-radius: 20px; padding: 14px 12px 64px; }
 }
+@media (max-width: 400px) { .topbar .m-brand { display: none; } }
 @media (min-width: 901px) {
   .shell.collapsed .side-brand span { display: none; }
   /* Thu gọn: chỉ lấy phần chữ "OXY" của logo, thu nhỏ để không bị cắt chữ Y; bỏ padding để đủ chỗ. */
@@ -1514,3 +1563,14 @@ button.bell { cursor: pointer; font: inherit; padding: 0; }
 .clock-d { font-size: 11.5px; color: var(--ink-3); }
 @media (max-width: 1100px) { .clock-d { display: none; } }
 @media (max-width: 700px) { .clock { display: none; } }
+
+/* ── PWA đã cài (standalone): chừa vùng thanh trạng thái phía trên ─────────────── */
+:root { --safe-t: env(safe-area-inset-top, 0px); }
+@media (display-mode: standalone), (display-mode: fullscreen) {
+  .topbar { height: calc(var(--top-h) + var(--safe-t)); padding-top: var(--safe-t); }
+  .side { top: calc(var(--top-h) + var(--safe-t)); }
+  .login-wrap { padding-top: calc(32px + var(--safe-t)); padding-bottom: calc(32px + var(--safe-b)); }
+}
+@media (display-mode: standalone) and (max-width: 900px) {
+  .side { top: 0 !important; padding-top: calc(18px + var(--safe-t)); }
+}

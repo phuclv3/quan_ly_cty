@@ -68,7 +68,7 @@ export interface SqRow {
         <label class="check-row"><input type="checkbox" [checked]="gop()" (change)="gop.set($any($event.target).checked)" /> Xem gộp CP HĐ</label>
       }
     </app-filter>
-    <app-chon-bar [cn]="cn" ten="phiếu" (xoa)="xoaNhieu()" />
+    <app-chon-bar [cn]="cn" ten="phiếu" [coDuyet]="duyetP()" [coXoa]="coTheXoa()" (duyet)="duyetNhieu()" (xoa)="xoaNhieu()" />
     <div class="tbl-wrap">
       <table class="tbl freeze sq">
         <thead>
@@ -244,7 +244,34 @@ export class SoQuyTab {
   /** Xoá nhiều: nháp xoá thẳng, còn lại gửi yêu cầu xoá; dòng Chi phí HĐ xoá ở màn Chi phí. Quyền / ràng buộc do Store kiểm. */
   private readonly confirm = inject(Confirm);
   protected readonly cn = new ChonNhieu();
-  protected readonly chonDuoc = computed(() => this.store.level('duyetXoa') !== 'none' || this.coTheLap());
+  protected readonly duyetP = computed(() => this.store.canApprove('soQuyDuyet'));
+  protected readonly coTheXoa = computed(() => this.store.level('duyetXoa') !== 'none' || this.coTheLap());
+  protected readonly chonDuoc = computed(() => this.coTheXoa() || this.duyetP());
+
+  /** Duyệt nhiều: chỉ phiếu đang Chờ duyệt; phiếu do chính mình lập (không có quyền tự duyệt) bị bỏ qua. */
+  protected async duyetNhieu(): Promise<void> {
+    const me = this.store.meId();
+    const tuDuyetDuoc = this.store.canEdit('tuDuyet');
+    const chon = this.rows().filter((r) => this.cn.co(r.key) && r.p);
+    const duoc = chon.filter((r) => r.p!.trangThai === TT.CHO_DUYET && (r.p!.nguoiDeNghi !== me || tuDuyetDuoc));
+    if (!duoc.length) {
+      this.store.say('Không có phiếu nào duyệt được — chỉ duyệt phiếu Chờ duyệt do người khác lập');
+      return;
+    }
+    const bo = chon.length - duoc.length;
+    const thu = sum(duoc.filter((r) => !r.lc), (r) => r.thu);
+    const chi = sum(duoc.filter((r) => !r.lc), (r) => r.chi);
+    const ok = await this.confirm.ask({
+      title: `Duyệt ${duoc.length} phiếu? ${[thu ? `Thu +${money(thu)} đ` : '', chi ? `Chi −${money(chi)} đ` : ''].filter(Boolean).join(' · ')}`,
+      message: 'Phiếu đã duyệt được cộng / trừ vào số dư nguồn tiền và bị khoá sửa. Muốn bỏ phải gửi yêu cầu xoá.',
+      warn: bo ? `${bo} phiếu đã chọn không duyệt được (không ở trạng thái Chờ duyệt hoặc do bạn lập) sẽ được bỏ qua.` : undefined,
+      ok: 'Duyệt',
+    });
+    if (!ok) return;
+    const err = this.store.duyetPhieu(duoc.map((r) => r.p!.id));
+    this.store.say(err ?? `Đã duyệt ${duoc.length} phiếu`);
+    this.cn.xoa();
+  }
   protected xoaDuoc(r: SqRow): boolean {
     return !!r.p && !this.store.dangChoXoa('PhieuThuChi', r.p.id);
   }

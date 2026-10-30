@@ -47,6 +47,8 @@ export function applyLabels(table: HTMLTableElement): void {
   for (const row of rows) {
     let col = 0;
     for (const td of Array.from(row.cells)) {
+      // Ô chỉ chứa checkbox chọn dòng → CSS đưa lên góc phải thẻ (không dựa vào :has để chắc chắn trên mọi trình duyệt).
+      td.classList.toggle('chk-cell', td.children.length === 1 && td.firstElementChild?.matches("input[type='checkbox']") === true && !td.textContent?.trim());
       const span = Math.max(1, td.colSpan);
       const manual = td.hasAttribute('data-label') && !td.hasAttribute(AUTO);
       if (!manual) {

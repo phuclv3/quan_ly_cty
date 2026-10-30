@@ -33,7 +33,7 @@ const TRANG_THAI = [TT.NHAP, TT.CHO_DUYET, TT.DA_DUYET, TT.TU_CHOI];
       </div>
     </div>
     <app-filter [(loc)]="loc" memo="kt-chi-phi" [facets]="facets()" placeholder="Tìm mã CP, số HĐ, khách hàng, nội dung…" />
-    <app-chon-bar [cn]="cn" ten="chi phí" (xoa)="xoaNhieu()" />
+    <app-chon-bar [cn]="cn" ten="chi phí" [coDuyet]="duyetC()" [coXoa]="coTheXoa()" (duyet)="duyetNhieu()" (xoa)="xoaNhieu()" />
     <div class="tbl-wrap">
       <table class="tbl freeze">
         <thead>
@@ -86,7 +86,32 @@ export class ChiPhiTab {
 
   /** Xoá nhiều: nháp xoá thẳng, còn lại gửi yêu cầu xoá. Quyền và ràng buộc từng bản ghi do Store kiểm. */
   protected readonly cn = new ChonNhieu();
-  protected readonly chonDuoc = computed(() => this.store.canEdit('cpHD') || this.store.level('duyetXoa') !== 'none');
+  protected readonly duyetC = computed(() => this.store.canApprove('cpHDDuyet'));
+  protected readonly coTheXoa = computed(() => this.store.canEdit('cpHD') || this.store.level('duyetXoa') !== 'none');
+  protected readonly chonDuoc = computed(() => this.coTheXoa() || this.duyetC());
+
+  /** Duyệt nhiều: chỉ chi phí đang Chờ duyệt; bản do chính mình thực hiện (không có quyền tự duyệt) bị bỏ qua. */
+  protected async duyetNhieu(): Promise<void> {
+    const me = this.store.meId();
+    const tuDuyetDuoc = this.store.canEdit('tuDuyet');
+    const chon = this.rows().filter((c) => this.cn.co(c.id));
+    const duoc = chon.filter((c) => c.trangThai === TT.CHO_DUYET && (c.nguoiThucHien !== me || tuDuyetDuoc));
+    if (!duoc.length) {
+      this.store.say('Không có chi phí nào duyệt được — chỉ duyệt chi phí Chờ duyệt do người khác thực hiện');
+      return;
+    }
+    const bo = chon.length - duoc.length;
+    const ok = await this.confirm.ask({
+      title: `Duyệt ${duoc.length} chi phí? Chi −${money(sum(duoc, (c) => c.soTien))} đ`,
+      message: 'Chi phí đã duyệt được trừ vào số dư nguồn tiền, cộng vào chi phí của HĐ và bị khoá sửa. Muốn bỏ phải gửi yêu cầu xoá.',
+      warn: bo ? `${bo} chi phí đã chọn không duyệt được (không ở trạng thái Chờ duyệt hoặc do bạn thực hiện) sẽ được bỏ qua.` : undefined,
+      ok: 'Duyệt',
+    });
+    if (!ok) return;
+    const err = this.store.duyetChiPhi(duoc.map((c) => c.id));
+    this.store.say(err ?? `Đã duyệt ${duoc.length} chi phí`);
+    this.cn.xoa();
+  }
   protected xoaDuoc(c: ChiPhiHD): boolean {
     return !this.store.dangChoXoa('ChiPhiThucHienHD', c.id);
   }

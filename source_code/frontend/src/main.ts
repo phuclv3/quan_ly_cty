@@ -7,3 +7,8 @@ khoiTaoTooltip();
 
 bootstrapApplication(App, appConfig)
   .catch((err) => console.error(err));
+
+// PWA: đăng ký service worker (đường dẫn tương đối để chạy được cả khi app nằm dưới thư mục con).
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+}

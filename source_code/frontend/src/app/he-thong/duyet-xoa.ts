@@ -9,6 +9,8 @@ import { Confirm } from '../shared/confirm';
 import { FilterBar, Facet, LOC_RONG, Loc, khopQ, khopSel } from '../shared/filter-bar';
 import { Pager, paginate } from '../shared/pager';
 import { Modal, TrangThai } from '../shared/ui-kit';
+import { ChonNhieu } from '../shared/chon-nhieu';
+import { ChonBar } from '../shared/chon-bar';
 import { linkPhieuKho } from '../kho/kho-util';
 import { TT } from '../core/trang-thai';
 
@@ -24,7 +26,7 @@ interface LinkDT {
   selector: 'app-duyet-xoa',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'page' },
-  imports: [RouterLink, FilterBar, Pager, TrangThai, Modal],
+  imports: [RouterLink, FilterBar, Pager, TrangThai, Modal, ChonBar],
   template: `
     <div class="page-head">
       <div>
@@ -48,10 +50,14 @@ interface LinkDT {
 
     <app-filter [(loc)]="loc" memo="duyet-xoa" [facets]="facets()" [time]="false" placeholder="Tìm đối tượng, lý do, người gửi…" />
 
+    @if (tab() === 'cho-duyet') {
+      <app-chon-bar [cn]="cn" ten="yêu cầu xoá" [coDuyet]="true" nhanDuyet="Duyệt xoá" [duyetNguyHiem]="true" [coTuChoi]="true" [coXoa]="false" (duyet)="duyetNhieu()" (tuChoi)="tuChoiNhieu()" />
+    }
     <div class="tbl-wrap">
       <table class="tbl freeze">
         <thead>
           <tr>
+            @if (chonDuoc()) { <th style="width:36px"><input type="checkbox" aria-label="Chọn cả trang" [checked]="cn.du(idTrang())" (change)="cn.chonTat(idTrang(), $any($event.target).checked)" /></th> }
             <th>Ngày gửi</th>
             <th>Người gửi</th>
             <th>Loại</th>
@@ -64,6 +70,9 @@ interface LinkDT {
         <tbody>
           @for (y of pg.items(); track y.id) {
             <tr>
+              @if (chonDuoc()) {
+                <td (click)="$event.stopPropagation()">@if (duyetDuocY(y)) { <input type="checkbox" [attr.aria-label]="'Chọn ' + y.moTa" [checked]="cn.co(y.id)" (change)="cn.flip(y.id)" /> }</td>
+              }
               <td>{{ viMoment(y.ngayGui) }}</td>
               <td>{{ store.userName(y.nguoiGui) }}</td>
               <td>{{ store.nhanDoiTuong(y.loai) }}</td>
@@ -101,7 +110,7 @@ interface LinkDT {
               </td>
             </tr>
           } @empty {
-            <tr><td colspan="7" class="empty">{{ tab() === 'cho-duyet' ? 'Không có yêu cầu nào đang chờ duyệt' : 'Chưa có yêu cầu đã xử lý' }}</td></tr>
+            <tr><td [attr.colspan]="chonDuoc() ? 8 : 7" class="empty">{{ tab() === 'cho-duyet' ? 'Không có yêu cầu nào đang chờ duyệt' : 'Chưa có yêu cầu đã xử lý' }}</td></tr>
           }
         </tbody>
       </table>
@@ -199,7 +208,67 @@ export class DuyetXoaPage {
     ];
   });
 
+  /** Duyệt / từ chối nhiều (chỉ tab Chờ duyệt, chỉ yêu cầu người dùng có quyền duyệt). */
+  protected readonly cn = new ChonNhieu();
+  protected readonly chonDuoc = computed(() => this.tab() === 'cho-duyet' && this.duyetDuoc());
+  protected duyetDuocY(y: YeuCauXoa): boolean {
+    return y.trangThai === TT.CHO_DUYET && this.store.duyetXoaDuoc(y);
+  }
+  protected readonly idTrang = computed(() => this.pg.items().filter((y) => this.duyetDuocY(y)).map((y) => y.id));
+  private chonDuocXuLy(): YeuCauXoa[] {
+    return this.choDuyet().filter((y) => this.cn.co(y.id) && this.duyetDuocY(y));
+  }
+
+  protected async duyetNhieu(): Promise<void> {
+    const ds = this.chonDuocXuLy();
+    if (!ds.length) return this.store.say('Không có yêu cầu nào duyệt được');
+    const ahAll = ds.flatMap((y) => this.store.anhHuongXoa(y));
+    const ok = await this.confirm.ask({
+      title: `Duyệt xoá ${ds.length} bản ghi?`,
+      message: `Các bản ghi bị xoá hẳn / huỷ, không khôi phục được; số dư, tồn kho, công nợ liên quan tính lại ngay. Gồm: ${ds.slice(0, 5).map((y) => y.moTa).join('; ')}${ds.length > 5 ? `; … và ${ds.length - 5} bản ghi khác` : ''}.`,
+      warn: ahAll.length ? [...new Set(ahAll)].slice(0, 6).join(' · ') : undefined,
+      ok: `Duyệt xoá ${ds.length}`,
+    });
+    if (!ok) return;
+    // Xử lý tuần tự: xoá bản ghi này có thể kéo theo yêu cầu khác (HĐ → phiếu…), nên đọc lại trạng thái trước mỗi lần.
+    let xong = 0;
+    const loi: string[] = [];
+    for (const y of ds) {
+      const hienTai = this.store.yeuCauXoa().find((x) => x.id === y.id);
+      if (!hienTai || hienTai.trangThai !== TT.CHO_DUYET) continue;
+      const e = this.store.duyetXoa(y.id);
+      if (e) loi.push(`${y.moTa}: ${e}`);
+      else xong++;
+    }
+    this.cn.xoa();
+    this.store.say(loi.length ? `Đã duyệt ${xong}/${ds.length} · Lỗi: ${loi.slice(0, 2).join(' · ')}` : `Đã duyệt xoá ${xong} bản ghi`);
+  }
+
+  protected async tuChoiNhieu(): Promise<void> {
+    const ds = this.chonDuocXuLy();
+    if (!ds.length) return this.store.say('Không có yêu cầu nào từ chối được');
+    const lyDo = await this.confirm.prompt({
+      title: `Từ chối ${ds.length} yêu cầu xoá?`,
+      message: 'Các bản ghi được giữ nguyên và mở khoá sửa lại.',
+      label: 'Lý do từ chối (áp dụng cho tất cả)',
+      minLength: 3,
+      multiline: true,
+      ok: `Từ chối ${ds.length}`,
+    });
+    if (lyDo === null) return;
+    let xong = 0;
+    const loi: string[] = [];
+    for (const y of ds) {
+      const e = this.store.tuChoiXoa(y.id, lyDo);
+      if (e) loi.push(`${y.moTa}: ${e}`);
+      else xong++;
+    }
+    this.cn.xoa();
+    this.store.say(loi.length ? `Đã từ chối ${xong}/${ds.length} · Lỗi: ${loi.slice(0, 2).join(' · ')}` : `Đã từ chối ${xong} yêu cầu xoá`);
+  }
+
   protected setTab(t: Tab): void {
+    this.cn.xoa();
     void this.router.navigate([], { relativeTo: this.route, queryParams: { tab: t }, queryParamsHandling: 'merge', replaceUrl: true });
   }
 
