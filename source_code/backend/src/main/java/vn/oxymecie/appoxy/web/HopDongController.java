@@ -183,7 +183,7 @@ public class HopDongController {
   public CommandResponse<PhieuThuChi> thucThu(@PathVariable String id, @PathVariable int dot, @Valid @RequestBody Req.ThucThu r) {
     return cmd.run("HDB.thucThu", c -> {
       PhieuThuChi p = hdb.ghiThucThu(c, id, dot, r.ngayThu(), r.soTienThu(), r.nguonTienNhan());
-      c.nhatKy("HopDongBan", id, "Thực thu đợt " + dot + " — " + p.getSoPhieu());
+      c.nhatKy("HopDongBan", id, "Thực thu đợt " + dot + (p == null ? " — về quỹ Phú Tài" : " — " + p.getSoPhieu()));
       return p;
     });
   }

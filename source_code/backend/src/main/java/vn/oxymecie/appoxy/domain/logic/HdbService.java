@@ -273,12 +273,21 @@ public class HdbService {
       throw ApiException.conflict("HĐ đang ở Báo giá — chỉ ghi thực thu từ Hiệu lực trở đi (trừ đợt tạm ứng)");
     DotTTBan d = h.getDotTT().stream().filter(x -> x.getDot() == dot).findFirst().orElse(null);
     if (d == null) throw ApiException.notFound("Không có đợt này");
-    if (Texts.blank(ngayThu) || !(soTienThu > 0) || Texts.blank(nguonTienNhan))
-      throw ApiException.invalid("Cần Ngày thực thu, Số tiền > 0 và Nguồn tiền nhận");
-    if (c.nguon(nguonTienNhan) == null) throw ApiException.invalid("Nguồn tiền nhận không tồn tại");
+    PhieuThuChi cu = d.getPhieuThuId() == null ? null : c.phieu(d.getPhieuThuId());
+    // HĐ thuộc Phú Tài: tiền về quỹ ảo Phú Tài (PhuTaiBaoCaoService.soQuy đọc thẳng từ đợt TT), không sinh phiếu ở Sổ quỹ / Nguồn tiền Oxy.
+    boolean phuTai = Boolean.TRUE.equals(h.getThuocPhuTai()) && cu == null;
+    if (Texts.blank(ngayThu) || !(soTienThu > 0) || (!phuTai && Texts.blank(nguonTienNhan)))
+      throw ApiException.invalid(phuTai ? "Cần Ngày thực thu và Số tiền > 0" : "Cần Ngày thực thu, Số tiền > 0 và Nguồn tiền nhận");
+    if (!phuTai && c.nguon(nguonTienNhan) == null) throw ApiException.invalid("Nguồn tiền nhận không tồn tại");
     long conLai = hdbConThuDuoc(h, dot);
     if (soTienThu > conLai) throw ApiException.invalid("Số thu vượt phần còn phải thu của HĐ (tối đa " + Money.vnd(conLai) + ")");
-    PhieuThuChi cu = d.getPhieuThuId() == null ? null : c.phieu(d.getPhieuThuId());
+    if (phuTai) {
+      d.setNgayThu(ngayThu);
+      d.setSoTienThu(soTienThu);
+      d.setNguonTienNhan(null);
+      Calc.apDungTuDongHdb(h);
+      return null;
+    }
     if (cu != null && TrangThai.DA_DUYET.equals(cu.getTrangThai()))
       throw ApiException.conflict("Phiếu thu của đợt này đã duyệt — muốn sửa thì bấm \"Yêu cầu xoá phiếu\" ở dòng đợt, duyệt xong ghi lại");
     PhieuThuChi p = cu != null ? cu : phieuMoi(c, "Thu");
