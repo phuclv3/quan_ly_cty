@@ -68,7 +68,7 @@ export interface SqRow {
         <label class="check-row"><input type="checkbox" [checked]="gop()" (change)="gop.set($any($event.target).checked)" /> Xem gộp CP HĐ</label>
       }
     </app-filter>
-    <app-chon-bar [cn]="cn" ten="phiếu" [coDuyet]="duyetP()" [coXoa]="coTheXoa()" (duyet)="duyetNhieu()" (xoa)="xoaNhieu()" />
+    <app-chon-bar [cn]="cn" ten="phiếu" [coGui]="coTheLap()" (gui)="guiDuyetNhieu()" [coDuyet]="duyetP()" titleDuyet="Duyệt các phiếu Chờ duyệt đã chọn; phiếu do chính bạn lập (không có quyền tự duyệt) sẽ được bỏ qua" [coXoa]="coTheXoa()" (duyet)="duyetNhieu()" (xoa)="xoaNhieu()" />
     <div class="tbl-wrap">
       <table class="tbl freeze sq">
         <thead>
@@ -247,6 +247,27 @@ export class SoQuyTab {
   protected readonly duyetP = computed(() => this.store.canApprove('soQuyDuyet'));
   protected readonly coTheXoa = computed(() => this.store.level('duyetXoa') !== 'none' || this.coTheLap());
   protected readonly chonDuoc = computed(() => this.coTheXoa() || this.duyetP());
+
+  /** Gửi duyệt nhiều: chỉ phiếu Nháp / Từ chối; phiếu thiếu thông tin bị Store bỏ qua và báo lý do. */
+  protected async guiDuyetNhieu(): Promise<void> {
+    const chon = this.rows().filter((r) => this.cn.co(r.key) && r.p);
+    const duoc = chon.filter((r) => r.p!.trangThai === TT.NHAP || r.p!.trangThai === TT.TU_CHOI);
+    if (!duoc.length) {
+      this.store.say('Không có phiếu nào gửi duyệt được — chỉ gửi phiếu Nháp hoặc Từ chối');
+      return;
+    }
+    const bo = chon.length - duoc.length;
+    const ok = await this.confirm.ask({
+      title: `Gửi duyệt ${duoc.length} phiếu?`,
+      message: 'Phiếu gửi duyệt sẽ bị khoá sửa cho đến khi được duyệt, từ chối hoặc rút lại.',
+      warn: bo ? `${bo} phiếu đã chọn không phải Nháp / Từ chối sẽ được bỏ qua.` : undefined,
+      ok: 'Gửi duyệt',
+    });
+    if (!ok) return;
+    const err = this.store.guiDuyetPhieu(duoc.map((r) => r.p!.id));
+    this.store.say(err ?? `Đã gửi duyệt ${duoc.length} phiếu`);
+    this.cn.xoa();
+  }
 
   /** Duyệt nhiều: chỉ phiếu đang Chờ duyệt; phiếu do chính mình lập (không có quyền tự duyệt) bị bỏ qua. */
   protected async duyetNhieu(): Promise<void> {

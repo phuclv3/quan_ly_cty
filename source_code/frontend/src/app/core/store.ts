@@ -606,6 +606,9 @@ export class Store {
   rutLaiPhieu(id: string): Result {
     return this.exec(() => this.rutLaiPhieu_(id), () => ['POST', `/phieu-thu-chi/${e_(id)}/rut-lai`]);
   }
+  guiDuyetPhieu(ids: string[]): Result {
+    return this.exec(() => this.guiDuyetPhieu_(ids), () => ['POST', '/phieu-thu-chi/gui-duyet', { ids }], true);
+  }
   duyetPhieu(ids: string[]): Result {
     return this.exec(() => this.duyetPhieu_(ids), () => ['POST', '/phieu-thu-chi/duyet', { ids }], true);
   }
@@ -1049,6 +1052,29 @@ export class Store {
   /** Người lập không tự duyệt phiếu của mình (trừ Giám đốc) — D-10. */
   private tuDuyet(nguoiLap: string): boolean {
     return nguoiLap === this.meId() && !this.canEdit('tuDuyet');
+  }
+
+  /** Gửi duyệt nhiều phiếu Nháp / Từ chối; phiếu lỗi hoặc không đủ quyền bị bỏ qua (trả cảnh báo). */
+  private guiDuyetPhieu_(ids: string[]): Result {
+    const e = this.require('soQuy', 'draft');
+    if (e) return e;
+    const bo: string[] = [];
+    this.patch('phieuThuChi', (rows) =>
+      rows.map((p) => {
+        if (!ids.includes(p.id)) return p;
+        if (!this.phieuSuaDuoc(p) || !this.chuPhieu(p)) {
+          bo.push(`${p.soPhieu} (không gửi duyệt được)`);
+          return p;
+        }
+        const loi = this.loiPhieu(p);
+        if (loi.length) {
+          bo.push(`${p.soPhieu} (${loi.join(', ')})`);
+          return p;
+        }
+        return { ...p, trangThai: TT.CHO_DUYET, lyDoTuChoi: undefined, lichSu: this.ghiLichSu(p.lichSu, 'Gửi duyệt') };
+      }),
+    );
+    return bo.length ? `Bỏ qua: ${bo.join('; ')}` : null;
   }
 
   private duyetPhieu_(ids: string[]): Result {
