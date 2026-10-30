@@ -100,6 +100,16 @@ public class KeToanController {
     });
   }
 
+  @Operation(summary = "Gửi duyệt phiếu (hàng loạt)", description = "Chỉ phiếu Nháp / Từ chối hợp lệ; phiếu lỗi bị bỏ qua (trả cảnh báo).")
+  @PostMapping("/phieu-thu-chi/gui-duyet")
+  public CommandResponse<String> guiDuyet(@Valid @RequestBody Req.Ids r) {
+    return cmd.run("PTC.guiDuyet", c -> {
+      String w = svc.guiDuyetPhieu(c, r.ids());
+      c.nhatKy("PhieuThuChi", String.join(",", r.ids()), "Gửi duyệt");
+      return w;
+    });
+  }
+
   @Operation(summary = "Duyệt phiếu (hàng loạt)", description = "Phiếu do chính mình lập bị bỏ qua (trả cảnh báo) trừ khi có quyền KT-07-TD.")
   @PostMapping("/phieu-thu-chi/duyet")
   public CommandResponse<String> duyet(@Valid @RequestBody Req.Ids r) {

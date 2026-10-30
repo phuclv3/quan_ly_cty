@@ -202,6 +202,28 @@ public class KeToanService {
     p.setLichSu(ghiLichSu(c, p.getLichSu(), "Rút lại", null));
   }
 
+  /** Gửi duyệt hàng loạt phiếu Nháp / Từ chối — phiếu không hợp lệ hoặc không đủ quyền bị bỏ qua (trả cảnh báo), các phiếu khác vẫn gửi. */
+  public String guiDuyetPhieu(Ctx c, List<String> ids) {
+    c.require(Perm.soQuy, Level.draft);
+    List<String> bo = new ArrayList<>();
+    for (PhieuThuChi p : c.db().getPhieuThuChi()) {
+      if (!ids.contains(p.getId())) continue;
+      if (!phieuSuaDuoc(c, p, false) || !chuPhieu(c, p)) {
+        bo.add(p.getSoPhieu() + " (không gửi duyệt được)");
+        continue;
+      }
+      List<String> loi = loiPhieu(c, p);
+      if (!loi.isEmpty()) {
+        bo.add(p.getSoPhieu() + " (" + String.join(", ", loi) + ")");
+        continue;
+      }
+      p.setTrangThai(TrangThai.CHO_DUYET);
+      p.setLyDoTuChoi(null);
+      p.setLichSu(ghiLichSu(c, p.getLichSu(), "Gửi duyệt", null));
+    }
+    return bo.isEmpty() ? null : "Bỏ qua: " + String.join("; ", bo);
+  }
+
   /** Duyệt hàng loạt — bỏ qua phiếu do chính mình lập (trả cảnh báo), các phiếu khác vẫn duyệt. */
   public String duyetPhieu(Ctx c, List<String> ids) {
     c.require(Perm.soQuyDuyet, Level.approve);
