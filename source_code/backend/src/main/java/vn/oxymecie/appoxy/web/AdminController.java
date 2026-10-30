@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import vn.oxymecie.appoxy.common.ApiException;
 import vn.oxymecie.appoxy.domain.logic.Ctx;
+import vn.oxymecie.appoxy.domain.model.TaiKhoan;
 import vn.oxymecie.appoxy.state.DataStore;
 
 @Tag(name = "Quản trị (dev)", description = "Chỉ dùng ở môi trường phát triển")
@@ -38,12 +39,12 @@ public class AdminController {
     this.resetEnabled = resetEnabled;
   }
 
-  @Operation(summary = "Tắt hệ thống (dừng backend, thoát tiến trình) — nhóm toàn quyền",
+  @Operation(summary = "Tắt hệ thống (dừng backend, thoát tiến trình) — chỉ tài khoản administrator",
       description = "Trả 202 rồi dừng sau ~1 giây. Muốn chạy lại phải khởi động backend thủ công / bằng dịch vụ hệ điều hành.")
   @PostMapping("/tat-he-thong")
   public ResponseEntity<Void> tatHeThong() {
     var u = Cmd.user();
-    if (!new Ctx(cmd.raw(), u.id(), clock, null, null).isGD()) throw ApiException.forbidden("Chỉ nhóm toàn quyền được tắt hệ thống");
+    if (!TaiKhoan.laAn(u.id())) throw ApiException.forbidden("Chỉ tài khoản administrator được tắt hệ thống");
     log.warn("Tài khoản {} yêu cầu tắt hệ thống", u.id());
     Thread t = new Thread(() -> {
       try {
