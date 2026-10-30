@@ -78,6 +78,34 @@ public class HopDongController {
         LocalDate.now(Dates.VN));
   }
 
+  public record LocHdb(List<String> ids) {}
+
+  public record TongThu(int soHD, long sauVAT, long daThu, long conPhaiThu) {}
+
+  public record TongThuTheoPhapNhan(TongThu oxy, TongThu phuTai) {}
+
+  @Operation(summary = "Tổng đã thu / còn phải thu của HĐ bán theo pháp nhân (OXY / Phú Tài)",
+      description = "Pháp nhân theo cờ thuocPhuTai của HĐ. Không tính Báo giá và HĐ huỷ. Chỉ tính HĐ người dùng được xem; body.ids (tuỳ chọn) giới hạn trong các HĐ đang lọc. Cần quyền xem giá trị HĐ (HDB-07).")
+  @PostMapping("/hop-dong-ban/tong-thu")
+  public TongThuTheoPhapNhan tongThuHdb(@RequestBody(required = false) LocHdb loc) {
+    var raw = cmd.raw();
+    var ctx = new vn.oxymecie.appoxy.domain.logic.Ctx(raw, Cmd.user().id(), java.time.Clock.systemUTC(), null, null);
+    if (!ctx.canView(vn.oxymecie.appoxy.domain.perm.Perm.hdbTab3)) throw ApiException.forbidden("Bạn không có quyền xem giá trị HĐ bán");
+    var ids = loc == null || loc.ids() == null ? null : new java.util.HashSet<>(loc.ids());
+    long[] oxy = new long[4], pt = new long[4]; // số HĐ, sau VAT, đã thu, còn phải thu
+    for (HopDongBan h : cmd.snapshot().getHopDongBan()) {
+      if (vn.oxymecie.appoxy.domain.model.TrangThai.BAO_GIA.equals(h.getTrangThai()) || vn.oxymecie.appoxy.domain.model.TrangThai.HUY.equals(h.getTrangThai())) continue;
+      if (ids != null && !ids.contains(h.getId())) continue;
+      Calc.HdbCalc c = Calc.hdbCalc(h, raw);
+      long[] t = Boolean.TRUE.equals(h.getThuocPhuTai()) ? pt : oxy;
+      t[0]++;
+      t[1] += c.sauVAT();
+      t[2] += c.daThu();
+      t[3] += c.conPhaiThu();
+    }
+    return new TongThuTheoPhapNhan(new TongThu((int) oxy[0], oxy[1], oxy[2], oxy[3]), new TongThu((int) pt[0], pt[1], pt[2], pt[3]));
+  }
+
   public record HdbChiTiet(HopDongBan hopDong, Calc.HdbCalc tinhToan, String trangThaiKeTiep) {}
 
   @Operation(summary = "Chi tiết HĐ bán + số liệu tự tính (giá trị sau VAT, thuế TNDN, đã thu, còn phải thu, giá vốn, hồ sơ thiếu)")
