@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, ElementRef, HostListener, computed, inject, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, HostListener, computed, inject, signal, viewChild } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { Icon, IconName } from './shared/icon';
 import { Store } from './core/store';
@@ -68,6 +68,10 @@ interface NavItem {
           }
         </div>
         <span class="spacer"></span>
+        <div class="clock" role="timer" aria-label="Đồng hồ">
+          <b class="clock-t">{{ gio() }}</b>
+          <small class="clock-d">{{ ngay() }}</small>
+        </div>
         @if (store.canView('viec')) {
           <a class="bell" routerLink="/viec" title="Công việc và cảnh báo" [attr.aria-label]="'Công việc và cảnh báo: ' + soViec() + ' việc chưa xong'">
             <app-icon name="mail" [size]="20" />
@@ -175,6 +179,19 @@ export class Shell {
     const tren = new Set(this.tabs().map((t) => t.path));
     return this.items().filter((x) => !tren.has(x.path)).reduce((s, x) => s + (x.count ?? 0), 0);
   });
+
+  // ── Đồng hồ trực tiếp (giờ máy người dùng), cập nhật mỗi giây ──
+  private readonly bayGio = signal(new Date());
+  protected readonly gio = computed(() => this.bayGio().toLocaleTimeString('vi-VN', { hour12: false }));
+  protected readonly ngay = computed(() => {
+    const d = this.bayGio();
+    const th = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy'][d.getDay()];
+    return `${th}, ${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+  });
+  constructor() {
+    const t = setInterval(() => this.bayGio.set(new Date()), 1000);
+    inject(DestroyRef).onDestroy(() => clearInterval(t));
+  }
 
   // ── Chuông: "Ưu tiên điều hành hôm nay" — cùng nguồn với bảng ở Trang chủ ──
   private readonly uu = inject(UuTien);
