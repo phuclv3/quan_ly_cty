@@ -207,7 +207,7 @@ public class KeToanController {
 
   @Operation(summary = "Báo cáo tổng quan kế toán",
       description = "Lợi nhuận gộp, công nợ (kèm tuổi nợ), dòng tiền theo tháng, dự báo tiền 30 ngày, số dư theo nguồn, thu chi theo danh mục, chi phí cố định, "
-          + "kết quả kinh doanh tóm tắt. Cần quyền xem nguồn tiền (KT-01) và công nợ (KT-17). phapNhan: TAT_CA / OXY / KOXY / PHU_TAI; soSanh: khong / cungKy.")
+          + "kết quả kinh doanh tóm tắt. Cần quyền xem nguồn tiền (KT-01) và công nợ (KT-17). phapNhan: TAT_CA (OXY + KHÍ OXY) / OXY / KOXY — không tính Phú Tài; soSanh: khong / cungKy.")
   @GetMapping("/bao-cao/ke-toan")
   public vn.oxymecie.appoxy.domain.logic.BaoCaoKtService.Dto baoCaoKeToan(@RequestParam(defaultValue = "0") int nam,
       @RequestParam(required = false) Integer quy, @RequestParam(required = false) Integer thang,
@@ -224,7 +224,7 @@ public class KeToanController {
   public record CongNo(List<CongNoDong> phaiThu, List<CongNoDong> phaiTra) {}
 
   @Operation(summary = "Công nợ phải thu (HĐ bán) / phải trả (HĐ mua) — KT-17",
-      description = "Quyền \"Xem của mình\" chỉ gồm HĐ mình phụ trách. Không tính HĐ Huỷ.")
+      description = "Quyền \"Xem của mình\" chỉ gồm HĐ mình phụ trách. Không tính HĐ Huỷ, Báo giá và HĐ bán / mua thuộc Phú Tài.")
   @GetMapping("/cong-no")
   public CongNo congNo() {
     var u = Cmd.user();
@@ -236,13 +236,14 @@ public class KeToanController {
     List<CongNoDong> thu = new ArrayList<>();
     for (HopDongBan h : d.getHopDongBan()) {
       if (TrangThai.HUY.equals(h.getTrangThai()) || TrangThai.BAO_GIA.equals(h.getTrangThai())) continue;
+      if (Boolean.TRUE.equals(h.getThuocPhuTai())) continue; // công nợ HĐ Phú Tài tách riêng ở module Phú Tài (PT-11)
       if (rieng && !u.id().equals(h.getSale())) continue;
       Calc.HdbCalc c = Calc.hdbCalc(h, raw);
       if (c.conPhaiThu() != 0) thu.add(new CongNoDong(h.getId(), h.getSoHD(), h.getTenKH(), c.giaTriQT(), c.daThu(), c.conPhaiThu()));
     }
     List<CongNoDong> tra = new ArrayList<>();
     if (!rieng) for (HopDongMua m : d.getHopDongMua()) {
-      if (TrangThai.HUY.equals(m.getTrangThai()) || TrangThai.NHAP.equals(m.getTrangThai())) continue;
+      if (TrangThai.HUY.equals(m.getTrangThai()) || TrangThai.NHAP.equals(m.getTrangThai()) || m.isThuocPhuTai()) continue;
       Calc.HdmCalc c = Calc.hdmCalc(m, raw);
       if (c.conPhaiTra() != 0) tra.add(new CongNoDong(m.getId(), m.getSoHD(), m.getTenNCC(), c.tong(), c.daTra(), c.conPhaiTra()));
     }

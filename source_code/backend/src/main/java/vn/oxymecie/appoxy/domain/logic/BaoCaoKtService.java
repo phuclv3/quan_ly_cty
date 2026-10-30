@@ -164,8 +164,10 @@ public class BaoCaoKtService {
         default -> { }
       }
     }
+    // Chi phí thực hiện của HĐ bán thuộc Phú Tài do kế toán Phú Tài ghi nhận — Oxy chỉ điều phối dòng tiền (số dư nguồn vẫn tính), không ghi nhận chi phí.
+    java.util.Set<String> hdbPhuTai = raw.getHopDongBan().stream().filter(h -> Boolean.TRUE.equals(h.getThuocPhuTai())).map(HopDongBan::getId).collect(java.util.stream.Collectors.toSet());
     for (ChiPhiHD c : raw.getChiPhiHD())
-      if (TrangThai.DA_DUYET.equals(c.getTrangThai()) && trongKy(c.getNgay(), loc.nam(), t1, t2) && nguonMap.containsKey(c.getNguonTien()))
+      if (TrangThai.DA_DUYET.equals(c.getTrangThai()) && trongKy(c.getNgay(), loc.nam(), t1, t2) && nguonMap.containsKey(c.getNguonTien()) && !hdbPhuTai.contains(c.getHdbId()))
         chiDm.computeIfAbsent(tenLoai(loaiMap, c.getLoaiChiPhi(), "Chi khác"), k -> new long[1])[0] += c.getSoTien();
     List<DanhMuc> danhMuc = new ArrayList<>();
     thuDm.entrySet().stream().sorted((a, b) -> Long.compare(b.getValue()[0], a.getValue()[0])).limit(3)
@@ -237,7 +239,7 @@ public class BaoCaoKtService {
     // ── Kết quả kinh doanh tóm tắt ──
     long cpCd = cpCoCau.stream().mapToLong(CoCau::soTien).sum();
     long cpBd = raw.getChiPhiHD().stream().filter(c -> TrangThai.DA_DUYET.equals(c.getTrangThai()) && trongKy(c.getNgay(), loc.nam(), t1, t2)
-        && nguonMap.containsKey(c.getNguonTien())).mapToLong(ChiPhiHD::getSoTien).sum();
+        && nguonMap.containsKey(c.getNguonTien()) && !hdbPhuTai.contains(c.getHdbId())).mapToLong(ChiPhiHD::getSoTien).sum();
     Kqkd kqkd = new Kqkd(ky[0], ky[1], lnGop, cpCd, cpBd, lnGop - cpCd - cpBd);
 
     return new Dto(homNay, loc, loiNhuan, kpiThu, kpiTra, kpiCp, duBao, dongTien, soDuNguon, danhMuc, tuoiNo, phapNhan,
@@ -254,22 +256,15 @@ public class BaoCaoKtService {
     if (quy != null && (quy < 1 || quy > 4)) throw ApiException.invalid("Quý phải từ 1 đến 4");
     if (thang != null && (thang < 1 || thang > 12)) throw ApiException.invalid("Tháng phải từ 1 đến 12");
     if (thang != null) quy = null;
-    String pn = List.of("OXY", "KOXY", "PHU_TAI").contains(in.phapNhan()) ? in.phapNhan() : "TAT_CA";
+    String pn = List.of("OXY", "KOXY").contains(in.phapNhan()) ? in.phapNhan() : "TAT_CA" /* gồm OXY + KHÍ OXY; Phú Tài có kế toán riêng ở module Phú Tài */;
     return new Loc(nam, quy, thang, pn, "cungKy".equals(in.soSanh()) ? "cungKy" : "khong");
   }
 
-  /** HĐ: OXY = không thuộc Phú Tài; KHÍ OXY chưa có HĐ nên không khớp. */
+  /** Kế toán Oxy chỉ tính tiền thật của Oxy: mọi lựa chọn đều loại HĐ thuộc Phú Tài; KHÍ OXY chưa có HĐ nên không khớp. */
   private static boolean khopHd(Boolean phuTai, String pn) {
-    boolean pt = Boolean.TRUE.equals(phuTai);
-    return switch (pn) {
-      case "OXY" -> !pt;
-      case "PHU_TAI" -> pt;
-      case "KOXY" -> false;
-      default -> true;
-    };
+    return !Boolean.TRUE.equals(phuTai) && !"KOXY".equals(pn);
   }
 
-  /** Tiền: theo Công ty của nguồn tiền; Phú Tài không có nguồn tiền riêng (quỹ Phú Tài tách khỏi báo cáo này). */
   private static boolean khopNguon(NguonTien n, String pn) {
     return switch (pn) {
       case "OXY", "KOXY" -> pn.equals(n.getCongTy());
