@@ -9,7 +9,7 @@ import { ChonNhieu } from './chon-nhieu';
     @if (cn().chon().size) {
       <div class="note info chon-hang">
         <b>Đã chọn {{ cn().chon().size }} {{ ten() }}</b>
-        @if (coGui()) { <button type="button" class="btn sm" title="Gửi các phiếu Nháp / Từ chối đã chọn sang Chờ duyệt; phiếu thiếu thông tin sẽ được bỏ qua" (click)="gui.emit()">Gửi duyệt {{ cn().chon().size }} đã chọn</button> }
+        @if (coGui()) { <button type="button" class="btn sm" title="Gửi các phiếu Nháp / Từ chối do bạn tạo sang Chờ duyệt; phiếu của người khác hoặc thiếu thông tin sẽ được bỏ qua" (click)="gui.emit()">Gửi duyệt {{ cn().chon().size }} đã chọn</button> }
         @if (coDuyet()) { <button type="button" class="btn sm" [class.ok]="!duyetNguyHiem()" [class.danger]="duyetNguyHiem()" [attr.title]="titleDuyet() || nhanDuyet() + ' các bản ghi đã chọn'" (click)="duyet.emit()">{{ nhanDuyet() }} {{ cn().chon().size }} đã chọn</button> }
         @if (coTuChoi()) { <button type="button" class="btn sm quiet" (click)="tuChoi.emit()">Từ chối {{ cn().chon().size }} đã chọn</button> }
         @if (coXoa()) { <button type="button" class="btn sm danger" (click)="xoa.emit()">Xoá {{ cn().chon().size }} đã chọn</button> }

@@ -251,16 +251,17 @@ export class SoQuyTab {
   /** Gửi duyệt nhiều: chỉ phiếu Nháp / Từ chối; phiếu thiếu thông tin bị Store bỏ qua và báo lý do. */
   protected async guiDuyetNhieu(): Promise<void> {
     const chon = this.rows().filter((r) => this.cn.co(r.key) && r.p);
-    const duoc = chon.filter((r) => r.p!.trangThai === TT.NHAP || r.p!.trangThai === TT.TU_CHOI);
+    const me = this.store.meId();
+    const duoc = chon.filter((r) => (r.p!.trangThai === TT.NHAP || r.p!.trangThai === TT.TU_CHOI) && r.p!.nguoiDeNghi === me);
     if (!duoc.length) {
-      this.store.say('Không có phiếu nào gửi duyệt được — chỉ gửi phiếu Nháp hoặc Từ chối');
+      this.store.say('Không có phiếu nào gửi duyệt được — chỉ gửi phiếu Nháp hoặc Từ chối do chính bạn tạo');
       return;
     }
     const bo = chon.length - duoc.length;
     const ok = await this.confirm.ask({
       title: `Gửi duyệt ${duoc.length} phiếu?`,
       message: 'Phiếu gửi duyệt sẽ bị khoá sửa cho đến khi được duyệt, từ chối hoặc rút lại.',
-      warn: bo ? `${bo} phiếu đã chọn không phải Nháp / Từ chối sẽ được bỏ qua.` : undefined,
+      warn: bo ? `${bo} phiếu đã chọn không phải Nháp / Từ chối hoặc không do bạn tạo sẽ được bỏ qua.` : undefined,
       ok: 'Gửi duyệt',
     });
     if (!ok) return;

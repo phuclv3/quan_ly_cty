@@ -988,6 +988,7 @@ export class Store {
     if (e) return e;
     if (!this.phieuSuaDuoc(p)) return 'Phiếu này không sửa được (đã gửi duyệt, đã duyệt hoặc đang chờ xoá)';
     if (gui) {
+      if (p.id && p.nguoiDeNghi !== this.meId()) return 'Chỉ người tạo phiếu mới gửi duyệt được';
       const loi = this.loiPhieu(p);
       if (loi.length) return loi.join(' · ');
     }
@@ -1062,8 +1063,8 @@ export class Store {
     this.patch('phieuThuChi', (rows) =>
       rows.map((p) => {
         if (!ids.includes(p.id)) return p;
-        if (!this.phieuSuaDuoc(p) || !this.chuPhieu(p)) {
-          bo.push(`${p.soPhieu} (không gửi duyệt được)`);
+        if (!this.phieuSuaDuoc(p) || p.nguoiDeNghi !== this.meId()) {
+          bo.push(`${p.soPhieu} (chỉ người tạo mới gửi duyệt được)`);
           return p;
         }
         const loi = this.loiPhieu(p);

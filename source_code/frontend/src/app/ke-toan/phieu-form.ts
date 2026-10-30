@@ -122,7 +122,7 @@ import { TT, ttNhan } from '../core/trang-thai';
           <button type="button" class="btn quiet" (click)="dong()">{{ edit() ? 'Huỷ' : 'Đóng' }}</button>
           @if (edit()) {
             <button type="button" class="btn quiet" (click)="luu(false)">Lưu nháp</button>
-            <button type="button" class="btn" (click)="luu(true)">Gửi duyệt</button>
+            @if (guiDuoc()) { <button type="button" class="btn" (click)="luu(true)">Gửi duyệt</button> }
           }
           @if (duyetDuoc() && p.trangThai === TT.CHO_DUYET && !choXoa()) {
             <button type="button" class="btn danger quiet" (click)="tuChoi.emit()">Từ chối</button>
@@ -249,6 +249,12 @@ export class PhieuForm {
     this.store.say(gui ? 'Đã gửi duyệt phiếu' : 'Đã lưu nháp phiếu');
     this.closed.emit();
   }
+
+  /** Chỉ người tạo mới gửi duyệt được (phiếu mới: người đang lập chính là người tạo). */
+  protected readonly guiDuoc = computed(() => {
+    const p = this.phieu();
+    return !!p && (!p.id || p.nguoiDeNghi === this.store.meId());
+  });
 
   /** Người lập rút phiếu Chờ duyệt về Nháp (không áp cho phiếu sinh tự động — sửa tại HĐ). */
   protected readonly rutDuoc = computed(() => {
