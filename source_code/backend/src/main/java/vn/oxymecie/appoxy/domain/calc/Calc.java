@@ -38,7 +38,7 @@ public final class Calc {
   public static final String LCP_HOA_HONG = "CPTH-HH";
   public static final String LCP_VAN_CHUYEN = "CPTH-VC";
   public static final List<String> HO_SO_BAT_BUOC = List.of("Hợp đồng", "BBGH/BBNT", "Hoá đơn");
-  public static final List<String> CHECKLIST_HDM = List.of("Đặt hàng", "Thanh toán Đợt 1", "Hàng về", "Kiểm định", "Nhập kho");
+  public static final List<String> CHECKLIST_HDM = List.of("Đặt hàng", "Thanh toán Đợt 1", "Dự kiến hàng về", "Kiểm định", "Nhập kho");
   public static final String CL_NHAP_KHO = "Nhập kho";
 
   private Calc() {}
@@ -290,7 +290,7 @@ public final class Calc {
   }
 
   /** Mốc tính hạn trả NCC: Ngày ký + các mục checklist tiến độ HĐ mua (trừ "Thanh toán Đợt 1"). */
-  public static final List<String> MOC_HAN_MUA = List.of("Ngày ký", "Đặt hàng", "Hàng về", "Kiểm định", "Nhập kho");
+  public static final List<String> MOC_HAN_MUA = List.of("Ngày ký", "Đặt hàng", "Dự kiến hàng về", "Kiểm định", "Nhập kho");
 
   /** Ngày của mốc tiến độ HĐ mua (Ngày ký hoặc ngày tích checklist); chưa đạt = null. */
   public static String ngayMocMua(HopDongMua m, String moc) {
