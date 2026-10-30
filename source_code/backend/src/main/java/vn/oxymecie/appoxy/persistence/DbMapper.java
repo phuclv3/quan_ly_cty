@@ -372,7 +372,9 @@ public class DbMapper {
   /** Mật khẩu không nằm trong domain — matKhauBam null = giữ nguyên mật khẩu đang có. */
   public void applyTaiKhoan(TaiKhoan x, TaiKhoanEntity e, String matKhauBam, String me, Instant now) {
     e.setId(x.getId());
-    e.setEmail(x.getEmail());
+    // Email chỉ ghi khi tạo mới: không API nào sửa email, nên bản trong cache có thể cũ hơn DB (email đổi trực tiếp bằng SQL)
+    // và ghi lại sẽ đưa email về giá trị cũ / mặc định mỗi lần tài khoản bị cập nhật (VD sau lần đăng nhập sai).
+    if (e.getEmail() == null) e.setEmail(x.getEmail());
     e.setHoTen(x.getHoTen());
     if (matKhauBam != null) e.setMatKhauBam(matKhauBam);
     e.setTrangThai(x.getTrangThai());
