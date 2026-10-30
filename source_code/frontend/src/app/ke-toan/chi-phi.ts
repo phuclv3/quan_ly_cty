@@ -15,6 +15,7 @@ import { xoaNhieuCoNhap } from '../shared/ho-so';
 import { ChiPhiForm } from './chi-phi-form';
 import { SortTh, Sorter } from '../shared/sort';
 import { TT, ttNhan } from '../core/trang-thai';
+import { ImportDm } from '../shared/import-dm';
 
 const TRANG_THAI = [TT.NHAP, TT.CHO_DUYET, TT.DA_DUYET, TT.TU_CHOI];
 
@@ -22,13 +23,13 @@ const TRANG_THAI = [TT.NHAP, TT.CHO_DUYET, TT.DA_DUYET, TT.TU_CHOI];
 @Component({
   selector: 'app-kt-chi-phi',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ChonBar, TrangThai, FilterBar, Pager, ChiPhiForm, RouterLink, SortTh],
+  imports: [ChonBar, TrangThai, FilterBar, Pager, ChiPhiForm, RouterLink, SortTh, ImportDm],
   template: `
     <div class="between" style="margin-bottom:8px">
       <p class="sub muted">Chi phí gắn từng HĐ bán; duyệt xong trừ vào Nguồn tiền chi ra và cộng vào chi phí của HĐ.</p>
       <div class="row">
         <button type="button" class="btn quiet" (click)="xuat()">Xuất Excel</button>
-        @if (store.canEdit('cpHD')) { <button type="button" class="btn" (click)="cp.set(store.newChiPhi())">+ Nhập chi phí</button> }
+        @if (store.canEdit('cpHD')) { <app-import-dm loai="cp" /><button type="button" class="btn" (click)="cp.set(store.newChiPhi())">+ Nhập chi phí</button> }
       </div>
     </div>
     <app-filter [(loc)]="loc" memo="kt-chi-phi" [facets]="facets()" placeholder="Tìm mã CP, số HĐ, khách hàng, nội dung…" />

@@ -18,6 +18,7 @@ import { ChiPhiForm } from './chi-phi-form';
 import { inPhieuThuChi } from './kt-print';
 import { SortTh, Sorter } from '../shared/sort';
 import { TT, ttNhan } from '../core/trang-thai';
+import { ImportDm } from '../shared/import-dm';
 
 const CP_HD = 'CP HĐ';
 const TRANG_THAI = [TT.NHAP, TT.CHO_DUYET, TT.DA_DUYET, TT.TU_CHOI];
@@ -46,7 +47,7 @@ export interface SqRow {
 @Component({
   selector: 'app-kt-so-quy',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ChonBar, TrangThai, FilterBar, Pager, PhieuForm, ChiPhiForm, RouterLink, SortTh],
+  imports: [ChonBar, TrangThai, FilterBar, Pager, PhieuForm, ChiPhiForm, RouterLink, SortTh, ImportDm],
   template: `
     <div class="between" style="margin-bottom:8px">
       <p class="sub muted">
@@ -55,6 +56,8 @@ export interface SqRow {
       <div class="row">
         <button type="button" class="btn quiet" (click)="xuat()">Xuất Excel</button>
         @if (coTheLap()) {
+          @if (laTat() || laThu()) { <app-import-dm loai="thu" /> }
+          @if (laTat() || !laThu()) { <app-import-dm loai="chi" /> }
           @if (laTat() || laThu()) { <button type="button" class="btn" (click)="mo(store.newPhieu('Thu'))">+ Lập phiếu thu</button> }
           @if (laTat() || !laThu()) { <button type="button" class="btn" (click)="mo(store.newPhieu('Chi'))">+ Lập phiếu chi</button> }
         }

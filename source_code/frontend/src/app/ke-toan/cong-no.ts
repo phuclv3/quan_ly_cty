@@ -126,7 +126,7 @@ function gom(rows: CnRow[]): Nhom[] {
     </div>
     @if (!nhom()) { <app-pager [pager]="pg" /> }
     <p class="sub muted" style="margin-top:8px">
-      @if (sub() === 'thu') { Còn phải thu = Giá trị HĐ bán sau VAT − Σ thực thu có phiếu Thu đã duyệt (phiếu chờ duyệt chưa tính). Không tính HĐ Báo giá. Muốn sửa thì sửa đợt thanh toán trong HĐ gốc. }
+      @if (sub() === 'thu') { Còn phải thu = Giá trị HĐ bán sau VAT − Σ thực thu có phiếu Thu đã duyệt (phiếu chờ duyệt chưa tính). Không tính HĐ Báo giá và HĐ Thuộc Phú Tài (công nợ Phú Tài xem ở mục Phú Tài). Muốn sửa thì sửa đợt thanh toán trong HĐ gốc. }
       @else { Còn phải trả = Giá trị HĐ mua − Σ đã trả NCC (phiếu chi đã duyệt). Không tính HĐ Thuộc Phú Tài và HĐ Huỷ. }
     </p>
   `,
@@ -147,7 +147,7 @@ export class CongNoTab {
     const me = this.store.meId();
     const own = this.store.ownOnly('congNo');
     return db.hopDongBan
-      .filter((h) => h.trangThai !== TT.BAO_GIA && h.trangThai !== TT.HUY && (!own || h.sale === me))
+      .filter((h) => !h.thuocPhuTai && h.trangThai !== TT.BAO_GIA && h.trangThai !== TT.HUY && (!own || h.sale === me))
       .map((h) => {
         const c = hdbCalc(h, db);
         const han = c.dotGanNhat?.han;

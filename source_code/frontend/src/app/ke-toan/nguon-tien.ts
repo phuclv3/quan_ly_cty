@@ -7,6 +7,7 @@ import { Modal, MoneyInput, TrangThai } from '../shared/ui-kit';
 import { Confirm } from '../shared/confirm';
 import { guiXoa } from '../shared/ho-so';
 import { TT } from '../core/trang-thai';
+import { ImportDm } from '../shared/import-dm';
 
 interface Card {
   n: NguonTien;
@@ -30,11 +31,11 @@ interface NhomCT {
 @Component({
   selector: 'app-kt-nguon',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Modal, MoneyInput, TrangThai],
+  imports: [Modal, MoneyInput, TrangThai, ImportDm],
   template: `
     <div class="between" style="margin-bottom:12px">
       <p class="sub muted">Số dư = Đầu kỳ + Thu − Chi ± Quyết toán tạm ứng + Luân chuyển vào − Luân chuyển ra − CP HĐ (chỉ phiếu Đã duyệt).</p>
-      @if (store.canEdit('nguonTien')) { <button type="button" class="btn" (click)="moi()">+ Thêm nguồn tiền</button> }
+      @if (store.canEdit('nguonTien')) { <span class="btn-row"><app-import-dm loai="nguon" /><button type="button" class="btn" (click)="moi()">+ Thêm nguồn tiền</button></span> }
     </div>
     <section class="card hero-nguon" [class.bad]="tong() < 0">
       <div class="between" style="gap:16px;flex-wrap:wrap">

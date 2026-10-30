@@ -87,7 +87,6 @@ function tranDep(v: number): number {
         <option value="TAT_CA" [selected]="pn() === 'TAT_CA'">Pháp nhân: Tất cả</option>
         <option value="OXY" [selected]="pn() === 'OXY'">OXY</option>
         <option value="KOXY" [selected]="pn() === 'KOXY'">KHÍ OXY</option>
-        <option value="PHU_TAI" [selected]="pn() === 'PHU_TAI'">Phú Tài</option>
       </select>
       <select aria-label="So sánh" (change)="soSanh.set($any($event.target).value)">
         <option value="cungKy" [selected]="soSanh() === 'cungKy'">So sánh: cùng kỳ {{ +nam() - 1 }}</option>

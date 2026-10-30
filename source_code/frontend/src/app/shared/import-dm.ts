@@ -1,18 +1,22 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { Store, kiemMST } from '../core/store';
-import { KhachHang, Kho, LoaiHang, NHOM_HANG, NhaCungCap, NhomHang } from '../core/models';
-import { fold } from '../core/util';
+import { ChiPhiHD, KhachHang, Kho, LoaiChiPhi, LoaiHang, NHOM_HANG, NguonTien, NhaCungCap, NhomHang, PhieuThuChi } from '../core/models';
+import { TT } from '../core/trang-thai';
+import { fold, money, todayIso } from '../core/util';
+import { parseSo } from '../hdm/hdm-util';
 import { docBang } from './excel';
+import { parseNgay } from './import-hd';
 import { xuatXlsx } from './export';
 import { Modal } from './ui-kit';
 import { Icon } from './icon';
 
 /**
- * Import danh mục từ Excel: Khách hàng, Nhà cung cấp, Mã hàng, Kho.
+ * Import từ Excel: danh mục (Khách hàng, Nhà cung cấp, Mã hàng, Kho) và Kế toán (Nguồn tiền, Loại chi phí, Phiếu thu, Phiếu chi, Chi phí HĐ).
+ * Phiếu thu / chi và Chi phí HĐ vào ở trạng thái Nháp — kế toán kiểm tra rồi Gửi duyệt như thường.
  * Tải file mẫu (backend dựng .xlsx) → điền → chọn file → xem trước từng dòng → import dòng hợp lệ.
  * Cột đọc theo TÊN tiêu đề. Dòng trùng bản ghi đã có (hoặc trùng trong file) bị bỏ qua, không ghi đè.
  */
-export type LoaiDm = 'kh' | 'ncc' | 'mh' | 'kho';
+export type LoaiDm = 'kh' | 'ncc' | 'mh' | 'kho' | 'nguon' | 'lcp' | 'thu' | 'chi' | 'cp';
 
 interface Cot {
   ten: string;
@@ -103,6 +107,82 @@ const CAU_HINH: Record<LoaiDm, CauHinhDm> = {
     cot: [{ ten: 'Tên kho', rong: 34, huongDan: 'Bắt buộc. Mã kho tự sinh, loại "Kho thường". Trùng tên kho đã có → bỏ qua.' }],
     viDu: [['Kho ví dụ (xoá dòng này)']],
   },
+  nguon: {
+    ten: 'nguồn tiền',
+    tenSo: 'Nguồn tiền',
+    tep: 'mau-import-nguon-tien.xlsx',
+    neo: 'Mã nguồn',
+    cot: [
+      { ten: 'Mã nguồn', rong: 14, huongDan: 'Bắt buộc, duy nhất (VD VCB-OXY), không có khoảng trắng. Trùng mã đã có → bỏ qua.' },
+      { ten: 'Tên', rong: 30, huongDan: 'Bắt buộc.' },
+      { ten: 'Công ty', rong: 10, huongDan: 'Bắt buộc: OXY hoặc KOXY (KHÍ OXY).' },
+      { ten: 'Loại', rong: 14, huongDan: 'Tiền mặt hoặc Ngân hàng. Trống = Ngân hàng.' },
+      { ten: 'Số tài khoản', rong: 18, huongDan: 'Tuỳ chọn. Nên định dạng ô là Text để giữ số 0 đầu.' },
+      { ten: 'Ngân hàng', rong: 20, huongDan: 'Tuỳ chọn.' },
+      { ten: 'Số dư đầu kỳ', rong: 16, huongDan: 'Số tiền VNĐ. Trống = 0.' },
+      { ten: 'Ngày đầu kỳ', rong: 14, huongDan: 'dd/mm/yyyy. Trống = hôm nay.' },
+    ],
+    viDu: [['VIDU-OXY', 'Tài khoản ví dụ (xoá dòng này)', 'OXY', 'Ngân hàng', '0123456789', 'Vietcombank', '50000000', '01/01/2026']],
+  },
+  lcp: {
+    ten: 'loại chi phí',
+    tenSo: 'Loại chi phí',
+    tep: 'mau-import-loai-chi-phi.xlsx',
+    neo: 'Tên loại chi phí',
+    cot: [
+      { ten: 'Tên loại chi phí', rong: 34, huongDan: 'Bắt buộc. Trùng tên trong cùng nhóm → bỏ qua. Mã tự sinh.' },
+      { ten: 'Nhóm', rong: 18, huongDan: 'Bắt buộc: Vận hành (chi sổ quỹ chung) hoặc Thực hiện HĐ (chi phí theo HĐ bán).' },
+    ],
+    viDu: [['Tiền điện ví dụ (xoá dòng này)', 'Vận hành']],
+  },
+  thu: {
+    ten: 'phiếu thu',
+    tenSo: 'Phiếu thu',
+    tep: 'mau-import-phieu-thu.xlsx',
+    neo: 'Ngày lập',
+    cot: [
+      { ten: 'Ngày lập', rong: 14, huongDan: 'Bắt buộc, dd/mm/yyyy.' },
+      { ten: 'Nguồn tiền', rong: 20, huongDan: 'Bắt buộc: mã hoặc tên nguồn tiền đang dùng.' },
+      { ten: 'Nội dung', rong: 40, huongDan: 'Bắt buộc.' },
+      { ten: 'Số tiền', rong: 16, huongDan: 'Bắt buộc, > 0 (VNĐ).' },
+      { ten: 'Ghi chú', rong: 24, huongDan: 'Tuỳ chọn.' },
+    ],
+    viDu: [['15/10/2026', 'VIDU-OXY', 'Thu tiền ví dụ (xoá dòng này)', '10000000', '']],
+  },
+  chi: {
+    ten: 'phiếu chi',
+    tenSo: 'Phiếu chi',
+    tep: 'mau-import-phieu-chi.xlsx',
+    neo: 'Ngày lập',
+    cot: [
+      { ten: 'Ngày lập', rong: 14, huongDan: 'Bắt buộc, dd/mm/yyyy.' },
+      { ten: 'Nguồn tiền', rong: 20, huongDan: 'Bắt buộc: mã hoặc tên nguồn tiền đang dùng.' },
+      { ten: 'Loại chi phí', rong: 24, huongDan: 'Bắt buộc: mã hoặc tên loại chi phí nhóm Vận hành.' },
+      { ten: 'Nội dung', rong: 40, huongDan: 'Bắt buộc.' },
+      { ten: 'Số tiền', rong: 16, huongDan: 'Bắt buộc, > 0 (VNĐ).' },
+      { ten: 'Người nhận', rong: 20, huongDan: 'Tuỳ chọn.' },
+      { ten: 'Ghi chú', rong: 24, huongDan: 'Tuỳ chọn.' },
+    ],
+    viDu: [['15/10/2026', 'VIDU-OXY', 'Tiền điện ví dụ', 'Chi tiền ví dụ (xoá dòng này)', '2000000', '', '']],
+  },
+  cp: {
+    ten: 'chi phí HĐ',
+    tenSo: 'Chi phí HĐ',
+    tep: 'mau-import-chi-phi-hd.xlsx',
+    neo: 'Số HĐ bán',
+    cot: [
+      { ten: 'Số HĐ bán', rong: 24, huongDan: 'Bắt buộc, đúng số HĐ bán đã có (từ Hiệu lực trở đi, không phải Báo giá).' },
+      { ten: 'Ngày', rong: 14, huongDan: 'Bắt buộc, dd/mm/yyyy.' },
+      { ten: 'Loại chi phí', rong: 24, huongDan: 'Bắt buộc: mã hoặc tên loại chi phí nhóm Thực hiện HĐ.' },
+      { ten: 'Nội dung', rong: 40, huongDan: 'Bắt buộc.' },
+      { ten: 'Số tiền', rong: 16, huongDan: 'Bắt buộc, > 0 (VNĐ).' },
+      { ten: 'Nguồn tiền', rong: 20, huongDan: 'Bắt buộc: mã hoặc tên nguồn tiền chi ra.' },
+      { ten: 'Người nhận', rong: 20, huongDan: 'Bắt buộc với Hoa hồng.' },
+      { ten: 'Đơn vị vận chuyển', rong: 20, huongDan: 'Tuỳ chọn.' },
+      { ten: 'Ghi chú', rong: 24, huongDan: 'Tuỳ chọn.' },
+    ],
+    viDu: [['260901/HĐKT/OMV-ABC', '15/10/2026', 'Vận chuyển', 'Chi phí ví dụ (xoá dòng này)', '1500000', 'VIDU-OXY', '', '', '']],
+  },
 };
 
 /** Tìm dòng tiêu đề (có ô cột neo) → hàm lấy ô theo tên cột. */
@@ -112,6 +192,9 @@ function docTheoTieuDe(rows: string[][], neo: string): { du: string[][]; o: (r: 
   const idx = new Map(rows[i].map((c, j) => [fold(c), j] as const));
   return { du: rows.slice(i + 1), o: (r, ten) => (r[idx.get(fold(ten)) ?? -1] ?? '').trim(), dauDong: i + 2 };
 }
+
+/** Tìm theo mã hoặc tên (không phân biệt hoa thường / dấu). */
+const tim = <T extends { id: string; ten: string }>(ds: readonly T[], v: string): T | undefined => (v ? ds.find((x) => fold(x.id) === fold(v) || fold(x.ten) === fold(v)) : undefined);
 
 const tach = (s: string) => s.split(/[;|]/).map((x) => x.trim()).filter(Boolean);
 
@@ -179,6 +262,74 @@ function docDong(loai: LoaiDm, rows: string[][], store: Store): DongKq[] | strin
         bietDanh: tach(o(r, 'Tên tham chiếu')),
       };
       kq.push({ dong, ten: ma ? `${ma} — ${ten}` : ten || '—', khoa: ma, loi, luu: () => store.saveLoaiHang(l, true) });
+    } else if (loai === 'nguon') {
+      const ma = o(r, 'Mã nguồn');
+      const ten = o(r, 'Tên');
+      if (!ma) loi.push('Thiếu Mã nguồn');
+      else if (/\s/.test(ma)) loi.push('Mã nguồn không chứa khoảng trắng');
+      else if (store.nguonById(ma)) loi.push(`Mã ${ma} đã có`);
+      else lap(fold(ma), 'Mã nguồn');
+      if (!ten) loi.push('Thiếu Tên');
+      const ct = fold(o(r, 'Công ty')).replace(/\s/g, '');
+      const congTy = ct === 'oxy' ? 'OXY' : ct === 'koxy' || ct === 'khioxy' ? 'KOXY' : undefined;
+      if (!congTy) loi.push('Công ty phải là OXY hoặc KOXY');
+      const loaiRaw = o(r, 'Loại');
+      const loaiN = !loaiRaw ? 'Ngân hàng' : fold(loaiRaw) === fold('Tiền mặt') ? 'Tiền mặt' : fold(loaiRaw) === fold('Ngân hàng') ? 'Ngân hàng' : undefined;
+      if (!loaiN) loi.push('Loại phải là Tiền mặt hoặc Ngân hàng');
+      const ngay = parseNgay(o(r, 'Ngày đầu kỳ'));
+      if (ngay === null) loi.push('Ngày đầu kỳ không hợp lệ (dd/mm/yyyy)');
+      const n: NguonTien = {
+        id: ma, ten, congTy: congTy ?? 'OXY', loai: loaiN ?? 'Ngân hàng', soTaiKhoan: o(r, 'Số tài khoản') || undefined, nganHang: o(r, 'Ngân hàng') || undefined,
+        soDuDauKy: parseSo(o(r, 'Số dư đầu kỳ')), ngayDauKy: ngay || todayIso(), trangThai: TT.DANG_DUNG,
+      };
+      kq.push({ dong, ten: ma ? `${ma} — ${ten}` : ten || '—', khoa: '', loi, luu: () => store.saveNguonTien(n, true) });
+    } else if (loai === 'lcp') {
+      const ten = o(r, 'Tên loại chi phí');
+      const nhomRaw = o(r, 'Nhóm');
+      const nhom = (['Vận hành', 'Thực hiện HĐ'] as const).find((x) => fold(x) === fold(nhomRaw));
+      if (!ten) loi.push('Thiếu Tên loại chi phí');
+      if (!nhom) loi.push('Nhóm phải là Vận hành hoặc Thực hiện HĐ');
+      else if (ten) {
+        if (db.loaiChiPhi.some((x) => x.nhom === nhom && fold(x.ten) === fold(ten))) loi.push(`"${ten}" đã có trong nhóm ${nhom}`);
+        else lap(`${nhom}:${fold(ten)}`, 'Tên');
+      }
+      const l: LoaiChiPhi = { id: '', ten, nhom: nhom ?? 'Vận hành', dangDung: true };
+      kq.push({ dong, ten: ten || '—', khoa: nhom ?? '', loi, luu: () => store.saveLoaiChiPhi(l) });
+    } else if (loai === 'thu' || loai === 'chi') {
+      const ngay = parseNgay(o(r, 'Ngày lập'));
+      if (!ngay) loi.push(ngay === null ? 'Ngày lập không hợp lệ (dd/mm/yyyy)' : 'Thiếu Ngày lập');
+      const nguon = tim(store.nguonDangDung(), o(r, 'Nguồn tiền'));
+      if (!nguon) loi.push(o(r, 'Nguồn tiền') ? `Không thấy nguồn tiền "${o(r, 'Nguồn tiền')}" đang dùng` : 'Thiếu Nguồn tiền');
+      const soTien = parseSo(o(r, 'Số tiền'));
+      const p: PhieuThuChi = { ...store.newPhieu(loai === 'thu' ? 'Thu' : 'Chi'), ngayLap: ngay || '', nguonTien: nguon?.id ?? '', noiDung: o(r, 'Nội dung'), ghiChu: o(r, 'Ghi chú') || undefined };
+      if (loai === 'thu') p.soTienThu = soTien;
+      else {
+        p.soTienChi = soTien;
+        p.nguoiNhan = o(r, 'Người nhận') || undefined;
+        const lcp = tim(store.lcpVanHanh(), o(r, 'Loại chi phí'));
+        if (!lcp) loi.push(o(r, 'Loại chi phí') ? `Không thấy loại chi phí nhóm Vận hành "${o(r, 'Loại chi phí')}"` : 'Thiếu Loại chi phí');
+        p.loaiChiPhi = lcp?.id;
+      }
+      if (!loi.length) loi.push(...store.loiPhieu(p));
+      kq.push({ dong, ten: p.noiDung || '—', khoa: soTien > 0 ? `${money(soTien)} đ` : '', loi, luu: () => store.savePhieu(p, false) });
+    } else if (loai === 'cp') {
+      const soHD = o(r, 'Số HĐ bán');
+      const hdb = soHD ? db.hopDongBan.find((x) => fold(x.soHD) === fold(soHD)) : undefined;
+      if (!soHD) loi.push('Thiếu Số HĐ bán');
+      else if (!hdb) loi.push(`Không thấy HĐ bán "${soHD}"`);
+      const ngay = parseNgay(o(r, 'Ngày'));
+      if (!ngay) loi.push(ngay === null ? 'Ngày không hợp lệ (dd/mm/yyyy)' : 'Thiếu Ngày');
+      const lcp = tim(store.lcpThucHien(), o(r, 'Loại chi phí'));
+      if (!lcp) loi.push(o(r, 'Loại chi phí') ? `Không thấy loại chi phí nhóm Thực hiện HĐ "${o(r, 'Loại chi phí')}"` : 'Thiếu Loại chi phí');
+      const nguon = tim(store.nguonDangDung(), o(r, 'Nguồn tiền'));
+      if (!nguon) loi.push(o(r, 'Nguồn tiền') ? `Không thấy nguồn tiền "${o(r, 'Nguồn tiền')}" đang dùng` : 'Thiếu Nguồn tiền');
+      const soTien = parseSo(o(r, 'Số tiền'));
+      const c: ChiPhiHD = {
+        ...store.newChiPhi(hdb?.id ?? ''), ngay: ngay || '', loaiChiPhi: lcp?.id ?? '', noiDung: o(r, 'Nội dung'), soTien, nguonTien: nguon?.id ?? '',
+        nguoiNhan: o(r, 'Người nhận') || undefined, donViVanChuyen: o(r, 'Đơn vị vận chuyển') || undefined, ghiChu: o(r, 'Ghi chú') || undefined,
+      };
+      if (!loi.length) loi.push(...store.loiChiPhi(c));
+      kq.push({ dong, ten: c.noiDung || '—', khoa: soHD, loi, luu: () => store.saveChiPhi(c, false) });
     } else {
       const ten = o(r, 'Tên kho');
       if (!ten) loi.push('Thiếu Tên kho');
@@ -191,7 +342,7 @@ function docDong(loai: LoaiDm, rows: string[][], store: Store): DongKq[] | strin
   return kq;
 }
 
-/** Nút "Import Excel" + popup cho các danh mục: tải file mẫu → chọn file → kiểm tra → import dòng hợp lệ. */
+/** Nút "Import Excel" + popup cho danh mục và dữ liệu kế toán: tải file mẫu → chọn file → kiểm tra → import dòng hợp lệ. */
 @Component({
   selector: 'app-import-dm',
   changeDetection: ChangeDetectionStrategy.OnPush,

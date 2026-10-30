@@ -57,7 +57,7 @@ interface NavItem {
           <app-icon name="search" [size]="18" />
           <input #o type="search" placeholder="Tìm khách hàng, MST, số điện thoại…" aria-label="Tìm nhanh" autocomplete="off"
                  [value]="q()" (input)="q.set($any($event.target).value)" (keydown.escape)="q.set('')" />
-          <kbd class="kbd">⌘ F</kbd>
+          <button type="button" class="kbd" [attr.aria-label]="'Tìm nhanh (' + phimTat + ')'" [title]="'Tìm nhanh (' + phimTat + ')'" (click)="o.focus()">{{ phimTat }}</button>
           @if (ketQua().length) {
             <ul class="search-res">
               @for (r of ketQua(); track r.link) {
@@ -140,6 +140,8 @@ export class Shell {
   });
 
   protected readonly q = signal('');
+  /** Phím tắt hiển thị theo hệ điều hành (Mac: ⌘F, còn lại: Ctrl F). */
+  protected readonly phimTat = /Mac|iPhone|iPad/i.test(navigator.platform) ? '⌘ F' : 'Ctrl F';
   private readonly o = viewChild<ElementRef<HTMLInputElement>>('o');
   /** Ctrl/⌘ + F: đưa con trỏ vào ô tìm nhanh (thay tìm của trình duyệt). */
   @HostListener('document:keydown', ['$event'])
@@ -155,18 +157,21 @@ export class Shell {
   });
   /** Tìm nhanh HĐ bán / HĐ mua / khách hàng theo số HĐ, tên, MST (tối đa 8 kết quả). */
   protected readonly ketQua = computed(() => {
-    const k = this.q().trim().toLowerCase();
-    if (k.length < 2) return [];
+    const bo = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/gi, 'd').toLowerCase();
+    const tu = bo(this.q().trim()).split(/\s+/).filter(Boolean);
+    if (!tu.length || tu.join('').length < 2) return [];
+    // Không phân biệt dấu/hoa thường; mọi từ gõ vào đều phải có mặt (thứ tự bất kỳ).
+    const khop = (s: string) => { const t = bo(s); return tu.every((x) => t.includes(x)); };
     const out: { nhan: string; loai: string; phu: string; link: string }[] = [];
     if (this.store.canView('hdb'))
       for (const h of this.store.hdbVisible())
-        if (`${h.soHD} ${h.tenKH} ${h.mst}`.toLowerCase().includes(k)) out.push({ nhan: h.soHD || '(báo giá)', loai: 'HĐ bán', phu: h.tenKH, link: `/hop-dong-ban/${h.id}` });
+        if (khop(`${h.soHD} ${h.tenKH} ${h.mst}`)) out.push({ nhan: h.soHD || '(báo giá)', loai: 'HĐ bán', phu: h.tenKH, link: `/hop-dong-ban/${h.id}` });
     if (this.store.canView('hdm'))
       for (const m of this.store.hdmVisible())
-        if (`${m.soHD} ${m.tenNCC}`.toLowerCase().includes(k)) out.push({ nhan: m.soHD || '(chưa số)', loai: 'HĐ mua', phu: m.tenNCC, link: `/hop-dong-mua/${m.id}` });
+        if (khop(`${m.soHD} ${m.tenNCC}`)) out.push({ nhan: m.soHD || '(chưa số)', loai: 'HĐ mua', phu: m.tenNCC, link: `/hop-dong-mua/${m.id}` });
     if (this.store.canView('khachHang'))
       for (const c of this.store.khachHang())
-        if (`${c.id} ${c.ten} ${c.tenVietTat ?? ''} ${c.mst} ${c.dienThoai}`.toLowerCase().includes(k))
+        if (khop(`${c.id} ${c.ten} ${c.tenVietTat ?? ''} ${c.mst} ${c.dienThoai}`))
           out.unshift({ nhan: c.tenVietTat || c.id, loai: 'Khách hàng', phu: c.ten, link: `/khach-hang/${c.id}` });
     return out.slice(0, 8);
   });

@@ -7,6 +7,7 @@ import { Confirm } from '../shared/confirm';
 import { guiXoa, guiXoaNhieu } from '../shared/ho-so';
 import { ChonNhieu } from '../shared/chon-nhieu';
 import { ChonBar } from '../shared/chon-bar';
+import { ImportDm } from '../shared/import-dm';
 
 const NHOM: NhomChiPhi[] = ['Vận hành', 'Thực hiện HĐ'];
 
@@ -14,14 +15,14 @@ const NHOM: NhomChiPhi[] = ['Vận hành', 'Thực hiện HĐ'];
 @Component({
   selector: 'app-dm-lcp',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ChonBar, Modal, TrangThai],
+  imports: [ChonBar, Modal, TrangThai, ImportDm],
   template: `
     <div class="note info" style="margin-bottom:12px">
       <span>Sổ quỹ chung chỉ chọn nhóm <b>Vận hành</b>; Chi phí thực hiện HĐ chỉ chọn nhóm <b>Thực hiện HĐ</b>; không xoá loại đã dùng — chỉ ngưng.</span>
     </div>
     @if (store.canEdit('nguonTien')) {
       <app-chon-bar [cn]="cn" ten="loại chi phí" (xoa)="xoaNhieu()" />
-      <div class="btn-row" style="margin-bottom:12px"><button type="button" class="btn" (click)="mo(null)">+ Thêm loại chi phí</button></div>
+      <div class="btn-row" style="margin-bottom:12px"><app-import-dm loai="lcp" /><button type="button" class="btn" (click)="mo(null)">+ Thêm loại chi phí</button></div>
     }
     <div class="grid c2">
       @for (g of nhom; track g) {

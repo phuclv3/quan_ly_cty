@@ -72,16 +72,16 @@ export function tinhCanhBaoTuDong(s: Store): CanhBao[] {
   const out: CanhBao[] = [];
   const them = (c: Omit<CanhBao, 'theoDoi'> & { nhom: NhomRuiRo }) => out.push({ ...c, theoDoi: theoDoiOf(c.nhom) });
 
-  // ── Tài chính: công nợ phải thu quá hạn / sắp đến hạn (HĐ bán) ──
+  // ── Tài chính: công nợ phải thu quá hạn / sắp đến hạn (HĐ bán Oxy — HĐ thuộc Phú Tài tính ở kế toán Phú Tài) ──
   if (s.canView('hdbTab3')) {
     // Số HĐ đang quá hạn của từng khách — một dấu hiệu khó thu.
     const hdQuaHanTheoKH = new Map<string, number>();
     for (const h of s.hdbVisible()) {
-      if (h.trangThai === TT.BAO_GIA || h.trangThai === TT.HUY || h.trangThai === TT.DA_TAT_TOAN) continue;
+      if (h.thuocPhuTai || h.trangThai === TT.BAO_GIA || h.trangThai === TT.HUY || h.trangThai === TT.DA_TAT_TOAN) continue;
       if (h.dotTT.some((d) => dotQuaHan(d, dotBanDaThu(d, db)))) hdQuaHanTheoKH.set(h.maKH || h.tenKH, (hdQuaHanTheoKH.get(h.maKH || h.tenKH) ?? 0) + 1);
     }
     for (const h of s.hdbVisible()) {
-      if (h.trangThai === TT.BAO_GIA || h.trangThai === TT.HUY || h.trangThai === TT.DA_TAT_TOAN) continue;
+      if (h.thuocPhuTai || h.trangThai === TT.BAO_GIA || h.trangThai === TT.HUY || h.trangThai === TT.DA_TAT_TOAN) continue;
       const so = h.soHD || '(chưa số)';
       const hoSo: HoSoLienQuan = { nhan: so, link: ['/hop-dong-ban', h.id], qp: { tab: '3' }, mau: 'hdb' };
       const quaHan = h.dotTT.filter((d) => dotQuaHan(d, dotBanDaThu(d, db)));
