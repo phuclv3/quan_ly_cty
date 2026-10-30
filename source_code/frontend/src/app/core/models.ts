@@ -713,14 +713,16 @@ export interface ChecklistItem {
   ngay?: string;
 }
 
-export const CHECKLIST_HDM = ['Đặt hàng', 'Thanh toán Đợt 1', 'Hàng về', 'Kiểm định', 'Nhập kho'];
+export const CHECKLIST_HDM = ['Đặt hàng', 'Thanh toán Đợt 1', 'Dự kiến hàng về', 'Kiểm định', 'Nhập kho'];
+/** Mục checklist có ngày DỰ KIẾN: nhập được ngày khi chưa tích; còn ≤ 7 ngày mà chưa về thì cảnh báo Kho kiểm tra tiến độ với NCC. */
+export const CL_DU_KIEN_HANG_VE = 'Dự kiến hàng về';
 /** Mục checklist tự tích theo phiếu nhập — chỉ nhập kho khi đã có hoá đơn NCC. */
 export const CL_NHAP_KHO = 'Nhập kho';
 /** Tên checklist cũ (trước v13) → tên mới. */
 export const CHECKLIST_HDM_CU: Record<string, string> = {
   'Đã đặt hàng': 'Đặt hàng',
   'Đã thanh toán đợt 1': 'Thanh toán Đợt 1',
-  'Hàng đã về': 'Hàng về',
+  'Hàng đã về': 'Dự kiến hàng về',
   'Đã kiểm định': 'Kiểm định',
   'Đã nhập kho': 'Nhập kho',
 };

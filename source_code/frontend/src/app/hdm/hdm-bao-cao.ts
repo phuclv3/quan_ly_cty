@@ -343,13 +343,13 @@ export class HdmBaoCao {
   }
   /** Hàng đã về nhưng chưa nhập kho (HĐ Phú Tài không nhập kho). */
   protected readonly dangVe = computed(() => {
-    const x = this.dangChay().filter((k) => !k.m.thuocPhuTai && this.tien(k.m, 'Hàng về')?.xong && k.pctNhap < 1);
+    const x = this.dangChay().filter((k) => !k.m.thuocPhuTai && this.tien(k.m, 'Dự kiến hàng về')?.xong && k.pctNhap < 1);
     return { n: x.length, giaTri: sum(x, (k) => k.tong * (1 - k.pctNhap)) };
   });
   protected readonly giaoTre = computed(() =>
     this.dangChay().filter((k) => {
       const dat = this.tien(k.m, 'Đặt hàng');
-      return dat?.xong && !!dat.ngay && !this.tien(k.m, 'Hàng về')?.xong && -daysFromToday(dat.ngay) > NGAY_TRE;
+      return dat?.xong && !!dat.ngay && !this.tien(k.m, 'Dự kiến hàng về')?.xong && -daysFromToday(dat.ngay) > NGAY_TRE;
     }),
   );
 
@@ -422,7 +422,7 @@ export class HdmBaoCao {
   protected readonly chuoi = computed(() => {
     const dem = { 'Chưa đặt': 0, 'Đã đặt': 0, 'Hàng về': 0, 'Kiểm định': 0, 'Nhập kho': 0 };
     for (const k of this.dangChay()) {
-      const ve = !!this.tien(k.m, 'Hàng về')?.xong;
+      const ve = !!this.tien(k.m, 'Dự kiến hàng về')?.xong;
       if (k.pctNhap > 0) dem['Nhập kho']++;
       else if (!this.tien(k.m, 'Đặt hàng')?.xong) dem['Chưa đặt']++;
       else if (!ve) dem['Đã đặt']++;
@@ -456,7 +456,7 @@ export class HdmBaoCao {
     for (const k of this.dangChay()) {
       const { m } = k;
       const dat = this.tien(m, 'Đặt hàng');
-      const ve = this.tien(m, 'Hàng về');
+      const ve = this.tien(m, 'Dự kiến hàng về');
       let buoc = '';
       let ruiRo = '';
       let c: RuiRo['c'] = 'warn';

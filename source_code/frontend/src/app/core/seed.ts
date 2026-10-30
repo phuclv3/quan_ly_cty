@@ -449,7 +449,7 @@ export async function buildSeed(): Promise<Db> {
       xuatHoaDon: 'Đã',
       import: true,
     });
-    m.checklist = m.checklist.map((c) => (c.ten === 'Nhập kho' || c.ten === 'Hàng về' ? { ...c, xong: true, ngay: r0.ngay } : c));
+    m.checklist = m.checklist.map((c) => (c.ten === 'Nhập kho' || c.ten === 'Dự kiến hàng về' ? { ...c, xong: true, ngay: r0.ngay } : c));
     const pk: PhieuKho = {
       id: uid('PK'),
       soPhieu: so(db.cauHinh.TIEN_TO_NK, r0.ngay),

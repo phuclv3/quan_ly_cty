@@ -5,7 +5,7 @@ import { map } from 'rxjs';
 import { Store } from '../core/store';
 import { TT, ttNhan } from '../core/trang-thai';
 import { MOC_HAN_MUA, apDungTuDongHdm, dnvtTinhTrang, donGiaVND, dotMuaDaTra, dotQuaHan, hdmCalc, hoSoThieu, loiDotTT, slDaNhap, thanhTienVND, tongSL } from '../core/calc';
-import { CL_NHAP_KHO, DongHangMua, DotTTMua, HopDongMua, LOAI_TIEN, LoaiTien, TrangThaiHDM, LOAI_HO_SO } from '../core/models';
+import { CL_DU_KIEN_HANG_VE, CL_NHAP_KHO, DongHangMua, DotTTMua, HopDongMua, LOAI_TIEN, LoaiTien, TrangThaiHDM, LOAI_HO_SO } from '../core/models';
 import { fold, money, num, pct, todayIso, uid, viDate, vnd } from '../core/util';
 import { Kpi, Modal, MoneyInput, Pick, PickOption, TrangThai, PickGo } from '../shared/ui-kit';
 import { HoSoPanel, guiXoa } from '../shared/ho-so';
@@ -514,7 +514,7 @@ interface TraForm {
                         @if (tuDong) { <span class="sub muted">(tự động theo phiếu nhập · cần "NCC đã xuất hoá đơn: Đã")</span> }
                       </label>
                     </td>
-                    <td><input type="date" [value]="x.ngay ?? ''" [disabled]="!edit4() || !x.xong || tuDong" (input)="setCL(i, $any($event.target).value || undefined)" [attr.aria-label]="'Ngày ' + x.ten" /></td>
+                    <td><input type="date" [value]="x.ngay ?? ''" [disabled]="!edit4() || (!x.xong && x.ten !== clDuKien) || tuDong" (input)="setCL(i, $any($event.target).value || undefined)" [attr.aria-label]="'Ngày ' + x.ten" /></td>
                   </tr>
                 }
               </tbody>
@@ -686,6 +686,7 @@ export class HdmDetail {
   protected readonly money = money;
   protected readonly mocHan = MOC_HAN_MUA;
   protected readonly clNhapKho = CL_NHAP_KHO;
+  protected readonly clDuKien = CL_DU_KIEN_HANG_VE;
   protected readonly num = num;
   protected readonly pct = pct;
   protected readonly viDate = viDate;

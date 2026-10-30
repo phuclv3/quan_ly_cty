@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal, viewChild } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { CanhBaoTay, FileRef, MUC_CANH_BAO, MUC_CANH_BAO_MOTA, MUC_CANH_BAO_TEN, MUC_UU_TIEN, MucCanhBao, MucUuTien, NHOM_VIEC, NguonViec, NhomViec, PHUT_DUYET_HAN, ViecGiao, ycConHan } from '../core/models';
+import { CL_DU_KIEN_HANG_VE, CanhBaoTay, FileRef, MUC_CANH_BAO, MUC_CANH_BAO_MOTA, MUC_CANH_BAO_TEN, MUC_UU_TIEN, MucCanhBao, MucUuTien, NHOM_VIEC, NguonViec, NhomViec, PHUT_DUYET_HAN, ViecGiao, ycConHan } from '../core/models';
 import { Store } from '../core/store';
 import { daysFromToday, nowIso, todayIso, viDate, viMoment } from '../core/util';
 import { CanhBao, NHOM_RUI_RO, soSanhCanhBao, tinhCanhBaoTuDong } from './canh-bao';
@@ -345,6 +345,7 @@ const NGUON_TEN: Record<NguonViec, string> = { HDB: 'HĐ BÁN', HDM: 'HĐ MUA', 
       }
       <div foot class="btn-row">
         @if (cbXem(); as x) {
+          @if (x.duocXuLy && x.heThong && !x.c.xongLuc && x.c.key.startsWith('hdm-ve-')) { <button type="button" class="btn" (click)="taoViecKho()">Tạo việc phát sinh cho Kho</button> }
           @if (x.duocXuLy) { <button type="button" class="btn" (click)="xuLyCB(!x.c.xongLuc)">{{ x.c.xongLuc ? '↺ Mở lại cảnh báo' : '✓ Đánh dấu đã xử lý' }}</button> }
         }
         <button type="button" class="btn quiet" (click)="cbXemKey.set(null)">Đóng</button>
@@ -806,6 +807,28 @@ export class ViecPage {
       ? this.store.xuLyCanhBaoHeThong({ ...this.snap(x.c), nguoiPhuTrach: nguoi, xong: !!x.c.xongLuc })
       : this.store.giaoCanhBao(x.c.tayId!, nguoi);
     this.store.say(e ?? (nguoi ? 'Đã giao người phụ trách' : 'Đã bỏ người phụ trách'));
+  }
+  /** Cảnh báo "Dự kiến hàng về": tạo việc phát sinh (nhóm Kho, gắn HĐ mua) cho người phụ trách hoặc các tài khoản nhóm Kho, rồi đóng cảnh báo. */
+  protected taoViecKho(): void {
+    const x = this.cbXem();
+    const id = x?.c.hoSo?.link[1];
+    const m = id ? this.store.hdmById(id) : undefined;
+    if (!x || !m) return;
+    const du = m.checklist.find((c) => c.ten === CL_DU_KIEN_HANG_VE)?.ngay;
+    const kho = this.store.taiKhoan().filter((t) => t.trangThai === TT.HOAT_DONG && t.nhom.includes('NQ-KHO')).map((t) => t.id);
+    const e = this.store.giaoViec({
+      noiDung: `Kiểm tra tiến độ hàng về với NCC ${m.tenNCC} — HĐ mua ${m.soHD || '(chưa số)'}${du ? ` (dự kiến ${viDate(du)})` : ''}`,
+      nguoiNhan: x.c.nguoiPhuTrach ? [x.c.nguoiPhuTrach] : kho,
+      nguonLoai: 'HDM',
+      hdmId: m.id,
+      nhom: 'Kho',
+      han: du && du >= todayIso() ? du : todayIso(),
+      mucUuTien: 'Trung bình',
+    });
+    if (e) return void this.store.say(e);
+    this.store.xuLyCanhBaoHeThong({ ...this.snap(x.c), nguoiPhuTrach: x.c.nguoiPhuTrach, xong: true, ghiChu: 'Đã chuyển thành việc phát sinh cho Kho' });
+    this.store.say('Đã tạo việc phát sinh cho Kho');
+    this.cbXemKey.set(null);
   }
   protected xuLyCB(xong: boolean): void {
     const x = this.cbXem();

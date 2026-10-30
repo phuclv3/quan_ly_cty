@@ -1,4 +1,4 @@
-import { LichSuCanhBao, MucCanhBao, NhomViec } from '../core/models';
+import { CL_DU_KIEN_HANG_VE, LichSuCanhBao, MucCanhBao, NhomViec } from '../core/models';
 import { dotBanDaThu, dotMuaDaTra, dotQuaHan, hdbCalc, hoSoThieu, kiemTraDongBan, lechKiemKe, soDuNguon } from '../core/calc';
 import { Store } from '../core/store';
 import { TT } from '../core/trang-thai';
@@ -164,6 +164,26 @@ export function tinhCanhBaoTuDong(s: Store): CanhBao[] {
         noiDung: `${m.soHD || m.tenNCC} đã nhận đủ hàng nhưng thiếu chứng từ: ${thieu.join(', ')}`,
         anhHuong: 'Chưa đủ chứng từ để đối chiếu, thanh toán và tất toán',
         hoSo: { nhan: m.soHD || '(chưa số)', link: ['/hop-dong-mua', m.id], mau: 'hdm' },
+      });
+    }
+  }
+
+  // ── Hợp đồng mua: còn ≤ NGUONG_P2_NGAY_SAP_HAN ngày tới ngày "Dự kiến hàng về" mà hàng chưa về → Kho kiểm tra tiến độ với NCC ──
+  // Quá ngày dự kiến mà chưa tích về vẫn giữ cảnh báo (P1) cho đến khi hàng về / HĐ nhận đủ.
+  if (s.canView('hdm')) {
+    for (const m of s.hdmVisible()) {
+      if (m.thuocPhuTai || [TT.NHAP, TT.HUY, TT.DA_TAT_TOAN, TT.DA_NHAN_DU].includes(m.trangThai as never)) continue;
+      const cl = m.checklist.find((x) => x.ten === CL_DU_KIEN_HANG_VE);
+      if (!cl?.ngay || cl.xong) continue;
+      const con = daysFromToday(cl.ngay);
+      if (con > NGUONG_P2_NGAY_SAP_HAN) continue;
+      them({
+        key: `hdm-ve-${m.id}`,
+        muc: con < 0 ? 'P1' : 'P2',
+        nhom: 'Kho & chất lượng',
+        noiDung: `${m.tenNCC} — dự kiến hàng về ${con < 0 ? `đã quá ${-con} ngày` : con === 0 ? 'hôm nay' : `sau ${con} ngày`}, hàng chưa về`,
+        anhHuong: 'Kho cần kiểm tra tiến độ giao hàng với NCC để kịp nhập kho và giao khách',
+        hoSo: { nhan: m.soHD || '(chưa số)', link: ['/hop-dong-mua', m.id], qp: { tab: '4' }, mau: 'hdm' },
       });
     }
   }

@@ -266,7 +266,7 @@ export class HdmList {
     const pt = m.thuocPhuTai;
     const xong = (ten: string) => m.checklist.find((x) => x.ten === ten);
     const daDat = !!xong('Đặt hàng')?.xong;
-    const hangVe = xong('Hàng về');
+    const hangVe = xong('Dự kiến hàng về');
     const kiemDinh = !!xong('Kiểm định')?.xong;
     const daNhapDu = pt || c.pctNhap >= 1;
     const thieuHS = hoSoThieu(db, 'HDM', m.id);
