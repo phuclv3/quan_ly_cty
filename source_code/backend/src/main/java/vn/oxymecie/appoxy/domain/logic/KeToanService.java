@@ -131,6 +131,8 @@ public class KeToanService {
       clean.setId(Ids.safe(p.getId()) && c.phieu(p.getId()) == null ? p.getId() : c.uid("PTC"));
     }
     if (gui) {
+      if (cu != null && !Objects.equals(cu.getNguoiDeNghi(), c.me()))
+        throw ApiException.forbidden("Chỉ người tạo phiếu mới gửi duyệt được");
       List<String> loi = loiPhieu(c, clean);
       if (!loi.isEmpty()) throw ApiException.invalid(String.join(" · ", loi));
     }
@@ -208,8 +210,8 @@ public class KeToanService {
     List<String> bo = new ArrayList<>();
     for (PhieuThuChi p : c.db().getPhieuThuChi()) {
       if (!ids.contains(p.getId())) continue;
-      if (!phieuSuaDuoc(c, p, false) || !chuPhieu(c, p)) {
-        bo.add(p.getSoPhieu() + " (không gửi duyệt được)");
+      if (!phieuSuaDuoc(c, p, false) || !Objects.equals(p.getNguoiDeNghi(), c.me())) {
+        bo.add(p.getSoPhieu() + " (chỉ người tạo mới gửi duyệt được)");
         continue;
       }
       List<String> loi = loiPhieu(c, p);
