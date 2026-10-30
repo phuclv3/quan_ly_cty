@@ -233,14 +233,17 @@ interface ThuNhap {
                   <td><input type="date" [value]="thu(d).ngayThu" (input)="setThu(d.dot, { ngayThu: $any($event.target).value })" /></td>
                   <td><app-money [value]="thu(d).soTienThu" (valueChange)="setThu(d.dot, { soTienThu: $event })" /></td>
                   <td>
-                    <select (change)="setThu(d.dot, { nguonTienNhan: $any($event.target).value })">
-                      @for (n of store.nguonDangDung(); track n.id) { <option [value]="n.id" [selected]="n.id === thu(d).nguonTienNhan">{{ n.ten }}</option> }
-                    </select>
+                    @if (saved()?.thuocPhuTai) { <span class="sub">Quỹ Phú Tài</span> }
+                    @else {
+                      <select (change)="setThu(d.dot, { nguonTienNhan: $any($event.target).value })">
+                        @for (n of store.nguonDangDung(); track n.id) { <option [value]="n.id" [selected]="n.id === thu(d).nguonTienNhan">{{ n.ten }}</option> }
+                      </select>
+                    }
                   </td>
                 } @else {
                   <td>{{ viDate(d.ngayThu) }}</td>
                   <td class="num">{{ d.soTienThu ? money(d.soTienThu) : '—' }}</td>
-                  <td>{{ d.nguonTienNhan ? store.nguonTen(d.nguonTienNhan) : '—' }}</td>
+                  <td>{{ d.nguonTienNhan ? store.nguonTen(d.nguonTienNhan) : saved()?.thuocPhuTai && d.soTienThu ? 'Quỹ Phú Tài' : '—' }}</td>
                 }
                 <td>
                   @let p = store.phieuById(d.phieuThuId);
@@ -552,7 +555,9 @@ export class HdbTab3 {
     }
     const ok = await this.confirm.ask({
       title: `Ghi nhận thực thu đợt ${dot}: ${money(t.soTienThu)} đ?`,
-      message: `Ngày thu ${viDate(t.ngayThu)} vào ${this.store.nguonTen(t.nguonTienNhan)}. Hệ thống tạo phiếu Thu Chờ duyệt ở Sổ quỹ; số dư quỹ chỉ tăng khi phiếu được duyệt.`,
+      message: s.thuocPhuTai
+        ? `Ngày thu ${viDate(t.ngayThu)} vào Quỹ Phú Tài. HĐ thuộc Phú Tài nên không tạo phiếu ở Sổ quỹ / Nguồn tiền Oxy.`
+        : `Ngày thu ${viDate(t.ngayThu)} vào ${this.store.nguonTen(t.nguonTienNhan)}. Hệ thống tạo phiếu Thu Chờ duyệt ở Sổ quỹ; số dư quỹ chỉ tăng khi phiếu được duyệt.`,
       warn: t.soTienThu !== d.soTien ? `Số thu khác số tiền của đợt (${money(d.soTien)} đ), lệch ${money(t.soTienThu - d.soTien)} đ.` : undefined,
       ok: 'Ghi nhận',
     });
@@ -567,6 +572,6 @@ export class HdbTab3 {
       delete n[dot];
       return n;
     });
-    this.store.say(`Đã ghi thực thu đợt ${dot} — phiếu Thu chờ duyệt`);
+    this.store.say(s.thuocPhuTai ? `Đã ghi thực thu đợt ${dot} — về quỹ Phú Tài` : `Đã ghi thực thu đợt ${dot} — phiếu Thu chờ duyệt`);
   }
 }

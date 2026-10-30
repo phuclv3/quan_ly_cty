@@ -25,8 +25,8 @@ const GD_CLASS: Record<GiaiDoanCH, string> = { 'Mới': 'moi', 'Đã báo giá':
     <div class="kpis">
       <div class="k hero">
         <span class="l">Cơ hội đang mở</span>
-        <b class="v">{{ short(kpi().giaTriMo) }}</b>
-        <span class="s">{{ kpi().soMo }} cơ hội · {{ kpi().soKhachMo }} khách hàng</span>
+        <b class="v">{{ short(tongHien().gia) }}</b>
+        <span class="s">{{ tongHien().so }} cơ hội · {{ tongHien().khach }} khách hàng</span>
       </div>
       <div class="k">
         <span class="l">Thắng trong kỳ</span>
@@ -230,6 +230,11 @@ export class KhCoHoi {
     this.locSan().filter((r) => (this.taiTiep() ? this.tai(r) : !this.gd() || r.c.giaiDoan === this.gd())),
   );
   protected readonly pg = paginate(this.rows);
+  /** Thẻ "Cơ hội đang mở" = tổng giá trị toàn bộ dòng đang hiện (theo chip + bộ lọc, mọi trang). */
+  protected readonly tongHien = computed(() => {
+    const rs = this.rows();
+    return { gia: sum(rs, (r) => r.c.giaTri), so: rs.length, khach: new Set(rs.map((r) => r.k.id)).size };
+  });
 
   /** Thẻ tổng quan: kỳ = năm nay; so với cùng kỳ năm trước (đến cùng ngày). */
   protected readonly kpi = computed(() => {

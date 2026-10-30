@@ -1459,11 +1459,23 @@ export class Store {
     if (h.trangThai === TT.BAO_GIA && !(h.coTamUng && dot === 1)) return 'HĐ đang ở Báo giá — chỉ ghi thực thu từ Hiệu lực trở đi (trừ đợt tạm ứng)';
     const d = h.dotTT.find((x) => x.dot === dot);
     if (!d) return 'Không có đợt này';
-    if (!o.ngayThu || !(o.soTienThu > 0) || !o.nguonTienNhan) return 'Cần Ngày thực thu, Số tiền > 0 và Nguồn tiền nhận';
-    const conLai = this.hdbConThuDuoc(h, dot);
-    if (o.soTienThu > conLai) return `Số thu vượt phần còn phải thu của HĐ (tối đa ${vnd(conLai)})`;
     let phieuThuId = d.phieuThuId;
     const cu = phieuThuId ? this.phieuById(phieuThuId) : undefined;
+    // HĐ thuộc Phú Tài: tiền về quỹ ảo Phú Tài, không sinh phiếu ở Sổ quỹ / Nguồn tiền Oxy (như trả NCC của HĐ mua Phú Tài).
+    const phuTai = !!h.thuocPhuTai && !cu;
+    if (!o.ngayThu || !(o.soTienThu > 0) || (!phuTai && !o.nguonTienNhan)) return phuTai ? 'Cần Ngày thực thu và Số tiền > 0' : 'Cần Ngày thực thu, Số tiền > 0 và Nguồn tiền nhận';
+    const conLai = this.hdbConThuDuoc(h, dot);
+    if (o.soTienThu > conLai) return `Số thu vượt phần còn phải thu của HĐ (tối đa ${vnd(conLai)})`;
+    if (phuTai) {
+      this.upsert(
+        'hopDongBan',
+        apDungTuDongHdb({
+          ...h,
+          dotTT: h.dotTT.map((x) => (x.dot === dot ? { ...x, ngayThu: o.ngayThu, soTienThu: o.soTienThu, nguonTienNhan: undefined } : x)),
+        }),
+      );
+      return null;
+    }
     if (cu && cu.trangThai === TT.DA_DUYET) return 'Phiếu thu của đợt này đã duyệt — muốn sửa thì bấm "Yêu cầu xoá phiếu" ở dòng đợt, duyệt xong ghi lại';
     const p: PhieuThuChi = {
       ...(cu ?? this.newPhieu('Thu')),

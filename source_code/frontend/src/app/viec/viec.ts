@@ -225,7 +225,7 @@ const NGUON_TEN: Record<NguonViec, string> = { HDB: 'HĐ BÁN', HDM: 'HĐ MUA', 
       <div class="schips" role="group" aria-label="Lọc theo trạng thái">
         <button type="button" [class.on]="!tt() && !chiTre()" (click)="chonTT('')">Tất cả ({{ dem()['tat'] }})</button>
         @for (t of DS_TT; track t) {
-          <button type="button" [class.on]="tt() === t" (click)="chonTT(t)">{{ t }} ({{ dem()[t] }})</button>
+          <button type="button" [class.on]="tt() === t" [attr.title]="t === 'Hoàn thành' ? 'Chỉ lấy công việc hoàn thành trong 7 ngày gần nhất' : null" (click)="chonTT(t)">{{ t }} ({{ dem()[t] }})</button>
         }
         <button type="button" class="flag" [class.on]="chiTre()" (click)="chiTre.set(!chiTre())">⊘ Trễ hạn ({{ soTre() }})</button>
       </div>
@@ -854,7 +854,9 @@ export class ViecPage {
   private readonly cuaPhamVi = computed(() => {
     const me = this.store.meId() ?? '';
     const pv = this.phamVi();
-    return this.store.viecVisible().filter((v) =>
+    // Việc đã hoàn thành chỉ hiện trong 7 ngày kể từ lúc xong; quá hạn đó tự ẩn khỏi danh sách.
+    const moc = this.now() - 7 * 86_400_000;
+    return this.store.viecVisible().filter((v) => !v.xongLuc || new Date(v.xongLuc).getTime() >= moc).filter((v) =>
       pv === 'tatCa' ? true : pv === 'toiGiao' ? v.nguoiTao === me && v.nguoiNhan.length > 0 : v.nguoiNhan.includes(me) || (v.nguoiTao === me && !v.nguoiNhan.length),
     );
   });

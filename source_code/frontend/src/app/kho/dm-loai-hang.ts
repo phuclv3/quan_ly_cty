@@ -101,9 +101,7 @@ import { ImportDm } from '../shared/import-dm';
                       <button type="button" class="btn sm quiet" (click)="sua(l)">Sửa</button>
                       <button type="button" class="btn sm quiet" (click)="doiMa(l)">Đổi mã</button>
                       <button type="button" class="btn sm quiet" (click)="batTat(l)">{{ l.dangDung ? 'Ngưng' : 'Dùng lại' }}</button>
-                      @if (!daDung().has(l.id) && store.level('duyetXoa') !== 'none') {
-                        <button type="button" class="btn sm quiet danger" (click)="xoa(l)">Xoá</button>
-                      }
+                      <button type="button" class="btn sm quiet danger" [disabled]="daDung().has(l.id)" [attr.title]="daDung().has(l.id) ? 'Mã hàng đã được dùng — chỉ ngưng, không xoá được' : null" (click)="xoa(l)">Xoá</button>
                     </div>
                   }
                 </td>
@@ -262,6 +260,9 @@ export class DmLoaiHangTab {
     const s = new Set<string>();
     for (const p of db.phieuKho) for (const d of p.dong) s.add(d.loaiHang);
     for (const m of db.hopDongMua) for (const d of m.chiTiet) s.add(d.loaiHang);
+    for (const h of db.hopDongBan) for (const d of h.dongHang ?? []) s.add(d.loaiHang);
+    for (const n of db.deNghiVatTu) for (const d of n.dong) s.add(d.loaiHang);
+    for (const k of db.kiemKe) for (const d of k.dong) s.add(d.loaiHang);
     return s;
   });
 
