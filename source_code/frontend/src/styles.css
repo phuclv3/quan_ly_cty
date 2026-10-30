@@ -673,6 +673,13 @@ app-money input { width: 100%; }
 .tbl-wrap + .kpis, .tbl-wrap + .form-grid, .tbl-wrap + .btn-row { margin-top: 12px; }
 /* Dòng có ô nhập: canh giữa theo chiều dọc để số / chữ thẳng hàng với ô */
 .tbl tbody tr:has(> td > input:not([type='checkbox']), > td > select, > td > app-money, > td > .pick, > td > textarea) > td { vertical-align: middle; }
+/*
+ * Dòng có ghi chú phụ dưới ô nhập (VD "Đề nghị DN… · HĐ bán …" ở Tên hàng) cao hơn các ô khác: canh giữa làm ô nhập lệch nhau.
+ * Canh trên cho mọi ô để các ô nhập cùng hàng; ô chữ / ô tích đẩy xuống nửa chênh với ô nhập 40px để thẳng hàng với chữ trong ô nhập.
+ */
+.tbl tbody tr.hint-row:has(> td > input:not([type='checkbox']), > td > select, > td > app-money, > td > .pick, > td > textarea) > td { vertical-align: top; }
+.tbl tbody tr.hint-row > td:not(:has(> input, > select, > app-money, > .pick, > textarea, > .ro)) { padding-top: 21px; }
+.tbl tbody tr.hint-row > td:has(> input[type='checkbox']) { padding-top: 23px; }
 .empty { padding: 28px 12px; text-align: center; color: var(--ink-3); }
 
 .bar { position: relative; height: 7px; border-radius: 4px; background: var(--surf-3); overflow: hidden; min-width: 70px; }

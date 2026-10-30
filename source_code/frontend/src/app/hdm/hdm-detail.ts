@@ -293,7 +293,7 @@ interface TraForm {
                 @for (d of m.chiTiet; track d.id; let i = $index) {
                   @let da = daNhap(d.id);
                   @let con = d.soLuong - da;
-                  <tr [class.sel]="chon().includes(d.id)">
+                  <tr [class.sel]="chon().includes(d.id)" [class.hint-row]="!!d.dnvtId || (da > 0 && d.soLuong < da)">
                     @if (nhapDuoc()) {
                       <td>@if (luuRoi(d.id) && con > 0) { <input type="checkbox" [attr.aria-label]="'Chọn ' + d.tenHang" [checked]="chon().includes(d.id)" (change)="flipChon(d.id)" /> }</td>
                     }
