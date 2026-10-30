@@ -117,7 +117,7 @@ interface NavItem {
         }
         <div class="user-chip">
           <span class="avatar" aria-hidden="true">{{ initial() }}</span>
-          <span class="who"><b>{{ store.tenNhom(auth.me()) }}</b><small>{{ auth.me()?.email }}</small></span>
+          <span class="who"><b>{{ auth.me()?.hoTen }} ({{ store.tenNhom(auth.me()) }})</b><small>{{ auth.me()?.email }}</small></span>
         </div>
       </header>
       <main class="main">
