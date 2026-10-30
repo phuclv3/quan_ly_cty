@@ -6,6 +6,7 @@ import { Ui } from './core/ui';
 import { Auth } from './core/auth';
 import { Perm } from './core/perm';
 import { TT } from './core/trang-thai';
+import { UuTien } from './home/uu-tien';
 
 interface NavItem {
   path: string;
@@ -67,12 +68,48 @@ interface NavItem {
           }
         </div>
         <span class="spacer"></span>
-        <a class="bell" routerLink="/viec" aria-label="Thư"><app-icon name="mail" [size]="20" /></a>
         @if (store.canView('viec')) {
-          <a class="bell" routerLink="/viec" [attr.aria-label]="'Việc được giao: ' + (store.viecCuaToi() + store.ycChoToi().length)">
-            <app-icon name="bell" [size]="20" />
-            @if (store.viecCuaToi() + store.ycChoToi().length > 0) { <i class="bell-n">{{ store.viecCuaToi() + store.ycChoToi().length }}</i> }
+          <a class="bell" routerLink="/viec" title="Công việc và cảnh báo" [attr.aria-label]="'Công việc và cảnh báo: ' + soViec() + ' việc chưa xong'">
+            <app-icon name="mail" [size]="20" />
+            @if (soViec() > 0) { <i class="bell-n">{{ soViec() > 99 ? '99+' : soViec() }}</i> }
           </a>
+        }
+        @if (store.canView('viec')) {
+          <div class="notif">
+            <button type="button" class="bell" [class.on]="moTB()" aria-haspopup="true" [attr.aria-expanded]="moTB()"
+                    title="Ưu tiên điều hành hôm nay" [attr.aria-label]="'Ưu tiên điều hành hôm nay: ' + soThongBao() + ' mục'" (click)="moTB.set(!moTB())">
+              <app-icon name="bell" [size]="20" />
+              @if (soThongBao() > 0) { <i class="bell-n" [class.khan]="cbKhanCap() > 0">{{ soThongBao() > 99 ? '99+' : soThongBao() }}</i> }
+            </button>
+            @if (moTB()) {
+              <section class="notif-panel" role="dialog" aria-label="Ưu tiên điều hành hôm nay">
+                <header class="np-head">
+                  <b>Ưu tiên điều hành hôm nay</b>
+                </header>
+                <div class="np-body">
+                  @if (!hang().length) {
+                    <p class="np-empty">🎉 Không còn việc ưu tiên trong ngày.</p>
+                  }
+                  @for (r of hang().slice(0, 8); track r.key) {
+                    @if (r.viecId) {
+                      <a class="np-item" routerLink="/viec" [queryParams]="{ id: r.viecId }" (click)="moTB.set(false)">
+                        <i [class]="'np-muc ' + (r.p0 ? 'P0' : 'P1')">{{ r.p0 ? 'P0' : 'P1' }}</i>
+                        <span class="np-txt"><b>{{ r.text }}</b><small [class.qh]="r.tre > 0">{{ r.sub }}</small></span>
+                      </a>
+                    } @else {
+                      <a class="np-item" [routerLink]="r.link" [queryParams]="r.qp" (click)="moTB.set(false)">
+                        <i [class]="'np-muc ' + (r.p0 ? 'P0' : 'P1')">{{ r.p0 ? 'P0' : 'P1' }}</i>
+                        <span class="np-txt"><b>{{ r.text }}</b><small>{{ r.ma ? r.ma + ' · ' : '' }}{{ r.sub }}</small></span>
+                      </a>
+                    }
+                  }
+                  @if (hang().length > 8) {
+                    <a class="np-more" routerLink="/" (click)="moTB.set(false)">Còn {{ hang().length - 8 }} mục khác trên Trang chủ ›</a>
+                  }
+                </div>
+              </section>
+            }
+          </div>
         }
         <div class="user-chip">
           <span class="avatar" aria-hidden="true">{{ initial() }}</span>
@@ -139,6 +176,22 @@ export class Shell {
     return this.items().filter((x) => !tren.has(x.path)).reduce((s, x) => s + (x.count ?? 0), 0);
   });
 
+  // ── Chuông: "Ưu tiên điều hành hôm nay" — cùng nguồn với bảng ở Trang chủ ──
+  private readonly uu = inject(UuTien);
+  protected readonly moTB = signal(false);
+  protected readonly hang = computed(() => (this.store.canView('viec') ? this.uu.hang() : []));
+  protected readonly soThongBao = computed(() => this.hang().length);
+  /** Icon thư: tất cả việc được giao chưa xong + yêu cầu gia hạn chờ tôi (mở trang Công việc & Cảnh báo). */
+  protected readonly soViec = computed(() => this.store.viecCuaToi() + this.store.ycChoToi().length);
+  /** Số mục khẩn (P0) — chấm đỏ đậm. */
+  protected readonly cbKhanCap = computed(() => this.hang().filter((r) => r.p0).length);
+  @HostListener('document:click', ['$event'])
+  protected clickNgoai(e: MouseEvent): void {
+    if (this.moTB() && !(e.target as HTMLElement | null)?.closest('.notif')) this.moTB.set(false);
+  }
+  @HostListener('document:keydown.escape')
+  protected escTB(): void { this.moTB.set(false); }
+
   protected readonly q = signal('');
   /** Phím tắt hiển thị theo hệ điều hành (Mac: ⌘F, còn lại: Ctrl F). */
   protected readonly phimTat = /Mac|iPhone|iPad/i.test(navigator.platform) ? '⌘ F' : 'Ctrl F';
@@ -179,7 +232,7 @@ export class Shell {
   protected readonly items = computed<NavItem[]>(() => {
     const all: NavItem[] = [
       { path: '/', label: 'Trang chủ', icon: 'home', perms: null, exact: true, group: 'Điều hành' },
-      { path: '/viec', label: 'Công việc & Cảnh báo', short: 'Việc', icon: 'list', perms: ['viec'], count: this.store.viecCuaToi() + this.store.ycChoToi().length, group: 'Điều hành' },
+      { path: '/viec', label: 'Công việc & Cảnh báo', short: 'Việc', icon: 'list', perms: ['viec'], count: this.soViec(), group: 'Điều hành' },
       { path: '/khach-hang', label: 'Khách hàng', short: 'Khách', icon: 'contact', perms: ['khachHang'], group: 'Nghiệp vụ' },
       { path: '/hop-dong-ban', label: 'Hợp đồng bán', short: 'HĐ bán', icon: 'sell', perms: ['hdb'], group: 'Nghiệp vụ' },
       { path: '/nha-cung-cap', label: 'Nhà cung cấp', short: 'NCC', icon: 'truck', perms: ['ncc'], group: 'Nghiệp vụ' },
