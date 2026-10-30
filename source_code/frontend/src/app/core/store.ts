@@ -399,6 +399,8 @@ export class Store {
   readonly nhomQuyen = computed(() => this.db().nhomQuyen);
   /** Nhóm quyền (đang hoạt động) của người đăng nhập. */
   readonly myGroups = computed<NhomQuyen[]>(() => this.nhomCua(this.me()));
+  /** Là tài khoản quản trị hệ thống `administrator` (TK-ROOT) — chỉ tài khoản này được vào "Vận hành hệ thống". */
+  readonly laQuanTri = computed(() => this.meId() === TK_QUAN_TRI_AN);
   /** Thuộc nhóm toàn quyền (Giám đốc / Owner). */
   readonly isGD = computed(() => this.myGroups().some((g) => g.toanQuyen));
 

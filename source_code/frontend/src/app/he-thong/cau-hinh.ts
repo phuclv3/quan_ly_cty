@@ -14,17 +14,17 @@ type Tab = 'tham-so' | 'du-lieu' | 'van-hanh';
 type Kieu = 'pct' | 'int' | 'text' | 'chon';
 
 const THAM_SO: { k: CauHinhKey; nhan: string; kieu: Kieu; hint: string }[] = [
-  { k: 'TNDN_NGUONG', nhan: 'Mốc bậc thuế TNDN HĐ bán', kieu: 'pct', hint: 'Mốc = tỷ lệ × GTHĐ thực tế trước VAT' },
-  { k: 'TNDN_MUC1', nhan: 'Thuế suất phần chênh lệch đến mốc', kieu: 'pct', hint: 'Bậc 1' },
-  { k: 'TNDN_MUC2', nhan: 'Thuế suất phần chênh lệch vượt mốc', kieu: 'pct', hint: 'Bậc 2' },
-  { k: 'PT_THUE', nhan: 'Phú Tài — thuế TNDN trên LN trước thuế', kieu: 'pct', hint: 'Mặc định cho HĐ Phú Tài mới' },
-  { k: 'PT_GIU', nhan: 'Phú Tài giữ (phí quản lý)', kieu: 'pct', hint: 'Tính trên LN sau thuế (cách chia Nhân) hoặc LN trước thuế (cách chia Cộng)' },
-  { k: 'PT_CACH_CHIA', nhan: 'Phú Tài — cách chia lợi nhuận', kieu: 'chon', hint: 'Nhân: Oxy = (1 − thuế) × (1 − PT giữ) — 72% với 20% / 10%. Cộng: Oxy = 1 − thuế − PT giữ — 70%. Áp cho HĐ Phú Tài tạo sau.' },
-  { k: 'SO_DOT_TOI_DA', nhan: 'Số đợt thanh toán tối đa / HĐ', kieu: 'int', hint: 'Áp cho HĐ bán và HĐ mua' },
-  { k: 'TIEN_TO_TC', nhan: 'Tiền tố số phiếu thu chi (cũ)', kieu: 'text', hint: 'Số phiếu mới tự đặt theo loại: Thu = PT, Chi / Tạm ứng = PC, Quyết toán = PQ, Luân chuyển = PL (VD PT2601-001, đánh lại mỗi tháng). Tiền tố này chỉ còn dùng để nhận diện số phiếu cũ.' },
-  { k: 'TIEN_TO_CP', nhan: 'Tiền tố mã chi phí thực hiện HĐ', kieu: 'text', hint: 'VD CP26-0001' },
-  { k: 'TIEN_TO_NK', nhan: 'Tiền tố phiếu nhập kho', kieu: 'text', hint: 'VD NK26-0001' },
-  { k: 'TIEN_TO_XK', nhan: 'Tiền tố phiếu xuất kho', kieu: 'text', hint: 'VD XK26-0001' },
+  { k: 'TNDN_NGUONG', nhan: 'Mốc bậc thuế TNDN HĐ bán', kieu: 'pct', hint: 'Dùng ở: Hợp đồng bán → tab 3 (tính Thuế TNDN / Hoàn trả) và các báo cáo lợi nhuận. Mốc = tỷ lệ × GTHĐ thực tế trước VAT; phần chênh lệch đến mốc tính theo bậc 1, vượt mốc tính theo bậc 2.' },
+  { k: 'TNDN_MUC1', nhan: 'Thuế suất phần chênh lệch đến mốc', kieu: 'pct', hint: 'Dùng ở: Hợp đồng bán → tab 3 (Thuế TNDN). Thuế suất bậc 1: áp cho phần chênh lệch từ 0 đến mốc.' },
+  { k: 'TNDN_MUC2', nhan: 'Thuế suất phần chênh lệch vượt mốc', kieu: 'pct', hint: 'Dùng ở: Hợp đồng bán → tab 3 (Thuế TNDN). Thuế suất bậc 2: áp cho phần chênh lệch vượt mốc.' },
+  { k: 'PT_THUE', nhan: 'Phú Tài — thuế TNDN trên LN trước thuế', kieu: 'pct', hint: 'Dùng ở: Phú Tài → tạo HĐ Phú Tài mới (điền sẵn ô thuế TNDN; sửa riêng từng HĐ được). Tính trên LN trước thuế.' },
+  { k: 'PT_GIU', nhan: 'Phú Tài giữ (phí quản lý)', kieu: 'pct', hint: 'Dùng ở: Phú Tài → tạo HĐ Phú Tài mới (điền sẵn ô Phú Tài giữ). Tính trên LN sau thuế (cách chia Nhân) hoặc LN trước thuế (cách chia Cộng).' },
+  { k: 'PT_CACH_CHIA', nhan: 'Phú Tài — cách chia lợi nhuận', kieu: 'chon', hint: 'Dùng ở: Phú Tài → chi tiết HĐ Phú Tài (phần Oxy được hưởng). Nhân: Oxy = (1 − thuế) × (1 − PT giữ) — 72% với 20% / 10%. Cộng: Oxy = 1 − thuế − PT giữ — 70%. Chỉ áp cho HĐ Phú Tài tạo sau.' },
+  { k: 'SO_DOT_TOI_DA', nhan: 'Số đợt thanh toán tối đa / HĐ', kieu: 'int', hint: 'Dùng ở: Hợp đồng bán và Hợp đồng mua → tab Thanh toán (số đợt tối đa khi lưu) và Import hợp đồng từ Excel.' },
+  { k: 'TIEN_TO_TC', nhan: 'Tiền tố số phiếu thu chi (cũ)', kieu: 'text', hint: 'Dùng ở: Kế toán → Sổ quỹ (phiếu thu / chi). Số phiếu mới tự đặt theo loại: Thu = PT, Chi / Tạm ứng = PC, Quyết toán = PQ, Luân chuyển = PL (VD PT2601-001, đánh lại mỗi tháng). Tiền tố này chỉ còn dùng để nhận diện số phiếu cũ.' },
+  { k: 'TIEN_TO_CP', nhan: 'Tiền tố mã chi phí thực hiện HĐ', kieu: 'text', hint: 'Dùng ở: Kế toán → Chi phí HĐ (mã chi phí thực hiện hợp đồng). VD CP26-0001.' },
+  { k: 'TIEN_TO_NK', nhan: 'Tiền tố phiếu nhập kho', kieu: 'text', hint: 'Dùng ở: Kho → phiếu nhập kho, gồm nhập hàng từ HĐ mua (Hợp đồng mua → nhận hàng). VD NK26-0001.' },
+  { k: 'TIEN_TO_XK', nhan: 'Tiền tố phiếu xuất kho', kieu: 'text', hint: 'Dùng ở: Kho → phiếu xuất kho, gồm xuất giao hàng cho HĐ bán. VD XK26-0001.' },
 ];
 const KIEU: Record<CauHinhKey, Kieu> = Object.fromEntries(THAM_SO.map((t) => [t.k, t.kieu])) as Record<CauHinhKey, Kieu>;
 const NHAN: Record<CauHinhKey, string> = Object.fromEntries(THAM_SO.map((t) => [t.k, t.nhan])) as Record<CauHinhKey, string>;
@@ -142,7 +142,7 @@ const BANG: { k: TableKey; nhan: string }[] = [
 
       @case ('van-hanh') {
         <div class="note warn">
-          Thao tác ảnh hưởng toàn hệ thống — chỉ nhóm toàn quyền thấy tab này. Nên xuất bản sao dữ liệu (tab Dữ liệu) trước khi tắt.
+          Thao tác ảnh hưởng toàn hệ thống — chỉ tài khoản administrator thấy tab này. Nên xuất bản sao dữ liệu (tab Dữ liệu) trước khi tắt.
         </div>
         <div class="card" style="margin-top:14px;max-width:640px">
           <h3>Tắt hệ thống</h3>
@@ -198,7 +198,8 @@ export class CauHinhPage {
   private readonly tabs = computed<Tab[]>(() => {
     const out: Tab[] = [];
     if (this.store.canView('cauHinh')) out.push('tham-so');
-    if (this.store.isGD()) out.push('du-lieu', 'van-hanh');
+    if (this.store.isGD()) out.push('du-lieu');
+    if (this.store.laQuanTri()) out.push('van-hanh');
     return out;
   });
   protected readonly tab = computed<Tab>(() => {
@@ -299,7 +300,7 @@ export class CauHinhPage {
   }
 
   protected async tatHeThong(): Promise<void> {
-    if (!this.store.isGD()) return;
+    if (!this.store.laQuanTri()) return;
     const go = await this.confirm.prompt({
       title: 'Tắt hệ thống và dừng backend?',
       message: 'Backend sẽ thoát ngay sau khi xác nhận. Mọi người đang dùng bị ngắt kết nối, không thể bật lại từ giao diện này.',

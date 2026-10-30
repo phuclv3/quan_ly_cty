@@ -8,7 +8,6 @@
   color-scheme: light;
   /* Be Vietnam Pro theo giao diện tham khảo — người dùng yêu cầu thay Times New Roman của NT-08. */
   --font: 'Be Vietnam Pro', 'Segoe UI', 'Noto Sans', Roboto, system-ui, sans-serif;
-  --mono: 'JetBrains Mono', Consolas, 'Cascadia Mono', 'Liberation Mono', ui-monospace, monospace;
 
   --bg: #f4f5f7;
   --surf: #ffffff;
@@ -143,7 +142,8 @@ app-icon { display: inline-flex; align-items: center; justify-content: center; f
 .note > app-icon { margin-top: 3px; }
 
 .num { font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
-.mono { font-family: var(--mono); font-size: 0.9em; }
+/* Mã / số hiệu: cùng một kiểu chữ toàn hệ thống; chỉ căn số đều chiều rộng. */
+.mono { font-family: var(--font); font-variant-numeric: tabular-nums; }
 .muted { color: var(--ink-3); }
 .sub { color: var(--ink-3); font-size: 15px; line-height: 1.6; }
 .neg { color: var(--bad-fg); }

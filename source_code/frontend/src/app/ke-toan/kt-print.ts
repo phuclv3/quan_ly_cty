@@ -36,7 +36,7 @@ export function inGiay(title: string, body: string, kho: 'A5' | 'A4'): boolean {
   if (!w) return false;
   const css = `
     @page { size: ${kho === 'A5' ? 'A5 landscape' : 'A4 portrait'}; margin: 12mm; }
-    body { font-family: 'Times New Roman', Times, serif; font-size: 13pt; color: #000; margin: 0; }
+    body { font-family: 'Be Vietnam Pro', 'Segoe UI', 'Noto Sans', Roboto, system-ui, sans-serif; font-size: 13pt; color: #000; margin: 0; }
     h1 { text-align: center; font-size: 17pt; margin: 6px 0 2px; }
     .c { text-align: center; } .r { text-align: right; } .m { color: #444; }
     .head { display: flex; justify-content: space-between; font-size: 11.5pt; }
@@ -49,13 +49,12 @@ export function inGiay(title: string, body: string, kho: 'A5' | 'A4'): boolean {
   `;
   w.document.open();
   w.document.write(
-    `<!doctype html><html lang="vi"><head><meta charset="utf-8"><title>${esc(title)}</title><style>${css}</style></head><body>${body}</body></html>`,
+    `<!doctype html><html lang="vi"><head><meta charset="utf-8"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap"><title>${esc(title)}</title><style>${css}</style></head><body>${body}</body></html>`,
   );
   w.document.close();
   w.focus();
-  setTimeout(() => {
-    w.print();
-  }, 150);
+  // Chờ font tải xong (tối đa 2 giây) rồi mới in, để chứng từ cùng kiểu chữ với hệ thống.
+  void Promise.race([w.document.fonts.ready, new Promise((r) => setTimeout(r, 2000))]).then(() => w.print());
   return true;
 }
 
