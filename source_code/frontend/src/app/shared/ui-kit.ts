@@ -36,7 +36,7 @@ import { fold, money, parseMoney, pct } from '../core/util';
   host: { '(document:keydown.escape)': 'esc()' },
   template: `
     @if (open()) {
-      <div class="modal-back" (click)="$event.target === $event.currentTarget && tryClose()">
+      <div class="modal-back" (click)="clickNen($event)">
         <section class="modal" [class]="'modal ' + size()" role="dialog" aria-modal="true" [attr.aria-label]="title()">
           <header class="modal-head">
             <h2>{{ title() }}</h2>
@@ -82,6 +82,10 @@ export class Modal {
   }
   protected esc(): void {
     if (this.open() && !this.confirm.current()) void this.tryClose();
+  }
+  /** Bấm đúng vào nền mới đóng. Không viết `a && b()` trong template: biểu thức trả `false` làm Angular gọi preventDefault → ô tích trong popup không đổi được. */
+  protected clickNen(e: MouseEvent): void {
+    if (e.target === e.currentTarget) void this.tryClose();
   }
 }
 

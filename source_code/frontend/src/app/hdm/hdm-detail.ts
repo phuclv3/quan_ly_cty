@@ -526,11 +526,11 @@ interface TraForm {
       <app-modal [open]="dnOpen()" title="Lấy hàng từ đề nghị cấp vật tư" sub="Chọn các dòng còn phải mua — có thể gom đề nghị của nhiều HĐ bán vào một HĐ mua" size="lg" (closed)="dnOpen.set(false)">
         <div class="tbl-wrap">
           <table class="tbl compact">
-            <thead><tr><th></th><th>Đề nghị</th><th>HĐ bán</th><th>Mã hàng</th><th>Tên hàng</th><th class="num">Đề nghị</th><th class="num">Đã lên HĐ mua</th><th class="num">Còn phải mua</th></tr></thead>
+            <thead><tr><th style="width:36px"><input type="checkbox" aria-label="Chọn tất cả" [checked]="dnCho().length > 0 && dnChon().length === dnCho().length" (change)="chonTatDN($any($event.target).checked)" /></th><th>Đề nghị</th><th>HĐ bán</th><th>Mã hàng</th><th>Tên hàng</th><th class="num">Đề nghị</th><th class="num">Đã lên HĐ mua</th><th class="num">Còn phải mua</th></tr></thead>
             <tbody>
               @for (r of dnCho(); track r.key) {
-                <tr>
-                  <td><input type="checkbox" [checked]="dnChon().includes(r.key)" (change)="latDN(r.key)" [attr.aria-label]="'Chọn ' + r.loaiHang" /></td>
+                <tr style="cursor:pointer" (click)="latDN(r.key)">
+                  <td><input type="checkbox" [checked]="dnChon().includes(r.key)" (click)="$event.stopPropagation()" (change)="latDN(r.key)" [attr.aria-label]="'Chọn ' + r.loaiHang" /></td>
                   <td>{{ r.soPhieu }}</td>
                   <td>{{ r.soHDB }}</td>
                   <td><b>{{ r.loaiHang }}</b></td>
@@ -547,6 +547,7 @@ interface TraForm {
         </div>
         <div foot class="btn-row">
           <button type="button" class="btn quiet" (click)="dnOpen.set(false)">Huỷ</button>
+          <button type="button" class="btn quiet" [disabled]="!dnCho().length" (click)="chonTatDN(dnChon().length !== dnCho().length)">{{ dnChon().length === dnCho().length && dnCho().length ? 'Bỏ chọn tất cả' : 'Chọn tất cả' }}</button>
           <button type="button" class="btn" [disabled]="!dnChon().length" (click)="themTuDN()">Thêm {{ dnChon().length }} dòng</button>
         </div>
       </app-modal>
@@ -855,6 +856,9 @@ export class HdmDetail {
   }
   protected latDN(k: string): void {
     this.dnChon.update((a) => (a.includes(k) ? a.filter((x) => x !== k) : [...a, k]));
+  }
+  protected chonTatDN(chon: boolean): void {
+    this.dnChon.set(chon ? this.dnCho().map((r) => r.key) : []);
   }
   protected themTuDN(keys = this.dnChon()): void {
     const rows = this.dnCho().filter((r) => keys.includes(r.key));

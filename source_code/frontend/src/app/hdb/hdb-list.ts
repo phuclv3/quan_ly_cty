@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
+import { api } from '../core/api';
 import { NgTemplateOutlet } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { Store } from '../core/store';
@@ -25,6 +26,14 @@ interface O {
   t: string;
   c: 'mute' | 'info' | 'ok' | 'warn' | 'bad' | 'done';
   sub?: string;
+}
+
+/** Tổng theo pháp nhân do backend tính (POST /hop-dong-ban/tong-thu). */
+interface TongThu {
+  soHD: number;
+  sauVAT: number;
+  daThu: number;
+  conPhaiThu: number;
 }
 
 interface Row {
@@ -86,6 +95,7 @@ const GIAI_DOAN_VUONG = ['Giao hàng', 'Nghiệm thu', 'Thanh toán', 'Tất to�
         <div class="k"><span class="l">Đã thu KH (OXY)</span><b class="v">{{ short(kpi().daThuOxy) }}</b><span class="s">{{ kpi().pctOxy }}% · {{ kpi().nOxy }} HĐ của OXY</span></div>
         <div class="k"><span class="l">Đã thu KH (Phú Tài)</span><b class="v">{{ short(kpi().daThuPt) }}</b><span class="s">{{ kpi().pctPt }}% · {{ kpi().nPt }} HĐ thuộc Phú Tài</span></div>
         <div class="k"><span class="l">Còn phải thu (OXY)</span><b class="v">{{ short(kpi().conThuOxy) }}</b><span class="s">không tính Phú Tài{{ kpi().quaHan ? ' · ' + kpi().quaHan + ' HĐ quá hạn' : '' }}</span></div>
+        <div class="k"><span class="l">Còn phải thu (Phú Tài)</span><b class="v">{{ tongThu() ? short(tongThu()!.phuTai.conPhaiThu) : '…' }}</b><span class="s">{{ tongThu() ? tongThu()!.phuTai.soHD + ' HĐ cờ Phú Tài · số liệu do máy chủ tính' : 'đang tải…' }}</span></div>
       } @else {
         <div class="k hero"><span class="l">Số HĐ</span><b class="v">{{ kpi().n }}</b><span class="s">Không tính Báo giá</span></div>
       }
@@ -385,6 +395,20 @@ export class HdbList {
       quaHan: oxy.filter((r) => r.c.quaHan > 0).length,
       choNT: rs.filter((r) => r.nghiemThu.t === 'Chờ BBNT').length,
     };
+  });
+
+  /** Còn phải thu theo pháp nhân do backend tính (POST /hop-dong-ban/tong-thu) trên đúng các HĐ đang lọc, không tính Báo giá / huỷ. */
+  protected readonly tongThu = signal<{ oxy: TongThu; phuTai: TongThu } | null>(null);
+  private seqThu = 0;
+  private readonly napTongThu = effect(() => {
+    if (!this.xemTien()) return;
+    const ids = this.locSan()
+      .filter((r) => r.h.trangThai !== TT.BAO_GIA && r.h.trangThai !== TT.HUY)
+      .map((r) => r.h.id);
+    const mine = ++this.seqThu;
+    void api<{ oxy: TongThu; phuTai: TongThu }>('POST', '/hop-dong-ban/tong-thu', { ids })
+      .then((x) => mine === this.seqThu && this.tongThu.set(x))
+      .catch(() => mine === this.seqThu && this.tongThu.set(null));
   });
 
   /** Xoá hàng loạt: chỉ người gửi được yêu cầu xoá, và chỉ HĐ mình sửa được, chưa chờ xoá. */
