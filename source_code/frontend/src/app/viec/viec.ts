@@ -108,6 +108,7 @@ const NGUON_TEN: Record<NguonViec, string> = { HDB: 'HĐ BÁN', HDM: 'HĐ MUA', 
      .cbhead{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:10px}.cbhead h2{font-size:17px;margin:0}
      table.cbt{border-collapse:separate;border-spacing:0}
      table.cbt tr.cbg td{padding:8px 12px;font-size:13px;border-bottom:1px solid var(--line)}
+     table.cbt tr.cbg .dot{margin-right:8px;vertical-align:middle;position:relative;top:-1px}
      table.cbt tr.cbg span{color:var(--ink-3);margin-left:4px}
      table.cbt tr.cbg.p0 td{background:#fdeceb;color:#a3261d}table.cbt tr.cbg.p1 td{background:#fdf1e6;color:#b4560f}table.cbt tr.cbg.p2 td{background:#fdf6e0;color:#8a5a00}
      table.cbt tr.cbr td:first-child{border-left:4px solid transparent}

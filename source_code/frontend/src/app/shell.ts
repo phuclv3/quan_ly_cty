@@ -69,7 +69,7 @@ interface NavItem {
         </div>
         <span class="spacer"></span>
         <div class="clock" role="timer" aria-label="Đồng hồ">
-          <b class="clock-t">{{ gio() }}</b>
+          <b class="clock-t">@for (c of gio().split(''); track $index) {<span [class.clock-c]="c !== ':'">{{ c }}</span>}</b>
           <small class="clock-d">{{ ngay() }}</small>
         </div>
         @if (store.canView('viec')) {
