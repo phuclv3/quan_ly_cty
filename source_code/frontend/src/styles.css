@@ -1124,6 +1124,12 @@ tr.hilite > td { background: var(--warn-bg) !important; }
 .han-tt .cong input { width: 84px; min-width: 84px; }
 .han-tt .kq { font-size: 13px; color: var(--ink-3); white-space: nowrap; }
 .han-tt .kq.co { color: var(--ink); font-weight: 600; }
+/* Ô ngày (Hạn trả / Ngày trả) trên dòng đợt thanh toán NCC: đủ rộng để icon lịch không đè chữ ngày. */
+.tbl td.tra-sua { min-width: 200px; }
+.tbl td.tra-sua.num { min-width: 150px; }
+/* Ô ngày đã được ngay-vi.ts đổi thành input.ngay (type=text, icon lịch là ảnh nền, chừa 40px bên phải) → rộng đủ cho chữ dd/mm/yyyy + icon. */
+.tbl td.tra-sua > input.ngay, .tbl .han-tt input.ngay { box-sizing: border-box; width: 170px; min-width: 170px; flex: 0 0 auto; }
+.tbl th.th-tra { min-width: 200px; }
 
 /* Ô ngày dd/mm/yyyy (shared/ngay-vi.ts): ô chữ + icon lịch; bấm icon mở lịch tiếng Việt. */
 /* Selector cố ý cùng độ đặc hiệu với quy tắc ô nhập chung (đặt sau) để `background` của nó không xoá icon. */

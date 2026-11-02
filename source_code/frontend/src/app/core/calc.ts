@@ -447,6 +447,9 @@ export function hdmTong(m: HopDongMua): number {
   return m.nhapTay ? (m.tongNhapTay ?? 0) : sum(m.chiTiet, thanhTienVND);
 }
 
+/** Tổng giá trị HĐ mua sau VAT — cơ sở của đợt thanh toán, công nợ, còn phải trả (hdmTong là trước VAT, dùng cho giá vốn). */
+export const hdmTongSauVAT = (m: HopDongMua): number => sauVAT(hdmTong(m), m.vat ?? 0);
+
 /** Số lượng đã nhập kho của một dòng HĐ Mua (KHO-04). */
 export function slDaNhap(dongId: string, db: Db): number {
   let s = 0;
@@ -467,6 +470,10 @@ export function dotMuaDaTra(m: HopDongMua, dot: HopDongMua['dotTT'][number], db:
 
 export interface HdmCalc {
   tongDong: number;
+  /** Tổng trước VAT. */
+  truocVAT: number;
+  thueVAT: number;
+  /** Tổng sau VAT. */
   tong: number;
   nguyenTe: Partial<Record<LoaiTien, number>>;
   daTra: number;
@@ -490,7 +497,7 @@ export function ngayMocMua(m: HopDongMua, moc: string): string | undefined {
 
 /** Đợt TT NCC: đợt theo % tính lại Số tiền theo tổng HĐ; đợt theo mốc tính Hạn = ngày mốc + N ngày. */
 export function apDungTuDongHdm(m: HopDongMua): HopDongMua {
-  const tong = hdmTong(m);
+  const tong = hdmTongSauVAT(m);
   return {
     ...m,
     dotTT: m.dotTT.map((d) => {
@@ -508,7 +515,8 @@ export function apDungTuDongHdm(m: HopDongMua): HopDongMua {
 
 export function hdmCalc(m: HopDongMua, db: Db): HdmCalc {
   const tongDong = sum(m.chiTiet, thanhTienVND);
-  const tong = hdmTong(m);
+  const truocVAT = hdmTong(m);
+  const tong = hdmTongSauVAT(m);
   const nguyenTe: Partial<Record<LoaiTien, number>> = {};
   for (const d of m.chiTiet) nguyenTe[d.loaiTien] = (nguyenTe[d.loaiTien] ?? 0) + d.soLuong * d.donGia;
   const daTra = sum(m.dotTT, (d) => dotMuaDaTra(m, d, db));
@@ -516,6 +524,8 @@ export function hdmCalc(m: HopDongMua, db: Db): HdmCalc {
   const slNhap = sum(m.chiTiet, (d) => slDaNhap(d.id, db));
   return {
     tongDong,
+    truocVAT,
+    thueVAT: tong - truocVAT,
     tong,
     nguyenTe,
     daTra,

@@ -74,6 +74,7 @@ import {
   apDungTuDongHdb,
   apDungTuDongHdm,
   hdmTong,
+  hdmTongSauVAT,
   sauVAT,
   hdmChoHdb,
   donGiaChuyenThang,
@@ -1890,6 +1891,7 @@ export class Store {
       ghiChu: '',
       chiTiet: [],
       nhapTay: false,
+      vat: 8,
       dotTT: [],
       xuatHoaDon: 'Chưa',
       checklist: CHECKLIST_HDM.map((ten) => ({ ten, xong: false })),
@@ -1916,7 +1918,7 @@ export class Store {
     if (!m.maNCC) return 'Chưa chọn Nhà cung cấp';
     if (m.nhapTay && !m.lyDoNhapTay?.trim()) return 'Nhập tay tổng giá trị cần ghi lý do';
     if (m.dotTT.length > this.cauHinh().SO_DOT_TOI_DA) return `Tối đa ${this.cauHinh().SO_DOT_TOI_DA} đợt thanh toán`;
-    const loiDot = loiDotTT(apDungTuDongHdm(m).dotTT, hdmTong(m));
+    const loiDot = loiDotTT(apDungTuDongHdm(m).dotTT, hdmTongSauVAT(m));
     if (loiDot) return loiDot;
     for (const d of m.chiTiet) {
       if (!d.loaiHang) return 'Có dòng hàng chưa chọn Loại hàng';
@@ -1936,14 +1938,28 @@ export class Store {
         const pt = this.db().hopDongPhuTai.find((p) => p.hdMua.includes(cu.id));
         if (pt) return `HĐ đang là giá đầu vào của HĐ Phú Tài ${pt.soHD} — bỏ HĐ này khỏi HĐ Phú Tài trước`;
       }
-      // Đợt đã có phiếu chi (chưa bị từ chối): giữ nguyên số tiền & hạn để khớp phiếu.
-      m = {
-        ...m,
-        dotTT: m.dotTT.map((d) => {
-          const old = cu.dotTT.find((x) => x.dot === d.dot);
-          return old && this.dotMuaKhoa(old) ? { ...d, soTien: old.soTien, han: old.han } : d;
-        }),
-      };
+      // Sửa ghi nhận trả trên dòng đợt (kể cả phiếu chi đã duyệt): ngày, số tiền trả, nguồn tiền đồng bộ sang phiếu chi.
+      const capNhatPhieu: PhieuThuChi[] = [];
+      const dotMoi: HopDongMua['dotTT'] = [];
+      for (const d of m.dotTT) {
+        const old = cu.dotTT.find((x) => x.dot === d.dot);
+        const p = old?.phieuChiId && !m.thuocPhuTai ? this.phieuById(old.phieuChiId) : undefined;
+        if (!old || !p) {
+          dotMoi.push(d);
+          continue;
+        }
+        if (!old.ngayTra || this.dangChoXoa('PhieuThuChi', p.id)) {
+          dotMoi.push({ ...d, ngayTra: old.ngayTra, soTienTra: old.soTienTra, nguonTien: old.nguonTien });
+          continue;
+        }
+        if (!d.ngayTra || !((d.soTienTra ?? 0) > 0)) return `Đợt ${d.dot}: cần Ngày trả và Số tiền trả > 0`;
+        if (!d.nguonTien) return `Đợt ${d.dot}: chưa chọn Nguồn tiền`;
+        if (p.ngayLap !== d.ngayTra || p.soTienChi !== d.soTienTra || p.nguonTien !== d.nguonTien)
+          capNhatPhieu.push({ ...p, ngayLap: d.ngayTra, soTienChi: d.soTienTra!, nguonTien: d.nguonTien });
+        dotMoi.push(d);
+      }
+      m = { ...m, dotTT: dotMoi };
+      for (const p of capNhatPhieu) this.upsert('phieuThuChi', p);
     }
     const out: HopDongMua = { ...m, id: m.id || uid('HDM') };
     this.upsert('hopDongMua', out);

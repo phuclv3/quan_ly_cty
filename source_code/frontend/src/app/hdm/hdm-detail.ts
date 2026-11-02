@@ -135,7 +135,7 @@ interface TraForm {
 
       @if (!isNew()) {
       <div class="kpis">
-        <app-kpi label="Tổng giá trị (VNĐ)" [value]="money(c.tong)" [sub]="m.nhapTay ? 'Nhập tay' : 'Σ thành tiền các dòng'" />
+        <app-kpi label="Tổng giá trị sau VAT (VNĐ)" [value]="money(c.tong)" [sub]="'Trước VAT ' + money(c.truocVAT) + ' · VAT ' + (m.vat ?? 0) + '%'" />
         <app-kpi label="Đã trả NCC" [value]="money(c.daTra)" [sub]="pct(c.pctTra)" tone="ok" />
         <app-kpi label="Còn phải trả" [value]="money(c.conPhaiTra)" [sub]="m.thuocPhuTai ? 'Phú Tài trả — không vào công nợ Oxy' : c.quaHan ? c.quaHan + ' đợt quá hạn' : ''" [tone]="c.quaHan ? 'bad' : c.conPhaiTra > 0 ? 'warn' : ''" />
         <app-kpi label="Nhập hàng" [value]="m.thuocPhuTai ? '—' : pct(c.pctNhap)" [sub]="m.thuocPhuTai ? 'Không nhập kho Oxy' : c.slNhap + ' / ' + c.slMua" />
@@ -350,6 +350,20 @@ interface TraForm {
             </table>
           </div>
 
+          @if (m.chiTiet.length || m.nhapTay) {
+            <div class="form-grid blk xanh" style="margin-top:8px">
+              <div class="field"><span class="lbl">Tổng trước VAT</span><div class="ro num">{{ money(c.truocVAT) }}</div></div>
+              <div class="field">
+                <label for="hdm-vat">Thuế VAT</label>
+                <select id="hdm-vat" [disabled]="!edit()" (change)="set('vat', +$any($event.target).value)">
+                  @for (v of vats; track v) { <option [value]="v" [selected]="v === (m.vat ?? 0)">{{ v }}%</option> }
+                </select>
+              </div>
+              <div class="field"><span class="lbl">Tiền thuế VAT</span><div class="ro num">{{ money(c.thueVAT) }}</div></div>
+              <div class="field"><span class="lbl">Tổng giá trị sau VAT</span><div class="ro num"><b>{{ money(c.tong) }}</b></div></div>
+            </div>
+          }
+
           @if (!m.thuocPhuTai && !isNew()) {
             <h3 class="section-title">Phiếu nhập kho của HĐ</h3>
             <div class="tbl-wrap">
@@ -396,7 +410,7 @@ interface TraForm {
               </div>
               @if (m.nhapTay) {
                 <div class="field">
-                  <label for="tongNT">Tổng giá trị nhập tay (VNĐ) <span class="req">*</span></label>
+                  <label for="tongNT">Tổng giá trị nhập tay, trước VAT (VNĐ) <span class="req">*</span></label>
                   <app-money inputId="tongNT" [value]="m.tongNhapTay ?? 0" [disabled]="!edit4()" (valueChange)="set('tongNhapTay', $event)" />
                   <span class="hint" [class.err]="(m.tongNhapTay ?? 0) !== c.tongDong">Chênh lệch so với Σ dòng: {{ money((m.tongNhapTay ?? 0) - c.tongDong) }}</span>
                 </div>
@@ -406,7 +420,9 @@ interface TraForm {
                   @if (!m.lyDoNhapTay?.trim()) { <span class="err">Bắt buộc ghi lý do</span> }
                 </div>
               }
-              <div class="field"><span class="lbl">Tổng giá trị HĐ (VNĐ)</span><div class="ro num"><b>{{ money(c.tong) }}</b></div></div>
+              <div class="field"><span class="lbl">Tổng giá trị trước VAT (VNĐ)</span><div class="ro num">{{ money(c.truocVAT) }}</div></div>
+              <div class="field"><span class="lbl">Thuế VAT {{ m.vat ?? 0 }}% (chỉnh ở Tab 2)</span><div class="ro num">{{ money(c.thueVAT) }}</div></div>
+              <div class="field"><span class="lbl">Tổng giá trị HĐ sau VAT (VNĐ)</span><div class="ro num"><b>{{ money(c.tong) }}</b></div></div>
             </div>
           </section>
 
@@ -420,8 +436,8 @@ interface TraForm {
             <table class="tbl compact">
               <thead>
                 <tr>
-                  <th>Đợt</th><th class="num">Tỷ lệ %</th><th class="w-md num">Số tiền</th><th class="th-han">Hạn trả (theo tiến độ)</th><th>Ngày trả</th><th class="num">Số tiền trả</th>
-                  @if (!m.thuocPhuTai) { <th>Nguồn tiền</th><th>Phiếu chi</th> }
+                  <th>Đợt</th><th class="num">Tỷ lệ %</th><th class="w-md num">Số tiền</th><th class="th-han">Hạn trả (theo tiến độ)</th><th class="th-tra">Ngày trả</th><th class="num">Số tiền trả</th>
+                  @if (!m.thuocPhuTai) { <th class="th-tra">Nguồn tiền</th><th>Phiếu chi</th> }
                   <th class="num">Đã trả (tính)</th><th class="w-md">Ghi chú</th><th></th>
                 </tr>
               </thead>
@@ -429,29 +445,38 @@ interface TraForm {
                 @for (d of m.dotTT; track d.dot; let i = $index) {
                   @let daTra = daTraDot(d);
                   @let phieu = store.phieuById(d.phieuChiId);
-                  @let khoaDot = store.dotMuaKhoa(d);
                   <tr [class.overdue]="quaHan(d)">
                     <td>Đợt {{ d.dot }} @if (quaHan(d)) { <app-tt v="Quá hạn" /> }</td>
-                    <td><input class="num" type="number" min="0" max="100" step="0.1" style="width:80px" [value]="d.tyLe ?? ''" [disabled]="!edit4() || khoaDot" (input)="setTyLe(i, $any($event.target))" aria-label="Tỷ lệ %" /></td>
-                    <td><app-money [value]="d.soTien" [disabled]="!edit4() || khoaDot" (valueChange)="setSoTien(i, $event)" /></td>
-                    <td [attr.title]="khoaDot ? 'Đợt đã có phiếu chi — khoá số tiền và hạn' : null">
+                    <td><input class="num" type="number" min="0" max="100" step="0.1" style="width:80px" [value]="d.tyLe ?? ''" [disabled]="!suaDong(d.dot)" (input)="setTyLe(i, $any($event.target))" aria-label="Tỷ lệ %" /></td>
+                    <td><app-money [value]="d.soTien" [disabled]="!suaDong(d.dot)" (valueChange)="setSoTien(i, $event)" /></td>
+                    <td>
                       <div class="han-tt">
-                        <select [disabled]="!edit4() || khoaDot" (change)="setMoc(i, $any($event.target).value)" aria-label="Mốc tính hạn">
+                        <select [disabled]="!suaDong(d.dot)" (change)="setMoc(i, $any($event.target).value)" aria-label="Mốc tính hạn">
                           @for (mc of mocHan; track mc) { <option [value]="mc" [selected]="d.hanMoc === mc">{{ mc }}</option> }
                           <option value="" [selected]="!d.hanMoc">Ngày cụ thể…</option>
                         </select>
                         @if (d.hanMoc) {
-                          <span class="cong">+ <input class="num" type="number" min="0" step="1" [value]="d.hanNgay ?? 0" [disabled]="!edit4() || khoaDot" (input)="setDot(i, { hanNgay: soNgay($any($event.target).value) })" aria-label="Số ngày sau mốc" /> ngày</span>
+                          <span class="cong">+ <input class="num" type="number" min="0" step="1" [value]="d.hanNgay ?? 0" [disabled]="!suaDong(d.dot)" (input)="setDot(i, { hanNgay: soNgay($any($event.target).value) })" aria-label="Số ngày sau mốc" /> ngày</span>
                           @if (d.han) { <span class="kq co">→ {{ viDate(d.han) }}</span> } @else { <span class="kq" [title]="'Hạn tính khi mốc ' + d.hanMoc + ' có ngày'">chờ mốc</span> }
                         } @else {
-                          <input type="date" [value]="d.han ?? ''" [disabled]="!edit4() || khoaDot" (input)="setDot(i, { han: $any($event.target).value || undefined })" aria-label="Hạn trả" />
+                          <input type="date" [value]="d.han ?? ''" [disabled]="!suaDong(d.dot)" (input)="setDot(i, { han: $any($event.target).value || undefined })" aria-label="Hạn trả" />
                         }
                       </div>
                     </td>
-                    <td>{{ viDate(d.ngayTra) }}</td>
-                    <td class="num">{{ d.soTienTra ? money(d.soTienTra) : '—' }}</td>
+                    @let suaTra = suaDong(d.dot) && !!d.ngayTra && !store.dangChoXoa('PhieuThuChi', d.phieuChiId ?? '');
+                    <td [class.tra-sua]="suaTra">
+                      @if (suaTra) { <input type="date" [value]="d.ngayTra" (input)="setDot(i, { ngayTra: $any($event.target).value || undefined })" aria-label="Ngày trả" /> }
+                      @else { {{ viDate(d.ngayTra) }} }
+                    </td>
+                    <td class="num" [class.tra-sua]="suaTra">
+                      @if (suaTra) { <app-money [value]="d.soTienTra ?? 0" (valueChange)="setDot(i, { soTienTra: $event })" /> }
+                      @else { {{ d.soTienTra ? money(d.soTienTra) : '—' }} }
+                    </td>
                     @if (!m.thuocPhuTai) {
-                      <td>{{ d.nguonTien ? store.nguonTen(d.nguonTien) : '—' }}</td>
+                      <td [class.tra-sua]="suaTra">
+                        @if (suaTra) { <app-pick [options]="nguonOpts()" [value]="d.nguonTien ?? ''" (valueChange)="setDot(i, { nguonTien: $event })" /> }
+                        @else { {{ d.nguonTien ? store.nguonTen(d.nguonTien) : '—' }} }
+                      </td>
                       <td>
                         @if (phieu) {
                           @if (xemPhieu()) { <a class="linkish" routerLink="/ke-toan" [queryParams]="{ tab: 'so-quy', id: phieu.id }">{{ phieu.soPhieu }}</a> } @else { {{ phieu.soPhieu }} }
@@ -463,11 +488,16 @@ interface TraForm {
                       </td>
                     }
                     <td class="num">{{ money(daTra) }}</td>
-                    <td><textarea rows="1" [value]="d.ghiChu ?? ''" [disabled]="!edit4()" (input)="setDot(i, { ghiChu: $any($event.target).value })" aria-label="Ghi chú đợt"></textarea></td>
+                    <td><textarea rows="1" [value]="d.ghiChu ?? ''" [disabled]="!suaDong(d.dot)" (input)="setDot(i, { ghiChu: $any($event.target).value })" aria-label="Ghi chú đợt"></textarea></td>
                     <td>
                       <div class="btn-row">
                         @if (edit4()) {
                           <button type="button" class="btn sm" [disabled]="isNew() || phieu?.trangThai === TT.DA_DUYET" [attr.title]="isNew() ? 'Lưu HĐ trước khi ghi nhận đã trả' : phieu?.trangThai === TT.DA_DUYET ? 'Phiếu chi đã duyệt — muốn sửa phải gửi yêu cầu xoá phiếu chi' : null" (click)="moTra(d)">{{ d.ngayTra ? 'Sửa ghi nhận' : 'Ghi nhận đã trả' }}</button>
+                        }
+                        @if (edit4()) {
+                          <button type="button" class="icon-btn sm" [class.on]="suaDong(d.dot)" [attr.title]="suaDong(d.dot) ? 'Xong sửa dòng' : 'Sửa dòng này'" [attr.aria-label]="suaDong(d.dot) ? 'Xong sửa dòng' : 'Sửa dòng này'" (click)="dongSua.set(suaDong(d.dot) ? null : d.dot)">
+                            <app-icon [name]="suaDong(d.dot) ? 'check' : 'edit'" [size]="16" />
+                          </button>
                         }
                         @if (edit4() && $last && !d.phieuChiId && !d.soTienTra) {
                           <button type="button" class="icon-btn sm" aria-label="Xoá đợt" (click)="xoaDot()"><app-icon name="trash" [size]="16" /></button>
@@ -732,6 +762,7 @@ export class HdmDetail {
   private readonly goc = computed(() => JSON.stringify(this.saved() ?? null));
   protected readonly dirty = computed(() => !this.isNew() && JSON.stringify(this.f()) !== this.goc());
 
+  protected readonly vats = [0, 8, 10] as const;
   protected readonly calc = computed(() => hdmCalc(this.f(), this.store.db()));
   /** File hợp đồng chọn khi HĐ chưa lưu — tải lên ngay sau lần Lưu đầu. */
   protected readonly fileCho = signal<File[]>([]);
@@ -819,7 +850,8 @@ export class HdmDetail {
   protected readonly phieuNhap = computed(() =>
     this.store
       .phieuKho()
-      .filter((p) => p.loai === 'Nhập' && p.hdId === this.id())
+      // Phiếu đã huỷ không hiện ở danh sách phiếu nhập của HĐ (dữ liệu vẫn giữ trong Kho để đối chiếu).
+      .filter((p) => p.loai === 'Nhập' && p.hdId === this.id() && p.trangThai !== TT.DA_HUY)
       .sort((a, b) => b.ngay.localeCompare(a.ngay)),
   );
 
@@ -1101,7 +1133,9 @@ export class HdmDetail {
     const tong = this.calc().tong;
     const conLai = Math.max(0, tong - this.tongDot());
     const tyLe = tong > 0 ? Math.round((conLai / tong) * 1000) / 10 : undefined;
-    this.f.update((x) => ({ ...x, dotTT: [...x.dotTT, { dot: x.dotTT.length + 1, tyLe, soTien: conLai, hanMoc: 'Ngày ký', hanNgay: 30 }] }));
+    const dot = m.dotTT.length + 1;
+    this.f.update((x) => ({ ...x, dotTT: [...x.dotTT, { dot, tyLe, soTien: conLai, hanMoc: 'Ngày ký', hanNgay: 30 }] }));
+    this.dongSua.set(dot);
   }
   protected xoaDot(): void {
     this.f.update((m) => ({ ...m, dotTT: m.dotTT.slice(0, -1) }));
@@ -1380,6 +1414,12 @@ export class HdmDetail {
 
   protected async huyPhieu(id: string, soPhieu: string): Promise<void> {
     await guiXoa(this.confirm, this.store, 'PhieuKho', id, `Phiếu nhập ${soPhieu} — HĐ mua ${this.saved()?.soHD ?? ''}`);
+  }
+
+  /** Dòng đợt thanh toán đang mở sửa (bấm cây bút); null = không dòng nào. */
+  protected readonly dongSua = signal<number | null>(null);
+  protected suaDong(dot: number): boolean {
+    return this.edit4() && this.dongSua() === dot;
   }
 
   protected moTra(d: DotTTMua): void {
