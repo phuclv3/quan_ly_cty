@@ -81,7 +81,7 @@ const NGUON_TEN: Record<NguonViec, string> = { HDB: 'HĐ BÁN', HDM: 'HĐ MUA', 
      .who{display:flex;align-items:center;gap:6px}.av{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:10.5px;font-weight:700;flex:0 0 auto}
      .st{display:inline-block;padding:1px 10px;border-radius:7px;font-size:13px;font-weight:600;white-space:nowrap}
      .st.cbd{background:#e6eaf0;color:#56657a}.st.dl{background:#dcebfa;color:#1d5a99}.st.cd{background:#fbf0d6;color:#8a5a00}.st.ht{background:#fde8c8;color:#8a4a00}
-     .fl{display:inline-block;padding:1px 9px;border-radius:999px;font-size:12.5px;font-weight:700;background:#fdeceb;color:#a3261d;border:1px solid #f0b8b3}
+     .fl{display:inline-block;white-space:nowrap;padding:1px 9px;border-radius:999px;font-size:12.5px;font-weight:700;background:#fdeceb;color:#a3261d;border:1px solid #f0b8b3}
      .fl.cd{background:#fbf0d6;color:#8a5a00;border-color:#ecd49a}
      .pr{display:inline-block;padding:1px 10px;border-radius:7px;font-size:13px;font-weight:600}
      .pr.cao{background:#fde0dd;color:#a3261d}.pr.tb{background:#fbf0d6;color:#8a5a00}.pr.thap{background:#ebeff4;color:#56657a}
