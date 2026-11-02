@@ -253,7 +253,11 @@ export class HdmList {
 
   protected readonly all = computed<Dong[]>(() => {
     const db = this.store.db();
-    return this.store.hdmVisible().map((m) => this.dongHd(m, hdmCalc(m, db)));
+    // HĐ mua thuộc Phú Tài chỉ xem ở màn Phú Tài, không hiện ở danh sách HĐ mua của OXY.
+    return this.store
+      .hdmVisible()
+      .filter((m) => !m.thuocPhuTai)
+      .map((m) => this.dongHd(m, hdmCalc(m, db)));
   });
 
   /** Suy ra các ô giai đoạn từ dữ liệu có sẵn: trạng thái HĐ, checklist, phiếu nhập kho, đợt trả NCC, hồ sơ. */

@@ -83,11 +83,6 @@ function tranDep(v: number): number {
         <option value="" [selected]="!thang()">Tháng: Tất cả</option>
         @for (m of thangOpts; track m) { <option [value]="m" [selected]="thang() === '' + m">Tháng {{ m }}</option> }
       </select>
-      <select aria-label="Pháp nhân" (change)="pn.set($any($event.target).value)">
-        <option value="TAT_CA" [selected]="pn() === 'TAT_CA'">Pháp nhân: Tất cả</option>
-        <option value="OXY" [selected]="pn() === 'OXY'">OXY</option>
-        <option value="PHU_TAI" [selected]="pn() === 'PHU_TAI'">Phú Tài</option>
-      </select>
       <select aria-label="So sánh" (change)="soSanh.set($any($event.target).value)">
         <option value="cungKy" [selected]="soSanh() === 'cungKy'">So sánh: cùng kỳ {{ +nam() - 1 }}</option>
         <option value="khong" [selected]="soSanh() === 'khong'">Không so sánh</option>
@@ -96,7 +91,7 @@ function tranDep(v: number): number {
       @if (dangTai()) { <span class="sub">Đang tải…</span> }
       @else if (d(); as x) { <span class="sub">Cập nhật {{ ngayVi(x.capNhat) }}</span> }
     </div>
-    <p class="sub luu-y">Tính theo Ngày ký · không gồm Báo giá và HĐ Huỷ · giá trị chưa VAT · Pháp nhân theo ô "Thuộc Phú Tài" của HĐ.</p>
+    <p class="sub luu-y">Tính theo Ngày ký · không gồm Báo giá và HĐ Huỷ · giá trị chưa VAT · không gồm HĐ thuộc Phú Tài (xem ở màn Phú Tài).</p>
 
     @if (loi()) {
       <div class="note bad" role="alert">{{ loi() }} <button type="button" class="linkish" (click)="tai()">Thử lại</button></div>
@@ -128,7 +123,7 @@ function tranDep(v: number): number {
       <div class="row-a">
         <section class="card-b">
           <h3>Giá trị HĐ ký theo tháng <span class="u">triệu đ · chưa VAT</span></h3>
-          <svg class="bar" viewBox="0 0 640 230" role="img" aria-label="Giá trị HĐ ký theo tháng, tách OXY và Phú Tài">
+          <svg class="bar" viewBox="0 0 640 230" role="img" aria-label="Giá trị HĐ ký theo tháng">
             @for (g of luoi(); track g.y) {
               <line x1="44" x2="632" [attr.y1]="g.y" [attr.y2]="g.y" class="gl" />
               <text x="38" [attr.y]="g.y + 3" text-anchor="end" class="ax">{{ g.nhan }}</text>
@@ -140,7 +135,7 @@ function tranDep(v: number): number {
               <text [attr.x]="b.x + b.w / 2" y="214" text-anchor="middle" class="ax">T{{ b.t }}</text>
             }
           </svg>
-          <div class="chu-giai"><span><i [style.background]="mauOxy"></i>OXY</span><span><i [style.background]="mauPt"></i>Phú Tài</span></div>
+          <div class="chu-giai"><span><i [style.background]="mauOxy"></i>OXY</span></div>
         </section>
 
         <section class="card-b">
@@ -311,7 +306,7 @@ export class HdbBaoCao {
   protected readonly nam = signal(String(new Date().getFullYear()));
   protected readonly quy = signal('');
   protected readonly thang = signal('');
-  protected readonly pn = signal('TAT_CA');
+  protected readonly pn = signal('OXY');
   protected readonly soSanh = signal('cungKy');
 
   protected readonly d = signal<BaoCao | null>(null);

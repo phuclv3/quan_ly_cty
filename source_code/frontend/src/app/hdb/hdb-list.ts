@@ -276,6 +276,8 @@ export class HdbList {
     const ptKH = new Set(db.hopDongPhuTai.map((x) => x.maKH));
     return this.store
       .hdbVisible()
+      // HĐ đánh dấu Thuộc Phú Tài chỉ xem ở màn Phú Tài, không hiện ở danh sách HĐ bán của OXY.
+      .filter((h) => !h.thuocPhuTai)
       .map((h) => this.dongHd(h, hdbCalc(h, db), ptKH.has(h.maKH) ? 'Phú Tài' : 'OXY'))
       .sort((a, b) => ((a.h.ngayKy ?? a.h.taoLuc) < (b.h.ngayKy ?? b.h.taoLuc) ? 1 : -1));
   });

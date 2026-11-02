@@ -484,6 +484,12 @@ export class HdbDetail {
     }
     this.f.update((h) => ({ ...h, id: out.id }));
     this.store.say('Đã lưu nháp');
+    // Máy chủ từ chối thì Store nạp lại dữ liệu và bản nháp biến mất → bỏ id để lần Tiếp sau tạo mới, không PUT vào id không còn.
+    void this.store.daGuiXong().then(() => this.boIdNeuMatNhap(out.id));
+  }
+
+  private boIdNeuMatNhap(id: string): void {
+    if (!this.store.hdbById(id)) this.f.update((h) => (h.id === id ? { ...h, id: '' } : h));
   }
 
   /** Bước cuối wizard: tạo HĐ, tải các tệp hồ sơ đã chọn, rồi mở HĐ ở dạng 5 tab. */
@@ -494,9 +500,21 @@ export class HdbDetail {
       this.store.say(err);
       return;
     }
+    // Giữ id trên bản nháp: bấm Lưu lại (sau lỗi tải tệp…) sẽ cập nhật cùng HĐ, không tạo bản thứ hai rồi báo "Số HĐ đã tồn tại".
+    this.f.update((h) => ({ ...h, id: out.id }));
+    let n = 0;
     this.dangLuu.set(true);
-    const n = await taiHoSoCho(this.store, 'HDB', out.id, cho);
-    this.dangLuu.set(false);
+    try {
+      await this.store.daGuiXong();
+      // Máy chủ từ chối (Store đã báo lỗi và nạp lại dữ liệu) → ở lại wizard, lần Lưu sau tạo mới.
+      if (!this.store.hdbById(out.id)) {
+        this.boIdNeuMatNhap(out.id);
+        return;
+      }
+      n = await taiHoSoCho(this.store, 'HDB', out.id, cho);
+    } finally {
+      this.dangLuu.set(false);
+    }
     this.store.say(n ? `Đã tạo HĐ bán và lưu ${n} tệp hồ sơ` : 'Đã tạo HĐ bán');
     this.f.set(structuredClone(this.store.hdbById(out.id)!));
     void this.unsaved.diSauKhiLuu(() =>
