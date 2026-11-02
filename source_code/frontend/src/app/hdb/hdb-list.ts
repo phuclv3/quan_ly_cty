@@ -31,8 +31,6 @@ interface Row {
   h: HopDongBan;
   c: HdbCalc;
   xoa: boolean;
-  /** 'OXY' hoặc 'Phú Tài' (khách có Hợp đồng Phú Tài). */
-  pn: 'OXY' | 'Phú Tài';
   phatSinh: boolean;
   /** Đủ điều kiện tất toán: đủ hồ sơ bắt buộc, đã giao, thu đủ, chưa tất toán. */
   duDK: boolean;
@@ -83,8 +81,8 @@ const GIAI_DOAN_VUONG = ['Giao hàng', 'Nghiệm thu', 'Thanh toán', 'Tất to�
     <div class="kpis">
       @if (xemTien()) {
         <div class="k hero"><span class="l">Tổng giá trị</span><b class="v">{{ short(kpi().tong) }}</b><span class="s">{{ kpi().n }} HĐ (không tính Báo giá)</span></div>
-        <div class="k"><span class="l">Đã thu KH (OXY)</span><b class="v">{{ short(kpi().daThuOxy) }}</b><span class="s">{{ kpi().pctOxy }}% · {{ kpi().nOxy }} HĐ của OXY</span></div>
-        <div class="k"><span class="l">Còn phải thu (OXY)</span><b class="v">{{ short(kpi().conThuOxy) }}</b><span class="s">không tính Phú Tài{{ kpi().quaHan ? ' · ' + kpi().quaHan + ' HĐ quá hạn' : '' }}</span></div>
+        <div class="k"><span class="l">Đã thu KH</span><b class="v">{{ short(kpi().daThu) }}</b><span class="s">{{ kpi().pctThu }}% giá trị</span></div>
+        <div class="k"><span class="l">Còn phải thu</span><b class="v">{{ short(kpi().conThu) }}</b><span class="s">{{ kpi().quaHan ? kpi().quaHan + ' HĐ quá hạn' : 'không có HĐ quá hạn' }}</span></div>
       } @else {
         <div class="k hero"><span class="l">Số HĐ</span><b class="v">{{ kpi().n }}</b><span class="s">Không tính Báo giá</span></div>
       }
@@ -143,7 +141,6 @@ const GIAI_DOAN_VUONG = ['Giao hàng', 'Nghiệm thu', 'Thanh toán', 'Tất to�
                 </td>
                 <td class="c-kh">
                   <span class="kh">{{ r.h.tenKH }}</span>
-                  <span class="pn" [class.pt2]="r.pn === 'Phú Tài'">{{ r.pn }}</span>
                 </td>
                 @if (xemTien()) { <td class="num"><b>{{ short(r.c.sauVAT) }}</b></td> }
                 <td><ng-container *ngTemplateOutlet="o; context: { $implicit: r.hd }" /></td>
@@ -225,8 +222,6 @@ const GIAI_DOAN_VUONG = ['Giao hàng', 'Nghiệm thu', 'Thanh toán', 'Tất to�
     .tbl td.c-kh { min-width: 150px !important; max-width: 190px; }
     .tbl ::ng-deep .sub { font-size: 11px; margin-top: 2px; }
     .kh { display: block; font-weight: 700; text-transform: uppercase; font-size: 11.5px; line-height: 1.35; margin-bottom: 3px; }
-    .pn { display: inline-block; padding: 0 8px; border-radius: 6px; font-size: 10.5px; font-weight: 700; background: #dff3e4; color: #17663f; }
-    .pn.pt2 { background: #ece0f7; color: #6b3f93; }
     .st { display: inline-block; padding: 1px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; white-space: nowrap; background: var(--mute-bg); color: var(--mute-fg); }
     .st.info { background: #dce9f8; color: #2c5d94; }
     .st.ok { background: #dff3e4; color: #17663f; }
@@ -262,17 +257,16 @@ export class HdbList {
 
   protected readonly all = computed<Row[]>(() => {
     const db = this.store.db();
-    const ptKH = new Set(db.hopDongPhuTai.map((x) => x.maKH));
     return this.store
       .hdbVisible()
       // HĐ đánh dấu Thuộc Phú Tài chỉ xem ở màn Phú Tài, không hiện ở danh sách HĐ bán của OXY.
       .filter((h) => !h.thuocPhuTai)
-      .map((h) => this.dongHd(h, hdbCalc(h, db), ptKH.has(h.maKH) ? 'Phú Tài' : 'OXY'))
+      .map((h) => this.dongHd(h, hdbCalc(h, db)))
       .sort((a, b) => ((a.h.ngayKy ?? a.h.taoLuc) < (b.h.ngayKy ?? b.h.taoLuc) ? 1 : -1));
   });
 
   /** Suy ra 6 ô giai đoạn từ dữ liệu có sẵn: trạng thái HĐ, xuất kho, hồ sơ và các đợt thanh toán. */
-  private dongHd(h: HopDongBan, c: HdbCalc, pn: Row['pn']): Row {
+  private dongHd(h: HopDongBan, c: HdbCalc): Row {
     const baoGia = h.trangThai === TT.BAO_GIA;
     const huy = h.trangThai === TT.HUY;
     const tatToan = h.trangThai === TT.DA_TAT_TOAN;
@@ -293,7 +287,6 @@ export class HdbList {
       h,
       c,
       xoa: this.store.dangChoXoa('HopDongBan', h.id),
-      pn,
       phatSinh: c.quaHan > 0 || c.phat > 0,
       duDK,
       vuong,
@@ -320,7 +313,6 @@ export class HdbList {
       { key: 'kh', label: 'Khách hàng', options: [...kh].map(([value, label]) => ({ value, label })) },
       { key: 'vuong', label: 'Giai đoạn vướng', options: GIAI_DOAN_VUONG.map((t) => ({ value: t, label: t })) },
       { key: 'sale', label: 'Phụ trách', options: sales.map((s) => ({ value: s, label: this.store.userName(s) })) },
-      { key: 'pn', label: 'Pháp nhân', options: ['OXY', 'Phú Tài'].map((t) => ({ value: t, label: t })) },
     ];
   });
 
@@ -336,13 +328,12 @@ export class HdbList {
     const l = this.loc();
     return this.sx.apply(
       this.all().filter(
-        ({ h, vuong, pn }) =>
+        ({ h, vuong }) =>
           khopQ(l, h.soHD, h.tenKH, h.mst, h.ghiChu, this.store.userName(h.sale)) &&
           khopSel(l, 'nam', h.ngayKy?.slice(0, 4)) &&
           khopSel(l, 'kh', h.maKH) &&
           khopSel(l, 'vuong', vuong) &&
-          khopSel(l, 'sale', h.sale) &&
-          khopSel(l, 'pn', pn),
+          khopSel(l, 'sale', h.sale),
       ),
     );
   });
@@ -369,17 +360,15 @@ export class HdbList {
 
   protected readonly kpi = computed(() => {
     const rs = this.locSan().filter((r) => r.h.trangThai !== TT.BAO_GIA && r.h.trangThai !== TT.HUY);
-    const oxy = rs.filter((r) => r.pn === 'OXY');
     const tong = sum(rs, (r) => r.c.sauVAT);
-    const pc = (x: Row[]) => (tong ? Math.round((sum(x, (r) => r.c.daThu) / tong) * 100) : 0);
+    const daThu = sum(rs, (r) => r.c.daThu);
     return {
       n: rs.length,
       tong,
-      daThuOxy: sum(oxy, (r) => r.c.daThu),
-      pctOxy: pc(oxy),
-      nOxy: oxy.length,
-      conThuOxy: sum(oxy, (r) => r.c.conPhaiThu),
-      quaHan: oxy.filter((r) => r.c.quaHan > 0).length,
+      daThu,
+      pctThu: tong ? Math.round((daThu / tong) * 100) : 0,
+      conThu: sum(rs, (r) => r.c.conPhaiThu),
+      quaHan: rs.filter((r) => r.c.quaHan > 0).length,
       choNT: rs.filter((r) => r.nghiemThu.t === 'Chờ BBNT').length,
     };
   });
@@ -403,12 +392,11 @@ export class HdbList {
 
   protected xuat(): void {
     const tien = this.xemTien();
-    const head = ['Số HĐ', 'Khách hàng', 'MST', 'Pháp nhân', 'Ngày ký', ...(tien ? ['Giá trị sau VAT', 'Đã thu', 'Đã thu (%)', 'Còn phải thu'] : []), 'Giao hàng', 'Hồ sơ', 'Sale phụ trách', 'Trạng thái'];
-    const body = this.rows().map(({ h, c, pn }) => [
+    const head = ['Số HĐ', 'Khách hàng', 'MST', 'Ngày ký', ...(tien ? ['Giá trị sau VAT', 'Đã thu', 'Đã thu (%)', 'Còn phải thu'] : []), 'Giao hàng', 'Hồ sơ', 'Sale phụ trách', 'Trạng thái'];
+    const body = this.rows().map(({ h, c }) => [
       h.soHD,
       h.tenKH,
       h.mst,
-      pn,
       viDate(h.ngayKy),
       ...(tien ? [c.sauVAT, c.daThu, Math.round(c.pctThu * 1000) / 10, c.conPhaiThu] : []),
       c.giaoHang,

@@ -32,8 +32,6 @@ interface Dong {
   c: HdmCalc;
   soHDB: string;
   choXoa: boolean;
-  /** 'OXY' hoặc 'Phú Tài'. */
-  pn: 'OXY' | 'Phú Tài';
   /** Người phụ trách = sale của HĐ bán liên quan ('' nếu HĐ mua chưa gắn HĐ bán). */
   pt: string;
   phatSinh: boolean;
@@ -81,9 +79,8 @@ const GIAI_DOAN_VUONG = ['Cung ứng', 'Nhập kho', 'Thanh toán', 'Tất toán
     } @else {
     <div class="kpis">
       <div class="k hero"><span class="l">Tổng giá trị</span><b class="v">{{ short(kpi().tong) }}</b><span class="s">{{ kpi().n }} HĐ (không tính Dự thảo)</span></div>
-      <div class="k"><span class="l">Đã trả NCC (OXY)</span><b class="v">{{ short(kpi().daTraOxy) }}</b><span class="s">{{ kpi().pctOxy }}% · {{ kpi().nOxy }} HĐ của OXY</span></div>
-      <div class="k"><span class="l">Đã trả NCC (Phú Tài)</span><b class="v">{{ short(kpi().daTraPt) }}</b><span class="s">{{ kpi().pctPt }}% · {{ kpi().nPt }} HĐ thuộc Phú Tài</span></div>
-      <div class="k"><span class="l">Còn phải trả (OXY)</span><b class="v">{{ short(kpi().conTraOxy) }}</b><span class="s">không tính Phú Tài{{ kpi().quaHan ? ' · ' + kpi().quaHan + ' HĐ quá hạn' : '' }}</span></div>
+      <div class="k"><span class="l">Đã trả NCC</span><b class="v">{{ short(kpi().daTra) }}</b><span class="s">{{ kpi().pctTra }}% giá trị</span></div>
+      <div class="k"><span class="l">Còn phải trả</span><b class="v">{{ short(kpi().conTra) }}</b><span class="s">{{ kpi().quaHan ? kpi().quaHan + ' HĐ quá hạn' : 'không có HĐ quá hạn' }}</span></div>
       <div class="k"><span class="l">Đang cung ứng</span><b class="v">{{ kpi().dangCungUng }}</b><span class="s">HĐ chưa nhận hàng</span></div>
     </div>
 
@@ -137,7 +134,6 @@ const GIAI_DOAN_VUONG = ['Cung ứng', 'Nhập kho', 'Thanh toán', 'Tất toán
                 </td>
                 <td class="c-kh">
                   <span class="kh">{{ r.m.tenNCC }}</span>
-                  <span class="pn" [class.pt2]="r.pn === 'Phú Tài'">{{ r.pn }}</span>
                 </td>
                 <td class="num"><b>{{ short(r.c.tong) }}</b></td>
                 <td><ng-container *ngTemplateOutlet="o; context: { $implicit: r.hd }" /></td>
@@ -158,7 +154,7 @@ const GIAI_DOAN_VUONG = ['Cung ứng', 'Nhập kho', 'Thanh toán', 'Tất toán
         </table>
       </div>
       <p class="legend"><b>4 giai đoạn:</b> Hợp đồng → Tiến độ cung ứng → Kiểm tra &amp; nhập kho → Tất toán · <b>Thanh toán NCC</b> là luồng riêng chạy song song</p>
-      <p class="legend">Tất toán khi đã nhận đủ hàng, trả đủ NCC và đủ hồ sơ: Hợp đồng, BBGH/BBNT, Hoá đơn NCC · HĐ thuộc Phú Tài không nhập kho, không vào công nợ OXY</p>
+      <p class="legend">Tất toán khi đã nhận đủ hàng, trả đủ NCC và đủ hồ sơ: Hợp đồng, BBGH/BBNT, Hoá đơn NCC</p>
       <p class="legend"><b class="neg">⚠ Phát sinh</b> = số đợt thanh toán NCC quá hạn</p>
       <app-pager [pager]="pg" />
       <p class="legend">bấm số HĐ để mở chi tiết</p>
@@ -215,8 +211,6 @@ const GIAI_DOAN_VUONG = ['Cung ứng', 'Nhập kho', 'Thanh toán', 'Tất toán
     .tbl td.c-kh { min-width: 150px !important; max-width: 190px; }
     .tbl ::ng-deep .sub { font-size: 11px; margin-top: 2px; }
     .kh { display: block; font-weight: 700; text-transform: uppercase; font-size: 11.5px; line-height: 1.35; margin-bottom: 3px; }
-    .pn { display: inline-block; padding: 0 8px; border-radius: 6px; font-size: 10.5px; font-weight: 700; background: #dff3e4; color: #17663f; }
-    .pn.pt2 { background: #ece0f7; color: #6b3f93; }
     .st { display: inline-block; padding: 1px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; white-space: nowrap; background: var(--mute-bg); color: var(--mute-fg); }
     .st.info { background: #dce9f8; color: #2c5d94; }
     .st.ok { background: #dff3e4; color: #17663f; }
@@ -267,12 +261,11 @@ export class HdmList {
     const huy = m.trangThai === TT.HUY;
     const tatToan = m.trangThai === TT.DA_TAT_TOAN;
     const song = !nhap && !huy && !tatToan;
-    const pt = m.thuocPhuTai;
     const xong = (ten: string) => m.checklist.find((x) => x.ten === ten);
     const daDat = !!xong('Đặt hàng')?.xong;
     const hangVe = xong('Dự kiến hàng về');
     const kiemDinh = !!xong('Kiểm định')?.xong;
-    const daNhapDu = pt || c.pctNhap >= 1;
+    const daNhapDu = c.pctNhap >= 1;
     const thieuHS = hoSoThieu(db, 'HDM', m.id);
     const duDK = song && daNhapDu && c.conPhaiTra <= 0 && m.xuatHoaDon === 'Đã' && !thieuHS.length;
     let vuong = '';
@@ -289,7 +282,6 @@ export class HdmList {
       c,
       soHDB: m.hdbId ? (this.store.hdbById(m.hdbId)?.soHD ?? m.hdbId) : '',
       choXoa: this.store.dangChoXoa('HopDongMua', m.id),
-      pn: pt ? 'Phú Tài' : 'OXY',
       pt: m.hdbId ? (this.store.hdbById(m.hdbId)?.sale ?? '') : '',
       phatSinh: c.quaHan > 0,
       duDK,
@@ -306,9 +298,8 @@ export class HdmList {
         : daDat
           ? { t: 'Đã đặt', c: 'warn' }
           : { t: 'Chưa đặt', c: 'mute' },
-      nhapKho: pt
-        ? { t: 'Không nhập kho', c: 'mute', sub: 'Phú Tài' }
-        : c.pctNhap >= 1
+      nhapKho:
+        c.pctNhap >= 1
           ? { t: 'Đã nhập', c: 'ok' }
           : c.pctNhap > 0
             ? { t: 'Nhập một phần', c: 'warn', sub: pct(c.pctNhap, 0) }
@@ -334,7 +325,6 @@ export class HdmList {
       { key: 'ncc', label: 'NCC', options: [...ncc].map(([value, label]) => ({ value, label })) },
       { key: 'vuong', label: 'Giai đoạn vướng', options: GIAI_DOAN_VUONG.map((t) => ({ value: t, label: t })) },
       { key: 'pt', label: 'Phụ trách', options: pts.map((s) => ({ value: s, label: this.store.userName(s) })) },
-      { key: 'pn', label: 'Pháp nhân', options: ['OXY', 'Phú Tài'].map((t) => ({ value: t, label: t })) },
     ];
   });
 
@@ -356,8 +346,7 @@ export class HdmList {
             khopSel(l, 'nam', r.m.ngayKy?.slice(0, 4)) &&
             khopSel(l, 'ncc', r.m.maNCC) &&
             khopSel(l, 'vuong', r.vuong) &&
-            khopSel(l, 'pt', r.pt) &&
-            khopSel(l, 'pn', r.pn),
+            khopSel(l, 'pt', r.pt),
         )
         .sort((a, b) => (b.m.ngayKy ?? b.m.taoLuc).localeCompare(a.m.ngayKy ?? a.m.taoLuc)),
     );
@@ -385,25 +374,16 @@ export class HdmList {
 
   protected readonly kpi = computed(() => {
     const hl = this.locSan().filter((r) => r.m.trangThai !== TT.NHAP && r.m.trangThai !== TT.HUY);
-    const oxy = hl.filter((r) => r.pn === 'OXY');
-    const pt = hl.filter((r) => r.pn === 'Phú Tài');
-    const tongOxy = sum(oxy, (r) => r.c.tong);
-    const tongPt = sum(pt, (r) => r.c.tong);
-    const pc = (x: number, tong: number) => (tong ? Math.round((x / tong) * 100) : 0);
-    const daTraOxy = sum(oxy, (r) => r.c.daTra);
-    const daTraPt = sum(pt, (r) => r.c.daTra);
+    const tong = sum(hl, (r) => r.c.tong);
+    const daTra = sum(hl, (r) => r.c.daTra);
     return {
       n: hl.length,
-      tong: tongOxy + tongPt,
-      daTraOxy,
-      daTraPt,
-      pctOxy: pc(daTraOxy, tongOxy),
-      pctPt: pc(daTraPt, tongPt),
-      nOxy: oxy.length,
-      nPt: pt.length,
-      conTraOxy: sum(oxy, (r) => Math.max(0, r.c.conPhaiTra)),
-      quaHan: oxy.filter((r) => r.c.quaHan > 0).length,
-      dangCungUng: oxy.filter((r) => (r.m.trangThai === TT.DA_KY || r.m.trangThai === TT.DANG_NHAN_HANG) && r.c.pctNhap === 0).length,
+      tong,
+      daTra,
+      pctTra: tong ? Math.round((daTra / tong) * 100) : 0,
+      conTra: sum(hl, (r) => Math.max(0, r.c.conPhaiTra)),
+      quaHan: hl.filter((r) => r.c.quaHan > 0).length,
+      dangCungUng: hl.filter((r) => (r.m.trangThai === TT.DA_KY || r.m.trangThai === TT.DANG_NHAN_HANG) && r.c.pctNhap === 0).length,
     };
   });
 
@@ -425,18 +405,17 @@ export class HdmList {
   }
 
   protected xuat(): void {
-    const head = ['Số HĐ mua', 'NCC', 'MST', 'Pháp nhân', 'Ngày ký', 'Giá trị VNĐ', 'Đã trả', 'Đã trả %', 'Còn phải trả', 'Nhập hàng %', 'HĐ bán liên quan', 'Phụ trách', 'Trạng thái'];
+    const head = ['Số HĐ mua', 'NCC', 'MST', 'Ngày ký', 'Giá trị VNĐ', 'Đã trả', 'Đã trả %', 'Còn phải trả', 'Nhập hàng %', 'HĐ bán liên quan', 'Phụ trách', 'Trạng thái'];
     const body = this.rows().map((r) => [
       r.m.soHD,
       r.m.tenNCC,
       r.m.mst,
-      r.pn,
       viDate(r.m.ngayKy),
       r.c.tong,
       r.c.daTra,
       pct(r.c.pctTra),
       r.c.conPhaiTra,
-      r.m.thuocPhuTai ? '' : pct(r.c.pctNhap),
+      pct(r.c.pctNhap),
       r.soHDB,
       r.pt ? this.store.userName(r.pt) : '',
       r.choXoa ? `${r.hd.t} (Chờ xoá)` : r.hd.t,
