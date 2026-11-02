@@ -78,6 +78,7 @@ public class HdmService {
     m.setHdbId(Texts.emptyToNull(m.getHdbId()));
     if (m.getHdbId() != null && c.hdb(m.getHdbId()) == null) throw ApiException.invalid("HĐ bán liên quan không tồn tại");
     if (m.isNhapTay() && Texts.blank(m.getLyDoNhapTay())) throw ApiException.invalid("Nhập tay tổng giá trị cần ghi lý do");
+    if (m.getVat() != 0 && m.getVat() != 8 && m.getVat() != 10) throw ApiException.invalid("VAT chỉ 0, 8 hoặc 10%");
     if (m.getTongNhapTay() != null && m.getTongNhapTay() < 0) throw ApiException.invalid("Tổng giá trị không âm");
     if (m.getDotTT().size() > c.cauHinh().getSoDotToiDa()) throw ApiException.invalid("Tối đa " + c.cauHinh().getSoDotToiDa() + " đợt thanh toán");
     if (!"Đã".equals(m.getXuatHoaDon()) && !"Chưa".equals(m.getXuatHoaDon())) m.setXuatHoaDon("Chưa");
@@ -110,12 +111,25 @@ public class HdmService {
       DotTTMua old = cu == null ? null : cu.getDotTT().stream().filter(x -> x.getDot() == d.getDot()).findFirst().orElse(null);
       // Phiếu chi chỉ gắn qua ghi nhận trả NCC.
       d.setPhieuChiId(old == null ? null : old.getPhieuChiId());
-      if (old != null && old.getPhieuChiId() != null && !m.isThuocPhuTai()) {
-        d.setNgayTra(old.getNgayTra());
-        d.setSoTienTra(old.getSoTienTra());
-        d.setNguonTien(old.getNguonTien());
-      }
       d.setNguonTien(Texts.emptyToNull(d.getNguonTien()));
+      if (old != null && old.getPhieuChiId() != null && !m.isThuocPhuTai()) {
+        PhieuThuChi p = c.phieu(old.getPhieuChiId());
+        if (p == null || old.getNgayTra() == null || c.dangChoXoa("PhieuThuChi", p.getId())) {
+          // Phiếu đang chờ xoá / đợt chưa ghi nhận: giữ nguyên.
+          d.setNgayTra(old.getNgayTra());
+          d.setSoTienTra(old.getSoTienTra());
+          d.setNguonTien(old.getNguonTien());
+        } else {
+          // Sửa ghi nhận trả trên dòng (kể cả phiếu đã duyệt): ngày, số tiền trả, nguồn tiền đồng bộ sang phiếu chi.
+          if (Texts.blank(d.getNgayTra()) || d.getSoTienTra() == null || d.getSoTienTra() <= 0)
+            throw ApiException.invalid("Đợt " + d.getDot() + ": cần Ngày trả và Số tiền trả > 0");
+          if (d.getNguonTien() == null) throw ApiException.invalid("Đợt " + d.getDot() + ": chưa chọn Nguồn tiền");
+          if (c.nguon(d.getNguonTien()) == null) throw ApiException.invalid("Nguồn tiền không tồn tại");
+          p.setNgayLap(d.getNgayTra());
+          p.setSoTienChi(d.getSoTienTra());
+          p.setNguonTien(d.getNguonTien());
+        }
+      }
       if (d.getNguonTien() != null && c.nguon(d.getNguonTien()) == null) throw ApiException.invalid("Nguồn tiền không tồn tại");
     }
     if (cu != null) {
@@ -134,17 +148,9 @@ public class HdmService {
         HopDongPhuTai pt = c.db().getHopDongPhuTai().stream().filter(p -> p.getHdMua().contains(cu.getId())).findFirst().orElse(null);
         if (pt != null) throw ApiException.conflict("HĐ đang là giá đầu vào của HĐ Phú Tài " + pt.getSoHD() + " — bỏ HĐ này khỏi HĐ Phú Tài trước");
       }
-      // Đợt đã có phiếu chi (chưa bị từ chối): giữ nguyên số tiền & hạn để khớp phiếu.
-      for (DotTTMua d : m.getDotTT()) {
-        DotTTMua old = cu.getDotTT().stream().filter(x -> x.getDot() == d.getDot()).findFirst().orElse(null);
-        if (old != null && dotMuaKhoa(c, old)) {
-          d.setSoTien(old.getSoTien());
-          d.setHan(old.getHan());
-        }
-      }
     }
     Calc.apDungTuDongHdm(m);
-    String loiDot = Calc.loiDotTT(m.getDotTT().stream().map(d -> new Calc.DotRow(d.getTyLe(), d.getSoTien(), d.getHan())).toList(), Calc.hdmTong(m));
+    String loiDot = Calc.loiDotTT(m.getDotTT().stream().map(d -> new Calc.DotRow(d.getTyLe(), d.getSoTien(), d.getHan())).toList(), Calc.hdmTongSauVAT(m));
     if (loiDot != null) throw ApiException.invalid(loiDot);
     if (isNew) m.setId(Ids.safe(m.getId()) && c.hdm(m.getId()) == null ? m.getId() : c.uid("HDM"));
     Ctx.upsert(c.db().getHopDongMua(), m, HopDongMua::getId);

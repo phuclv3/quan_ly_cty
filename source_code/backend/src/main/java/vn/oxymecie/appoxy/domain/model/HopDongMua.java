@@ -34,4 +34,6 @@ public class HopDongMua {
   private String taoLuc;
   @JsonProperty("import")
   private Boolean laImport;
+  /** Thuế VAT (%): 0, 8 hoặc 10. Tổng giá trị trên các dòng / nhập tay là trước VAT. */
+  private int vat;
 }

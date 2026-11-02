@@ -65,6 +65,9 @@ public class HopDongMuaEntity extends Audited {
   @Column(name = "tong_nhap_tay")
   private Long tongNhapTay;
 
+  @Column(name = "vat", nullable = false)
+  private int vat;
+
   @Column(name = "ly_do_nhap_tay")
   private String lyDoNhapTay;
 

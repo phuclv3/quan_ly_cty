@@ -324,7 +324,7 @@ public final class Calc {
 
   /** Đợt TT NCC: đợt theo % tính lại Số tiền theo tổng HĐ; đợt theo mốc tính Hạn = ngày mốc + N ngày (đợt đã có phiếu chi giữ nguyên). */
   public static HopDongMua apDungTuDongHdm(HopDongMua m) {
-    double tong = hdmTong(m);
+    double tong = hdmTongSauVAT(m);
     for (DotTTMua x : m.getDotTT()) {
       if (x.getPhieuChiId() != null) continue;
       if (x.getTyLe() != null) x.setSoTien(Math.round((x.getTyLe() / 100) * tong));
@@ -338,8 +338,13 @@ public final class Calc {
 
   public record HdmCalc(double tong, double daTra, double conPhaiTra, double slMua, double slNhap) {}
 
+  /** Tổng giá trị HĐ mua sau VAT — cơ sở của đợt thanh toán, công nợ và còn phải trả (hdmTong là trước VAT, dùng cho giá vốn). */
+  public static double hdmTongSauVAT(HopDongMua m) {
+    return Math.round(hdmTong(m) * (1 + m.getVat() / 100.0));
+  }
+
   public static HdmCalc hdmCalc(HopDongMua m, Db db) {
-    double tong = hdmTong(m);
+    double tong = hdmTongSauVAT(m);
     double daTra = 0;
     for (DotTTMua d : m.getDotTT()) daTra += dotMuaDaTra(m, d, db);
     double slMua = sum(m.getChiTiet(), DongHangMua::getSoLuong);
