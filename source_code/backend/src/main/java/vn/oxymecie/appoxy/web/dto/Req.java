@@ -58,11 +58,6 @@ public final class Req {
                         @Positive(message = "Số tiền phải > 0") long soTienThu,
                         @NotBlank(message = "Cần Nguồn tiền nhận") String nguonTienNhan) {}
 
-  public record TienTraKhach(@NotBlank(message = "Cần Người nhận") @Size(max = 255) String nguoiNhan,
-                             @Positive(message = "Số tiền phải > 0") long soTien,
-                             @Pattern(regexp = NGAY, message = NGAY_MSG) String ngay,
-                             @NotBlank(message = "Chưa chọn Nguồn tiền") String nguonTien) {}
-
   public record DeNghi(@NotEmpty(message = "Không có dòng nào cần đề nghị") List<DongDeNghi> dong, @Size(max = 1000) String ghiChu) {}
 
   public record NhapKho(@NotBlank(message = "Chưa chọn Ngày") @Pattern(regexp = NGAY, message = NGAY_MSG) String ngay,

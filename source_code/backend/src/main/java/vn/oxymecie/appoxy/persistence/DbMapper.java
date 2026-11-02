@@ -193,7 +193,7 @@ public class DbMapper {
         e.getLoaiChiPhi(), e.getNoiDung(), e.getSoTienThu(), e.getSoTienChi(), e.getPhieuTamUngGoc(), e.getSoTienThucChi(), e.getNguoiNhan(),
         e.getNguoiDeNghi(), e.getTrangThai(), e.getNguoiDuyet(), t(e.getNgayDuyet()), e.getLyDoTuChoi(),
         new ArrayList<>(e.getFiles().stream().map(this::file).toList()), e.getGhiChu(), ps, trueOrNull(e.isLaImport()),
-        orNull(new ArrayList<>(ls)));
+        orNull(new ArrayList<>(ls)), e.getHdbId());
   }
 
   ChiPhiHD chiPhiHD(ChiPhiHDEntity e) {
@@ -603,6 +603,7 @@ public class DbMapper {
     e.setPsLoai(x.getPhatSinh() == null ? null : x.getPhatSinh().getLoai());
     e.setPsHdId(x.getPhatSinh() == null ? null : x.getPhatSinh().getHdId());
     e.setPsDot(x.getPhatSinh() == null ? null : x.getPhatSinh().getDot());
+    e.setHdbId(Texts.emptyToNull(x.getHdbId()));
     e.setLaImport(Boolean.TRUE.equals(x.getLaImport()));
     e.getLichSu().clear();
     e.getLichSu().addAll(lichSuPtc(x.getLichSu()));

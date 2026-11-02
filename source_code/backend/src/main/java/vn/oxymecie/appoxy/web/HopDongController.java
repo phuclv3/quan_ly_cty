@@ -216,16 +216,6 @@ public class HopDongController {
     });
   }
 
-  @Operation(summary = "Thêm tiền trả khách (HDB-09) = chi phí HĐ loại Hoa hồng, gửi duyệt")
-  @PostMapping("/hop-dong-ban/{id}/tien-tra-khach")
-  public CommandResponse<ChiPhiHD> tienTraKhach(@PathVariable String id, @Valid @RequestBody Req.TienTraKhach r) {
-    return cmd.run("HDB.tienTraKhach", c -> {
-      ChiPhiHD x = hdb.themTienTraKhach(c, id, r.nguoiNhan(), r.soTien(), r.ngay(), r.nguonTien());
-      c.nhatKy("HopDongBan", id, "Tiền trả khách " + x.getMaCP());
-      return x;
-    });
-  }
-
   @Operation(summary = "Lập đề nghị cấp vật tư (mỗi dòng thiếu = 1 đề nghị)")
   @PostMapping("/hop-dong-ban/{id}/de-nghi-vat-tu")
   public CommandResponse<List<String>> deNghi(@PathVariable String id, @Valid @RequestBody Req.DeNghi r) {

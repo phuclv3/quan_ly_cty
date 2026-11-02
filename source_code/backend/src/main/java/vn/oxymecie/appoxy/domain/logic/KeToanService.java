@@ -63,6 +63,12 @@ public class KeToanService {
         if (!(p.getSoTienChi() > 0)) e.add("Số tiền Chi phải > 0");
         if (Texts.blank(p.getLoaiChiPhi())) e.add("Chưa chọn Loại chi phí (nhóm Vận hành)");
         if ("Tạm ứng".equals(p.getLoai()) && Texts.blank(p.getNguoiNhan())) e.add("Chưa nhập Người nhận tạm ứng");
+        if ("Chi".equals(p.getLoai()) && Calc.LCP_HOA_HONG.equals(p.getLoaiChiPhi())) {
+          HopDongBan h = Texts.blank(p.getHdbId()) ? null : c.hdb(p.getHdbId());
+          if (h == null) e.add("Hoa hồng cần chọn HĐ bán");
+          else if (TrangThai.BAO_GIA.equals(h.getTrangThai())) e.add("HĐ đang ở Báo giá — chỉ chi hoa hồng cho HĐ từ Hiệu lực trở đi");
+          if (Texts.blank(p.getNguoiNhan())) e.add("Hoa hồng cần Người nhận");
+        }
       }
       case "Quyết toán tạm ứng" -> {
         if (Texts.blank(p.getPhieuTamUngGoc())) e.add("Chưa chọn phiếu Tạm ứng gốc");
@@ -119,7 +125,10 @@ public class KeToanService {
     if ("Quyết toán tạm ứng".equals(clean.getLoai())) clean.setSoTienChi(0);
     if (!"Luân chuyển".equals(clean.getLoai())) clean.setNguonTienDen(null);
     if ("Thu".equals(clean.getLoai()) || "Luân chuyển".equals(clean.getLoai())) clean.setLoaiChiPhi(null);
-    if (!"Tạm ứng".equals(clean.getLoai()) && !"Quyết toán tạm ứng".equals(clean.getLoai())) clean.setNguoiNhan(null);
+    boolean hoaHong = "Chi".equals(clean.getLoai()) && Calc.LCP_HOA_HONG.equals(clean.getLoaiChiPhi());
+    if (!"Tạm ứng".equals(clean.getLoai()) && !"Quyết toán tạm ứng".equals(clean.getLoai()) && !hoaHong) clean.setNguoiNhan(null);
+    clean.setHdbId(hoaHong ? Texts.emptyToNull(clean.getHdbId()) : null);
+    if (clean.getHdbId() != null && c.hdb(clean.getHdbId()) == null) throw ApiException.invalid("HĐ bán không tồn tại");
     if (!"Quyết toán tạm ứng".equals(clean.getLoai())) {
       clean.setPhieuTamUngGoc(null);
       clean.setSoTienThucChi(null);
@@ -298,6 +307,8 @@ public class KeToanService {
     }
     if (Texts.blank(x.getNgay())) throw ApiException.invalid("Chưa có Ngày");
     if (x.getSoTien() < 0) throw ApiException.invalid("Số tiền không âm");
+    if (isNew && Calc.LCP_HOA_HONG.equals(x.getLoaiChiPhi()))
+      throw ApiException.invalid("Hoa hồng kinh doanh phải lập bằng Phiếu chi (Kế toán → Phiếu chi, loại chi phí Hoa hồng kinh doanh)");
     ChiPhiHD out = c.copy(x, ChiPhiHD.class);
     out.setHdbId(Texts.emptyToNull(out.getHdbId()));
     out.setLoaiChiPhi(Texts.emptyToNull(out.getLoaiChiPhi()));

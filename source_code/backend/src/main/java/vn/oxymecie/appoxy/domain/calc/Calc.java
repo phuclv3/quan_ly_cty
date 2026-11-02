@@ -59,17 +59,34 @@ public final class Calc {
 
   // ── HĐ Bán ───────────────────────────────────────────────────────────
 
-  public record Thue(double moc, double phan1, double phan2, long thue1, long thue2, long thue) {}
+  public record Thue(double moc, double phan1, double phan2, long thue1, long thue2, long thue, boolean cu) {}
 
-  /** HDB-08: thuế TNDN luỹ tiến trên chênh lệch, mốc = nguong × GTHĐ thực tế trước VAT. */
-  public static Thue thueTNDN(double chenhLech, double thucTe, ThamSoThue ts) {
+  /** HĐ ký trước ngày này tính theo công thức cũ: phí = TYLE_THUE_CU × chênh lệch (phần còn lại trả khách). */
+  public static final String NGAY_DOI_CONG_THUC_THUE = "2026-03-01";
+  public static final double TYLE_THUE_CU = 0.22;
+
+  /** HĐ ký trước 03/2026 (theo Ngày ký) dùng công thức cũ. Chưa có Ngày ký → công thức mới. */
+  public static boolean hdbCongThucCu(String ngayKy) {
+    return ngayKy != null && !ngayKy.isEmpty() && ngayKy.compareTo(NGAY_DOI_CONG_THUC_THUE) < 0;
+  }
+
+  /**
+   * HDB-08: thuế TNDN trên chênh lệch.
+   * HĐ mới: luỹ tiến, mốc = nguong × GTHĐ thực tế trước VAT. HĐ cũ (ký trước 03/2026): phẳng 22% × chênh lệch.
+   */
+  public static Thue thueTNDN(double chenhLech, double thucTe, ThamSoThue ts, String ngayKy) {
     double moc = ts.getNguong() * thucTe;
-    if (chenhLech <= 0) return new Thue(moc, 0, 0, 0, 0, 0);
+    boolean cu = hdbCongThucCu(ngayKy);
+    if (chenhLech <= 0) return new Thue(moc, 0, 0, 0, 0, 0, cu);
+    if (cu) {
+      long thue = Math.round(chenhLech * TYLE_THUE_CU);
+      return new Thue(moc, chenhLech, 0, thue, 0, thue, true);
+    }
     double phan1 = Math.min(chenhLech, moc);
     double phan2 = Math.max(chenhLech - moc, 0);
     long thue1 = Math.round(phan1 * ts.getMuc1());
     long thue2 = Math.round(phan2 * ts.getMuc2());
-    return new Thue(moc, phan1, phan2, thue1, thue2, thue1 + thue2);
+    return new Thue(moc, phan1, phan2, thue1, thue2, thue1 + thue2, cu);
   }
 
   /** Đã thu của một đợt — chỉ khi phiếu Thu được DUYỆT (F-02); đợt import không có phiếu tính theo số đã ghi. */
@@ -96,7 +113,7 @@ public final class Calc {
   public static HdbCalc hdbCalc(HopDongBan h, Db db) {
     long sau = sauVAT(h.getTruocVAT(), h.getVat());
     long chenhLech = h.getThucTeTruocVAT() > 0 ? h.getTruocVAT() - h.getThucTeTruocVAT() : 0;
-    Thue thue = thueTNDN(chenhLech, h.getThucTeTruocVAT(), h.getThamSoThue());
+    Thue thue = thueTNDN(chenhLech, h.getThucTeTruocVAT(), h.getThamSoThue(), h.getNgayKy());
     long daThu = 0, daThuCho = 0;
     for (DotTTBan d : h.getDotTT()) {
       daThu += dotBanDaThu(d, db);
@@ -107,6 +124,12 @@ public final class Calc {
       if (!Objects.equals(c.getHdbId(), h.getId())) continue;
       if (TrangThai.DA_DUYET.equals(c.getTrangThai())) cpDuyet += c.getSoTien();
       if (TrangThai.CHO_DUYET.equals(c.getTrangThai())) cpCho += c.getSoTien();
+    }
+    // Hoa hồng = Phiếu Chi gắn HĐ bán (dòng Chi phí HĐ loại Hoa hồng là dữ liệu cũ, đã nằm trong cpDuyet / cpCho ở trên).
+    for (PhieuThuChi p : db.getPhieuThuChi()) {
+      if (!"Chi".equals(p.getLoai()) || !LCP_HOA_HONG.equals(p.getLoaiChiPhi()) || !Objects.equals(p.getHdbId(), h.getId())) continue;
+      if (TrangThai.DA_DUYET.equals(p.getTrangThai())) cpDuyet += p.getSoTienChi();
+      if (TrangThai.CHO_DUYET.equals(p.getTrangThai())) cpCho += p.getSoTienChi();
     }
     long phat = Math.max(h.getPhatHD() == null ? 0 : h.getPhatHD(), 0);
     double giaVonXK = 0;

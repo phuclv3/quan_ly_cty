@@ -327,22 +327,6 @@ public class HdbService {
     return p;
   }
 
-  /** HDB-09: thêm nhanh tiền trả khách = 1 chi phí HĐ loại Hoa hồng, gửi duyệt luôn. */
-  public ChiPhiHD themTienTraKhach(Ctx c, String hdbId, String nguoiNhan, long soTien, String ngay, String nguonTien) {
-    ChiPhiHD x = new ChiPhiHD();
-    x.setHdbId(hdbId);
-    x.setNgay(Texts.blank(ngay) ? c.today() : ngay);
-    x.setLoaiChiPhi(Calc.LCP_HOA_HONG);
-    x.setNoiDung("Hoa hồng kinh doanh — " + Texts.nz(nguoiNhan));
-    x.setSoTien(soTien);
-    x.setNguonTien(nguonTien);
-    x.setNguoiThucHien(c.me());
-    x.setNguoiNhan(nguoiNhan);
-    x.setTrangThai(TrangThai.NHAP);
-    x.setFiles(new ArrayList<>());
-    return keToan.saveChiPhi(c, x, true, true);
-  }
-
   // ── Đề nghị cấp vật tư ───────────────────────────────────────────────
 
   /** HĐ bán thiếu hàng → mỗi dòng sản phẩm thiếu = 1 đề nghị riêng (có thể mua của NCC khác nhau). */

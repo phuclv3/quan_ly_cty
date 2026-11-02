@@ -36,4 +36,6 @@ public class PhieuThuChi {
   @JsonProperty("import")
   private Boolean laImport;
   private List<LichSuDuyet> lichSu;
+  /** Phiếu Chi hoa hồng kinh doanh: HĐ bán mà khoản tiền trả khách thuộc về. */
+  private String hdbId;
 }

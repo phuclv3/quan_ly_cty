@@ -91,6 +91,9 @@ public class PhieuThuChiEntity extends Audited {
   @Column(name = "ps_dot")
   private Integer psDot;
 
+  @Column(name = "hdb_id")
+  private String hdbId;
+
   @Column(name = "la_import", nullable = false)
   private boolean laImport;
   @ElementCollection

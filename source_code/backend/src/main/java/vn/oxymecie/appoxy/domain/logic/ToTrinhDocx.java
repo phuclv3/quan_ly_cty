@@ -145,8 +145,10 @@ public final class ToTrinhDocx {
     // Bảng tiền (dòng 1..7)
     var ts = h.getThamSoThue();
     var th = c.thue();
-    String[] nhan = {null, null, null, null, "Phí QL (≤" + Money.phanTram(ts.getNguong()) + ") - " + Money.phanTram(ts.getMuc1()),
-        "Phí QL (>" + Money.phanTram(ts.getNguong()) + ") - " + Money.phanTram(ts.getMuc2()), null};
+    String[] nhan = th.cu()
+        ? new String[] {null, null, null, null, "Phí QL - " + Money.phanTram(Calc.TYLE_THUE_CU), "Phí QL (phần vượt) - không áp dụng", null}
+        : new String[] {null, null, null, null, "Phí QL (≤" + Money.phanTram(ts.getNguong()) + ") - " + Money.phanTram(ts.getMuc1()),
+            "Phí QL (>" + Money.phanTram(ts.getNguong()) + ") - " + Money.phanTram(ts.getMuc2()), null};
     double[] so = {h.getTruocVAT(), h.getThucTeTruocVAT(), c.chenhLech(), th.thue(), th.thue1(), th.thue2(), Math.max(c.chenhLech() - th.thue(), 0)};
     var rows = kids(tbls.get(1), "tr");
     for (int i = 0; i < 7; i++) {
