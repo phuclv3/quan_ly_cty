@@ -44,15 +44,30 @@ export interface Buoc {
 
 // ── HĐ Bán ──────────────────────────────────────────────────────────────
 
-/** HDB-08: thuế TNDN luỹ tiến trên chênh lệch, mốc = nguong × GTHĐ thực tế trước VAT. */
-export function thueTNDN(chenhLech: number, thucTe: number, ts: ThamSoThue) {
+/** HĐ ký trước ngày này tính theo công thức cũ: phí = TYLE_THUE_CU × chênh lệch (phần còn lại trả khách). */
+export const NGAY_DOI_CONG_THUC_THUE = '2026-03-01';
+export const TYLE_THUE_CU = 0.22;
+
+/** HĐ ký trước 03/2026 (theo Ngày ký) dùng công thức cũ. Chưa có Ngày ký → công thức mới. */
+export const hdbCongThucCu = (ngayKy?: string) => !!ngayKy && ngayKy < NGAY_DOI_CONG_THUC_THUE;
+
+/**
+ * HDB-08: thuế TNDN trên chênh lệch.
+ * HĐ mới: luỹ tiến, mốc = nguong × GTHĐ thực tế trước VAT. HĐ cũ (ký trước 03/2026): phẳng 22% × chênh lệch.
+ */
+export function thueTNDN(chenhLech: number, thucTe: number, ts: ThamSoThue, ngayKy?: string) {
   const moc = ts.nguong * thucTe;
-  if (chenhLech <= 0) return { moc, phan1: 0, phan2: 0, thue1: 0, thue2: 0, thue: 0 };
+  const cu = hdbCongThucCu(ngayKy);
+  if (chenhLech <= 0) return { moc, phan1: 0, phan2: 0, thue1: 0, thue2: 0, thue: 0, cu };
+  if (cu) {
+    const thue = Math.round(chenhLech * TYLE_THUE_CU);
+    return { moc, phan1: chenhLech, phan2: 0, thue1: thue, thue2: 0, thue, cu };
+  }
   const phan1 = Math.min(chenhLech, moc);
   const phan2 = Math.max(chenhLech - moc, 0);
   const thue1 = Math.round(phan1 * ts.muc1);
   const thue2 = Math.round(phan2 * ts.muc2);
-  return { moc, phan1, phan2, thue1, thue2, thue: thue1 + thue2 };
+  return { moc, phan1, phan2, thue1, thue2, thue: thue1 + thue2, cu };
 }
 
 /** Đợt quá hạn: quá Hạn mà chưa thu đủ (HDB-10). */
@@ -117,23 +132,32 @@ export interface HdbCalc {
   quaHan: number;
 }
 
+/** Phiếu Chi hoa hồng kinh doanh của một HĐ bán (mọi trạng thái). */
+export const phieuHoaHong = (db: Db, hdbId: string): PhieuThuChi[] =>
+  db.phieuThuChi.filter((p) => p.loai === 'Chi' && p.loaiChiPhi === LCP_HOA_HONG && p.hdbId === hdbId);
+
 export function hdbCalc(h: HopDongBan, db: Db): HdbCalc {
   const sau = sauVAT(h.truocVAT, h.vat);
   const chenhLech = h.thucTeTruocVAT > 0 ? h.truocVAT - h.thucTeTruocVAT : 0;
   const tyLeCL = h.thucTeTruocVAT > 0 ? chenhLech / h.thucTeTruocVAT : 0;
-  const thue = thueTNDN(chenhLech, h.thucTeTruocVAT, h.thamSoThue);
+  const thue = thueTNDN(chenhLech, h.thucTeTruocVAT, h.thamSoThue, h.ngayKy);
   const daThu = sum(h.dotTT, (d) => dotBanDaThu(d, db));
   const daThuCho = sum(h.dotTT, (d) => dotBanChoDuyet(d, db));
   const cps = db.chiPhiHD.filter((c) => c.hdbId === h.id);
-  const hh = cps.filter((c) => c.loaiChiPhi === LCP_HOA_HONG && c.trangThai !== TT.TU_CHOI);
-  const cpDuyet = sum(
-    cps.filter((c) => c.trangThai === TT.DA_DUYET),
-    (c) => c.soTien,
-  );
-  const cpCho = sum(
-    cps.filter((c) => c.trangThai === TT.CHO_DUYET),
-    (c) => c.soTien,
-  );
+  // Hoa hồng = Phiếu Chi gắn HĐ bán; dòng Chi phí HĐ loại Hoa hồng là dữ liệu cũ (trước khi bắt buộc có phiếu).
+  const hhCu = cps.filter((c) => c.loaiChiPhi === LCP_HOA_HONG && c.trangThai !== TT.TU_CHOI);
+  const hhPhieu = phieuHoaHong(db, h.id).filter((p) => p.trangThai !== TT.TU_CHOI);
+  const hh = [...hhCu.map((c) => ({ soTien: c.soTien, trangThai: c.trangThai })), ...hhPhieu.map((p) => ({ soTien: p.soTienChi, trangThai: p.trangThai }))];
+  const cpDuyet =
+    sum(
+      cps.filter((c) => c.trangThai === TT.DA_DUYET),
+      (c) => c.soTien,
+    ) + sum(hhPhieu.filter((p) => p.trangThai === TT.DA_DUYET), (p) => p.soTienChi);
+  const cpCho =
+    sum(
+      cps.filter((c) => c.trangThai === TT.CHO_DUYET),
+      (c) => c.soTien,
+    ) + sum(hhPhieu.filter((p) => p.trangThai === TT.CHO_DUYET), (p) => p.soTienChi);
   const phat = Math.max(h.phatHD ?? 0, 0);
   const xk = db.phieuKho.filter((p) => p.loai === 'Xuất' && p.hdId === h.id && p.trangThai === TT.HIEU_LUC);
   const giaVonXK = sum(xk, (p) => sum(p.dong, (d) => (d.donGiaGoc ?? 0) * d.soLuong));

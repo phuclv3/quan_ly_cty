@@ -425,6 +425,8 @@ export interface PhieuThuChi {
   /** Dữ liệu import (NT-13). */
   import?: boolean;
   lichSu?: LichSuDuyet[];
+  /** Phiếu Chi loại Hoa hồng kinh doanh: HĐ bán mà khoản tiền trả khách thuộc về. */
+  hdbId?: string;
 }
 
 export interface ChiPhiHD {

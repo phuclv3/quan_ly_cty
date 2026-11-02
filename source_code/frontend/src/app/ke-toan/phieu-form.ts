@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, linkedSignal, output, viewChild } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Store } from '../core/store';
-import { LOAI_PHIEU, LoaiPhieu, PhieuThuChi } from '../core/models';
+import { LCP_HOA_HONG, LOAI_PHIEU, LoaiPhieu, PhieuThuChi } from '../core/models';
 import { chenhLechQuyetToan, tamUngChoQuyetToan } from '../core/calc';
 import { money, moneyInWords, viDate, viMoment } from '../core/util';
 import { Modal, MoneyInput, Pick, PickOption, TrangThai } from '../shared/ui-kit';
@@ -95,6 +95,11 @@ import { TT, ttNhan } from '../core/trang-thai';
               <div class="field"><label>Loại chi phí (Vận hành) <span class="req">*</span></label><app-pick [options]="lcpOpts()" [disabled]="!edit()" [value]="p.loaiChiPhi || ''" (valueChange)="set('loaiChiPhi', $event)" /></div>
               @if (p.loai === 'Tạm ứng') {
                 <div class="field"><label for="pf-nn">Người nhận tạm ứng <span class="req">*</span></label><input id="pf-nn" [disabled]="!edit()" [value]="p.nguoiNhan || ''" (input)="set('nguoiNhan', $any($event.target).value)" /></div>
+              }
+              @if (hoaHong()) {
+                <div class="field wide"><label>HĐ bán <span class="req">*</span></label><app-pick [options]="hdbOpts()" [disabled]="!edit()" [value]="p.hdbId || ''" (valueChange)="set('hdbId', $event || undefined)" placeholder="— Chọn HĐ bán trả hoa hồng —" /></div>
+                <div class="field"><label for="pf-nn-hh">Người nhận hoa hồng <span class="req">*</span></label><input id="pf-nn-hh" [disabled]="!edit()" [value]="p.nguoiNhan || ''" (input)="set('nguoiNhan', $any($event.target).value)" /></div>
+                <p class="hint full muted">Phiếu được duyệt mới tính vào Tiền trả khách của HĐ bán (Tab 3).</p>
               }
             }
           }
@@ -194,9 +199,23 @@ export class PhieuForm {
     }
     return list;
   });
+  /** Phiếu Chi loại Hoa hồng kinh doanh → bắt buộc gắn HĐ bán. */
+  protected readonly hoaHong = computed(() => {
+    const p = this.f();
+    return p?.loai === 'Chi' && p.loaiChiPhi === LCP_HOA_HONG;
+  });
+  protected readonly hdbOpts = computed<PickOption[]>(() => {
+    const cur = this.f()?.hdbId;
+    return this.store
+      .hopDongBan()
+      .filter((h) => h.id === cur || (h.trangThai !== TT.BAO_GIA && h.trangThai !== TT.HUY))
+      .map((h) => ({ value: h.id, label: `${h.soHD} — ${h.tenKH}`, hint: ttNhan(h.trangThai) }));
+  });
   protected readonly lcpOpts = computed<PickOption[]>(() => {
     const cur = this.f()?.loaiChiPhi;
     const list: PickOption[] = this.store.lcpVanHanh().map((l) => ({ value: l.id, label: l.ten }));
+    const hh = this.f()?.loai === 'Chi' ? this.store.lcpById(LCP_HOA_HONG) : undefined;
+    if (hh?.dangDung && !list.some((o) => o.value === hh.id)) list.push({ value: hh.id, label: hh.ten, hint: hh.nhom });
     const c = cur ? this.store.lcpById(cur) : undefined;
     if (c && !list.some((o) => o.value === c.id)) list.push({ value: c.id, label: c.ten, hint: c.dangDung ? c.nhom : 'Ngưng' });
     return list;

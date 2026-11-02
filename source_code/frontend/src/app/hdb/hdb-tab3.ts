@@ -1,17 +1,17 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, model, signal, viewChild } from '@angular/core';
 import { Store } from '../core/store';
 import { TT } from '../core/trang-thai';
-import { DongHangBan, DotTTBan, HopDongBan, LCP_HOA_HONG } from '../core/models';
-import { Buoc, apDungTuDongHdb, congNgay, dotBanDaThu, dotQuaHan, hdbCalc, kiemTraDongBan, loiDotTT, loConHang, tongDongBan, tongDongBanTH } from '../core/calc';
+import { DongHangBan, DotTTBan, HopDongBan, LCP_HOA_HONG, PhieuThuChi } from '../core/models';
+import { Buoc, NGAY_DOI_CONG_THUC_THUE, TYLE_THUE_CU, apDungTuDongHdb, phieuHoaHong, congNgay, dotBanDaThu, dotQuaHan, hdbCalc, kiemTraDongBan, loiDotTT, loConHang, tongDongBan, tongDongBanTH } from '../core/calc';
 import { xemThuToTrinhHdb } from '../shared/export';
 import { money, pct, sum, todayIso, uid, viDate } from '../core/util';
 import { BuocTable, Kpi, MoneyInput, Pick, TrangThai } from '../shared/ui-kit';
 import { maHangOpts, moTaMa } from '../kho/kho-util';
 import { Icon } from '../shared/icon';
+import { PhieuForm } from '../ke-toan/phieu-form';
 import { Confirm } from '../shared/confirm';
 import { guiXoa } from '../shared/ho-so';
 import { RouterLink } from '@angular/router';
-import { KiemTra } from '../shared/kiem-tra';
 
 interface ThuNhap {
   ngayThu: string;
@@ -23,7 +23,7 @@ interface ThuNhap {
 @Component({
   selector: 'app-hdb-tab3',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MoneyInput, BuocTable, Kpi, TrangThai, Icon, RouterLink, KiemTra, Pick],
+  imports: [MoneyInput, BuocTable, Kpi, TrangThai, Icon, RouterLink, Pick, PhieuForm],
   template: `
     <div class="kpis">
       <app-kpi label="Giá trị sau VAT" [value]="money(c().sauVAT)" />
@@ -148,30 +148,42 @@ interface ThuNhap {
       </section>
 
       <section class="card blk vang">
-        <h2 class="section-title">Thuế TNDN trên chênh lệch</h2>
+        <h2 class="section-title" [title]="tipCongThuc()">Thuế TNDN trên chênh lệch <span class="sub" [title]="tipCongThuc()">(công thức theo ngày ký HĐ ⓘ)</span></h2>
         <app-buoc [rows]="buocThue()" />
-        <p class="sub">Tham số lưu theo HĐ lúc tạo: mốc {{ pct(f().thamSoThue.nguong) }} × GTHĐ thực tế, mức {{ pct(f().thamSoThue.muc1) }} / {{ pct(f().thamSoThue.muc2) }}. Chênh lệch ≤ 0 → thuế = 0.</p>
+        @if (c().thue.cu) {
+          <p class="sub">HĐ ký trước 01/03/2026: {{ pct(tyLeThueCu) }} × chênh lệch, phần còn lại trả khách. Chênh lệch ≤ 0 → thuế = 0.</p>
+        } @else {
+          <p class="sub">Tham số lưu theo HĐ lúc tạo: mốc {{ pct(f().thamSoThue.nguong) }} × GTHĐ thực tế, mức {{ pct(f().thamSoThue.muc1) }} / {{ pct(f().thamSoThue.muc2) }}. Chênh lệch ≤ 0 → thuế = 0.</p>
+        }
       </section>
     </div>
 
     <section class="card blk tim">
       <div class="section-title">
         <h2>Tiền trả khách (hoa hồng)</h2>
-        <span class="sub">Lưu ở Chi phí thực hiện HĐ loại "Hoa hồng kinh doanh"</span>
+        <span class="sub">Mỗi khoản là một Phiếu chi loại "Hoa hồng kinh doanh" gắn HĐ bán này (Sales hoặc Kế toán lập)</span>
       </div>
       <div class="tbl-wrap">
         <table class="tbl compact">
-          <thead><tr><th>Người nhận</th><th class="num">Số tiền</th><th>Ngày chi</th><th>Nguồn tiền</th><th>Trạng thái</th></tr></thead>
+          <thead><tr><th>Người nhận</th><th class="num">Số tiền</th><th>Ngày chi</th><th>Nguồn tiền</th><th>Phiếu</th><th>Trạng thái</th></tr></thead>
           <tbody>
             @for (x of hoaHong(); track x.id) {
-              <tr><td>{{ x.nguoiNhan || '—' }}</td><td class="num">{{ money(x.soTien) }}</td><td>{{ viDate(x.ngay) }}</td><td>{{ store.nguonTen(x.nguonTien) }}</td><td><app-tt [v]="x.trangThai" /></td></tr>
+              <tr>
+                <td>{{ x.nguoiNhan || '—' }}</td><td class="num">{{ money(x.soTien) }}</td><td>{{ viDate(x.ngay) }}</td><td>{{ store.nguonTen(x.nguonTien) }}</td>
+                <td>
+                  @if (x.phieuId && xemPhieu()) { <a class="linkish" routerLink="/ke-toan" [queryParams]="{ tab: 'so-quy', id: x.phieuId }">{{ x.soPhieu }}</a> }
+                  @else if (x.phieuId) { {{ x.soPhieu }} }
+                  @else { <span class="muted" title="Khoản cũ ghi ở Chi phí thực hiện HĐ, chưa có Phiếu chi">Chưa có phiếu</span> }
+                </td>
+                <td><app-tt [v]="x.trangThai" /></td>
+              </tr>
             } @empty {
-              <tr><td colspan="5" class="muted">Chưa có khoản trả khách</td></tr>
+              <tr><td colspan="6" class="muted">Chưa có khoản trả khách</td></tr>
             }
           </tbody>
           <tfoot>
-            <tr><th>Tổng (trừ Từ chối)</th><td class="num">{{ money(c().tienTraKhach) }}</td><td colspan="3" class="sub">Đã duyệt: {{ money(c().tienTraKhachDuyet) }}</td></tr>
-            <tr><th>Gợi ý tối đa</th><td class="num" title="Chênh lệch − Thuế TNDN">{{ money(c().traKhachToiDa) }}</td><td colspan="3" class="sub">= Chênh lệch − Thuế TNDN</td></tr>
+            <tr><th>Tổng (trừ Từ chối)</th><td class="num">{{ money(c().tienTraKhach) }}</td><td colspan="4" class="sub">Đã duyệt: {{ money(c().tienTraKhachDuyet) }}</td></tr>
+            <tr><th>Gợi ý tối đa</th><td class="num" title="Chênh lệch − Thuế TNDN">{{ money(c().traKhachToiDa) }}</td><td colspan="4" class="sub">= Chênh lệch − Thuế TNDN</td></tr>
           </tfoot>
         </table>
       </div>
@@ -179,18 +191,11 @@ interface ThuNhap {
         <p class="note warn">Tổng tiền trả khách vượt mức gợi ý tối đa {{ money(c().tienTraKhach - c().traKhachToiDa) }} đ.</p>
       }
       @if (themHH()) {
-        <div class="form-grid hh-form" appKiemTra #ktHH="kiemTra">
-          <div class="field"><label for="hh-nn">Người nhận <span class="req">*</span></label><input id="hh-nn" [value]="hh().nguoiNhan" (input)="setHH('nguoiNhan', $any($event.target).value)" /></div>
-          <div class="field"><label for="hh-tien">Số tiền <span class="req">*</span></label><app-money inputId="hh-tien" [value]="hh().soTien" (valueChange)="setHH('soTien', $event)" /></div>
-          <div class="field"><label for="hh-ngay">Ngày chi <span class="req">*</span></label><input id="hh-ngay" type="date" [value]="hh().ngay" (input)="setHH('ngay', $any($event.target).value)" /></div>
-          <div class="field">
-            <label for="hh-nguon">Nguồn tiền <span class="req">*</span></label>
-            <select id="hh-nguon" (change)="setHH('nguonTien', $any($event.target).value)">
-              @for (n of store.nguonDangDung(); track n.id) { <option [value]="n.id" [selected]="n.id === hh().nguonTien">{{ n.ten }}</option> }
-            </select>
-          </div>
+        <div class="btn-row" style="margin-top:8px">
+          <button type="button" class="btn sm" (click)="moPhieuHH()"><app-icon name="plus" [size]="16" /> Lập phiếu chi hoa hồng</button>
         </div>
-        <div class="btn-row" style="margin-top:8px"><button type="button" class="btn sm" (click)="luuHH()"><app-icon name="plus" [size]="16" /> Thêm (gửi duyệt)</button></div>
+        <p class="sub">Khoản hoa hồng chỉ được tính và chi tiền sau khi Phiếu chi được duyệt ở Kế toán.</p>
+        <app-phieu-form [phieu]="phieuHH()" nhom="chi" (closed)="phieuHH.set(null)" />
       } @else if (saved() && saved()!.trangThai === TT.BAO_GIA) {
         <p class="sub">HĐ ở Báo giá — chỉ thêm tiền trả khách từ Hiệu lực trở đi.</p>
       }
@@ -289,7 +294,6 @@ interface ThuNhap {
   `,
 })
 export class HdbTab3 {
-  private readonly ktHH = viewChild('ktHH', { read: KiemTra });
   protected readonly store = inject(Store);
   protected readonly TT = TT;
   private readonly confirm = inject(Confirm);
@@ -372,10 +376,28 @@ export class HdbTab3 {
   /** Ràng buộc các đợt (tỷ lệ ≤ 100%, Σ tiền ≤ giá trị HĐ, hạn tăng dần) — cùng quy tắc Store / backend chặn khi lưu. */
   protected readonly loiDot = computed(() => loiDotTT(this.f().dotTT, this.c().sauVAT));
 
+  protected readonly tyLeThueCu = TYLE_THUE_CU;
+
+  /** Tooltip cho người dùng biết HĐ đang tính theo công thức nào (theo Ngày ký so với 01/03/2026). */
+  protected readonly tipCongThuc = computed(() => {
+    const ts = this.f().thamSoThue;
+    const ky = this.f().ngayKy;
+    const moc = `mốc ${viDate(NGAY_DOI_CONG_THUC_THUE)}`;
+    return this.c().thue.cu
+      ? `Công thức theo ngày ký HĐ: ký ${viDate(ky)} (trước ${moc}). Phí = ${pct(TYLE_THUE_CU)} × chênh lệch, còn lại trả khách.`
+      : `Công thức theo ngày ký HĐ: ${ky ? `ký ${viDate(ky)} (từ ${moc})` : 'chưa có Ngày ký (tạm tính theo công thức từ 01/03/2026)'}. Chênh lệch ≤ ${pct(ts.nguong)} GTHĐ thực tế tính ${pct(ts.muc1)}, phần vượt tính ${pct(ts.muc2)}.`;
+  });
+
   protected readonly buocThue = computed<Buoc[]>(() => {
     const h = this.f();
     const t = this.c().thue;
     const ts = h.thamSoThue;
+    if (t.cu)
+      return [
+        { nhan: 'Chênh lệch (CL)', congThuc: 'Tổng GTHĐ trước VAT − GTHĐ thực tế', giaTri: this.c().chenhLech },
+        { nhan: 'Thuế TNDN (Tổng phí quản lý)', congThuc: `CL × ${pct(TYLE_THUE_CU)} (HĐ ký trước 03/2026)`, giaTri: t.thue, chinh: true },
+        { nhan: 'Hoàn trả', congThuc: 'CL − Thuế TNDN (theo tờ trình)', giaTri: Math.max(this.c().chenhLech - t.thue, 0) },
+      ];
     return [
       { nhan: 'Chênh lệch (CL)', congThuc: 'Tổng GTHĐ trước VAT − GTHĐ thực tế', giaTri: this.c().chenhLech },
       { nhan: 'Mốc', congThuc: `${pct(ts.nguong)} × GTHĐ thực tế trước VAT`, giaTri: Math.round(t.moc) },
@@ -389,38 +411,41 @@ export class HdbTab3 {
   });
 
   // ── Tiền trả khách (HDB-09) ──
-  protected readonly hoaHong = computed(() =>
-    this.store.chiPhiHD().filter((x) => x.hdbId === this.f().id && x.loaiChiPhi === LCP_HOA_HONG),
-  );
+  /** Phiếu chi hoa hồng gắn HĐ này + khoản cũ ghi ở Chi phí HĐ (chưa có phiếu). */
+  protected readonly hoaHong = computed(() => {
+    const id = this.f().id;
+    const phieu = phieuHoaHong(this.store.db(), id).map((p) => ({
+      id: p.id,
+      nguoiNhan: p.nguoiNhan,
+      soTien: p.soTienChi,
+      ngay: p.ngayLap,
+      nguonTien: p.nguonTien,
+      trangThai: p.trangThai,
+      phieuId: p.id as string | undefined,
+      soPhieu: p.soPhieu,
+    }));
+    const cu = this.store
+      .chiPhiHD()
+      .filter((x) => x.hdbId === id && x.loaiChiPhi === LCP_HOA_HONG)
+      .map((x) => ({ id: x.id, nguoiNhan: x.nguoiNhan, soTien: x.soTien, ngay: x.ngay, nguonTien: x.nguonTien, trangThai: x.trangThai, phieuId: undefined as string | undefined, soPhieu: '' }));
+    return [...phieu, ...cu];
+  });
+  /** Phiếu chi hoa hồng đang lập (popup ngay tại HĐ, không chuyển màn hình). */
+  protected readonly phieuHH = signal<PhieuThuChi | null>(null);
+  protected moPhieuHH(): void {
+    const h = this.saved();
+    if (!h) return;
+    this.phieuHH.set({
+      ...this.store.newPhieu('Chi'),
+      loaiChiPhi: LCP_HOA_HONG,
+      hdbId: h.id,
+      noiDung: `Hoa hồng kinh doanh — HĐ bán ${h.soHD} (${h.tenKH})`,
+    });
+  }
   protected readonly themHH = computed(() => {
     const s = this.saved();
-    return !!s && !this.khoa() && s.trangThai !== TT.BAO_GIA && this.store.canEdit('cpHD', s.sale);
+    return !!s && !this.khoa() && s.trangThai !== TT.BAO_GIA && this.store.phieuSuaDuoc(this.store.newPhieu());
   });
-  protected readonly hh = signal({ nguoiNhan: '', soTien: 0, ngay: todayIso(), nguonTien: '' });
-  protected setHH(k: 'nguoiNhan' | 'ngay' | 'nguonTien', v: string): void;
-  protected setHH(k: 'soTien', v: number): void;
-  protected setHH(k: string, v: string | number): void {
-    this.hh.update((x) => ({ ...x, [k]: v }));
-  }
-  protected async luuHH(): Promise<void> {
-    if (this.ktHH()?.hopLe() === false) return;
-    const o = { ...this.hh(), nguoiNhan: this.hh().nguoiNhan.trim() };
-    if (!o.nguonTien) o.nguonTien = this.store.nguonDangDung()[0]?.id ?? '';
-    const ok = await this.confirm.ask({
-      title: `Ghi tiền trả khách ${money(o.soTien)} đ cho ${o.nguoiNhan || '(chưa nhập người nhận)'}?`,
-      message: 'Tạo 1 Chi phí thực hiện HĐ loại Hoa hồng kinh doanh ở trạng thái Chờ duyệt. Khi duyệt sẽ trừ vào nguồn tiền đã chọn.',
-      ok: 'Gửi duyệt',
-    });
-    if (!ok) return;
-    const err = this.store.themTienTraKhach(this.f().id, o);
-    if (err) {
-      this.store.say(err);
-      return;
-    }
-    if (this.c().tienTraKhach > this.c().traKhachToiDa) this.store.say('Đã gửi duyệt — lưu ý: tổng tiền trả khách vượt mức gợi ý tối đa');
-    else this.store.say('Đã thêm tiền trả khách — chờ duyệt');
-    this.hh.set({ nguoiNhan: '', soTien: 0, ngay: todayIso(), nguonTien: o.nguonTien });
-  }
 
   // ── Đợt thanh toán (HDB-10) ──
   protected set<K extends keyof HopDongBan>(k: K, v: HopDongBan[K]): void {

@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Store } from '../core/store';
-import { ChiPhiHD, LOAI_PHIEU, PhieuThuChi } from '../core/models';
+import { ChiPhiHD, LCP_HOA_HONG, LOAI_PHIEU, PhieuThuChi } from '../core/models';
 import { chenhLechQuyetToan } from '../core/calc';
 import { nhoLoc } from '../core/ui';
 import { money, sum, viDate } from '../core/util';
@@ -156,16 +156,22 @@ export class SoQuyTab {
     const q = route.snapshot.queryParamMap;
     const id = q.get('id');
     const lapQT = q.get('lapQT');
+    const lapHH = q.get('lapHH');
     if (id) {
       const p = this.store.phieuById(id);
       if (p && (!this.draftOnly() || p.nguoiDeNghi === this.store.meId())) this.phieu.set(p);
       else this.store.say('Không tìm thấy phiếu hoặc bạn không được xem phiếu này');
+    } else if (lapHH) {
+      // Từ HĐ bán Tab 3: mở phiếu Chi hoa hồng điền sẵn HĐ bán.
+      const h = this.store.hdbById(lapHH);
+      const p = this.store.newPhieu('Chi');
+      if (h && this.coTheLap()) this.phieu.set({ ...p, loaiChiPhi: LCP_HOA_HONG, hdbId: h.id, noiDung: `Hoa hồng kinh doanh — HĐ bán ${h.soHD} (${h.tenKH})` });
     } else if (lapQT) {
       const g = this.store.phieuById(lapQT);
       const p = this.store.newPhieu('Quyết toán tạm ứng');
       if (g && this.coTheLap()) this.phieu.set({ ...p, phieuTamUngGoc: g.id, nguonTien: g.nguonTien, nguoiNhan: g.nguoiNhan, soTienThucChi: g.soTienChi, noiDung: `Quyết toán tạm ứng ${g.soPhieu}` });
     }
-    if (id || lapQT) void router.navigate([], { relativeTo: route, queryParams: { id: null, lapQT: null }, queryParamsHandling: 'merge', replaceUrl: true });
+    if (id || lapQT || lapHH) void router.navigate([], { relativeTo: route, queryParams: { id: null, lapQT: null, lapHH: null }, queryParamsHandling: 'merge', replaceUrl: true });
   }
 
   protected readonly all = computed<SqRow[]>(() => {

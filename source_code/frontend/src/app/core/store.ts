@@ -670,9 +670,6 @@ export class Store {
   huyDeNghiVatTu(id: string, lyDo: string): Result {
     return this.exec(() => this.huyDeNghiVatTu_(id, lyDo), () => ['POST', `/de-nghi-vat-tu/${e_(id)}/huy`, { lyDo }]);
   }
-  themTienTraKhach(hdbId: string, o: { nguoiNhan: string; soTien: number; ngay: string; nguonTien: string }): Result {
-    return this.exec(() => this.themTienTraKhach_(hdbId, o), () => ['POST', `/hop-dong-ban/${e_(hdbId)}/tien-tra-khach`, o]);
-  }
   setHoSoCo(chu: ChuHoSo, chuId: string, loai: LoaiHoSo, co: { daLuu?: boolean; daScan?: boolean; ghiChu?: string }): Result {
     return this.exec(() => this.setHoSoCo_(chu, chuId, loai, co), () => ['PATCH', `/ho-so/${chu}/${e_(chuId)}/${loaiHs_(loai)}`, co]);
   }
@@ -956,6 +953,12 @@ export class Store {
         if (!(p.soTienChi > 0)) e.push('Số tiền Chi phải > 0');
         if (!p.loaiChiPhi) e.push('Chưa chọn Loại chi phí (nhóm Vận hành)');
         if (p.loai === 'Tạm ứng' && !p.nguoiNhan?.trim()) e.push('Chưa nhập Người nhận tạm ứng');
+        if (p.loai === 'Chi' && p.loaiChiPhi === LCP_HOA_HONG) {
+          const h = p.hdbId ? this.hdbById(p.hdbId) : undefined;
+          if (!h) e.push('Hoa hồng cần chọn HĐ bán');
+          else if (h.trangThai === TT.BAO_GIA) e.push('HĐ đang ở Báo giá — chỉ chi hoa hồng cho HĐ từ Hiệu lực trở đi');
+          if (!p.nguoiNhan?.trim()) e.push('Hoa hồng cần Người nhận');
+        }
         break;
       case 'Quyết toán tạm ứng':
         if (!p.phieuTamUngGoc) e.push('Chưa chọn phiếu Tạm ứng gốc');
@@ -999,7 +1002,9 @@ export class Store {
     if (clean.loai === 'Quyết toán tạm ứng') clean.soTienChi = 0;
     if (clean.loai !== 'Luân chuyển') clean.nguonTienDen = undefined;
     if (clean.loai === 'Thu' || clean.loai === 'Luân chuyển') clean.loaiChiPhi = undefined;
-    if (clean.loai !== 'Tạm ứng' && clean.loai !== 'Quyết toán tạm ứng') clean.nguoiNhan = undefined;
+    const hoaHong = clean.loai === 'Chi' && clean.loaiChiPhi === LCP_HOA_HONG;
+    if (clean.loai !== 'Tạm ứng' && clean.loai !== 'Quyết toán tạm ứng' && !hoaHong) clean.nguoiNhan = undefined;
+    if (!hoaHong) clean.hdbId = undefined;
     if (clean.loai !== 'Quyết toán tạm ứng') {
       clean.phieuTamUngGoc = undefined;
       clean.soTienThucChi = undefined;
@@ -1152,6 +1157,7 @@ export class Store {
     const e = this.require('cpHD', 'edit', h?.sale);
     if (e) return e;
     if (!this.chiPhiSuaDuoc(c)) return 'Chi phí này không sửa được';
+    if (!c.id && c.loaiChiPhi === LCP_HOA_HONG) return 'Hoa hồng kinh doanh phải lập bằng Phiếu chi (Kế toán → Phiếu chi, loại chi phí Hoa hồng kinh doanh)';
     if (gui) {
       const loi = this.loiChiPhi(c);
       if (loi.length) return loi.join(' · ');
@@ -1809,17 +1815,6 @@ export class Store {
     const sau = hdbCalc(h, this.db()).sauVAT;
     const khac = h.dotTT.filter((x) => x.dot !== dot).reduce((s, x) => s + (x.soTienThu ?? 0), 0);
     return Math.max(0, sau - khac);
-  }
-
-  /** HDB-09: thêm nhanh tiền trả khách = 1 CP HĐ loại Hoa hồng, Chờ duyệt. */
-  private themTienTraKhach_(hdbId: string, o: { nguoiNhan: string; soTien: number; ngay: string; nguonTien: string }): Result {
-    const c: ChiPhiHD = {
-      ...this.newChiPhi(hdbId),
-      loaiChiPhi: LCP_HOA_HONG,
-      noiDung: `Hoa hồng kinh doanh — ${o.nguoiNhan}`,
-      ...o,
-    };
-    return this.saveChiPhi(c, true);
   }
 
   // ── Hồ sơ & hoá đơn (NT-12, HDB-05/06) ──
