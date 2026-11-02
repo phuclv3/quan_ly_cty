@@ -2,12 +2,21 @@
 -- sang Phiếu chi (Chờ duyệt) gắn HĐ bán, rồi xoá dòng chi phí cũ để không bị tính hai lần.
 -- Khoản Đã duyệt / Nháp / Từ chối giữ nguyên ở Chi phí HĐ.
 
-CREATE TEMPORARY TABLE tmp_hh_chuyen AS
+-- Bảng tạm khai báo collation tường minh: cột sinh từ biểu thức (CONCAT…) sẽ lấy collation mặc định của máy chủ
+-- (utf8mb4_0900_ai_ci) và lệch với các bảng của ứng dụng (utf8mb4_unicode_ci) → lỗi "Illegal mix of collations" khi JOIN.
+CREATE TEMPORARY TABLE tmp_hh_chuyen (
+  cp_id     VARCHAR(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  phieu_id  VARCHAR(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  khoa      VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  stt       INT NOT NULL
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
+
+INSERT INTO tmp_hh_chuyen (cp_id, phieu_id, khoa, stt)
 SELECT
-  c.id AS cp_id,
-  LEFT(CONCAT('PTC-', c.id), 40) AS phieu_id,
-  CONCAT('PC', DATE_FORMAT(c.ngay, '%y%m')) AS khoa,
-  ROW_NUMBER() OVER (PARTITION BY DATE_FORMAT(c.ngay, '%y%m') ORDER BY c.ngay, c.created_at, c.id) AS stt
+  c.id,
+  LEFT(CONCAT('PTC-', c.id), 40),
+  CONCAT('PC', DATE_FORMAT(c.ngay, '%y%m')),
+  ROW_NUMBER() OVER (PARTITION BY DATE_FORMAT(c.ngay, '%y%m') ORDER BY c.ngay, c.created_at, c.id)
 FROM kt_chi_phi_hd c
 WHERE c.loai_chi_phi = 'CPTH-HH' AND c.trang_thai = 'CHO_DUYET' AND c.hdb_id IS NOT NULL;
 
