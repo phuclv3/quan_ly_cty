@@ -43,21 +43,22 @@ class BaoCaoHdbServiceTest {
   void tinhGiaTriSoHdVaSoSanhCungKy() {
     Db d = db();
     var r = new BaoCaoHdbService().tao(d, d, new Loc(2026, null, null, "TAT_CA", "cungKy"), HOM_NAY);
-    assertEquals(300_000_000d, r.giaTri().hienTai());
+    // HĐ B thuộc Phú Tài không vào báo cáo.
+    assertEquals(100_000_000d, r.giaTri().hienTai());
     assertEquals(150_000_000d, r.giaTri().kyTruoc());
-    assertEquals(100.0, r.giaTri().pct());
-    assertEquals(2, r.soHd().hienTai());
+    assertEquals(-33.3, r.giaTri().pct(), 0.1);
+    assertEquals(1, r.soHd().hienTai());
     assertEquals(1, r.huy());
     assertEquals(100_000_000L, r.thangs().get(2).oxy());
-    assertEquals(200_000_000L, r.thangs().get(2).phuTai());
-    assertEquals("B", r.top().get(0).id());
+    assertEquals(0L, r.thangs().get(2).phuTai());
+    assertEquals("A", r.top().get(0).id());
   }
 
   @Test
-  void locPhapNhanVaKhongSoSanh() {
+  void khongTinhHdPhuTaiDuXinPhapNhanPhuTai() {
     Db d = db();
     var r = new BaoCaoHdbService().tao(d, d, new Loc(2026, null, null, "PHU_TAI", "khong"), HOM_NAY);
-    assertEquals(200_000_000d, r.giaTri().hienTai());
+    assertEquals(100_000_000d, r.giaTri().hienTai());
     assertEquals(1, r.soHd().hienTai());
     assertNull(r.giaTri().kyTruoc());
     assertNull(r.giaTri().pct());

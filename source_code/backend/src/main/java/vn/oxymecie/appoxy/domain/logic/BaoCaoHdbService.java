@@ -154,7 +154,8 @@ public class BaoCaoHdbService {
     if (thang != null && (thang < 1 || thang > 12)) throw ApiException.invalid("Tháng phải từ 1 đến 12");
     // Chọn tháng thì bỏ quý (tháng hẹp hơn).
     if (thang != null) quy = null;
-    String pn = "OXY".equals(in.phapNhan()) || "PHU_TAI".equals(in.phapNhan()) ? in.phapNhan() : "TAT_CA";
+    // Báo cáo chỉ gồm HĐ của OXY — HĐ thuộc Phú Tài xem ở màn Phú Tài, bất kể tham số phapNhan.
+    String pn = "OXY";
     return new Loc(nam, quy, thang, pn, "cungKy".equals(in.soSanh()) ? "cungKy" : "khong");
   }
 
