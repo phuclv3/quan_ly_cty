@@ -298,10 +298,11 @@ public class DuyetXoaService {
         Ctx.drop(d.getHopDongPhuTai(), HopDongPhuTai::getId, id);
       }
       case "PhieuKho" -> {
-        // KHO-08: phiếu chuyển "Đã huỷ", tồn tính lại; cập nhật trạng thái nhận của HĐ Mua.
+        // KHO-08: huỷ = xoá hẳn phiếu, tồn tính lại; cập nhật trạng thái nhận của HĐ Mua.
         PhieuKho p = c.phieuKho(id);
         if (p == null) return;
-        p.setTrangThai(TrangThai.DA_HUY);
+        Ctx.drop(d.getPhieuKho(), PhieuKho::getId, id);
+        c.luiBoDem(p.getSoPhieu(), d.getPhieuKho().stream().map(PhieuKho::getSoPhieu).toList());
         if ("Tự động HĐ Mua".equals(p.getNguonGoc()) && p.getHdId() != null) hdm.capNhatTrangThaiNhan(c, p.getHdId());
         if ("Xuất".equals(p.getLoai()) && p.getHdId() != null && c.hdb(p.getHdId()) != null) {
           HopDongBan h = c.hdb(p.getHdId());

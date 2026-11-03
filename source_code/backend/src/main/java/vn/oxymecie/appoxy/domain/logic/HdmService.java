@@ -251,10 +251,12 @@ public class HdmService {
     if (m == null || TrangThai.DA_TAT_TOAN.equals(m.getTrangThai()) || TrangThai.HUY.equals(m.getTrangThai()) || TrangThai.NHAP.equals(m.getTrangThai())) return;
     Calc.HdmCalc x = Calc.hdmCalc(m, c.db());
     String toi = x.slNhap() <= 0 ? TrangThai.DA_KY : x.slNhap() >= x.slMua() ? TrangThai.DA_NHAN_DU : TrangThai.DANG_NHAN_HANG;
+    // Ngày nhập kho = ngày phiếu nhập cuối cùng (phiếu làm đủ hàng), không phải ngày thao tác.
+    String ngayNhap = Calc.ngayNhapCuoi(c.db(), hdmId);
     for (ChecklistItem it : m.getChecklist()) {
       if (!Calc.CL_NHAP_KHO.equals(it.getTen())) continue;
       it.setXong(TrangThai.DA_NHAN_DU.equals(toi));
-      it.setNgay(TrangThai.DA_NHAN_DU.equals(toi) ? c.today() : null);
+      it.setNgay(TrangThai.DA_NHAN_DU.equals(toi) ? (ngayNhap != null ? ngayNhap : c.today()) : null);
     }
     m.setTrangThai(toi);
   }

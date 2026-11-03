@@ -282,6 +282,23 @@ public final class Ctx {
     return k + "-" + String.format("%04d", n);
   }
 
+  /** Xoá phiếu: bộ đếm lùi về số lớn nhất còn lại cùng tiền tố (chỉ lùi, không tăng) — số cuối bị xoá được dùng lại. */
+  public void luiBoDem(String soPhieu, List<String> conLai) {
+    int i = soPhieu == null ? -1 : soPhieu.lastIndexOf('-');
+    if (i < 0) return;
+    String k = soPhieu.substring(0, i);
+    int max = 0;
+    for (String s : conLai) {
+      if (s == null || !s.startsWith(k + "-")) continue;
+      try {
+        max = Math.max(max, Integer.parseInt(s.substring(k.length() + 1)));
+      } catch (NumberFormatException e) {
+        // số phiếu lạ (nhập tay / import) — bỏ qua
+      }
+    }
+    if (max < db.getBoDem().getOrDefault(k, 0)) db.getBoDem().put(k, max);
+  }
+
   /** Số phiếu thu chi: {tiền tố}{yyMM}-{nnn}, đánh số lại từ 001 mỗi tháng của ngày chứng từ. */
   public String nextSoThang(String prefix, String ngay) {
     String iso = ngay == null || ngay.isEmpty() ? today() : ngay;

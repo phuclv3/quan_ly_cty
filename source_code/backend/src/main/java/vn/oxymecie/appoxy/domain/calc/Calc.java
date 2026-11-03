@@ -295,6 +295,16 @@ public final class Calc {
   }
 
   /** SL đã nhập kho (phiếu nhập Hiệu lực) của một dòng HĐ Mua. */
+  /** Ngày phiếu nhập hiệu lực cuối cùng của HĐ mua (null nếu chưa có) — ngày checklist "Nhập kho". */
+  public static String ngayNhapCuoi(Db db, String hdmId) {
+    String max = null;
+    for (PhieuKho p : db.getPhieuKho()) {
+      if (!"Nhập".equals(p.getLoai()) || !Objects.equals(p.getHdId(), hdmId) || !TrangThai.HIEU_LUC.equals(p.getTrangThai()) || p.getNgay() == null) continue;
+      if (max == null || p.getNgay().compareTo(max) > 0) max = p.getNgay();
+    }
+    return max;
+  }
+
   public static double slDaNhap(String dongId, Db db) {
     double s = 0;
     for (PhieuKho p : db.getPhieuKho()) {

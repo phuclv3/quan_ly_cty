@@ -15,6 +15,7 @@ import vn.oxymecie.appoxy.common.Texts;
 import vn.oxymecie.appoxy.domain.calc.Calc;
 import vn.oxymecie.appoxy.domain.calc.Calc.DongLo;
 import vn.oxymecie.appoxy.domain.model.BinhKhi;
+import vn.oxymecie.appoxy.domain.model.ChecklistItem;
 import vn.oxymecie.appoxy.domain.model.DongKiemKe;
 import vn.oxymecie.appoxy.domain.model.DongPhieuKho;
 import vn.oxymecie.appoxy.domain.model.HopDongBan;
@@ -310,6 +311,15 @@ public class KhoService {
     }
     p.setNgay(ngay);
     p.setGhiChu(ghiChu);
+    // Phiếu nhập tự động từ HĐ mua: ngày checklist "Nhập kho" (đã tích) theo ngày phiếu nhập cuối cùng.
+    if ("Nhập".equals(p.getLoai()) && "Tự động HĐ Mua".equals(p.getNguonGoc()) && p.getHdId() != null) {
+      HopDongMua m = c.hdm(p.getHdId());
+      if (m != null) {
+        String ngayNhap = Calc.ngayNhapCuoi(c.db(), m.getId());
+        for (ChecklistItem it : m.getChecklist())
+          if (Calc.CL_NHAP_KHO.equals(it.getTen()) && it.isXong()) it.setNgay(ngayNhap);
+      }
+    }
   }
 
   /**
