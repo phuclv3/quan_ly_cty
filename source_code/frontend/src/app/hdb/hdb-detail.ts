@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, linkedSignal, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, linkedSignal, signal, untracked } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { map } from 'rxjs';
@@ -338,11 +338,15 @@ export class HdbDetail {
     return this.store.hdbVisible().some((h) => h.id === id);
   });
 
-  /** Bản nháp Tab 1 + Tab 3. Trạng thái / thực thu luôn lấy theo bản đã lưu. */
+  /**
+   * Bản nháp Tab 1 + Tab 3. Trạng thái / thực thu luôn lấy theo bản đã lưu.
+   * HĐ mới (wizard): giữ bản nháp đang nhập kể cả khi đã có id nháp (lưu ở bước Tiếp); hdbMoi() chạy untracked vì
+   * nó đọc Store và linkedSignal theo dõi mọi signal đọc trong computation.
+   */
   protected readonly f = linkedSignal<HopDongBan | null, HopDongBan>({
     source: this.saved,
     computation: (s, prev) => {
-      if (!s) return prev && !prev.value.id ? prev.value : this.hdbMoi();
+      if (!s) return prev && !prev.source ? prev.value : untracked(() => this.hdbMoi());
       if (prev && prev.value.id === s.id && vanTay(prev.value) !== vanTay(prev.source)) return ghepNhap(prev.value, s);
       return structuredClone(s);
     },

@@ -754,10 +754,15 @@ export class HdmDetail {
   protected readonly loaiHS = LOAI_HO_SO;
   /** Bản đã lưu (tham chiếu ổn định tới khi Store ghi bản ghi này). */
   protected readonly saved = computed(() => (this.isNew() ? undefined : this.store.hdmVisible().find((x) => x.id === this.id())));
-  /** Bản nháp đang sửa — tự nạp lại khi bản đã lưu thay đổi. */
+  /**
+   * Bản nháp đang sửa — tự nạp lại khi bản đã lưu thay đổi.
+   * HĐ mới: giữ nguyên bản nháp đang nhập; blank() chạy untracked — nó đọc Store (HĐ bán, đề nghị vật tư) và
+   * linkedSignal theo dõi mọi signal đọc trong computation, nên mỗi lần Store đổi (lưu nháp ở bước Tiếp, máy chủ
+   * trả kết quả) bản nháp sẽ bị dựng lại trống.
+   */
   protected readonly f = linkedSignal<HopDongMua | undefined, HopDongMua>({
     source: this.saved,
-    computation: (s) => (s ? structuredClone(s) : this.blank()),
+    computation: (s, prev) => (s ? structuredClone(s) : prev && !prev.source ? prev.value : untracked(() => this.blank())),
   });
   private readonly goc = computed(() => JSON.stringify(this.saved() ?? null));
   protected readonly dirty = computed(() => !this.isNew() && JSON.stringify(this.f()) !== this.goc());
