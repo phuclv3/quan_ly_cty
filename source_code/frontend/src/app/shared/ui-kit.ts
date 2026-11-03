@@ -181,11 +181,19 @@ export class MoneyInput {
   readonly disabled = input(false);
   readonly placeholder = input('');
   readonly inputId = input('');
+  /** Hiện "0" thay vì để trống khi giá trị bằng 0. */
+  readonly showZero = input(false);
   /** Cho phép số thập phân (đơn giá ngoại tệ, tỷ giá). */
   readonly decimals = input(0);
   protected readonly focused = signal(false);
   protected readonly text = computed(() =>
-    this.decimals() > 0 ? (this.value() ? this.value().toLocaleString('vi-VN', { maximumFractionDigits: this.decimals() }) : '') : this.value() ? money(this.value()) : '',
+    this.decimals() > 0
+      ? this.value() || this.showZero()
+        ? this.value().toLocaleString('vi-VN', { maximumFractionDigits: this.decimals() })
+        : ''
+      : this.value() || this.showZero()
+        ? money(this.value())
+        : '',
   );
   protected live(raw: string): void {
     const n = parseMoney(raw);

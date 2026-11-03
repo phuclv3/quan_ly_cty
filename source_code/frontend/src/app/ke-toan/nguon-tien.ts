@@ -89,7 +89,11 @@ interface NhomCT {
     @if (f(); as n) {
       <app-modal #mNguon [open]="true" [title]="isNew() ? 'Thêm nguồn tiền' : 'Sửa nguồn tiền ' + n.id" size="md" [dirty]="dirty()" (closed)="f.set(null)">
         @if (err()) { <div class="note bad">{{ err() }}</div> }
-        @if (khoa()) { <div class="note info">Nguồn đã có phiếu Đã duyệt — khoá Số dư đầu kỳ và Ngày đầu kỳ.</div> }
+        @if (!isNew()) {
+          @if (store.soDu(n.id); as s) {
+            <div class="note info"><span><b>Số dư hiện tại: {{ vnd(s.soDu) }}</b> · Đầu kỳ {{ money(s.dauKy) }} + Thu {{ money(s.thu + s.qtThu) }} − Chi {{ money(s.chi + s.qtChi) }}</span></div>
+          }
+        }
         <div class="form-grid blk xanh">
 <h3 class="blk-t">Thông tin nguồn tiền</h3>
           <div class="field"><label for="nt-id">Mã nguồn <span class="req">*</span></label><input id="nt-id" [disabled]="!isNew()" [value]="n.id" (input)="set('id', $any($event.target).value.trim())" /></div>
@@ -113,8 +117,8 @@ interface NhomCT {
             <div class="field"><label for="nt-stk">Số tài khoản</label><input id="nt-stk" [value]="n.soTaiKhoan || ''" (input)="set('soTaiKhoan', $any($event.target).value)" /></div>
             <div class="field"><label for="nt-nh">Ngân hàng</label><input id="nt-nh" [value]="n.nganHang || ''" (input)="set('nganHang', $any($event.target).value)" /></div>
           }
-          <div class="field"><label>Số dư đầu kỳ (VNĐ)</label><app-money [disabled]="khoa()" [value]="n.soDuDauKy" (valueChange)="set('soDuDauKy', $event)" /></div>
-          <div class="field"><label for="nt-ngay">Ngày đầu kỳ</label><input id="nt-ngay" type="date" [disabled]="khoa()" [value]="n.ngayDauKy" (input)="set('ngayDauKy', $any($event.target).value)" /></div>
+          <div class="field"><label>Số dư đầu kỳ (VNĐ)</label><app-money [showZero]="true" [value]="n.soDuDauKy" (valueChange)="set('soDuDauKy', $event)" /></div>
+          <div class="field"><label for="nt-ngay">Ngày đầu kỳ</label><input id="nt-ngay" type="date" [value]="n.ngayDauKy" (input)="set('ngayDauKy', $any($event.target).value)" /></div>
           <div class="field">
             <label for="nt-tt">Trạng thái</label>
             <select id="nt-tt" (change)="set('trangThai', $any($event.target).value)">
