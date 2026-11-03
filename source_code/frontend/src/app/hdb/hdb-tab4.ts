@@ -7,6 +7,7 @@ import { hdbBuocLoiNhuan, hdbCalc } from '../core/calc';
 import { money, moneyInWords, sum, todayIso, viDate } from '../core/util';
 import { BuocTable, Modal, TrangThai } from '../shared/ui-kit';
 import { Icon } from '../shared/icon';
+import { inQuyetToanVanChuyen } from '../ke-toan/kt-print';
 
 /** HDB-11 — Tab 4 Chi phí thực hiện & Lợi nhuận gộp tạm tính; Quyết toán vận chuyển (KT-16). */
 @Component({
@@ -14,8 +15,7 @@ import { Icon } from '../shared/icon';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterLink, BuocTable, Modal, TrangThai, Icon],
   styles: [
-    `@media print { :host-context(body.in-qt) > :not(app-modal) { display: none !important; } }
-     .ky { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; text-align: center; margin-top: 28px; }
+    `.ky { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; text-align: center; margin-top: 28px; }
      .ky span { display: block; margin-top: 64px; color: var(--ink-3); font-size: 14px; }`,
   ],
   template: `
@@ -121,15 +121,8 @@ export class HdbTab4 {
   );
   protected readonly tongVC = computed(() => sum(this.vanChuyen().filter((x) => x.trangThai === TT.DA_DUYET), (x) => x.soTien));
 
-  /** In riêng khối quyết toán: ẩn phần còn lại của trang khi in. */
+  /** In quyết toán A4 — cùng kiểu mẫu in phiếu thu / chi (Kế toán). */
   protected inQT(): void {
-    const b = document.body;
-    b.classList.add('in-qt');
-    const xong = () => {
-      b.classList.remove('in-qt');
-      window.removeEventListener('afterprint', xong);
-    };
-    window.addEventListener('afterprint', xong);
-    window.print();
+    inQuyetToanVanChuyen(this.h(), this.store);
   }
 }

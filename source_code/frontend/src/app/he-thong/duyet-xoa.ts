@@ -330,7 +330,7 @@ export class DuyetXoaPage {
       title: `Duyệt xoá ${this.store.nhanDoiTuong(y.loai).toLowerCase()} "${y.moTa}"?`,
       message:
         y.loai === 'PhieuKho'
-          ? 'Phiếu kho chuyển "Đã huỷ" và tồn kho được tính lại ngay; SL đã nhập / lần giao của HĐ liên quan cập nhật theo.'
+          ? 'Phiếu kho bị xoá hẳn và tồn kho được tính lại ngay; SL đã nhập / lần giao của HĐ liên quan cập nhật theo.'
           : 'Bản ghi bị xoá hẳn, không khôi phục được. Số dư nguồn tiền, tồn kho, công nợ liên quan được tính lại ngay theo dữ liệu còn lại.',
       warn: [`Lý do người gửi: ${y.lyDo}`, ...ah].join(' · '),
       ok: 'Duyệt xoá',

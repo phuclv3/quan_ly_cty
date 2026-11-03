@@ -85,7 +85,7 @@ const quyenSua = (p: PhieuKho): Perm =>
       <app-pager [pager]="pg" />
       <div class="note info">
         Phiếu nhập: mỗi dòng là một LÔ có mã lô + đơn giá riêng. Phiếu xuất: mỗi dòng trừ đúng một lô, giá vốn = đơn giá lô.
-        Phiếu không sửa số lượng — chỉ sửa Ngày, Ghi chú; huỷ phiếu qua duyệt xoá, duyệt xong phiếu chuyển "Đã huỷ" và tồn tính lại.
+        Phiếu không sửa số lượng — chỉ sửa Ngày, Ghi chú; huỷ phiếu qua duyệt xoá, duyệt xong phiếu bị xoá hẳn và tồn tính lại.
         Phiếu nhập có lô đã xuất phải huỷ phiếu xuất trước.
         Phiếu có Vị trí kho "Chuyển thẳng — không qua kho" chỉ lưu để truy vết theo HĐ, không cộng/trừ tồn (KHO-07).
       </div>
@@ -215,7 +215,7 @@ const quyenSua = (p: PhieuKho): Perm =>
       }
       <div foot class="btn-row">
         @if (sel(); as p) {
-          @if (huyDuoc(p)) { <button type="button" class="btn danger quiet" (click)="huy(p)">Huỷ phiếu</button> }
+          @if (huyDuoc(p)) { <button type="button" class="btn danger quiet" (click)="huy(p)">{{ p.trangThai === TT.DA_HUY ? 'Xoá phiếu' : 'Huỷ phiếu' }}</button> }
           <button type="button" class="btn quiet" (click)="inPhieu(p)">In phiếu</button>
           @if (suaDuoc(p)) { <button type="button" class="btn" (click)="luu(p)">Lưu Ngày / Ghi chú</button> }
         }
@@ -332,7 +332,8 @@ export class PhieuKhoTab {
     return p.trangThai === TT.HIEU_LUC && !this.choXoa(p) && this.store.canEdit(quyenSua(p));
   }
   protected huyDuoc(p: PhieuKho): boolean {
-    return p.trangThai === TT.HIEU_LUC && !this.choXoa(p) && this.store.level('duyetXoa') !== 'none' && this.store.canEdit(quyenSua(p));
+    // Phiếu "Đã huỷ" (dữ liệu trước khi huỷ = xoá) cũng gửi xoá được để dọn đi.
+    return !this.choXoa(p) && this.store.level('duyetXoa') !== 'none' && this.store.canEdit(quyenSua(p));
   }
   protected vatPhieu(p: PhieuKho): number {
     return sum(p.dong, (d) => Math.round(((d.donGia ?? 0) * d.soLuong * (d.vat ?? 0)) / 100));

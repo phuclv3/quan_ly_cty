@@ -548,6 +548,16 @@ export class Store {
     return `${k}-${String(n).padStart(4, '0')}`;
   }
 
+  /** Xoá phiếu: bộ đếm lùi về số lớn nhất còn lại cùng tiền tố (chỉ lùi, không tăng) — số cuối bị xoá được dùng lại. */
+  private luiBoDem(soPhieu: string, conLai: string[]): void {
+    const i = soPhieu.lastIndexOf('-');
+    if (i < 0) return;
+    const k = soPhieu.slice(0, i);
+    const max = Math.max(0, ...conLai.filter((s) => s.startsWith(k + '-')).map((s) => Number(s.slice(k.length + 1)) || 0));
+    const hien = this.db().boDem[k] ?? 0;
+    if (max < hien) this.db.update((d) => ({ ...d, boDem: { ...d.boDem, [k]: max } }));
+  }
+
   /** Số phiếu thu chi: {tiền tố}{yyMM}-{nnn}, đánh số lại từ 001 mỗi tháng của ngày chứng từ. */
   /** Tiền tố số phiếu theo loại: Thu → PT, Chi / Tạm ứng → PC, Quyết toán tạm ứng → PQ, Luân chuyển → PL (khớp backend). */
   private tienToPhieu(loai: PhieuThuChi['loai']): string {
@@ -2061,14 +2071,23 @@ export class Store {
     return null;
   }
 
+  /** Ngày phiếu nhập hiệu lực cuối cùng của HĐ mua — ngày checklist "Nhập kho". */
+  private ngayNhapCuoi(hdmId: string): string | undefined {
+    return this.db()
+      .phieuKho.filter((p) => p.loai === 'Nhập' && p.hdId === hdmId && p.trangThai === TT.HIEU_LUC && p.ngay)
+      .reduce<string | undefined>((max, p) => (!max || p.ngay > max ? p.ngay : max), undefined);
+  }
+
   /** Đang nhận hàng / Đã nhận đủ tự chuyển theo phiếu nhập (HDM-03). */
   private capNhatTrangThaiNhan(hdmId: string): void {
     const m = this.hdmById(hdmId);
     if (!m || m.trangThai === TT.DA_TAT_TOAN || m.trangThai === TT.HUY || m.trangThai === TT.NHAP) return;
     const c = hdmCalc(m, this.db());
     const toi: TrangThaiHDM = c.slNhap <= 0 ? TT.DA_KY : c.slNhap >= c.slMua ? TT.DA_NHAN_DU : TT.DANG_NHAN_HANG;
+    // Ngày nhập kho = ngày phiếu nhập cuối cùng (phiếu làm đủ hàng), không phải ngày thao tác.
+    const ngayNhap = this.ngayNhapCuoi(hdmId);
     const checklist = m.checklist.map((x) =>
-      x.ten === CL_NHAP_KHO ? { ...x, xong: toi === TT.DA_NHAN_DU, ngay: toi === TT.DA_NHAN_DU ? todayIso() : undefined } : x,
+      x.ten === CL_NHAP_KHO ? { ...x, xong: toi === TT.DA_NHAN_DU, ngay: toi === TT.DA_NHAN_DU ? (ngayNhap ?? todayIso()) : undefined } : x,
     );
     this.upsert('hopDongMua', { ...m, trangThai: toi, checklist });
   }
@@ -2291,6 +2310,12 @@ export class Store {
       }
     }
     this.upsert('phieuKho', { ...p, ...o });
+    // Phiếu nhập tự động từ HĐ mua: ngày checklist "Nhập kho" (đã tích) theo ngày phiếu nhập cuối cùng.
+    const m = p.loai === 'Nhập' && p.nguonGoc === 'Tự động HĐ Mua' && p.hdId ? this.hdmById(p.hdId) : undefined;
+    if (m) {
+      const ngayNhap = this.ngayNhapCuoi(m.id);
+      this.upsert('hopDongMua', { ...m, checklist: m.checklist.map((x) => (x.ten === CL_NHAP_KHO && x.xong ? { ...x, ngay: ngayNhap } : x)) });
+    }
     return null;
   }
 
@@ -2622,7 +2647,7 @@ export class Store {
       case 'PhieuKho': {
         const p = d.phieuKho.find((x) => x.id === id);
         if (!p) return [];
-        const out = ['Phiếu chuyển "Đã huỷ", tồn kho tính lại'];
+        const out = ['Phiếu bị xoá hẳn, tồn kho tính lại; phiếu là số cuối thì số phiếu được dùng lại'];
         if (p.nguonGoc === 'Tự động HĐ Mua') out.push('Trạng thái nhận hàng của HĐ mua tính lại');
         if (p.nguonGoc === 'Tự động HĐ Bán') out.push('HĐ bán không còn lần giao nào thì về lại "Hiệu lực"');
         return out;
@@ -2812,9 +2837,10 @@ export class Store {
         this.patch('dongTienPT', (r) => r.filter((x) => x.hdptId !== id));
         return this.drop('hopDongPhuTai', id);
       case 'PhieuKho': {
-        // KHO-08: phiếu chuyển "Đã huỷ", tồn tính lại; cập nhật trạng thái nhận của HĐ Mua.
+        // KHO-08: huỷ = xoá hẳn phiếu, tồn tính lại; cập nhật trạng thái nhận của HĐ Mua.
         const p = this.db().phieuKho.find((x) => x.id === id);
-        this.patch('phieuKho', (r) => r.map((x) => (x.id === id ? { ...x, trangThai: TT.DA_HUY } : x)));
+        this.drop('phieuKho', id);
+        if (p) this.luiBoDem(p.soPhieu, this.db().phieuKho.map((x) => x.soPhieu));
         if (p?.nguonGoc === 'Tự động HĐ Mua' && p.hdId) this.capNhatTrangThaiNhan(p.hdId);
         // HĐ bán không còn lần giao nào → về lại "Hiệu lực".
         if (p?.loai === 'Xuất' && p.hdId && this.hdbById(p.hdId)) {

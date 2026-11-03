@@ -5,10 +5,10 @@
 
 import { CONG_TY } from '../core/cong-ty';
 import { chenhLechQuyetToan } from '../core/calc';
-import { PhieuThuChi } from '../core/models';
+import { HopDongBan, LCP_VAN_CHUYEN, PhieuThuChi } from '../core/models';
 import { Store } from '../core/store';
-import { money, moneyInWords } from '../core/util';
-import { ttNhan } from '../core/trang-thai';
+import { money, moneyInWords, sum, todayIso, viDate } from '../core/util';
+import { TT, ttNhan } from '../core/trang-thai';
 
 export function esc(s: string | number | null | undefined): string {
   return String(s ?? '')
@@ -137,4 +137,54 @@ export function inPhieuThuChi(p: PhieuThuChi, store: Store): void {
     </div>
   `;
   if (!inGiay(`${tieuDe} ${p.soPhieu}`, body, 'A5')) store.say('Trình duyệt chặn cửa sổ in — hãy cho phép cửa sổ bật lên');
+}
+
+/** In Bảng quyết toán chi phí vận chuyển A4 theo HĐ bán (KT-16) — cùng kiểu mẫu với phiếu thu / chi. Bỏ chi phí Nháp / Từ chối. */
+export function inQuyetToanVanChuyen(h: HopDongBan, store: Store): void {
+  const ds = store
+    .chiPhiHD()
+    .filter((c) => c.hdbId === h.id && c.loaiChiPhi === LCP_VAN_CHUYEN && c.trangThai !== TT.NHAP && c.trangThai !== TT.TU_CHOI)
+    .sort((a, b) => (a.ngay < b.ngay ? -1 : 1));
+  const duyet = sum(ds.filter((c) => c.trangThai === TT.DA_DUYET), (c) => c.soTien);
+  const cho = sum(ds.filter((c) => c.trangThai === TT.CHO_DUYET), (c) => c.soTien);
+  const rows = ds
+    .map(
+      (c, i) =>
+        `<tr><td class="c">${i + 1}</td><td class="c">${viDate(c.ngay)}</td><td>${esc(c.noiDung)}</td><td>${esc(c.donViVanChuyen || '')}</td><td class="r">${money(c.soTien)}</td><td>${esc(store.nguonTen(c.nguonTien))}</td><td>${esc(ttNhan(c.trangThai))}</td></tr>`,
+    )
+    .join('');
+  const d = todayIso().split('-');
+  const ten = store.me()?.hoTen ?? '';
+  const ky = ['Giám đốc', 'Kế toán trưởng', 'Người lập'];
+  const kyHtml = `<table class="ky"><tr>${ky
+    .map(
+      (c, i) =>
+        `<td><b>${c}</b><br><i>${i === 0 ? '(Ký, họ tên, đóng dấu)' : '(Ký, họ tên)'}</i>${
+          i === 2 && ten ? `<div style="margin-top:48px"><b>${esc(ten)}</b></div>` : ''
+        }</td>`,
+    )
+    .join('')}</tr></table>`;
+  const body = `
+    <style>${CSS_MAU_TT}</style>
+    <div class="mau-head">
+      <div><b>${esc(CONG_TY.ten)}</b><br><i style="font-size:10.5pt">${esc(CONG_TY.diaChi)}</i></div>
+    </div>
+    <div class="mau-tt">
+      <h1>BẢNG QUYẾT TOÁN CHI PHÍ VẬN CHUYỂN</h1>
+      <div>Ngày ${d[2]} tháng ${d[1]} năm ${d[0]}</div>
+    </div>
+    <div class="mau-dong">Hợp đồng bán số: <span class="v"><b>${esc(h.soHD)}</b></span></div>
+    <div class="mau-dong">Khách hàng: <span class="v">${esc(h.tenKH)}</span></div>
+    <table class="l">
+      <thead><tr><th>STT</th><th>Ngày</th><th>Nội dung</th><th>Đơn vị vận chuyển</th><th>Số tiền (đ)</th><th>Nguồn tiền</th><th>Trạng thái</th></tr></thead>
+      <tbody>${rows || '<tr><td colspan="7" class="c">Không có chi phí vận chuyển</td></tr>'}</tbody>
+      <tfoot>
+        <tr><th colspan="4" class="r">Tổng đã duyệt</th><th class="r">${money(duyet)}</th><th colspan="2"></th></tr>
+        ${cho ? `<tr><th colspan="4" class="r">Tổng chờ duyệt</th><th class="r">${money(cho)}</th><th colspan="2"></th></tr>` : ''}
+      </tfoot>
+    </table>
+    <div class="mau-dong">Số tiền quyết toán: <b>${money(duyet)} đ</b> — (Viết bằng chữ): <i>${esc(moneyInWords(duyet))}</i></div>
+    ${kyHtml}
+  `;
+  if (!inGiay(`Quyết toán vận chuyển ${h.soHD}`, body, 'A4')) store.say('Trình duyệt chặn cửa sổ in — hãy cho phép cửa sổ bật lên');
 }

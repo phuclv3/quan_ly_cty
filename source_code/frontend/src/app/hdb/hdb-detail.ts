@@ -4,9 +4,10 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { map } from 'rxjs';
 import { Store } from '../core/store';
 import { TT, ttNhan } from '../core/trang-thai';
-import { HopDongBan, TRANG_THAI_HDB, TrangThaiHDB } from '../core/models';
-import { dnvtTinhTrang, hdbCalc, hdbConChuaGiao, hdbThieuDeChuyen, hdmCalc, hdmChoHdb } from '../core/calc';
-import { money, pct } from '../core/util';
+import { HopDongBan, HopDongMua, PhieuKho, TRANG_THAI_HDB, TrangThaiHDB } from '../core/models';
+import { dnvtTinhTrang, dongMuaChoHdb, hdbCalc, hdbConChuaGiao, hdbThieuDeChuyen, hdmCalc, hdmChoHdb, maLo } from '../core/calc';
+import { money, pct, viDate } from '../core/util';
+import { linkPhieuKho } from '../kho/kho-util';
 import { Confirm } from '../shared/confirm';
 import { HoSoPanel, guiXoa } from '../shared/ho-so';
 import { TrangThai } from '../shared/ui-kit';
@@ -251,6 +252,44 @@ const TABS = [
               </table>
             </div>
           </section>
+          <section class="card">
+            <div class="section-title">
+              <h2>Nhập – xuất kho theo HĐ</h2>
+              <span class="sub">HĐ mua → Phiếu nhập (lô) → Phiếu xuất giao HĐ bán này. Nối theo mã lô.</span>
+            </div>
+            <div class="tbl-wrap">
+              <table class="tbl compact">
+                <thead><tr><th>Mã hàng</th><th>Lô</th><th>HĐ mua</th><th>Phiếu nhập</th><th class="num">SL nhập</th><th>Phiếu xuất</th><th class="num">SL xuất</th><th class="num">Còn lại lô</th></tr></thead>
+                <tbody>
+                  @for (r of nhapXuat(); track r.lo) {
+                    <tr>
+                      <td><b>{{ r.loaiHang }}</b></td>
+                      <td class="sub">{{ r.lo }}</td>
+                      <td>@if (r.hdm) { <a [routerLink]="['/hop-dong-mua', r.hdm.id]">{{ r.hdm.soHD }}</a> } @else { <span class="muted" title="Lô có sẵn trong kho, không nhập từ HĐ mua của HĐ này">Tồn sẵn</span> }</td>
+                      <td>
+                        @if (r.nhap) {
+                          @if (xemKho()) { <a routerLink="/kho" [queryParams]="linkPK(r.nhap)">{{ r.nhap.soPhieu }}</a> } @else { {{ r.nhap.soPhieu }} }
+                          <span class="sub">{{ viDate(r.nhap.ngay) }}</span>
+                        } @else { — }
+                      </td>
+                      <td class="num">{{ r.slNhap ? r.slNhap : '—' }}</td>
+                      <td>
+                        @for (x of r.xuat; track x.id) {
+                          @if (xemKho()) { <a routerLink="/kho" [queryParams]="linkPK(x)">{{ x.soPhieu }}</a> } @else { {{ x.soPhieu }} }
+                          <span class="sub">{{ viDate(x.ngay) }}</span>
+                        } @empty { <span class="tag warn">Chưa xuất</span> }
+                      </td>
+                      <td class="num">{{ r.slXuat || '—' }}</td>
+                      <td class="num">{{ r.nhap ? r.slNhap - r.slXuat : '—' }}</td>
+                    </tr>
+                  } @empty {
+                    <tr><td colspan="8" class="muted">Chưa có phiếu nhập từ HĐ mua liên quan và chưa có phiếu xuất cho HĐ này.</td></tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+            <p class="sub">Phiếu xuất lập ở Tab 1 (Ghi nhận giao hàng) hoặc Kho › Phiếu xuất chọn HĐ bán này. "Còn lại lô" = SL nhập − SL đã xuất cho HĐ này.</p>
+          </section>
           }
         }
       }
@@ -375,6 +414,38 @@ export class HdbDetail {
     const db = this.store.db();
     return id ? this.store.hopDongMua().filter((m) => hdmChoHdb(m, id)).map((m) => ({ m, c: hdmCalc(m, db) })) : [];
   });
+  /** Tab 5 — nối lô: dòng phiếu nhập của HĐ mua liên quan (đúng dòng dành cho HĐ này) ↔ dòng phiếu xuất HĐ bán này. */
+  protected readonly nhapXuat = computed(() => {
+    const id = this.saved()?.id;
+    if (!id) return [];
+    const pks = this.store.phieuKho().filter((p) => p.trangThai === TT.HIEU_LUC);
+    const dongMua = new Map<string, HopDongMua>();
+    for (const { m } of this.hdms()) for (const d of dongMuaChoHdb(m, id)) dongMua.set(d.id, m);
+    const rows = new Map<string, { lo: string; loaiHang: string; hdm?: HopDongMua; nhap?: PhieuKho; slNhap: number; xuat: PhieuKho[]; slXuat: number }>();
+    for (const p of pks.filter((x) => x.loai === 'Nhập'))
+      p.dong.forEach((d, i) => {
+        const m = d.dongHDMua ? dongMua.get(d.dongHDMua) : undefined;
+        if (!m) return;
+        const lo = maLo(p, i);
+        rows.set(lo, { lo, loaiHang: d.loaiHang, hdm: m, nhap: p, slNhap: d.soLuong, xuat: [], slXuat: 0 });
+      });
+    for (const p of pks.filter((x) => x.loai === 'Xuất' && x.hdId === id).sort((a, b) => (a.ngay < b.ngay ? -1 : 1)))
+      for (const d of p.dong) {
+        const lo = d.lo ?? `${p.soPhieu} (chưa gán lô)`;
+        let r = rows.get(lo);
+        if (!r) {
+          const goc = pks.find((x) => x.loai === 'Nhập' && x.dong.some((y, i) => maLo(x, i) === lo));
+          r = { lo, loaiHang: d.loaiHang, nhap: goc, slNhap: goc ? (goc.dong.find((y, i) => maLo(goc, i) === lo)?.soLuong ?? 0) : 0, xuat: [], slXuat: 0 };
+          rows.set(lo, r);
+        }
+        if (!r.xuat.includes(p)) r.xuat.push(p);
+        r.slXuat += d.soLuong;
+      }
+    return [...rows.values()].sort((a, b) => a.loaiHang.localeCompare(b.loaiHang) || a.lo.localeCompare(b.lo));
+  });
+  protected readonly xemKho = computed(() => this.store.canView('khoTon'));
+  protected readonly linkPK = linkPhieuKho;
+  protected readonly viDate = viDate;
   protected readonly viecHD = computed(() => {
     const id = this.saved()?.id;
     return id ? this.store.viecVisible().filter((v) => v.hdbId === id && !v.suCo).sort((a, b) => Number(!!a.xongLuc) - Number(!!b.xongLuc) || (a.han ?? '').localeCompare(b.han ?? '')) : [];

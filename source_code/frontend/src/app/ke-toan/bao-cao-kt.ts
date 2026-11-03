@@ -5,8 +5,8 @@ import { LCP_VAN_CHUYEN, PhieuThuChi } from '../core/models';
 import { tamUngTreo } from '../core/calc';
 import { daysFromToday, money, sum, todayIso, viDate } from '../core/util';
 import { MoneyInput, Pick, PickOption, TrangThai } from '../shared/ui-kit';
-import { donVi, esc, inGiay, kyTen } from './kt-print';
-import { TT, ttNhan } from '../core/trang-thai';
+import { TT } from '../core/trang-thai';
+import { inQuyetToanVanChuyen } from './kt-print';
 import { BaoCaoTongQuan } from './bao-cao-tong-quan';
 
 type Muc = 'tong-quan' | 'tam-ung' | 'so-du' | 'van-chuyen';
@@ -214,30 +214,9 @@ export class BaoCaoKtTab {
     if (h && this.muc() === 'van-chuyen') this.hdb.set(h);
   }
 
+  /** In quyết toán A4 — cùng kiểu mẫu in phiếu thu / chi. */
   protected inVC(): void {
     const h = this.hd();
-    if (!h) return;
-    const rows = this.vc()
-      .map(
-        (c, i) =>
-          `<tr><td class="c">${i + 1}</td><td>${viDate(c.ngay)}</td><td>${esc(c.noiDung)}</td><td>${esc(c.donViVanChuyen || '')}</td><td class="r">${money(c.soTien)}</td><td>${esc(this.store.nguonTen(c.nguonTien))}</td><td>${esc(ttNhan(c.trangThai))}</td></tr>`,
-      )
-      .join('');
-    const d = todayIso().split('-');
-    const body = `
-      <div class="head">${donVi()}<div class="r">Ngày ${d[2]} tháng ${d[1]} năm ${d[0]}</div></div>
-      <h1>BẢNG QUYẾT TOÁN CHI PHÍ VẬN CHUYỂN</h1>
-      <p class="c">Hợp đồng bán số <b>${esc(h.soHD)}</b> — Khách hàng: ${esc(h.tenKH)}</p>
-      <table class="l">
-        <thead><tr><th>STT</th><th>Ngày</th><th>Nội dung</th><th>Đơn vị vận chuyển</th><th>Số tiền (đ)</th><th>Nguồn tiền</th><th>Trạng thái</th></tr></thead>
-        <tbody>${rows || '<tr><td colspan="7" class="c">Không có chi phí vận chuyển</td></tr>'}</tbody>
-        <tfoot>
-          <tr><th colspan="4" class="r">Tổng đã duyệt</th><th class="r">${money(this.vcDuyet())}</th><th colspan="2"></th></tr>
-          <tr><th colspan="4" class="r">Tổng chờ duyệt</th><th class="r">${money(this.vcCho())}</th><th colspan="2"></th></tr>
-        </tfoot>
-      </table>
-      ${kyTen(['Người lập', 'Kế toán', 'Giám đốc'])}
-    `;
-    if (!inGiay(`Quyết toán vận chuyển ${h.soHD}`, body, 'A4')) this.store.say('Trình duyệt chặn cửa sổ in — hãy cho phép cửa sổ bật lên');
+    if (h) inQuyetToanVanChuyen(h, this.store);
   }
 }

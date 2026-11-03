@@ -184,11 +184,20 @@ interface ThuNhap {
           <tfoot>
             <tr><th>Tổng (trừ Từ chối)</th><td class="num">{{ money(c().tienTraKhach) }}</td><td colspan="4" class="sub">Đã duyệt: {{ money(c().tienTraKhachDuyet) }}</td></tr>
             <tr><th>Gợi ý tối đa</th><td class="num" title="Chênh lệch − Thuế TNDN">{{ money(c().traKhachToiDa) }}</td><td colspan="4" class="sub">= Chênh lệch − Thuế TNDN</td></tr>
+            <tr><th>Hoa hồng quyết toán theo phiếu</th><td class="num" title="Σ phiếu chi hoa hồng đã duyệt"><b>{{ money(c().tienTraKhachDuyet) }}</b></td><td colspan="4" class="sub">= Σ phiếu chi hoa hồng đã duyệt</td></tr>
+            <tr>
+              <th>Thuế TNDN thực giữ (quyết toán)</th>
+              <td class="num" [class.neg]="c().thueThucGiu < 0" title="Chênh lệch − Hoa hồng quyết toán">{{ money(c().thueThucGiu) }}</td>
+              <td colspan="4" class="sub">= Chênh lệch − HH quyết toán · tỷ lệ thực {{ pct(c().tyLeThueThuc) }} (công thức: {{ money(c().thue.thue) }}, lệch {{ money(c().thueThucGiu - c().thue.thue) }})</td>
+            </tr>
           </tfoot>
         </table>
       </div>
       @if (c().tienTraKhach > c().traKhachToiDa) {
         <p class="note warn">Tổng tiền trả khách vượt mức gợi ý tối đa {{ money(c().tienTraKhach - c().traKhachToiDa) }} đ.</p>
+      }
+      @if (c().tienTraKhachDuyet > 0 && c().thueThucGiu !== c().thue.thue) {
+        <p class="note">Quyết toán theo phiếu: thuế TNDN thực giữ {{ pct(c().tyLeThueThuc) }} chênh lệch ({{ money(c().thueThucGiu) }} đ), khác công thức {{ money(c().thueThucGiu - c().thue.thue) }} đ.</p>
       }
       @if (themHH()) {
         <div class="btn-row" style="margin-top:8px">

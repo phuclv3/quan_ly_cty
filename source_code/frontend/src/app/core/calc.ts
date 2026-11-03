@@ -117,6 +117,9 @@ export interface HdbCalc {
   tienTraKhachDuyet: number;
   /** Gợi ý tối đa tiền trả khách = Chênh lệch − Thuế TNDN. */
   traKhachToiDa: number;
+  /** Quyết toán theo phiếu: thuế TNDN thực giữ = Chênh lệch − Σ phiếu hoa hồng đã duyệt; tỷ lệ = phần giữ ÷ Chênh lệch. */
+  thueThucGiu: number;
+  tyLeThueThuc: number;
   cpDuyet: number;
   cpCho: number;
   giaVon: number;
@@ -170,6 +173,11 @@ export function hdbCalc(h: HopDongBan, db: Db): HdbCalc {
   const daXuatHD = sum(hoaDons, (x) => x.giaTri);
   const chuaQua = h.dotTT.filter((d) => dotBanDaThu(d, db) < d.soTien && d.han);
   chuaQua.sort((a, b) => (a.han! < b.han! ? -1 : 1));
+  const hhDuyet = sum(
+    hh.filter((c) => c.trangThai === TT.DA_DUYET),
+    (c) => c.soTien,
+  );
+  const thueThucGiu = chenhLech - hhDuyet;
   return {
     sauVAT: sau,
     chenhLech,
@@ -182,11 +190,10 @@ export function hdbCalc(h: HopDongBan, db: Db): HdbCalc {
     conPhaiThu: sau - phat - daThu,
     pctThu: sau - phat > 0 ? daThu / (sau - phat) : 0,
     tienTraKhach: sum(hh, (c) => c.soTien),
-    tienTraKhachDuyet: sum(
-      hh.filter((c) => c.trangThai === TT.DA_DUYET),
-      (c) => c.soTien,
-    ),
+    tienTraKhachDuyet: hhDuyet,
     traKhachToiDa: Math.max(0, chenhLech - thue.thue),
+    thueThucGiu,
+    tyLeThueThuc: chenhLech > 0 ? thueThucGiu / chenhLech : 0,
     cpDuyet,
     cpCho,
     giaVon,
