@@ -13,6 +13,7 @@ import { Confirm } from '../shared/confirm';
 import { guiXoa, guiXoaNhieu } from '../shared/ho-so';
 import { ChonNhieu } from '../shared/chon-nhieu';
 import { xuatExcel } from '../shared/export';
+import { KetQuaMST, TraMst } from '../shared/tra-mst';
 
 const BLANK: NhaCungCap = { id: '', ten: '', mst: '', diaChi: '', quocGia: 'Việt Nam', nguoiLienHe: '', dienThoai: '', email: '', ghiChu: '' };
 type F = Exclude<keyof NhaCungCap, 'id'>;
@@ -23,7 +24,7 @@ import { ImportDm } from '../shared/import-dm';
   selector: 'app-dm-ncc',
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `.bulk { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 12px; }`,
-  imports: [RouterLink, Modal, TrangThai, FilterBar, Pager, ImportDm],
+  imports: [RouterLink, Modal, TrangThai, FilterBar, Pager, ImportDm, TraMst],
   template: `
     <div class="between">
       <app-filter style="flex:1 1 auto;min-width:0" [(loc)]="loc" memo="dm-ncc" [time]="false" placeholder="Tìm mã, tên, MST, quốc gia, người liên hệ…" />
@@ -110,7 +111,7 @@ import { ImportDm } from '../shared/import-dm';
             </select>
             <span class="hint">Ngưng: không chọn được cho HĐ mới; HĐ cũ giữ nguyên.</span>
           </div>
-          <div class="field"><label for="ncc-mst">MST</label><input id="ncc-mst" [value]="d.mst" (input)="set('mst', $any($event.target).value)" /></div>
+          <div class="field"><label for="ncc-mst">MST</label><input id="ncc-mst" [value]="d.mst" (input)="set('mst', $any($event.target).value.trim())" /><app-tra-mst [mst]="d.mst" (ketQua)="dienMST($event)" /></div>
           <div class="field"><label for="ncc-qg">Quốc gia</label><input id="ncc-qg" [value]="d.quocGia" (input)="set('quocGia', $any($event.target).value)" /></div>
           <div class="field"><label for="ncc-lh">Người liên hệ</label><input id="ncc-lh" [value]="d.nguoiLienHe" (input)="set('nguoiLienHe', $any($event.target).value)" /></div>
           <div class="field"><label for="ncc-dt">Điện thoại</label><input id="ncc-dt" [value]="d.dienThoai" (input)="set('dienThoai', $any($event.target).value)" /></div>
@@ -193,6 +194,10 @@ export class DmNcc {
   }
   protected set(k: F, v: string): void {
     this.f.update((d) => (d ? { ...d, [k]: v } : d));
+    this.trung.set(null);
+  }
+  protected dienMST(r: KetQuaMST): void {
+    this.f.update((d) => (d ? { ...d, mst: r.mst, ten: r.ten, diaChi: r.diaChi || d.diaChi } : d));
     this.trung.set(null);
   }
   protected moCoSan(t: NhaCungCap): void {

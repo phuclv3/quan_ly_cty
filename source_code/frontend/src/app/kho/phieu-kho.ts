@@ -9,7 +9,8 @@ import { TT, ttNhan } from '../core/trang-thai';
 import { nhoLoc } from '../core/ui';
 import { money, sum, viDate, viMoment } from '../core/util';
 import { Confirm } from '../shared/confirm';
-import { xemPhieuKhoPdf, xuatExcel } from '../shared/export';
+import { xuatExcel } from '../shared/export';
+import { inPhieuKho } from './kho-print';
 import { Facet, FilterBar, LOC_RONG, Loc, khopQ, khopSel, khopThoiGian } from '../shared/filter-bar';
 import { guiXoa, guiXoaNhieu } from '../shared/ho-so';
 import { ChonNhieu } from '../shared/chon-nhieu';
@@ -379,18 +380,9 @@ export class PhieuKhoTab {
   protected async huy(p: PhieuKho): Promise<void> {
     await guiXoa(this.confirm, this.store, 'PhieuKho', p.id, `Phiếu ${p.soPhieu}`);
   }
-  /** Mở PDF do backend dựng ở tab mới (mở tab trước khi gọi API để trình duyệt không chặn cửa sổ bật lên). */
-  protected async inPhieu(p: PhieuKho): Promise<void> {
-    const w = window.open('', '_blank');
-    const { blob, loi } = await xemPhieuKhoPdf(p.id);
-    if (!blob) {
-      w?.close();
-      return this.store.say(loi, 'bad');
-    }
-    const url = URL.createObjectURL(blob);
-    if (w) w.location.href = url;
-    else this.store.say('Trình duyệt đang chặn cửa sổ bật lên — cho phép rồi bấm lại', 'bad');
-    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  /** In phiếu A4 theo Mẫu 01-VT / 02-VT, cùng cách in và kiểu chữ với phiếu Thu / Chi (Kế toán). */
+  protected inPhieu(p: PhieuKho): void {
+    inPhieuKho(p, this.store);
   }
 
   protected xuatExcel(): void {

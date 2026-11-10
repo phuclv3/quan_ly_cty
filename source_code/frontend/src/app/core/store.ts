@@ -85,6 +85,7 @@ import {
   hdbKhongGiaoHang,
   hdbThieuDeChuyen,
   hdmCalc,
+  ngayHieuLucHdm,
   hoSoThieu,
   ptCalc,
   slDaNhap,
@@ -1408,7 +1409,7 @@ export class Store {
     if (dong.length === 0) return 'Cần ít nhất 1 dòng hàng có số lượng > 0';
     const p: PhieuKho = {
       id: uid('PK'),
-      soPhieu: this.nextSo(this.cauHinh().TIEN_TO_XK, o.ngay),
+      soPhieu: this.nextSoThang(this.cauHinh().TIEN_TO_XK, o.ngay),
       ngay: o.ngay,
       loai: 'Xuất',
       nguonGoc: 'Tự động HĐ Bán',
@@ -1918,7 +1919,7 @@ export class Store {
     if (cu && this.hdmKhoa(cu)) return 'HĐ đã khoá';
     if (!canAll && cu) {
       // Kế toán chỉ sửa Tab 4.
-      m = { ...cu, dotTT: m.dotTT, xuatHoaDon: m.xuatHoaDon, checklist: m.checklist, nhapTay: m.nhapTay, tongNhapTay: m.tongNhapTay, lyDoNhapTay: m.lyDoNhapTay };
+      m = { ...cu, dotTT: m.dotTT, xuatHoaDon: m.xuatHoaDon, checklist: m.checklist, nhapTay: m.nhapTay, tongNhapTay: m.tongNhapTay, lyDoNhapTay: m.lyDoNhapTay, coTamUng: m.coTamUng };
     }
     if (!m.soHD.trim()) return 'Số HĐ mua là bắt buộc';
     if (this.db().hopDongMua.some((x) => x.id !== m.id && fold(x.soHD) === fold(m.soHD))) return `Số HĐ mua ${m.soHD} đã tồn tại`;
@@ -1993,6 +1994,7 @@ export class Store {
     if (toi === TT.DA_KY) {
       if (!m.soHD || !m.maNCC || !m.ngayKy) return 'Cần Số HĐ, NCC và Ngày ký';
       if (m.chiTiet.length === 0 && c.tong <= 0) return 'Cần ít nhất 1 dòng hàng hoặc tổng giá trị';
+      if (m.coTamUng && !ngayHieuLucHdm(m)) return 'HĐ có tạm ứng: chỉ Hiệu lực khi đã thanh toán Đợt 1';
     }
     if (toi === TT.DA_TAT_TOAN) {
       // F-13: HĐ Oxy có dòng hàng phải nhận đủ (HĐ import đã ở "Đã nhận đủ" không cần phiếu nhập).
@@ -2007,7 +2009,7 @@ export class Store {
       if (c.slNhap > 0 || c.daTra > 0) return 'Chỉ huỷ khi chưa có phiếu nhập và chưa trả tiền';
       if (m.dotTT.some((d) => this.dotMuaKhoa(d))) return 'Còn phiếu chi trả NCC đang chờ duyệt — từ chối hoặc xoá phiếu chi trước';
     }
-    this.upsert('hopDongMua', { ...m, trangThai: toi });
+    this.upsert('hopDongMua', { ...m, trangThai: toi, ngayHieuLuc: toi === TT.DA_KY ? ngayHieuLucHdm(m) : m.ngayHieuLuc });
     return null;
   }
 
@@ -2048,7 +2050,7 @@ export class Store {
       dong.push({ loaiHang: d.loaiHang, thuocTinh: d.thongSo, soLuong: x.soLuong, dongHDMua: d.id, donGia: Math.round(donGiaVND(d)), vat: o.vat, ghiChu: d.ghiChu });
     }
     if (dong.length === 0) return 'Chưa có dòng nào có SL thực nhập > 0';
-    const soPhieu = this.nextSo(this.cauHinh().TIEN_TO_NK, o.ngay);
+    const soPhieu = this.nextSoThang(this.cauHinh().TIEN_TO_NK, o.ngay);
     const daCo = this.loDaCo();
     dong.forEach((d, i) => (d.lo = this.maLoMoi(soPhieu, o.soHoaDon, i, daCo)));
     const p: PhieuKho = {
@@ -2168,7 +2170,7 @@ export class Store {
       if (vao.length === 0) return 'Cần ít nhất 1 dòng hàng có SL > 0';
       const thieuGia = vao.findIndex((d) => !(d.donGia > 0));
       if (thieuGia >= 0 && !o.choGia0) return `Dòng ${thieuGia + 1}: chưa có đơn giá — nhập kho phải có đơn giá của lô`;
-      soPhieu = this.nextSo(this.cauHinh().TIEN_TO_NK, p.ngay);
+      soPhieu = this.nextSoThang(this.cauHinh().TIEN_TO_NK, p.ngay);
       const daCo = this.loDaCo();
       dong = vao.map((d, i) => ({
         loaiHang: d.loaiHang,
@@ -2184,7 +2186,7 @@ export class Store {
       if (typeof r === 'string') return r;
       if (r.length === 0) return 'Cần ít nhất 1 dòng hàng có SL > 0';
       dong = r;
-      soPhieu = this.nextSo(this.cauHinh().TIEN_TO_XK, p.ngay);
+      soPhieu = this.nextSoThang(this.cauHinh().TIEN_TO_XK, p.ngay);
     }
     const out: PhieuKho = {
       id: uid('PK'),

@@ -97,7 +97,7 @@ export class HdmSuCo {
   protected readonly lyDoKhongSuCo = computed(() => {
     if (this.coTheBaoSuCo()) return null;
     if (this.khoa()) return 'HĐ đã khoá (Đã tất toán / đang chờ xoá)';
-    return 'Chỉ ghi nhận phát sinh khi HĐ mua đang ở trạng thái "Đã ký" hoặc "Đang nhận hàng"';
+    return 'Chỉ ghi nhận phát sinh khi HĐ mua đang ở trạng thái "Hiệu lực" hoặc "Đã nhận hàng"';
   });
   protected readonly suCos = computed(() =>
     this.store

@@ -48,7 +48,7 @@ const COT_BAN: CotMau[] = [
 const COT_MUA: CotMau[] = [
   { ten: 'Số HĐ', rong: 22, huongDan: 'Bắt buộc. Các dòng cùng Số HĐ gộp thành 1 HĐ (mỗi dòng 1 mặt hàng). Trùng Số HĐ đã có trong app → bỏ qua.' },
   { ten: 'Ngày ký', rong: 12, huongDan: 'dd/mm/yyyy.' },
-  { ten: 'Trạng thái', rong: 10, huongDan: '"Nháp" (mặc định) hoặc "Đã ký".' },
+  { ten: 'Trạng thái', rong: 10, huongDan: '"Nháp" (mặc định) hoặc "Hiệu lực" (hoặc "Đã ký").' },
   { ten: 'Mã NCC', rong: 10, huongDan: 'Tuỳ chọn. Tìm NCC theo Mã → MST → Tên. Không thấy → tạo NCC mới.' },
   { ten: 'Tên nhà cung cấp', rong: 34, huongDan: 'Bắt buộc nếu không có Mã NCC.' },
   { ten: 'MST', rong: 14, huongDan: 'Tuỳ chọn.' },
@@ -73,7 +73,7 @@ const VI_DU_BAN: (string | number)[][] = [
   ['260901/HĐKT/OMV-ABC', '', '', '', '', '', '', '', '', '', '', '', '', '', 'KC-NO-8L', 'Bình khí chuẩn NO 1000ppm', 1, 6800000, 5400000],
 ];
 const VI_DU_MUA: (string | number)[][] = [
-  ['HDM-2026-001', '05/09/2026', 'Đã ký', '', 'Nhà cung cấp Ví Dụ', '', '', 'Không', '260901/HĐKT/OMV-ABC', '50;50', '15/10/2026;15/11/2026', '', 'KC-NO-8L', 'Bình khí chuẩn NO 500ppm', 'NO 500ppm', 2, '', 5200000, 'VNĐ', ''],
+  ['HDM-2026-001', '05/09/2026', 'Hiệu lực', '', 'Nhà cung cấp Ví Dụ', '', '', 'Không', '260901/HĐKT/OMV-ABC', '50;50', '15/10/2026;15/11/2026', '', 'KC-NO-8L', 'Bình khí chuẩn NO 500ppm', 'NO 500ppm', 2, '', 5200000, 'VNĐ', ''],
   ['HDM-2026-001', '', '', '', '', '', '', '', '', '', '', '', '', 'Van điều áp CGA', 'Inox 316', 1, 'Cái', 120, 'USD', 25400],
 ];
 
@@ -258,8 +258,8 @@ export function docHdMua(rows: string[][], store: Store): KetQuaHd<HopDongMua>[]
     const ngayKy = parseNgay(o(r0, 'Ngày ký'));
     if (ngayKy === null) loi.push(`Ngày ký "${o(r0, 'Ngày ký')}" không hợp lệ`);
     const tt = fold(o(r0, 'Trạng thái'));
-    const trangThai = !tt || tt === fold(ttNhan(TT.NHAP)) || tt === fold(TT.NHAP) ? TT.NHAP : tt === fold(ttNhan(TT.DA_KY)) || tt === fold(TT.DA_KY) ? TT.DA_KY : null;
-    if (!trangThai) loi.push(`Trạng thái "${o(r0, 'Trạng thái')}" không hợp lệ (Nháp / Đã ký)`);
+    const trangThai = !tt || tt === fold(ttNhan(TT.NHAP)) || tt === fold(TT.NHAP) ? TT.NHAP : tt === fold(ttNhan(TT.DA_KY)) || tt === fold(TT.DA_KY) || tt === fold("Đã ký") ? TT.DA_KY : null;
+    if (!trangThai) loi.push(`Trạng thái "${o(r0, 'Trạng thái')}" không hợp lệ (Nháp / Hiệu lực)`);
     const soHDB = o(r0, 'Số HĐ bán liên quan');
     const hdb = soHDB ? db.hopDongBan.find((x) => fold(x.soHD) === fold(soHDB)) : undefined;
     if (soHDB && !hdb) loi.push(`Không thấy HĐ bán ${soHDB}`);

@@ -502,11 +502,17 @@ export function ngayMocMua(m: HopDongMua, moc: string): string | undefined {
   return x?.xong ? x.ngay : undefined;
 }
 
+/** Ngày hiệu lực HĐ mua: có tạm ứng → ngày thanh toán Đợt 1 (chưa trả = rỗng); không → Ngày ký. */
+export function ngayHieuLucHdm(m: Pick<HopDongMua, 'coTamUng' | 'ngayKy' | 'dotTT'>): string | undefined {
+  return m.coTamUng ? m.dotTT.find((d) => d.dot === 1)?.ngayTra || undefined : m.ngayKy || undefined;
+}
+
 /** Đợt TT NCC: đợt theo % tính lại Số tiền theo tổng HĐ; đợt theo mốc tính Hạn = ngày mốc + N ngày. */
 export function apDungTuDongHdm(m: HopDongMua): HopDongMua {
   const tong = hdmTongSauVAT(m);
   return {
     ...m,
+    ngayHieuLuc: ngayHieuLucHdm(m),
     dotTT: m.dotTT.map((d) => {
       if (d.phieuChiId) return d;
       const x = { ...d };

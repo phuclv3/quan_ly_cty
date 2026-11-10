@@ -747,6 +747,9 @@ export interface HopDongMua {
   lyDoNhapTay?: string;
   /** Thuế VAT (%): 0, 8 hoặc 10; thiếu = 0. Tổng dòng hàng / nhập tay là trước VAT. */
   vat?: number;
+  /** Có tạm ứng: Ngày hiệu lực = ngày trả Đợt 1; không tạm ứng: = Ngày ký. */
+  coTamUng?: boolean;
+  ngayHieuLuc?: string;
   dotTT: DotTTMua[];
   xuatHoaDon: 'Đã' | 'Chưa';
   checklist: ChecklistItem[];

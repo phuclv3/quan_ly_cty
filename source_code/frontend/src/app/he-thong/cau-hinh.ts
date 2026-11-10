@@ -23,8 +23,8 @@ const THAM_SO: { k: CauHinhKey; nhan: string; kieu: Kieu; hint: string }[] = [
   { k: 'SO_DOT_TOI_DA', nhan: 'Số đợt thanh toán tối đa / HĐ', kieu: 'int', hint: 'Dùng ở: Hợp đồng bán và Hợp đồng mua → tab Thanh toán (số đợt tối đa khi lưu) và Import hợp đồng từ Excel.' },
   { k: 'TIEN_TO_TC', nhan: 'Tiền tố số phiếu thu chi (cũ)', kieu: 'text', hint: 'Dùng ở: Kế toán → Sổ quỹ (phiếu thu / chi). Số phiếu mới tự đặt theo loại: Thu = PT, Chi / Tạm ứng = PC, Quyết toán = PQ, Luân chuyển = PL (VD PT2601-001, đánh lại mỗi tháng). Tiền tố này chỉ còn dùng để nhận diện số phiếu cũ.' },
   { k: 'TIEN_TO_CP', nhan: 'Tiền tố mã chi phí thực hiện HĐ', kieu: 'text', hint: 'Dùng ở: Kế toán → Chi phí HĐ (mã chi phí thực hiện hợp đồng). VD CP26-0001.' },
-  { k: 'TIEN_TO_NK', nhan: 'Tiền tố phiếu nhập kho', kieu: 'text', hint: 'Dùng ở: Kho → phiếu nhập kho, gồm nhập hàng từ HĐ mua (Hợp đồng mua → nhận hàng). VD NK26-0001.' },
-  { k: 'TIEN_TO_XK', nhan: 'Tiền tố phiếu xuất kho', kieu: 'text', hint: 'Dùng ở: Kho → phiếu xuất kho, gồm xuất giao hàng cho HĐ bán. VD XK26-0001.' },
+  { k: 'TIEN_TO_NK', nhan: 'Tiền tố phiếu nhập kho', kieu: 'text', hint: 'Dùng ở: Kho → phiếu nhập kho, gồm nhập hàng từ HĐ mua (Hợp đồng mua → nhận hàng). Số phiếu đánh lại từ 001 mỗi tháng của ngày phiếu, VD NK2610-001 (phiếu tháng 10/2026).' },
+  { k: 'TIEN_TO_XK', nhan: 'Tiền tố phiếu xuất kho', kieu: 'text', hint: 'Dùng ở: Kho → phiếu xuất kho, gồm xuất giao hàng cho HĐ bán. Số phiếu đánh lại từ 001 mỗi tháng của ngày phiếu, VD XK2610-001.' },
 ];
 const KIEU: Record<CauHinhKey, Kieu> = Object.fromEntries(THAM_SO.map((t) => [t.k, t.kieu])) as Record<CauHinhKey, Kieu>;
 const NHAN: Record<CauHinhKey, string> = Object.fromEntries(THAM_SO.map((t) => [t.k, t.nhan])) as Record<CauHinhKey, string>;

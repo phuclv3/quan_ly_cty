@@ -63,7 +63,7 @@ export function inGiay(title: string, body: string, kho: 'A5' | 'A4'): boolean {
 const CHAM = '.'.repeat(300);
 
 /** CSS riêng cho mẫu phiếu thu/chi theo TT 133/2016/TT-BTC (Mẫu số 01-TT / 02-TT). */
-const CSS_MAU_TT = `
+export const CSS_MAU_TT = `
   /* Tinos (Google Fonts) cùng độ rộng chữ với Times New Roman — máy Linux không có Times New Roman vẫn in cùng bố cục. */
   body { font-family: 'Times New Roman', Tinos, 'Liberation Serif', Times, serif; font-size: 12pt; }
   .mau-head { display: flex; justify-content: space-between; align-items: flex-start; font-size: 11pt; }

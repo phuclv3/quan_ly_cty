@@ -4,7 +4,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { map } from 'rxjs';
 import { Store } from '../core/store';
 import { TT, ttNhan } from '../core/trang-thai';
-import { MOC_HAN_MUA, apDungTuDongHdm, dnvtTinhTrang, donGiaVND, dotMuaDaTra, dotQuaHan, hdmCalc, hoSoThieu, loiDotTT, slDaNhap, thanhTienVND, tongSL } from '../core/calc';
+import { MOC_HAN_MUA, apDungTuDongHdm, dnvtTinhTrang, donGiaVND, dotMuaDaTra, dotQuaHan, hdmCalc, hoSoThieu, ngayHieuLucHdm, loiDotTT, slDaNhap, thanhTienVND, tongSL } from '../core/calc';
 import { CL_DU_KIEN_HANG_VE, CL_NHAP_KHO, DongHangMua, DotTTMua, HopDongMua, LOAI_TIEN, LoaiTien, TrangThaiHDM, LOAI_HO_SO } from '../core/models';
 import { fold, money, num, pct, todayIso, uid, viDate, vnd } from '../core/util';
 import { Kpi, Modal, MoneyInput, Pick, PickOption, TrangThai, PickGo } from '../shared/ui-kit';
@@ -242,7 +242,7 @@ interface TraForm {
                 <dd>@if (tongHS()) { @for (loai of loaiHS; track loai) { @if (choHS()[loai]?.length) { <span class="chip">{{ loai }}: {{ choHS()[loai]!.length }}</span> } } } @else { <span class="muted">Chưa chọn tệp — bổ sung sau ở Tab "Lưu trữ hồ sơ"</span> }</dd>
                 <button type="button" class="btn sm quiet" (click)="den(4)">Sửa</button>
               </div>
-              <div><dt>Trạng thái khi lưu</dt><dd><app-tt v="Nháp" /> <span class="muted">— chuyển "Đã ký" ở màn chi tiết.</span></dd><span></span></div>
+              <div><dt>Trạng thái khi lưu</dt><dd><app-tt v="Nháp" /> <span class="muted">— chuyển "Hiệu lực" ở màn chi tiết.</span></dd><span></span></div>
             </dl>
           </section>
         }
@@ -263,7 +263,7 @@ interface TraForm {
             <span class="muted">Thành tiền VNĐ = SL × Đơn giá × Tỷ giá (VNĐ: tỷ giá = 1).</span>
             <div class="btn-row">
               @if (!m.thuocPhuTai && store.canEdit('hdmNhapKho') && !isNew()) {
-                <button type="button" class="btn" [disabled]="!nhapDuoc() || (!chon().length && !conNhap().length)" [attr.title]="!nhapDuoc() ? 'Chưa nhập kho được — HĐ cần ở trạng thái Đã ký trở lên và NCC đã xuất hoá đơn' : !conNhap().length ? 'Mọi dòng đã nhập kho đủ' : null" (click)="moNhap(chon().length ? chon() : conNhap())"><app-icon name="box" [size]="16" /> @if (chon().length) { Nhập kho {{ chon().length }} dòng chọn } @else { Nhập kho tất cả ({{ conNhap().length }} dòng còn lại) }</button>
+                <button type="button" class="btn" [disabled]="!nhapDuoc() || (!chon().length && !conNhap().length)" [attr.title]="!nhapDuoc() ? 'Chưa nhập kho được — HĐ cần ở trạng thái Hiệu lực trở lên và NCC đã xuất hoá đơn' : !conNhap().length ? 'Mọi dòng đã nhập kho đủ' : null" (click)="moNhap(chon().length ? chon() : conNhap())"><app-icon name="box" [size]="16" /> @if (chon().length) { Nhập kho {{ chon().length }} dòng chọn } @else { Nhập kho tất cả ({{ conNhap().length }} dòng còn lại) }</button>
               }
               @if (edit()) {
                 <button type="button" class="btn" (click)="moDN()"><app-icon name="truck" [size]="16" /> Lấy từ đề nghị cấp vật tư @if (dnCho().length) { ({{ dnCho().length }}) }</button>
@@ -273,7 +273,7 @@ interface TraForm {
             </div>
           </div>
           @if (!m.thuocPhuTai && store.canEdit('hdmNhapKho') && !isNew() && !nhapDuoc() && trangThai() === TT.NHAP) {
-            <div class="note info">Chuyển HĐ sang “Đã ký” để nhập kho.</div>
+            <div class="note info">Chuyển HĐ sang “Hiệu lực” để nhập kho.</div>
           }
           @if (choHoaDon()) {
             <div class="note warn">Bắt buộc có hoá đơn mới nhập kho — chọn <b>NCC đã xuất hoá đơn: Đã</b> ở <a class="linkish" (click)="setTab('4')">Tab 3</a> rồi Lưu.</div>
@@ -426,6 +426,12 @@ interface TraForm {
             </div>
           </section>
 
+          <div class="field">
+            <span class="lbl">Ngày hiệu lực</span>
+            <div class="ro" [title]="m.coTamUng ? 'Có tạm ứng: = ngày thanh toán Đợt 1' : 'Không tạm ứng: = Ngày ký'">{{ ngayHieuLuc() ? viDate(ngayHieuLuc()!) : '—' }}</div>
+            <label class="check-row"><input type="checkbox" [checked]="!!m.coTamUng" [disabled]="!edit4()" (change)="set('coTamUng', $any($event.target).checked)" /> HĐ có tạm ứng</label>
+            <span class="hint">@if (m.coTamUng) { = Ngày thanh toán Đợt 1{{ ngayHieuLuc() ? '' : ' — chưa thanh toán' }} } @else { = Ngày ký }</span>
+          </div>
           <div class="section-title">
             <h3>Đợt thanh toán NCC <small class="sub">Σ tỷ lệ {{ tongTyLe() }}% / 100% · Σ đợt {{ money(tongDot()) }} / {{ money(c.tong) }}</small></h3>
             @if (edit4()) { <button type="button" class="btn sm quiet" [disabled]="!themDotDuoc()" [attr.title]="lyDoKhongThemDot()" (click)="themDot()"><app-icon name="plus" [size]="16" /> Thêm đợt {{ m.dotTT.length + 1 }}</button> }
@@ -528,8 +534,14 @@ interface TraForm {
                   <option value="Chưa" [selected]="m.xuatHoaDon === 'Chưa'">Chưa</option>
                   <option value="Đã" [selected]="m.xuatHoaDon === 'Đã'">Đã</option>
                 </select>
-                @if (m.xuatHoaDon === 'Đã') { <span class="hint">Nhập Số + Ngày hoá đơn ở <a class="linkish" (click)="setTab('2')">Tab 4</a>.</span> }
-                @else if (!m.thuocPhuTai) { <span class="hint">Bắt buộc chọn "Đã" (và Lưu) mới <b>Nhập kho</b> được.</span> }
+                @if (!m.thuocPhuTai) {
+                  @if (nhapDuoc()) {
+                    <span class="hint">Đã đủ điều kiện nhập kho. Số + Ngày hoá đơn nhập khi bấm <b>Nhập kho</b>.</span>
+                    <button type="button" class="btn sm" (click)="setTab('3')"><app-icon name="box" [size]="16" /> Nhập kho (Tab 2)</button>
+                  } @else if (lyDoChuaNhapKho(); as ly) {
+                    <span class="hint">{{ ly }}</span>
+                  }
+                }
               </div>
             </div>
             <table class="tbl compact">
@@ -539,9 +551,9 @@ interface TraForm {
                   <tr>
                     @let tuDong = x.ten === clNhapKho && !m.thuocPhuTai;
                     <td>
-                      <label class="check-row" [attr.title]="tuDong ? 'Tự tích khi nhập đủ hàng (Tab 2)' : null">
+                      <label class="check-row" [attr.title]="tuDong ? 'Không tích tay — tự tích khi nhập đủ hàng. Nhập kho ở Tab 2.' : null">
                         <input type="checkbox" [checked]="x.xong" [disabled]="!edit4() || tuDong" (change)="tichCL(i, $any($event.target).checked)" /> {{ x.ten }}
-                        @if (tuDong) { <span class="sub muted">(tự động theo phiếu nhập · cần "NCC đã xuất hoá đơn: Đã")</span> }
+                        @if (tuDong) { <span class="sub muted">(tự tích khi nhập đủ hàng ở Tab 2 · cần HĐ Hiệu lực và "NCC đã xuất hoá đơn: Đã")</span> }
                       </label>
                     </td>
                     <td><input type="date" [value]="x.ngay ?? ''" [disabled]="!edit4() || (!x.xong && x.ten !== clDuKien) || tuDong" (input)="setCL(i, $any($event.target).value || undefined)" [attr.aria-label]="'Ngày ' + x.ten" /></td>
@@ -790,6 +802,22 @@ export class HdmDetail {
   protected readonly canSave = computed(() => this.edit() || this.edit4());
   protected readonly soDotToiDa = computed(() => this.store.cauHinh().SO_DOT_TOI_DA);
 
+  protected readonly ngayHieuLuc = computed(() => ngayHieuLucHdm(this.f()));
+  /** Lý do chưa nhập kho được (hiện ở Tab 3 để người dùng biết cần làm gì tiếp). */
+  protected readonly lyDoChuaNhapKho = computed((): string | null => {
+    const s = this.saved();
+    if (!s || this.isNew()) return 'Lưu HĐ trước, rồi chọn "NCC đã xuất hoá đơn: Đã" để nhập kho.';
+    if (this.choXoa()) return 'HĐ đang chờ xoá — chưa nhập kho được.';
+    if (!this.store.canEdit('hdmNhapKho')) return 'Tài khoản chưa có quyền nhập kho.';
+    if (s.trangThai === TT.NHAP) return 'HĐ đang Nháp — chuyển sang "Hiệu lực" (nút "Chuyển →" ở đầu trang) mới nhập kho được.';
+    if (s.trangThai === TT.DA_TAT_TOAN || s.trangThai === TT.HUY) return 'HĐ đã khoá — không nhập kho được.';
+    if (s.xuatHoaDon !== 'Đã') {
+      return this.f().xuatHoaDon === 'Đã'
+        ? 'Đã chọn "Đã" nhưng chưa Lưu — bấm Lưu để nhập kho được.'
+        : 'Chọn "NCC đã xuất hoá đơn: Đã" rồi Lưu để nhập kho được.';
+    }
+    return null;
+  });
   protected readonly nhapDuoc = computed(() => this.nhapDuocTruHD() && this.saved()?.xuatHoaDon === 'Đã');
   /** Đủ điều kiện nhập kho, chỉ còn thiếu "NCC đã xuất hoá đơn: Đã". */
   protected readonly choHoaDon = computed(() => this.nhapDuocTruHD() && this.saved()?.xuatHoaDon !== 'Đã');
@@ -1188,11 +1216,11 @@ export class HdmDetail {
       case TT.NHAP:
         return 'Nháp: đang soạn, chưa ký. Sửa tự do.';
       case TT.DA_KY:
-        return 'Đã ký: cần Số HĐ, NCC, Ngày ký và ít nhất 1 dòng hàng (hoặc tổng giá trị). Từ bước này mới nhập kho được, khi NCC đã xuất hoá đơn.';
+        return 'Hiệu lực: cần Số HĐ, NCC, Ngày ký và ít nhất 1 dòng hàng (hoặc tổng giá trị). Từ bước này mới nhập kho được, khi NCC đã xuất hoá đơn.';
       case TT.DANG_NHAN_HANG:
-        return 'Đang nhận hàng: tự chuyển khi nhập kho một phần (nút "Nhập kho" ở Tab 2) — không chuyển bằng tay.';
+        return 'Đã nhận hàng: tự chuyển khi nhập kho một phần (nút "Nhập kho" ở Tab 2) — không chuyển bằng tay.';
       case TT.DA_NHAN_DU:
-        return 'Đã nhận đủ: tự chuyển khi số lượng nhập kho đủ số lượng mua — không chuyển bằng tay.';
+        return 'Đã giao hàng: tự chuyển khi số lượng nhập kho đủ số lượng mua — không chuyển bằng tay.';
       case TT.DA_TAT_TOAN:
         return 'Đã tất toán: cần nhận đủ hàng (HĐ Phú Tài không cần), trả đủ NCC, NCC đã xuất hoá đơn và đủ hồ sơ. Sau bước này HĐ bị khoá toàn bộ.';
       default:
@@ -1212,13 +1240,13 @@ export class HdmDetail {
     if (!m) return '';
     switch (this.trangThai()) {
       case TT.NHAP:
-        return 'Điền đủ thông tin rồi bấm "Chuyển → Đã ký" khi hợp đồng đã ký.';
+        return 'Điền đủ thông tin rồi bấm "Chuyển → Hiệu lực" khi hợp đồng đã ký.';
       case TT.DA_KY:
         return m.thuocPhuTai
           ? 'HĐ thuộc Phú Tài: ghi nhận các lần Phú Tài trả NCC ở Tab 3, đủ hồ sơ rồi bấm "Chuyển → Đã tất toán".'
-          : 'Nhập kho ở Tab 2 (cần chọn "NCC đã xuất hoá đơn: Đã" ở Tab 3); HĐ tự chuyển sang "Đang nhận hàng". Trả NCC ở Tab 3.';
+          : 'Nhập kho ở Tab 2 (cần chọn "NCC đã xuất hoá đơn: Đã" ở Tab 3); HĐ tự chuyển sang "Đã nhận hàng". Trả NCC ở Tab 3.';
       case TT.DANG_NHAN_HANG:
-        return 'Nhập kho tiếp cho đủ số lượng mua; HĐ sẽ tự chuyển sang "Đã nhận đủ".';
+        return 'Nhập kho tiếp cho đủ số lượng mua; HĐ sẽ tự chuyển sang "Đã giao hàng".';
       case TT.DA_NHAN_DU:
         return 'Trả đủ NCC và đủ hồ sơ rồi bấm "Chuyển → Đã tất toán".';
       case TT.DA_TAT_TOAN:
@@ -1250,7 +1278,7 @@ export class HdmDetail {
         ? `"${ttNhan(st)}" tự chuyển khi nhập kho — bấm "Nhập kho" ở bảng hàng hoá (chưa tích dòng nào = nhập tất cả dòng còn lại).`
         : this.choHoaDon()
           ? `"${ttNhan(st)}" tự chuyển khi nhập kho — trước đó chọn "NCC đã xuất hoá đơn: Đã" ở Tab 3 rồi Lưu.`
-          : `"${ttNhan(st)}" tự chuyển khi nhập kho — HĐ cần ở "Đã ký" và bạn cần quyền nhập kho.`,
+          : `"${ttNhan(st)}" tự chuyển khi nhập kho — HĐ cần ở "Hiệu lực" và bạn cần quyền nhập kho.`,
     );
   }
   protected daTraDot(d: DotTTMua): number {
