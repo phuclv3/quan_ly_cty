@@ -37,15 +37,16 @@ interface TheoHd {
   conTrongQuy: number;
 }
 interface QuyDto {
-  canDoi: { tuNgay: string | null; denNgay: string; dauKy: number; khTra: number; traNcc: number; chiPhi: number; chuyenOxy: number; cuoiKy: number };
+  canDoi: { tuNgay: string | null; denNgay: string; dauKy: number; khTra: number; traNcc: number; chiPhi: number; chuyenOxy: number; cuoiKy: number; phieuThu: number; phieuChi: number };
   rows: QuyRow[];
   theoHd: TheoHd[];
   dem: Record<string, number>;
   hdOpts: Ref[];
 }
 
-type Loc = 'all' | 'Thu KH' | 'Trả NCC' | 'Chi phí' | 'Chuyển OXY';
-const LOAI_CHIP: Record<string, string> = { 'Thu KH': 'ok', 'Trả NCC': 'info', 'Chi phí': 'warn', 'Chuyển OXY': 'pt', 'Số dư đầu kỳ': '' };
+type Loc = 'all' | 'Thu KH' | 'Trả NCC' | 'Chi phí' | 'Chuyển OXY' | 'Phiếu thu' | 'Phiếu chi';
+type LoaiForm = 'Số dư đầu kỳ' | 'Chuyển OXY' | 'Phiếu thu' | 'Phiếu chi';
+const LOAI_CHIP: Record<string, string> = { 'Thu KH': 'ok', 'Trả NCC': 'info', 'Chi phí': 'warn', 'Chuyển OXY': 'pt', 'Số dư đầu kỳ': '', 'Phiếu thu': 'ok', 'Phiếu chi': 'warn' };
 
 /** Tab 4 · Sổ quỹ Phú Tài — số liệu do backend tính (GET /phu-tai/so-quy); dòng nhập tay ghi qua POST /phu-tai/so-quy. */
 @Component({
@@ -63,8 +64,8 @@ const LOAI_CHIP: Record<string, string> = { 'Thu KH': 'ok', 'Trả NCC': 'info',
     @if (d(); as x) {
       <div class="kpis">
         <div class="k hero"><span class="l">Số dư quỹ Phú Tài</span><b class="v">{{ money(x.canDoi.cuoiKy) }}</b><span class="s">đến {{ viDate(x.canDoi.denNgay) }}</span></div>
-        <div class="k"><span class="l">Thu trong kỳ</span><b class="v">{{ money(x.canDoi.khTra) }}</b><span class="s">khách hàng trả</span></div>
-        <div class="k"><span class="l">Chi trong kỳ</span><b class="v">{{ money(x.canDoi.traNcc + x.canDoi.chiPhi) }}</b><span class="s">trả NCC {{ money(x.canDoi.traNcc) }} · chi phí {{ money(x.canDoi.chiPhi) }}</span></div>
+        <div class="k"><span class="l">Thu trong kỳ</span><b class="v">{{ money(x.canDoi.khTra + x.canDoi.phieuThu) }}</b><span class="s">khách trả {{ money(x.canDoi.khTra) }} · phiếu thu {{ money(x.canDoi.phieuThu) }}</span></div>
+        <div class="k"><span class="l">Chi trong kỳ</span><b class="v">{{ money(x.canDoi.traNcc + x.canDoi.chiPhi + x.canDoi.phieuChi) }}</b><span class="s">trả NCC {{ money(x.canDoi.traNcc) }} · chi phí {{ money(x.canDoi.chiPhi) }} · phiếu chi {{ money(x.canDoi.phieuChi) }}</span></div>
         <div class="k"><span class="l">Đã chuyển về OXY</span><b class="v">{{ money(x.canDoi.chuyenOxy) }}</b><span class="s">phần quyền lợi · tab 3</span></div>
       </div>
 
@@ -73,8 +74,10 @@ const LOAI_CHIP: Record<string, string> = { 'Thu KH': 'ok', 'Trả NCC': 'info',
           <h3>A. Cân đối quỹ Phú Tài <span class="u">@if (x.canDoi.tuNgay) { kỳ {{ viDate(x.canDoi.tuNgay) }} – {{ viDate(x.canDoi.denNgay) }} }</span></h3>
           <div class="db"><span>Số dư đầu kỳ@if (x.canDoi.tuNgay) { ({{ viDate(x.canDoi.tuNgay) }}) }</span><b>{{ money(x.canDoi.dauKy) }}</b></div>
           <div class="db"><span>+ Khách hàng trả</span><b class="duong">+ {{ money(x.canDoi.khTra) }}</b></div>
+          @if (x.canDoi.phieuThu) { <div class="db"><span>+ Phiếu thu (nhập tay)</span><b class="duong">+ {{ money(x.canDoi.phieuThu) }}</b></div> }
           <div class="db"><span>− Trả nhà cung cấp</span><b class="am">− {{ money(x.canDoi.traNcc) }}</b></div>
           <div class="db"><span>− Chi phí (vận chuyển, kiểm định…)</span><b class="am">− {{ money(x.canDoi.chiPhi) }}</b></div>
+          @if (x.canDoi.phieuChi) { <div class="db"><span>− Phiếu chi (nhập tay)</span><b class="am">− {{ money(x.canDoi.phieuChi) }}</b></div> }
           <div class="db"><span>− Chuyển quyền lợi về OXY</span><b class="tim">− {{ money(x.canDoi.chuyenOxy) }}</b></div>
           <div class="db tong"><span>= Số dư cuối kỳ</span><b>{{ money(x.canDoi.cuoiKy) }}</b></div>
           @if (store.canEdit('phuTai')) {
@@ -83,7 +86,7 @@ const LOAI_CHIP: Record<string, string> = { 'Thu KH': 'ok', 'Trả NCC': 'info',
         </section>
         <section class="card-b">
           <h3>B. Theo hợp đồng <span class="u">tiền của từng HĐ trong quỹ</span></h3>
-          <div class="tbl-wrap">
+          <div class="tbl-wrap cuon-b">
             <table class="tbl">
               <thead><tr><th>HĐ</th><th class="num">KH trả</th><th class="num">Trả NCC</th><th class="num">Chi phí</th><th class="num">Chuyển OXY</th><th class="num">Còn trong quỹ</th></tr></thead>
               <tbody>
@@ -113,6 +116,8 @@ const LOAI_CHIP: Record<string, string> = { 'Thu KH': 'ok', 'Trả NCC': 'info',
             <button type="button" class="pill-b" [class.on]="loc() === 'Trả NCC'" (click)="loc.set('Trả NCC')">Trả NCC ({{ x.dem['Trả NCC'] }})</button>
             <button type="button" class="pill-b" [class.on]="loc() === 'Chi phí'" (click)="loc.set('Chi phí')">Chi phí ({{ x.dem['Chi phí'] }})</button>
             <button type="button" class="pill-b" [class.on]="loc() === 'Chuyển OXY'" (click)="loc.set('Chuyển OXY')">Chuyển OXY ({{ x.dem['Chuyển OXY'] }})</button>
+            <button type="button" class="pill-b" [class.on]="loc() === 'Phiếu thu'" (click)="loc.set('Phiếu thu')">Phiếu thu ({{ x.dem['Phiếu thu'] }})</button>
+            <button type="button" class="pill-b" [class.on]="loc() === 'Phiếu chi'" (click)="loc.set('Phiếu chi')">Phiếu chi ({{ x.dem['Phiếu chi'] }})</button>
           </div>
           <span style="flex:1"></span>
           <select aria-label="Lọc theo HĐ" (change)="hd.set($any($event.target).value)">
@@ -120,27 +125,29 @@ const LOAI_CHIP: Record<string, string> = { 'Thu KH': 'ok', 'Trả NCC': 'info',
             @for (h of x.hdOpts; track h.id) { <option [value]="h.id" [selected]="hd() === h.id">{{ h.ten }} · {{ h.soHD }}</option> }
           </select>
           @if (store.canEdit('phuTai')) {
+            <button type="button" class="btn pill sm" (click)="moForm('Phiếu thu')">+ Thêm phiếu thu</button>
+            <button type="button" class="btn pill sm" (click)="moForm('Phiếu chi')">+ Thêm phiếu chi</button>
             <button type="button" class="btn pill hero sm" (click)="moForm('Chuyển OXY')">+ Chuyển quyền lợi về OXY</button>
           }
         </div>
 
         @if (form(); as f) {
           <div class="frm">
-            <b>{{ f.loai === 'Chuyển OXY' ? 'Chuyển quyền lợi về OXY' : 'Số dư đầu kỳ quỹ Phú Tài' }}</b>
+            <b>{{ f.loai === 'Chuyển OXY' ? 'Chuyển quyền lợi về OXY' : f.loai === 'Phiếu thu' ? 'Phiếu thu quỹ Phú Tài' : f.loai === 'Phiếu chi' ? 'Phiếu chi quỹ Phú Tài' : 'Số dư đầu kỳ quỹ Phú Tài' }}</b>
             @if (err()) { <div class="note bad">{{ err() }}</div> }
             <div class="frm-g">
               <label>Ngày <input type="date" [value]="f.ngay" (input)="setF('ngay', $any($event.target).value)" /></label>
-              @if (f.loai === 'Chuyển OXY') {
-                <label>HĐ bán
+              @if (f.loai === 'Chuyển OXY' || f.loai === 'Phiếu thu' || f.loai === 'Phiếu chi') {
+                <label><span>HĐ bán @if (f.loai !== 'Chuyển OXY') { <span class="u">(không bắt buộc)</span> }</span>
                   <select (change)="setF('hdbId', $any($event.target).value)">
-                    <option value="" [selected]="!f.hdbId">— Chọn HĐ —</option>
+                    <option value="" [selected]="!f.hdbId">{{ f.loai === 'Chuyển OXY' ? '— Chọn HĐ —' : '— Không gắn HĐ —' }}</option>
                     @for (h of x.hdOpts; track h.id) { <option [value]="h.id" [selected]="f.hdbId === h.id">{{ h.soHD }} · {{ h.ten }}</option> }
                   </select>
                 </label>
               }
               <label>Số tiền (VNĐ) <app-money [value]="f.soTien" (valueChange)="setF('soTien', $event)" /></label>
               <label>Chứng từ (UNC / sao kê) <input [value]="f.tep" placeholder="VD UNC_OXY_0510.pdf" (input)="setF('tep', $any($event.target).value)" /></label>
-              <label class="full">Nội dung <input [value]="f.ghiChu" (input)="setF('ghiChu', $any($event.target).value)" /></label>
+              <label class="full"><span>Nội dung @if (f.loai === 'Phiếu thu' || f.loai === 'Phiếu chi') { <span class="req">*</span> }</span> <input [value]="f.ghiChu" (input)="setF('ghiChu', $any($event.target).value)" /></label>
             </div>
             <div class="btns"><button type="button" class="btn quiet sm" (click)="form.set(null)">Huỷ</button><button type="button" class="btn sm" [disabled]="dangLuu()" (click)="luu()">Lưu</button></div>
           </div>
@@ -159,7 +166,7 @@ const LOAI_CHIP: Record<string, string> = { 'Thu KH': 'ok', 'Trả NCC': 'info',
                   <td class="num"><span class="duong">{{ r.thu ? money(r.thu) : '' }}</span></td>
                   <td class="num"><span class="am">{{ r.chi ? money(r.chi) : '' }}</span></td>
                   <td class="num"><b>{{ money(r.tonQuy) }}</b></td>
-                  <td>@if (r.tep) { <span class="chip info">{{ r.tep }}</span> } @else if (r.loai !== 'Thu KH' && r.loai !== 'Số dư đầu kỳ') { <span class="chip dash">+ Đính kèm</span> }</td>
+                  <td>@if (r.tep) { <span class="chip info">{{ r.tep }}</span> } @else if (r.loai !== 'Thu KH' && r.loai !== 'Số dư đầu kỳ' && r.loai !== 'Phiếu thu') { <span class="chip dash">+ Đính kèm</span> }</td>
                 </tr>
               } @empty { <tr><td colspan="8" class="empty">Chưa có dòng tiền nào</td></tr> }
             </tbody>
@@ -171,6 +178,10 @@ const LOAI_CHIP: Record<string, string> = { 'Thu KH': 'ok', 'Trả NCC': 'info',
     }
   `,
   styles: [PT_STYLES, `
+    /* Bảng B: dòng Tổng cố định ở đáy, các HĐ cuộn trong khung. */
+    .cuon-b { max-height: 360px; overflow: auto; }
+    .cuon-b thead th { position: sticky; top: 0; z-index: 2; background: var(--surf, #fff); }
+    .cuon-b tfoot th, .cuon-b tfoot td { position: sticky; bottom: 0; z-index: 2; background: var(--surf, #fff); box-shadow: 0 -1px 0 var(--line, #ddd); }
     .row-2 { display: grid; gap: 14px; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); }
     @media (max-width: 1000px) { .row-2 { grid-template-columns: minmax(0, 1fr); } }
     .flow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 14px; padding: 8px 12px; border-radius: 12px; background: var(--surf); font-size: 12.5px; }
@@ -193,7 +204,9 @@ const LOAI_CHIP: Record<string, string> = { 'Thu KH': 'ok', 'Trả NCC': 'info',
     .chip.dash { background: transparent; border: 1px dashed var(--line-2); color: var(--ink-3); }
     .frm { margin-bottom: 14px; padding: 14px; border-radius: 12px; background: var(--surf-2); display: grid; gap: 10px; }
     .frm-g { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
-    .frm-g label { display: grid; gap: 4px; font-size: 12.5px; font-weight: 600; }
+    .frm-g label { display: grid; align-content: start; gap: 4px; font-size: 12.5px; font-weight: 600; }
+    .frm-g label > span:first-child { display: block; min-height: 1.3em; line-height: 1.3; white-space: nowrap; }
+    .frm-g input, .frm-g select { box-sizing: border-box; height: 38px; width: 100%; }
     .frm-g label.full { grid-column: 1 / -1; }
   `],
 })
@@ -216,11 +229,11 @@ export class PtSoQuy {
     return LOAI_CHIP[loai] ?? '';
   }
 
-  protected readonly form = signal<{ loai: 'Số dư đầu kỳ' | 'Chuyển OXY'; ngay: string; hdbId: string; soTien: number; ghiChu: string; tep: string } | null>(null);
+  protected readonly form = signal<{ loai: LoaiForm; ngay: string; hdbId: string; soTien: number; ghiChu: string; tep: string } | null>(null);
   protected readonly err = signal('');
   protected readonly dangLuu = signal(false);
 
-  protected moForm(loai: 'Số dư đầu kỳ' | 'Chuyển OXY'): void {
+  protected moForm(loai: LoaiForm): void {
     this.err.set('');
     this.form.set({ loai, ngay: todayIso(), hdbId: '', soTien: 0, ghiChu: '', tep: '' });
   }
@@ -233,6 +246,7 @@ export class PtSoQuy {
     if (!f) return;
     if (!f.ngay || !(f.soTien > 0)) return void this.err.set('Cần Ngày và Số tiền > 0');
     if (f.loai === 'Chuyển OXY' && !f.hdbId) return void this.err.set('Chọn HĐ bán Phú Tài');
+    if ((f.loai === 'Phiếu thu' || f.loai === 'Phiếu chi') && !f.ghiChu.trim()) return void this.err.set('Cần ghi Nội dung phiếu');
     this.dangLuu.set(true);
     try {
       await api('POST', '/phu-tai/so-quy', f);
