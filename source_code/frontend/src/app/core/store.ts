@@ -67,6 +67,7 @@ import {
   YeuCauXoa,
   CHECKLIST_HDM,
   CL_NHAP_KHO,
+  NGUON_QUY_PHU_TAI,
 } from './models';
 import { CHUC_NANG, KE_TOAN_DUYET_XOA, Level, Perm, atLeast, levelOf } from './perm';
 import { api, readToken, writeToken } from './api';
@@ -459,7 +460,7 @@ export class Store {
   khById = (id?: string) => this.db().khachHang.find((x) => x.id === id);
   nccById = (id?: string) => this.db().ncc.find((x) => x.id === id);
   nguonById = (id?: string) => this.db().nguonTien.find((x) => x.id === id);
-  nguonTen = (id?: string) => this.nguonById(id)?.ten ?? (id ? id : '—');
+  nguonTen = (id?: string) => (id === NGUON_QUY_PHU_TAI ? 'Quỹ Phú Tài' : this.nguonById(id)?.ten ?? (id ? id : '—'));
   lcpById = (id?: string) => this.db().loaiChiPhi.find((x) => x.id === id);
   lcpTen = (id?: string) => this.lcpById(id)?.ten ?? '—';
   khoById = (id?: string) => this.db().kho.find((x) => x.id === id);
@@ -725,6 +726,10 @@ export class Store {
   }
   suaPhieuKho(id: string, o: { ngay: string; ghiChu?: string }): Result {
     return this.exec(() => this.suaPhieuKho_(id, o), () => ['PATCH', `/phieu-kho/${e_(id)}`, o]);
+  }
+  /** "Sửa phiếu": thêm hàng vào phiếu nhập / xuất kho đã lập. */
+  themDongPhieuKho(id: string, dongNhap: DongNhapLo[], dongXuat: DongXuat[]): Result {
+    return this.exec(() => this.themDongPhieuKho_(id, dongNhap, dongXuat), () => ['POST', `/phieu-kho/${e_(id)}/dong`, { dongNhap, dongXuat }]);
   }
   suaLo(phieuId: string, i: number, o: { thuocTinh: string; donGia: number; vat?: number; ghiChu?: string }): string | { capNhat: number } {
     return this.exec(() => this.suaLo_(phieuId, i, o), () => ['PATCH', `/phieu-kho/${e_(phieuId)}/dong/${i}`, o]);
@@ -2318,6 +2323,37 @@ export class Store {
       const ngayNhap = this.ngayNhapCuoi(m.id);
       this.upsert('hopDongMua', { ...m, checklist: m.checklist.map((x) => (x.ten === CL_NHAP_KHO && x.xong ? { ...x, ngay: ngayNhap } : x)) });
     }
+    return null;
+  }
+
+  private themDongPhieuKho_(id: string, dongNhap: DongNhapLo[], dongXuat: DongXuat[]): Result {
+    const p = this.db().phieuKho.find((x) => x.id === id);
+    if (!p) return 'Không tìm thấy phiếu';
+    const e = this.quyenPhieu(p);
+    if (e) return e;
+    let them: DongPhieuKho[];
+    if (p.loai === 'Nhập') {
+      const vao = dongNhap.filter((d) => d.loaiHang && d.soLuong > 0);
+      if (vao.length === 0) return 'Cần ít nhất 1 dòng hàng có SL > 0';
+      const thieuGia = vao.findIndex((d) => !(d.donGia > 0));
+      if (thieuGia >= 0) return `Dòng ${thieuGia + 1}: chưa có đơn giá — nhập kho phải có đơn giá của lô`;
+      const daCo = this.loDaCo();
+      them = vao.map((d, i) => ({
+        loaiHang: d.loaiHang,
+        thuocTinh: d.thuocTinh.trim(),
+        soLuong: d.soLuong,
+        donGia: Math.max(d.donGia || 0, 0),
+        vat: d.vat,
+        ghiChu: d.ghiChu?.trim() || undefined,
+        lo: this.maLoMoi(p.soPhieu, p.soHoaDon, p.dong.length + i, daCo),
+      }));
+    } else {
+      const r = this.dongXuatTheoLo(p.kho, p.hdId, dongXuat, p.ngay);
+      if (typeof r === 'string') return r;
+      if (r.length === 0) return 'Cần ít nhất 1 dòng hàng có SL > 0';
+      them = r;
+    }
+    this.upsert('phieuKho', { ...p, dong: [...p.dong, ...them] });
     return null;
   }
 

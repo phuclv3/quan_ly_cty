@@ -429,6 +429,9 @@ export interface PhieuThuChi {
   hdbId?: string;
 }
 
+/** Nguồn tiền ảo của chi phí thực hiện HĐ thuộc Phú Tài: chi từ Quỹ Phú Tài, không trừ nguồn tiền Oxy. */
+export const NGUON_QUY_PHU_TAI = 'QUY_PHU_TAI';
+
 export interface ChiPhiHD {
   id: string;
   maCP: string;
@@ -657,6 +660,8 @@ export interface HopDongBan {
   thuocPhuTai?: boolean;
   /** HĐ Phú Tài: tỷ lệ % LN trước thuế OXY được hưởng (trống = 70). */
   ptTyLeOxy?: number;
+  /** Thuế TNDN nhập tay: thuế suất phẳng 0..1 × chênh lệch. Trống = tính theo công thức. */
+  tyLeThueTay?: number;
   taoLuc: string;
   import?: boolean;
 }

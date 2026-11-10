@@ -421,7 +421,13 @@ interface TraForm {
                 </div>
               }
               <div class="field"><span class="lbl">Tổng giá trị trước VAT (VNĐ)</span><div class="ro num">{{ money(c.truocVAT) }}</div></div>
-              <div class="field"><span class="lbl">Thuế VAT {{ m.vat ?? 0 }}% (chỉnh ở Tab 2)</span><div class="ro num">{{ money(c.thueVAT) }}</div></div>
+              <div class="field">
+                <label for="hdm-vat3">Thuế VAT</label>
+                <select id="hdm-vat3" [disabled]="!edit()" (change)="set('vat', +$any($event.target).value)">
+                  @for (v of vats; track v) { <option [value]="v" [selected]="v === (m.vat ?? 0)">{{ v }}%</option> }
+                </select>
+                <span class="hint">Tiền thuế: {{ money(c.thueVAT) }}</span>
+              </div>
               <div class="field"><span class="lbl">Tổng giá trị HĐ sau VAT (VNĐ)</span><div class="ro num"><b>{{ money(c.tong) }}</b></div></div>
             </div>
           </section>

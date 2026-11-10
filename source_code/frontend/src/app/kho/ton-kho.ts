@@ -27,6 +27,8 @@ interface Ma {
   loaiHang: string;
   /** Tên các kho / vị trí còn hàng. */
   khos: string[];
+  /** Thông số kỹ thuật / nồng độ (quy cách khi nhập lô) của các lô còn tồn — đúng như lúc nhập kho. */
+  thongSo: string[];
   ton: number;
   daGiu: number;
   /** Tồn của lô nhập từ HĐ mua chưa kiểm định xong. */
@@ -86,6 +88,8 @@ const NGUONG_SAP_HET = 2;
     .tbl .z { color: var(--ink-3); }
     .tbl .qc { color: #8a5a00; } .tbl .hs { color: #a3261d; font-weight: 600; }
     .ma-ten { display: block; font-size: 11px; color: var(--ink-3); margin-top: 2px; max-width: 180px; }
+    .ts-ky-thuat { min-width: 220px; max-width: 360px; white-space: normal; }
+    .ts-ky-thuat div + div { margin-top: 3px; padding-top: 3px; border-top: 1px dashed var(--line, #ddd); }
     .lo-link { border: 0; background: none; padding: 0; color: var(--brand); font-weight: 600; font-size: 12px; cursor: pointer; text-align: left; }
     .st { display: inline-block; padding: 1px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; white-space: nowrap; background: var(--mute-bg); color: var(--mute-fg); }
     .st.info { background: #dce9f8; color: #2c5d94; }
@@ -127,7 +131,7 @@ const NGUONG_SAP_HET = 2;
         <div class="tbl-wrap">
           <table class="tbl freeze">
             <thead>
-              <tr><th>Mã hàng</th><th>Kho · vị trí</th><th class="num">Tồn sổ</th><th class="num">Đã giữ</th><th class="num" title="Lô nhập từ HĐ mua chưa kiểm định xong">Cách ly / chờ QC</th><th class="num" title="Lô chưa có số hoá đơn / chứng từ">Thiếu hồ sơ</th><th class="num">Khả dụng</th><th>Lô · chứng từ</th><th class="num">Giá trị tồn</th><th>Cảnh báo</th></tr>
+              <tr><th>Mã hàng</th><th>Thông số kỹ thuật</th><th>Kho · vị trí</th><th class="num">Tồn sổ</th><th class="num">Đã giữ</th><th class="num" title="Lô nhập từ HĐ mua chưa kiểm định xong">Cách ly / chờ QC</th><th class="num" title="Lô chưa có số hoá đơn / chứng từ">Thiếu hồ sơ</th><th class="num">Khả dụng</th><th>Lô · chứng từ</th><th class="num">Giá trị tồn</th><th>Cảnh báo</th></tr>
             </thead>
             <tbody>
               @for (r of pgMa.items(); track r.loaiHang) {
@@ -135,6 +139,9 @@ const NGUONG_SAP_HET = 2;
                   <td>
                     <b>{{ r.loaiHang }}</b>
                     <span class="ma-ten">{{ moTa(r.loaiHang) }}</span>
+                  </td>
+                  <td class="sub ts-ky-thuat">
+                    @for (t of r.thongSo; track t) { <div>{{ t }}</div> } @empty { — }
                   </td>
                   <td>{{ r.khos.join(' / ') || '—' }}</td>
                   <td class="num" [class.neg]="r.ton < 0"><b>{{ money(r.ton) }}</b></td>
@@ -149,7 +156,7 @@ const NGUONG_SAP_HET = 2;
                   <td><span class="st" [class]="'st ' + mau(r.canh)">{{ r.canh }}{{ r.canh === 'Lệch' ? ' ' + (r.lech > 0 ? '+' : '') + r.lech : '' }}</span></td>
                 </tr>
               } @empty {
-                <tr><td colspan="10" class="empty">Không có mã hàng nào khớp bộ lọc</td></tr>
+                <tr><td colspan="11" class="empty">Không có mã hàng nào khớp bộ lọc</td></tr>
               }
             </tbody>
           </table>
@@ -306,7 +313,7 @@ export class TonKhoTab {
     const row = (id: string): Ma => {
       let r = theoMa.get(id);
       if (!r) {
-        r = { loaiHang: id, khos: [], ton: 0, daGiu: 0, choQC: 0, thieuHS: 0, khaDung: 0, soLo: 0, loChoQC: 0, loThieuHS: 0, giaTri: 0, lech: this.lechMa().get(id) ?? 0, canh: 'Đủ hàng' };
+        r = { loaiHang: id, khos: [], thongSo: [], ton: 0, daGiu: 0, choQC: 0, thieuHS: 0, khaDung: 0, soLo: 0, loChoQC: 0, loThieuHS: 0, giaTri: 0, lech: this.lechMa().get(id) ?? 0, canh: 'Đủ hàng' };
         theoMa.set(id, r);
       }
       return r;
@@ -324,6 +331,8 @@ export class TonKhoTab {
       if (l.ton <= 0) continue;
       const r = row(l.loaiHang);
       r.soLo++;
+      const qc = l.quyCach?.trim();
+      if (qc && !r.thongSo.includes(qc)) r.thongSo.push(qc);
       if (this.choKiemDinh(l)) {
         r.choQC += l.ton;
         r.loChoQC++;
@@ -361,7 +370,7 @@ export class TonKhoTab {
     return this.allMa().filter((r) => {
       const lh = this.store.loaiHangById(r.loaiHang);
       return (
-        khopQ(l, r.loaiHang, lh?.ten, lh?.moTa, ...r.khos, ...this.tenHD(r.loaiHang), lh?.loaiKhi, ...(lh?.bietDanh ?? [])) &&
+        khopQ(l, r.loaiHang, lh?.ten, lh?.moTa, ...r.thongSo, ...r.khos, ...this.tenHD(r.loaiHang), lh?.loaiKhi, ...(lh?.bietDanh ?? [])) &&
         khopSel(l, 'nhom', lh?.nhom) &&
         khopSel(l, 'canh', r.canh) &&
         (!tenKho.size || r.khos.some((k) => tenKho.has(k)))
@@ -429,10 +438,10 @@ export class TonKhoTab {
 
   protected xuatExcel(): void {
     if (this.che() === 'ma') {
-      const rows: (string | number)[][] = [['Mã hàng', 'Tên', 'Mô tả', 'Tên trên hoá đơn', 'Nhóm', 'ĐVT', 'Vị trí kho', 'Tồn sổ', 'Đã giữ', 'Cách ly / chờ QC', 'Thiếu hồ sơ', 'Khả dụng', 'Số lô', 'Giá trị tồn', 'Lệch kiểm kê', 'Cảnh báo']];
+      const rows: (string | number)[][] = [['Mã hàng', 'Tên', 'Mô tả', 'Thông số kỹ thuật', 'Tên trên hoá đơn', 'Nhóm', 'ĐVT', 'Vị trí kho', 'Tồn sổ', 'Đã giữ', 'Cách ly / chờ QC', 'Thiếu hồ sơ', 'Khả dụng', 'Số lô', 'Giá trị tồn', 'Lệch kiểm kê', 'Cảnh báo']];
       for (const r of this.rowsMa()) {
         const lh = this.store.loaiHangById(r.loaiHang);
-        rows.push([r.loaiHang, lh?.ten ?? '', lh?.moTa ?? '', this.tenHD(r.loaiHang).join('; '), lh?.nhom ?? '', lh?.dvt ?? '', r.khos.join(' / '), r.ton, r.daGiu, r.choQC, r.thieuHS, r.khaDung, r.soLo, Math.round(r.giaTri), r.lech, r.canh]);
+        rows.push([r.loaiHang, lh?.ten ?? '', lh?.moTa ?? '', r.thongSo.join('; '), this.tenHD(r.loaiHang).join('; '), lh?.nhom ?? '', lh?.dvt ?? '', r.khos.join(' / '), r.ton, r.daGiu, r.choQC, r.thieuHS, r.khaDung, r.soLo, Math.round(r.giaTri), r.lech, r.canh]);
       }
       void xuatExcel('ton-kho-theo-ma', rows);
       return;

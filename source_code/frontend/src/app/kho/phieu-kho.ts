@@ -52,7 +52,7 @@ const quyenSua = (p: PhieuKho): Perm =>
         <div class="tbl-wrap">
         <table class="tbl freeze">
           <thead>
-            <tr>@if (chonDuoc()) { <th style="width:36px"><input type="checkbox" aria-label="Chọn cả trang" [checked]="cn.du(idTrang())" (change)="cn.chonTat(idTrang(), $any($event.target).checked)" /></th> }<th>Số phiếu</th><th>Ngày</th><th>Nguồn gốc</th><th>{{ loai() === 'Nhập' ? 'HĐ mua / Số hoá đơn' : 'HĐ bán' }}</th><th>Vị trí kho</th><th class="num">Số dòng</th><th class="num">Tổng SL</th><th class="num">{{ loai() === 'Nhập' ? 'Giá trị nhập' : 'Giá vốn' }}</th><th>Người thực hiện</th><th>Trạng thái</th></tr>
+            <tr>@if (chonDuoc()) { <th style="width:36px"><input type="checkbox" aria-label="Chọn cả trang" [checked]="cn.du(idTrang())" (change)="cn.chonTat(idTrang(), $any($event.target).checked)" /></th> }<th style="min-width:130px">Số phiếu</th><th style="width:96px">Ngày</th><th>Nguồn gốc</th><th>{{ loai() === 'Nhập' ? 'HĐ mua / Số hoá đơn' : 'HĐ bán' }}</th><th>Vị trí kho</th><th style="min-width:240px">Hàng hoá · Thông số kỹ thuật</th><th class="num">Số dòng</th><th class="num">Tổng SL</th><th class="num">{{ loai() === 'Nhập' ? 'Giá trị nhập' : 'Giá vốn' }}</th><th>Người thực hiện</th><th>Trạng thái</th></tr>
           </thead>
           <tbody>
             @for (p of pg.items(); track p.id) {
@@ -60,14 +60,18 @@ const quyenSua = (p: PhieuKho): Perm =>
               @if (chonDuoc()) {
                 <td (click)="$event.stopPropagation()">@if (xoaDuoc(p)) { <input type="checkbox" [attr.aria-label]="'Chọn ' + p.soPhieu" [checked]="cn.co(p.id)" (change)="cn.flip(p.id)" /> }</td>
               }
-                <td><b>{{ p.soPhieu }}</b></td>
-                <td>{{ viDate(p.ngay) }}</td>
+                <td style="white-space:nowrap"><b>{{ p.soPhieu }}</b></td>
+                <td style="white-space:nowrap">{{ viDate(p.ngay) }}</td>
                 <td>{{ p.nguonGoc }}</td>
                 <td>
                   @if (hd(p); as h) { <a [routerLink]="h.link" (click)="$event.stopPropagation()">{{ h.so }}</a> } @else if (!p.soHoaDon) { — }
                   @if (p.soHoaDon) { <span class="sub">{{ p.soHoaDon }}</span> }
                 </td>
                 <td>{{ store.khoTen(p.kho) }}</td>
+                <td class="hang-ts">
+                  @for (h of hangHoa(p).hien; track $index) { <div><b>{{ h.ma }}</b>@if (h.thongSo) { <span class="sub"> · {{ h.thongSo }}</span> }</div> }
+                  @if (hangHoa(p).them) { <div class="sub">+ {{ hangHoa(p).them }} dòng khác</div> }
+                </td>
                 <td class="num">{{ p.dong.length }}</td>
                 <td class="num">{{ money(tongSL(p)) }}</td>
                 <td class="num">{{ money(giaTriPhieu(p)) }}</td>
@@ -78,7 +82,7 @@ const quyenSua = (p: PhieuKho): Perm =>
                 </td>
               </tr>
             } @empty {
-              <tr><td [attr.colspan]="chonDuoc() ? 11 : 10" class="empty">{{ coPhieu() ? 'Không có phiếu nào khớp bộ lọc' : 'Chưa có phiếu ' + (loai() === 'Nhập' ? 'nhập' : 'xuất') + ' kho nào' }}</td></tr>
+              <tr><td [attr.colspan]="chonDuoc() ? 12 : 11" class="empty">{{ coPhieu() ? 'Không có phiếu nào khớp bộ lọc' : 'Chưa có phiếu ' + (loai() === 'Nhập' ? 'nhập' : 'xuất') + ' kho nào' }}</td></tr>
             }
           </tbody>
         </table>
@@ -218,6 +222,7 @@ const quyenSua = (p: PhieuKho): Perm =>
         @if (sel(); as p) {
           @if (huyDuoc(p)) { <button type="button" class="btn danger quiet" (click)="huy(p)">{{ p.trangThai === TT.DA_HUY ? 'Xoá phiếu' : 'Huỷ phiếu' }}</button> }
           <button type="button" class="btn quiet" (click)="inPhieu(p)">In phiếu</button>
+          @if (suaDuoc(p)) { <button type="button" class="btn quiet" (click)="moSuaPhieu(p)">Sửa phiếu</button> }
           @if (suaDuoc(p)) { <button type="button" class="btn" (click)="luu(p)">Lưu Ngày / Ghi chú</button> }
         }
         <button type="button" class="btn quiet" (click)="dong()">Đóng</button>
@@ -225,6 +230,7 @@ const quyenSua = (p: PhieuKho): Perm =>
     </app-modal>
 
     <app-kho-phieu-tay [open]="moTay()" [loaiMacDinh]="loai()" (closed)="moTay.set(false)" />
+    <app-kho-phieu-tay [open]="!!phieuSua()" [phieuSua]="phieuSua()" [loaiMacDinh]="loai()" (closed)="phieuSua.set(null)" />
   `,
 })
 export class PhieuKhoTab {
@@ -381,6 +387,22 @@ export class PhieuKhoTab {
     await guiXoa(this.confirm, this.store, 'PhieuKho', p.id, `Phiếu ${p.soPhieu}`);
   }
   /** In phiếu A4 theo Mẫu 01-VT / 02-VT, cùng cách in và kiểu chữ với phiếu Thu / Chi (Kế toán). */
+  /** Phiếu đang "Sửa phiếu" (thêm hàng) — mở popup lập phiếu ở chế độ sửa. */
+  protected readonly phieuSua = signal<PhieuKho | null>(null);
+  /** Hàng hoá + thông số kỹ thuật (quy cách / nồng độ) của phiếu — gộp dòng cùng mã + thông số, tối đa 3 dòng. */
+  protected hangHoa(p: PhieuKho): { hien: { ma: string; thongSo: string }[]; them: number } {
+    const gop = new Map<string, { ma: string; thongSo: string }>();
+    for (const d of p.dong) {
+      const ts = (d.thuocTinh ?? '').trim();
+      gop.set(`${d.loaiHang}|${ts}`, { ma: d.loaiHang, thongSo: ts });
+    }
+    const ds = [...gop.values()];
+    return { hien: ds.slice(0, 3), them: Math.max(0, ds.length - 3) };
+  }
+  protected moSuaPhieu(p: PhieuKho): void {
+    this.dong();
+    this.phieuSua.set(p);
+  }
   protected inPhieu(p: PhieuKho): void {
     inPhieuKho(p, this.store);
   }

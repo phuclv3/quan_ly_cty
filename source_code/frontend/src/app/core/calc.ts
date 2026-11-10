@@ -24,7 +24,7 @@ import {
   PhieuThuChi,
   ThamSoThue,
 } from './models';
-import { daysFromToday, sum, todayIso, vnd } from './util';
+import { daysFromToday, fold, sum, todayIso, vnd } from './util';
 import { TT, ttNhan } from './trang-thai';
 
 // ── Chung ───────────────────────────────────────────────────────────────
@@ -55,19 +55,21 @@ export const hdbCongThucCu = (ngayKy?: string) => !!ngayKy && ngayKy < NGAY_DOI_
  * HDB-08: thuế TNDN trên chênh lệch.
  * HĐ mới: luỹ tiến, mốc = nguong × GTHĐ thực tế trước VAT. HĐ cũ (ký trước 03/2026): phẳng 22% × chênh lệch.
  */
-export function thueTNDN(chenhLech: number, thucTe: number, ts: ThamSoThue, ngayKy?: string) {
+export function thueTNDN(chenhLech: number, thucTe: number, ts: ThamSoThue, ngayKy?: string, tyLeTay?: number | null) {
   const moc = ts.nguong * thucTe;
-  const cu = hdbCongThucCu(ngayKy);
-  if (chenhLech <= 0) return { moc, phan1: 0, phan2: 0, thue1: 0, thue2: 0, thue: 0, cu };
+  const tay = tyLeTay != null;
+  const cu = tay || hdbCongThucCu(ngayKy);
+  const tyLe = tay ? tyLeTay : TYLE_THUE_CU;
+  if (chenhLech <= 0) return { moc, phan1: 0, phan2: 0, thue1: 0, thue2: 0, thue: 0, cu, tyLe: cu ? tyLe : 0, tay };
   if (cu) {
-    const thue = Math.round(chenhLech * TYLE_THUE_CU);
-    return { moc, phan1: chenhLech, phan2: 0, thue1: thue, thue2: 0, thue, cu };
+    const thue = Math.round(chenhLech * tyLe);
+    return { moc, phan1: chenhLech, phan2: 0, thue1: thue, thue2: 0, thue, cu, tyLe, tay };
   }
   const phan1 = Math.min(chenhLech, moc);
   const phan2 = Math.max(chenhLech - moc, 0);
   const thue1 = Math.round(phan1 * ts.muc1);
   const thue2 = Math.round(phan2 * ts.muc2);
-  return { moc, phan1, phan2, thue1, thue2, thue: thue1 + thue2, cu };
+  return { moc, phan1, phan2, thue1, thue2, thue: thue1 + thue2, cu, tyLe: 0, tay };
 }
 
 /** Đợt quá hạn: quá Hạn mà chưa thu đủ (HDB-10). */
@@ -143,7 +145,7 @@ export function hdbCalc(h: HopDongBan, db: Db): HdbCalc {
   const sau = sauVAT(h.truocVAT, h.vat);
   const chenhLech = h.thucTeTruocVAT > 0 ? h.truocVAT - h.thucTeTruocVAT : 0;
   const tyLeCL = h.thucTeTruocVAT > 0 ? chenhLech / h.thucTeTruocVAT : 0;
-  const thue = thueTNDN(chenhLech, h.thucTeTruocVAT, h.thamSoThue, h.ngayKy);
+  const thue = thueTNDN(chenhLech, h.thucTeTruocVAT, h.thamSoThue, h.ngayKy, h.tyLeThueTay);
   const daThu = sum(h.dotTT, (d) => dotBanDaThu(d, db));
   const daThuCho = sum(h.dotTT, (d) => dotBanChoDuyet(d, db));
   const cps = db.chiPhiHD.filter((c) => c.hdbId === h.id);
@@ -360,6 +362,33 @@ export function daGiuTheoMa(db: Db, loaiHang: string): number {
 
 export type TrangThaiKhoDong = 'Đủ hàng' | 'Đã đề nghị mua' | 'Cần mua';
 
+/** Chuẩn hoá để so nồng độ: chữ thường, bỏ khoảng trắng, dấu phẩy → chấm ("500 ppm" ≡ "500ppm", "0,5%" ≡ "0.5%"). */
+const chuanNongDo = (t: string): string => t.toLowerCase().replace(/\s+/g, '').replace(/,/g, '.');
+/** Nồng độ trong một chuỗi: các cụm số + đơn vị (ppm / ppb / %), VD "NO 500ppm, SO2 1,5%" → ["500ppm", "1.5%"]. */
+const tachNongDo = (t: string): string[] => (t.match(/\d+(?:[.,]\d+)?\s*(?:ppm|ppb|ppmv|%)/gi) ?? []).map(chuanNongDo);
+
+/**
+ * Các lô còn hàng của mã KHỚP với "Tên hàng trên HĐ (nồng độ)" của dòng. Trả null = không ràng buộc nồng độ được
+ * (tên không ghi nồng độ, hoặc lô của mã không ghi nồng độ dạng ppm / %) → dùng cả tồn của mã như cũ.
+ * Thứ tự ưu tiên: ánh xạ tên bán (đúng tên + mã) chỉ định lô → ánh xạ có nồng độ → nồng độ trong tên.
+ */
+export function loKhopTenHang(db: Db, loaiHang: string, tenHang: string): DongLo[] | null {
+  const lots = loConHang(db, loaiHang);
+  const ten = fold(tenHang);
+  const ax = ten ? db.anhXaTen.find((a) => a.loaiHang === loaiHang && fold(a.ten) === ten) : undefined;
+  if (ax?.lo) return lots.filter((l) => l.lo === ax.lo);
+  const tokens = ax?.nongDo ? tachNongDo(ax.nongDo) : tachNongDo(tenHang);
+  if (!tokens.length) return null;
+  // Lô của mã không ghi nồng độ dạng ppm / % (VD chỉ ghi dải) thì không thể đối chiếu → không ràng buộc.
+  const lotGhiNongDo = (l: DongLo) => tachNongDo(l.quyCach).length > 0;
+  if (!loConHang(db, loaiHang).some(lotGhiNongDo)) return null;
+  return lots.filter((l) => {
+    // So theo từng cụm nồng độ nguyên vẹn ("5ppm" không khớp nhầm "25ppm").
+    const cua = tachNongDo(l.quyCach);
+    return tokens.every((t) => cua.includes(t));
+  });
+}
+
 /**
  * Check kho cho từng dòng hàng HĐ bán / báo giá: còn phải giao = SL − đã xuất cho HĐ;
  * so với tồn dành cho HĐ (đã trừ phần HĐ khác giữ — tonDanhCho): đủ → xanh "Đủ hàng";
@@ -368,13 +397,14 @@ export type TrangThaiKhoDong = 'Đủ hàng' | 'Đã đề nghị mua' | 'Cần 
 export function kiemTraDongBan(
   db: Db,
   h: HopDongBan,
-): { d: DongHangBan; daGiao: number; con: number; ton: number; tonThuc: number; daGiuKhac: number; thieu: number; daDeNghi: number; trangThai: TrangThaiKhoDong }[] {
+): { d: DongHangBan; daGiao: number; con: number; ton: number; tonThuc: number; daGiuKhac: number; thieu: number; daDeNghi: number; trangThai: TrangThaiKhoDong; tonMa: number; khongKhopNongDo: boolean }[] {
   const daGiao = new Map<string, number>();
   for (const p of db.phieuKho)
     if (p.loai === 'Xuất' && p.hdId === h.id && h.id && p.trangThai === TT.HIEU_LUC)
       for (const x of p.dong) daGiao.set(x.loaiHang, (daGiao.get(x.loaiHang) ?? 0) + x.soLuong);
   const deNghi = h.id ? slDaDeNghi(db, h.id) : new Map<string, number>();
   const conTon = new Map<string, number>();
+  const conKhop = new Map<string, number>();
   const tonMa = new Map<string, ReturnType<typeof tonDanhCho>>();
   return (h.dongHang ?? []).map((d) => {
     const g = Math.min(daGiao.get(d.loaiHang) ?? 0, d.soLuong);
@@ -387,9 +417,23 @@ export function kiemTraDongBan(
     }
     const tm = tonMa.get(d.loaiHang);
     // Nhiều dòng cùng mã dùng chung phần tồn dành cho HĐ.
-    const ton = d.loaiHang ? conTon.get(d.loaiHang)! : 0;
+    const tonMaDu = d.loaiHang ? conTon.get(d.loaiHang)! : 0;
+    // Tên hàng trên HĐ ghi nồng độ → chỉ tính tồn của các lô đúng nồng độ đó (cùng mã nhưng khác nồng độ không tính là có hàng).
+    let ton = tonMaDu;
+    let khongKhopNongDo = false;
+    if (d.loaiHang) {
+      const lo = loKhopTenHang(db, d.loaiHang, d.tenHang);
+      if (lo) {
+        const kKhop = `${d.loaiHang}|${lo.map((l) => l.lo).join(',')}`;
+        if (!conKhop.has(kKhop)) conKhop.set(kKhop, sum(lo, (l) => l.ton));
+        ton = Math.min(tonMaDu, conKhop.get(kKhop)!);
+        khongKhopNongDo = ton < con && tonMaDu >= con;
+        const dungKhop = Math.min(ton, con);
+        conKhop.set(kKhop, conKhop.get(kKhop)! - dungKhop);
+      }
+    }
     const dung = Math.min(ton, con);
-    if (d.loaiHang) conTon.set(d.loaiHang, ton - dung);
+    if (d.loaiHang) conTon.set(d.loaiHang, tonMaDu - dung);
     const thieu = con - dung;
     // Đề nghị riêng của dòng trước, rồi phần đề nghị cũ gộp theo mã (dùng chung cho các dòng cùng mã).
     const rieng = Math.min(deNghi.get(d.id) ?? 0, thieu);
@@ -398,7 +442,7 @@ export function kiemTraDongBan(
     if (gop) deNghi.set(kMa, deNghi.get(kMa)! - gop);
     const dn = rieng + gop;
     const trangThai: TrangThaiKhoDong = thieu <= 0 ? 'Đủ hàng' : dn >= thieu ? 'Đã đề nghị mua' : 'Cần mua';
-    return { d, daGiao: g, con, ton, tonThuc: tm?.ton ?? 0, daGiuKhac: tm?.daGiuKhac ?? 0, thieu, daDeNghi: dn, trangThai };
+    return { d, daGiao: g, con, ton, tonThuc: tm?.ton ?? 0, daGiuKhac: tm?.daGiuKhac ?? 0, thieu, daDeNghi: dn, trangThai, tonMa: tonMaDu, khongKhopNongDo };
   });
 }
 

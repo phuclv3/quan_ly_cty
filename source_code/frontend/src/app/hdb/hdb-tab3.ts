@@ -66,9 +66,10 @@ interface ThuNhap {
                 <td class="num">{{ money(k.d.soLuong * k.d.donGiaTH) }}</td>
                 <td>
                   @if (!k.d.loaiHang) { <span class="muted">—</span> }
-                  @else if (k.trangThai === 'Đủ hàng') { <span class="tag ok" [title]="'Tồn kho ' + k.tonThuc + ', dành cho HĐ này ' + k.ton">✓ Có trong kho ({{ k.ton }})</span> }
+                  @else if (k.trangThai === 'Đủ hàng') { <span class="tag ok" [title]="'Tồn kho mã ' + k.tonThuc + ' · đúng nồng độ / tên trên HĐ và dành cho HĐ này: ' + k.ton">✓ Có trong kho ({{ k.ton }})</span> }
                   @else if (k.trangThai === 'Đã đề nghị mua') { <span class="tag warn">Đã đề nghị mua {{ k.daDeNghi }}</span> }
-                  @else { <span class="tag bad" [title]="'Tồn ' + k.ton + ', cần ' + k.con">✗ Cần mua {{ k.thieu - k.daDeNghi }}</span> }
+                  @else { <span class="tag bad" [title]="k.khongKhopNongDo ? 'Mã ' + k.d.loaiHang + ' còn ' + k.tonMa + ' nhưng không có lô đúng nồng độ / tên hàng trên HĐ' : 'Tồn ' + k.ton + ', cần ' + k.con">✗ Cần mua {{ k.thieu - k.daDeNghi }}</span> }
+                  @if (k.khongKhopNongDo) { <span class="sub" title="Có hàng cùng mã nhưng khác nồng độ so với tên hàng trên HĐ">Mã còn {{ k.tonMa }} nhưng khác nồng độ</span> }
                   @if (k.daGiuKhac) { <span class="sub" title="HĐ hiệu lực trước được giữ hàng trước">HĐ khác giữ {{ k.daGiuKhac }}/{{ k.tonThuc }}</span> }
                   @if (k.daGiao) { <span class="sub">Đã giao {{ k.daGiao }}</span> }
                 </td>
@@ -149,8 +150,26 @@ interface ThuNhap {
 
       <section class="card blk vang">
         <h2 class="section-title" [title]="tipCongThuc()">Thuế TNDN trên chênh lệch <span class="sub" [title]="tipCongThuc()">(công thức theo ngày ký HĐ ⓘ)</span></h2>
+        <div class="form-grid cols-3">
+          <div class="field">
+            <label for="t3-cachthue">Cách tính thuế TNDN</label>
+            <select id="t3-cachthue" [disabled]="!edit()" (change)="setCachThue($any($event.target).value)">
+              <option value="ct" [selected]="f().tyLeThueTay == null">Theo công thức (tự động)</option>
+              <option value="tay" [selected]="f().tyLeThueTay != null">Nhập tay % thuế TNDN</option>
+            </select>
+          </div>
+          @if (f().tyLeThueTay != null) {
+            <div class="field">
+              <label for="t3-tyle-thue">Thuế TNDN (%) <span class="req">*</span></label>
+              <input id="t3-tyle-thue" type="number" min="0" max="100" step="0.1" [disabled]="!edit()" [value]="tyLeThueTayPct()" (input)="setTyLeThueTay($any($event.target).value)" />
+              <span class="hint">Thuế = % × chênh lệch; phần còn lại trả khách.</span>
+            </div>
+          }
+        </div>
         <app-buoc [rows]="buocThue()" />
-        @if (c().thue.cu) {
+        @if (c().thue.tay) {
+          <p class="sub">Thuế TNDN nhập tay: {{ pct(c().thue.tyLe) }} × chênh lệch. Chênh lệch ≤ 0 → thuế = 0. Chọn "Theo công thức" để quay về cách tính tự động.</p>
+        } @else if (c().thue.cu) {
           <p class="sub">HĐ ký trước 01/03/2026: {{ pct(tyLeThueCu) }} × chênh lệch, phần còn lại trả khách. Chênh lệch ≤ 0 → thuế = 0.</p>
         } @else {
           <p class="sub">Tham số lưu theo HĐ lúc tạo: mốc {{ pct(f().thamSoThue.nguong) }} × GTHĐ thực tế, mức {{ pct(f().thamSoThue.muc1) }} / {{ pct(f().thamSoThue.muc2) }}. Chênh lệch ≤ 0 → thuế = 0.</p>
@@ -404,7 +423,7 @@ export class HdbTab3 {
     if (t.cu)
       return [
         { nhan: 'Chênh lệch (CL)', congThuc: 'Tổng GTHĐ trước VAT − GTHĐ thực tế', giaTri: this.c().chenhLech },
-        { nhan: 'Thuế TNDN (Tổng phí quản lý)', congThuc: `CL × ${pct(TYLE_THUE_CU)} (HĐ ký trước 03/2026)`, giaTri: t.thue, chinh: true },
+        { nhan: 'Thuế TNDN (Tổng phí quản lý)', congThuc: t.tay ? `CL × ${pct(t.tyLe)} (nhập tay)` : `CL × ${pct(TYLE_THUE_CU)} (HĐ ký trước 03/2026)`, giaTri: t.thue, chinh: true },
         { nhan: 'Hoàn trả', congThuc: 'CL − Thuế TNDN (theo tờ trình)', giaTri: Math.max(this.c().chenhLech - t.thue, 0) },
       ];
     return [
@@ -467,6 +486,18 @@ export class HdbTab3 {
       }
       return next;
     });
+  }
+  protected readonly tyLeThueTayPct = computed(() => {
+    const v = this.f().tyLeThueTay;
+    return v == null ? '' : Math.round(v * 10000) / 100;
+  });
+  /** Chọn cách tính: công thức (xoá % tay) hoặc nhập tay (khởi tạo bằng 22% — mức công thức cũ — để sửa tiếp). */
+  protected setCachThue(v: string): void {
+    this.set('tyLeThueTay', v === 'tay' ? this.f().tyLeThueTay ?? TYLE_THUE_CU : undefined);
+  }
+  protected setTyLeThueTay(raw: string): void {
+    const n = Number(raw);
+    this.set('tyLeThueTay', raw.trim() === '' || !Number.isFinite(n) ? 0 : Math.min(Math.max(n, 0), 100) / 100);
   }
   protected setVat(raw: string): void {
     const v = Number(raw);

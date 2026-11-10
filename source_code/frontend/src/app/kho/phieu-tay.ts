@@ -48,7 +48,10 @@ const xuatRong = (): DongXuatF => ({ loaiHang: '', lo: '', soLuong: 0, tenTrenHD
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [Modal, Pick],
   template: `
-    <app-modal #mTay [open]="open()" [title]="f().loai === 'Nhập' ? 'Lập phiếu nhập kho' : 'Lập phiếu xuất kho'" [sub]="f().loai === 'Nhập' ? 'Nhập kho' : 'Nguồn gốc: Nhập tay – điều chỉnh'" size="lg" [dirty]="dirty()" (closed)="closed.emit()">
+    <app-modal #mTay [open]="open()" [title]="phieuSua() ? 'Sửa phiếu ' + phieuSua()!.soPhieu : f().loai === 'Nhập' ? 'Lập phiếu nhập kho' : 'Lập phiếu xuất kho'" [sub]="f().loai === 'Nhập' ? 'Nhập kho' : 'Nguồn gốc: Nhập tay – điều chỉnh'" size="lg" [dirty]="dirty()" (closed)="closed.emit()">
+      @if (phieuSua(); as ps) {
+        <div class="note info">Thêm hàng vào phiếu <b>{{ ps.soPhieu }}</b> ({{ ps.loai }} · {{ store.khoTen(ps.kho) }}). Ngày, kho, HĐ và ghi chú giữ nguyên; hàng thêm vào được cộng/trừ kho theo ngày phiếu.</div>
+      } @else {
       <div class="form-grid blk xanh">
 <h3 class="blk-t">Thông tin phiếu</h3>
         <div class="field"><label for="pt-ngay">Ngày <span class="req">*</span></label><input id="pt-ngay" type="date" [value]="f().ngay" (input)="set('ngay', $any($event.target).value)" /></div>
@@ -86,6 +89,7 @@ const xuatRong = (): DongXuatF => ({ loaiHang: '', lo: '', soLuong: 0, tenTrenHD
           </div>
         }
       </div>
+      }
 
       <section class="blk duong">
       @if (f().loai === 'Nhập') {
@@ -127,8 +131,8 @@ const xuatRong = (): DongXuatF => ({ loaiHang: '', lo: '', soLuong: 0, tenTrenHD
         <h3 class="section-title">Dòng xuất <button type="button" class="btn sm quiet" (click)="themXuat()">+ Thêm dòng</button></h3>
         <div class="tbl-wrap fit">
           <table class="tbl compact fit">
-            <colgroup><col style="width:24%"><col style="width:24%"><col style="width:8%"><col style="width:12%"><col style="width:17%"><col style="width:8%"><col style="width:7%"></colgroup>
-            <thead><tr><th>Mã hàng <span class="req">*</span></th><th>Lô</th><th class="num">SL <span class="req">*</span></th><th class="num">Giá vốn</th><th>Tên hàng trên HĐ</th><th>Ghi chú</th><th></th></tr></thead>
+            <colgroup><col style="width:17%"><col style="width:19%"><col style="width:19%"><col style="width:7%"><col style="width:9%"><col style="width:14%"><col style="width:11%"><col style="width:4%"></colgroup>
+            <thead><tr><th>Mã hàng <span class="req">*</span></th><th>Lô</th><th>Thông số kỹ thuật</th><th class="num">SL <span class="req">*</span></th><th class="num">Giá vốn</th><th>Tên hàng trên HĐ</th><th>Ghi chú</th><th></th></tr></thead>
             <tbody>
               @for (d of f().xuat; track $index; let i = $index) {
                 <tr>
@@ -141,10 +145,13 @@ const xuatRong = (): DongXuatF => ({ loaiHang: '', lo: '', soLuong: 0, tenTrenHD
                       <select (change)="setXuat(i, { lo: $any($event.target).value })" aria-label="Lô" [disabled]="!d.loaiHang">
                         <option value="" [selected]="!d.lo">Tự chọn lô nhập trước (FIFO)</option>
                         @for (l of lots(d.loaiHang); track l.lo) {
-                          <option [value]="l.lo" [selected]="l.lo === d.lo">{{ l.lo }} · tồn {{ l.ton }} · {{ money(l.donGia) }}{{ l.quyCach ? ' · ' + l.quyCach.slice(0, 40) : '' }}</option>
+                          <option [value]="l.lo" [selected]="l.lo === d.lo">{{ l.lo }} · tồn {{ l.ton }} · {{ money(l.donGia) }}{{ l.quyCach ? ' · ' + l.quyCach.slice(0, 60) : '' }}</option>
                         }
                       </select>
                     }
+                  </td>
+                  <td class="sub">
+                    @for (t of thongSoXuat(d); track t) { <div>{{ t }}</div> } @empty { — }
                   </td>
                   <td class="num"><input type="number" min="0" [value]="d.soLuong || ''" (input)="setXuat(i, { soLuong: +$any($event.target).value })" aria-label="Số lượng" /></td>
                   <td class="num">{{ money(giaVon(d)) }}</td>
@@ -156,7 +163,7 @@ const xuatRong = (): DongXuatF => ({ loaiHang: '', lo: '', soLuong: 0, tenTrenHD
                 </tr>
               }
             </tbody>
-            <tfoot><tr><td colspan="3">Tổng giá vốn</td><td class="num">{{ money(tongXuat()) }}</td><td colspan="3"></td></tr></tfoot>
+            <tfoot><tr><td colspan="4">Tổng giá vốn</td><td class="num">{{ money(tongXuat()) }}</td><td colspan="3"></td></tr></tfoot>
           </table>
           <datalist id="pt-ten-hd">@for (a of tenDaGan(); track a.id) { <option [value]="a.ten">{{ a.loaiHang }}{{ a.nongDo ? ' · ' + a.nongDo : '' }}</option> }</datalist>
         </div>
@@ -165,6 +172,7 @@ const xuatRong = (): DongXuatF => ({ loaiHang: '', lo: '', soLuong: 0, tenTrenHD
       }
       </section>
 
+      @if (!phieuSua()) {
       <div class="form-grid blk vang">
         <div class="field wide">
           <label for="pt-lydo">Lý do @if (!coChungTu()) { <span class="req">*</span> }</label>
@@ -172,11 +180,12 @@ const xuatRong = (): DongXuatF => ({ loaiHang: '', lo: '', soLuong: 0, tenTrenHD
         </div>
         <div class="field wide"><label for="pt-gc">Ghi chú</label><textarea id="pt-gc" rows="2" [value]="f().ghiChu" (input)="set('ghiChu', $any($event.target).value)"></textarea></div>
       </div>
+      }
       @if (canhBao()) { <div class="note warn">{{ canhBao() }}</div> }
       @if (err()) { <div class="note bad">{{ err() }}</div> }
       <div foot class="btn-row">
         <button type="button" class="btn quiet" (click)="closed.emit()">Huỷ</button>
-        <button type="button" class="btn" (click)="luu()">Lưu phiếu</button>
+        <button type="button" class="btn" (click)="luu()">{{ phieuSua() ? 'Thêm hàng vào phiếu' : 'Lưu phiếu' }}</button>
       </div>
     </app-modal>
   `,
@@ -186,6 +195,8 @@ export class PhieuTayForm {
   protected readonly store = inject(Store);
   readonly open = input(false);
   readonly loaiMacDinh = input<PhieuKho['loai']>('Nhập');
+  /** Có giá trị = chế độ "Sửa phiếu": giữ nguyên đầu phiếu, chỉ thêm hàng vào phiếu này. */
+  readonly phieuSua = input<PhieuKho | null>(null);
   readonly closed = output<void>();
   protected readonly ctId = KHO_CHUYEN_THANG;
   protected readonly money = money;
@@ -224,6 +235,8 @@ export class PhieuTayForm {
 
   private moi(): Form {
     const kho = this.store.khoDangDung().find((k) => k.id !== KHO_CHUYEN_THANG)?.id ?? '';
+    const ps = this.phieuSua();
+    if (ps) return { ngay: ps.ngay, loai: ps.loai, hdId: ps.hdId ?? '', kho: ps.kho, soHoaDon: ps.soHoaDon ?? '', ncc: ps.ncc ?? '', lyDo: ps.lyDo ?? '', ghiChu: ps.ghiChu ?? '', nhap: [nhapRong()], xuat: [xuatRong()] };
     return { ngay: todayIso(), loai: this.loaiMacDinh(), hdId: '', kho, soHoaDon: '', ncc: '', lyDo: '', ghiChu: '', nhap: [nhapRong()], xuat: [xuatRong()] };
   }
 
@@ -272,6 +285,18 @@ export class PhieuTayForm {
   protected lots(lh: string): DongLo[] {
     return lh ? loConHang(this.store.db(), lh, this.f().kho).filter((l) => l.ngay <= this.f().ngay) : [];
   }
+  /** Thông số kỹ thuật (quy cách / nồng độ) của hàng sẽ xuất: lô đã chọn, hoặc các lô FIFO sẽ bị trừ; chưa có SL thì liệt kê các lô còn hàng của mã. */
+  protected thongSoXuat(d: DongXuatF): string[] {
+    if (!d.loaiHang || this.f().kho === KHO_CHUYEN_THANG) return [];
+    const lots = this.lots(d.loaiHang);
+    let ds: string[];
+    if (d.lo) ds = [lots.find((l) => l.lo === d.lo)?.quyCach ?? ''];
+    else if (d.soLuong > 0) {
+      const cuaLo = new Map(lots.map((l) => [l.lo, l.quyCach]));
+      ds = phanBoLo(this.store.db(), { loaiHang: d.loaiHang, kho: this.f().kho, soLuong: d.soLuong }).dong.map((x) => cuaLo.get(x.lo) ?? x.quyCach);
+    } else ds = lots.map((l) => l.quyCach);
+    return [...new Set(ds.map((t) => t.trim()).filter(Boolean))].slice(0, 4);
+  }
   protected giaVon(d: DongXuatF): number {
     if (!d.loaiHang || !(d.soLuong > 0) || this.f().kho === KHO_CHUYEN_THANG) return 0;
     if (d.lo) return d.soLuong * (this.lots(d.loaiHang).find((l) => l.lo === d.lo)?.donGia ?? 0);
@@ -317,6 +342,18 @@ export class PhieuTayForm {
   protected luu(): void {
     if (this.mTay()?.kt.hopLe() === false) return;
     const f = this.f();
+    const ps = this.phieuSua();
+    if (ps) {
+      const e = this.store.themDongPhieuKho(
+        ps.id,
+        f.nhap,
+        f.xuat.map((d) => ({ loaiHang: d.loaiHang, lo: d.lo || undefined, soLuong: d.soLuong, tenTrenHD: d.tenTrenHD, ghiChu: d.ghiChu })),
+      );
+      if (e) return this.err.set(e);
+      this.store.say(`Đã thêm hàng vào phiếu ${ps.soPhieu}`);
+      this.closed.emit();
+      return;
+    }
     const r = this.store.savePhieuKhoTay(
       { ngay: f.ngay, loai: f.loai, hdId: f.hdId || undefined, kho: f.kho, lyDo: f.lyDo, ghiChu: f.ghiChu, soHoaDon: f.soHoaDon, ncc: f.ncc || undefined },
       f.nhap,
