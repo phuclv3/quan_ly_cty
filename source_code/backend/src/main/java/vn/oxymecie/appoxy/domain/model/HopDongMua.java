@@ -36,4 +36,7 @@ public class HopDongMua {
   private Boolean laImport;
   /** Thuế VAT (%): 0, 8 hoặc 10. Tổng giá trị trên các dòng / nhập tay là trước VAT. */
   private int vat;
+  /** Có tạm ứng: Ngày hiệu lực = ngày thanh toán Đợt 1; không tạm ứng: = Ngày ký. */
+  private boolean coTamUng;
+  private String ngayHieuLuc;
 }

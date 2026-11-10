@@ -245,7 +245,7 @@ public class HdbService {
     }
     List<DongPhieuKho> ds = kho.dongXuatTheoLo(c, khoId, hdbId, dong, ngay);
     if (ds.isEmpty()) throw ApiException.invalid("Cần ít nhất 1 dòng hàng có số lượng > 0");
-    PhieuKho p = new PhieuKho(c.uid("PK"), c.nextSo(c.cauHinh().getTienToXK(), ngay), ngay, "Xuất", "Tự động HĐ Bán", hdbId, khoId,
+    PhieuKho p = new PhieuKho(c.uid("PK"), c.nextSoThang(c.cauHinh().getTienToXK(), ngay), ngay, "Xuất", "Tự động HĐ Bán", hdbId, khoId,
         null, c.me(), TrangThai.HIEU_LUC, ghiChu, ds, null, null, null);
     Ctx.upsert(c.db().getPhieuKho(), p, PhieuKho::getId);
     if (TrangThai.HIEU_LUC.equals(h.getTrangThai())) h.setTrangThai(TrangThai.DANG_GIAO_HANG);

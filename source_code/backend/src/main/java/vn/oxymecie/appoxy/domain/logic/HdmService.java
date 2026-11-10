@@ -170,11 +170,13 @@ public class HdmService {
     if (hdmKhoa(c, m)) throw ApiException.conflict("HĐ đã khoá (Đã tất toán, Huỷ hoặc đang chờ xoá)");
     // Trạng thái nhận hàng do phiếu nhập tự chuyển — tay chỉ chuyển Đã ký / Đã tất toán / Huỷ.
     if (!List.of(TrangThai.DA_KY, TrangThai.DA_TAT_TOAN, TrangThai.HUY).contains(toi)) throw ApiException.conflict("Trạng thái \"" + TrangThai.nhan(toi) + "\" do nhập kho tự chuyển");
-    if (TrangThai.DA_KY.equals(toi) && !TrangThai.NHAP.equals(m.getTrangThai())) throw ApiException.conflict("Chỉ HĐ Nháp mới chuyển \"Đã ký\"");
+    if (TrangThai.DA_KY.equals(toi) && !TrangThai.NHAP.equals(m.getTrangThai())) throw ApiException.conflict("Chỉ HĐ Nháp mới chuyển \"Hiệu lực\"");
     Calc.HdmCalc c2 = Calc.hdmCalc(m, c.db());
     if (TrangThai.DA_KY.equals(toi)) {
       if (Texts.blank(m.getSoHD()) || Texts.blank(m.getMaNCC()) || Texts.blank(m.getNgayKy())) throw ApiException.invalid("Cần Số HĐ, NCC và Ngày ký");
       if (m.getChiTiet().isEmpty() && c2.tong() <= 0) throw ApiException.invalid("Cần ít nhất 1 dòng hàng hoặc tổng giá trị");
+      if (m.isCoTamUng() && Texts.blank(Calc.ngayHieuLucHdm(m))) throw ApiException.invalid("HĐ có tạm ứng: chỉ Hiệu lực khi đã thanh toán Đợt 1");
+      m.setNgayHieuLuc(Calc.ngayHieuLucHdm(m));
     }
     if (TrangThai.DA_TAT_TOAN.equals(toi)) {
       if (TrangThai.NHAP.equals(m.getTrangThai())) throw ApiException.conflict("HĐ chưa ký");
@@ -235,7 +237,7 @@ public class HdmService {
           null, null, d.getGhiChu()));
     }
     if (dong.isEmpty()) throw ApiException.invalid("Chưa có dòng nào có SL thực nhập > 0");
-    String soPhieu = c.nextSo(c.cauHinh().getTienToNK(), ngay);
+    String soPhieu = c.nextSoThang(c.cauHinh().getTienToNK(), ngay);
     Set<String> daCo = kho.loDaCo(c);
     for (int i = 0; i < dong.size(); i++) dong.get(i).setLo(kho.maLoMoi(soPhieu, soHoaDon, i, daCo));
     PhieuKho p = new PhieuKho(c.uid("PK"), soPhieu, ngay, "Nhập", "Tự động HĐ Mua", hdmId, khoId, null, c.me(), TrangThai.HIEU_LUC, ghiChu,

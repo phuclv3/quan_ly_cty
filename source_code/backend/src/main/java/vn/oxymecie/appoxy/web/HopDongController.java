@@ -278,7 +278,7 @@ public class HopDongController {
     });
   }
 
-  @Operation(summary = "Chuyển trạng thái HĐ mua", description = "Nháp → Đã ký; Đã ký / đang nhận / đã nhận đủ → Đã tất toán; Huỷ.")
+  @Operation(summary = "Chuyển trạng thái HĐ mua", description = "Nháp → Hiệu lực; Hiệu lực / đã nhận hàng / đã giao hàng → Đã tất toán; Huỷ.")
   @PostMapping("/hop-dong-mua/{id}/chuyen-trang-thai")
   public CommandResponse<Void> chuyenHdm(@PathVariable String id, @Valid @RequestBody Req.ChuyenTrangThai r) {
     return cmd.run("HDM.chuyenTrangThai", c -> {

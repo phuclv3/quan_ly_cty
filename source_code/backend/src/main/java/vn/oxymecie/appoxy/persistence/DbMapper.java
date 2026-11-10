@@ -281,7 +281,7 @@ public class DbMapper {
     List<ChecklistItem> cl = new ArrayList<>(e.getChecklist().stream().map(x -> new ChecklistItem(x.getTen(), x.isXong(), d(x.getNgay()))).toList());
     return new HopDongMua(e.getId(), e.getSoHD(), e.getMaNCC(), e.getTenNCC(), e.getDiaChi(), e.getMst(), d(e.getNgayKy()), e.getHdbId(),
         e.isThuocPhuTai(), e.getTrangThai(), Texts.nz(e.getGhiChu()), ct, e.isNhapTay(), e.getTongNhapTay(), e.getLyDoNhapTay(), dot,
-        e.getXuatHoaDon(), cl, e.getGhiChuHoSoThieu(), t(e.getTaoLuc()), trueOrNull(e.isLaImport()), e.getVat());
+        e.getXuatHoaDon(), cl, e.getGhiChuHoSoThieu(), t(e.getTaoLuc()), trueOrNull(e.isLaImport()), e.getVat(), e.isCoTamUng(), d(e.getNgayHieuLuc()));
   }
 
   PhieuKho phieuKho(PhieuKhoEntity e) {
@@ -798,6 +798,8 @@ public class DbMapper {
     e.setNhapTay(x.isNhapTay());
     e.setTongNhapTay(x.getTongNhapTay());
     e.setVat(x.getVat());
+    e.setCoTamUng(x.isCoTamUng());
+    e.setNgayHieuLuc(ld(x.getNgayHieuLuc()));
     e.setLyDoNhapTay(x.getLyDoNhapTay());
     e.setXuatHoaDon(x.getXuatHoaDon());
     e.setGhiChuHoSoThieu(x.getGhiChuHoSoThieu());

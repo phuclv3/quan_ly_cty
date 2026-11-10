@@ -333,7 +333,16 @@ public final class Calc {
   }
 
   /** Đợt TT NCC: đợt theo % tính lại Số tiền theo tổng HĐ; đợt theo mốc tính Hạn = ngày mốc + N ngày (đợt đã có phiếu chi giữ nguyên). */
+  /** Ngày hiệu lực HĐ mua: có tạm ứng → ngày thanh toán Đợt 1 (chưa trả = null); không → Ngày ký. */
+  public static String ngayHieuLucHdm(HopDongMua m) {
+    if (m.isCoTamUng()) {
+      return m.getDotTT().stream().filter(d -> d.getDot() == 1).findFirst().map(DotTTMua::getNgayTra).orElse(null);
+    }
+    return m.getNgayKy();
+  }
+
   public static HopDongMua apDungTuDongHdm(HopDongMua m) {
+    m.setNgayHieuLuc(ngayHieuLucHdm(m));
     double tong = hdmTongSauVAT(m);
     for (DotTTMua x : m.getDotTT()) {
       if (x.getPhieuChiId() != null) continue;

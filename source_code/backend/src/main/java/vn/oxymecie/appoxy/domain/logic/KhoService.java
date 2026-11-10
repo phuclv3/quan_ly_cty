@@ -138,7 +138,7 @@ public class KhoService {
         if (!(vao.get(i).donGia() > 0) && !choGia0)
           throw ApiException.invalid("Dòng " + (i + 1) + ": chưa có đơn giá — nhập kho phải có đơn giá của lô");
       }
-      soPhieu = c.nextSo(c.cauHinh().getTienToNK(), p.ngay());
+      soPhieu = c.nextSoThang(c.cauHinh().getTienToNK(), p.ngay());
       Set<String> daCo = loDaCo(c);
       dong = new ArrayList<>();
       for (int i = 0; i < vao.size(); i++) {
@@ -149,7 +149,7 @@ public class KhoService {
     } else {
       dong = dongXuatTheoLo(c, p.kho(), hdId, dongXuat, p.ngay());
       if (dong.isEmpty()) throw ApiException.invalid("Cần ít nhất 1 dòng hàng có SL > 0");
-      soPhieu = c.nextSo(c.cauHinh().getTienToXK(), p.ngay());
+      soPhieu = c.nextSoThang(c.cauHinh().getTienToXK(), p.ngay());
     }
     String id = vn.oxymecie.appoxy.common.Ids.safe(idDeXuat) && c.phieuKho(idDeXuat) == null ? idDeXuat : c.uid("PK");
     boolean nhap = "Nhập".equals(p.loai());

@@ -68,6 +68,12 @@ public class HopDongMuaEntity extends Audited {
   @Column(name = "vat", nullable = false)
   private int vat;
 
+  @Column(name = "co_tam_ung", nullable = false)
+  private boolean coTamUng;
+
+  @Column(name = "ngay_hieu_luc")
+  private LocalDate ngayHieuLuc;
+
   @Column(name = "ly_do_nhap_tay")
   private String lyDoNhapTay;
 

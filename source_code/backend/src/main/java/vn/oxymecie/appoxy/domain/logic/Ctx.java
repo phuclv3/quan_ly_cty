@@ -274,7 +274,7 @@ public final class Ctx {
     list.removeIf(x -> Objects.equals(id.apply(x), key));
   }
 
-  /** KT-06 / D-31: {tiền tố}{yy}-{nnnn} theo năm của ngày chứng từ, không tái dùng số. */
+  /** KT-06 / D-31: {tiền tố}{yy}-{nnnn} theo năm của ngày chứng từ (phiếu kho dùng nextSoThang), không tái dùng số. */
   public String nextSo(String prefix, String ngay) {
     String k = prefix + Dates.yy(ngay == null || ngay.isEmpty() ? today() : ngay);
     int n = db.getBoDem().getOrDefault(k, 0) + 1;
