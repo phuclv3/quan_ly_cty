@@ -39,6 +39,9 @@ public class PhuTaiBaoCaoService {
   private static final String KD = "CPTH-KD";
   public static final String LOAI_DAU_KY = "Số dư đầu kỳ";
   public static final String LOAI_CHUYEN_OXY = "Chuyển OXY";
+  /** Phiếu thu / chi nhập tay vào Quỹ Phú Tài (ngoài thu KH, trả NCC, chi phí HĐ tự sinh). */
+  public static final String LOAI_PHIEU_THU = "Phiếu thu";
+  public static final String LOAI_PHIEU_CHI = "Phiếu chi";
 
   public record Ref(String id, String soHD, String ten) {}
 
@@ -264,7 +267,7 @@ public class PhuTaiBaoCaoService {
 
   public record QuyRow(String id, String ngay, String loai, String hdbId, String soHD, String tenKH, String noiDung, long thu, long chi, long tonQuy, String tep, boolean nhapTay) {}
 
-  public record CanDoi(String tuNgay, String denNgay, long dauKy, long khTra, long traNcc, long chiPhi, long chuyenOxy, long cuoiKy) {}
+  public record CanDoi(String tuNgay, String denNgay, long dauKy, long khTra, long traNcc, long chiPhi, long chuyenOxy, long cuoiKy, long phieuThu, long phieuChi) {}
 
   public record TheoHd(String hdbId, String soHD, String tenKH, long khTra, long traNcc, long chiPhi, long chuyenOxy, long conTrongQuy) {}
 
@@ -278,8 +281,8 @@ public class PhuTaiBaoCaoService {
     List<Tho> tho = new ArrayList<>();
     for (DongTienPT d : raw.getDongTienPT()) {
       if (d.getLoai() == null) continue;
-      boolean dau = LOAI_DAU_KY.equals(d.getLoai());
-      tho.add(new Tho(d.getNgay(), dau ? 0 : 3, d.getId(), d.getLoai(), d.getHdbId(), Texts.nz(d.getGhiChu()), dau ? d.getSoTien() : 0, dau ? 0 : d.getSoTien(), d.getTep(), true));
+      boolean dau = LOAI_DAU_KY.equals(d.getLoai()) || LOAI_PHIEU_THU.equals(d.getLoai());
+      tho.add(new Tho(d.getNgay(), LOAI_DAU_KY.equals(d.getLoai()) ? 0 : dau ? 1 : 3, d.getId(), d.getLoai(), d.getHdbId(), Texts.nz(d.getGhiChu()), dau ? d.getSoTien() : 0, dau ? 0 : d.getSoTien(), d.getTep(), true));
     }
     for (HdPt r : hds) {
       HopDongBan h = r.h();
@@ -304,7 +307,7 @@ public class PhuTaiBaoCaoService {
     List<QuyRow> rows = new ArrayList<>();
     long ton = 0;
     Map<String, Integer> dem = new LinkedHashMap<>();
-    for (String k : List.of("Thu KH", "Trả NCC", "Chi phí", LOAI_CHUYEN_OXY)) dem.put(k, 0);
+    for (String k : List.of("Thu KH", "Trả NCC", "Chi phí", LOAI_CHUYEN_OXY, LOAI_PHIEU_THU, LOAI_PHIEU_CHI)) dem.put(k, 0);
     for (Tho t : tho) {
       ton += t.thu() - t.chi();
       HdPt r = t.hdbId() == null ? null : theoId.get(t.hdbId());
@@ -321,21 +324,27 @@ public class PhuTaiBaoCaoService {
     long cp = hds.stream().mapToLong(HdPt::cp).sum(), cx = hds.stream().mapToLong(HdPt::chuyenOxy).sum();
     List<TheoHd> theo = hds.stream().map(r -> new TheoHd(r.h().getId(), r.h().getSoHD(), r.h().getTenKH(), r.khTra(), r.traNcc(), r.cp(), r.chuyenOxy(), r.conTrongQuy())).toList();
     List<Ref> opts = hds.stream().map(r -> new Ref(r.h().getId(), r.h().getSoHD(), r.h().getTenKH())).toList();
-    return new QuyDto(new CanDoi(tu, today.toString(), dauKy, kh, ncc, cp, cx, dauKy + kh - ncc - cp - cx), rows, theo, dem, opts);
+    long pThu = tho.stream().filter(t -> LOAI_PHIEU_THU.equals(t.loai())).mapToLong(Tho::thu).sum();
+    long pChi = tho.stream().filter(t -> LOAI_PHIEU_CHI.equals(t.loai())).mapToLong(Tho::chi).sum();
+    return new QuyDto(new CanDoi(tu, today.toString(), dauKy, kh, ncc, cp, cx, dauKy + kh + pThu - ncc - cp - cx - pChi, pThu, pChi), rows, theo, dem, opts);
   }
 
   /** Ghi dòng nhập tay vào sổ quỹ Phú Tài: số dư đầu kỳ hoặc chuyển quyền lợi về OXY. */
   public DongTienPT themDongQuy(Ctx c, DongTienPT in) {
     c.require(Perm.phuTai);
     if (Texts.blank(in.getNgay()) || !(in.getSoTien() > 0)) throw ApiException.invalid("Cần Ngày và Số tiền > 0");
-    if (!LOAI_DAU_KY.equals(in.getLoai()) && !LOAI_CHUYEN_OXY.equals(in.getLoai())) throw ApiException.invalid("Loại dòng không hợp lệ");
+    if (!List.of(LOAI_DAU_KY, LOAI_CHUYEN_OXY, LOAI_PHIEU_THU, LOAI_PHIEU_CHI).contains(in.getLoai())) throw ApiException.invalid("Loại dòng không hợp lệ");
     boolean chuyen = LOAI_CHUYEN_OXY.equals(in.getLoai());
-    final String hdbId = chuyen ? Texts.emptyToNull(in.getHdbId()) : null;
-    if (chuyen) {
+    boolean phieu = LOAI_PHIEU_THU.equals(in.getLoai()) || LOAI_PHIEU_CHI.equals(in.getLoai());
+    // Chuyển OXY bắt buộc gắn HĐ Phú Tài; Phiếu thu / chi gắn HĐ hay không đều được (nếu gắn thì phải là HĐ Phú Tài).
+    final String hdbId = chuyen || phieu ? Texts.emptyToNull(in.getHdbId()) : null;
+    if (chuyen || hdbId != null) {
       HopDongBan h = hdbId == null ? null : c.db().getHopDongBan().stream().filter(x -> x.getId().equals(hdbId)).findFirst().orElse(null);
-      if (h == null || !Boolean.TRUE.equals(h.getThuocPhuTai())) throw ApiException.invalid("Chuyển OXY phải gắn một HĐ bán Phú Tài");
+      if (h == null || !Boolean.TRUE.equals(h.getThuocPhuTai())) throw ApiException.invalid(chuyen ? "Chuyển OXY phải gắn một HĐ bán Phú Tài" : "HĐ gắn phiếu phải là HĐ bán Phú Tài");
     }
-    DongTienPT out = new DongTienPT(c.uid("DT"), in.getNgay(), chuyen ? "Chi từ PT" : "Thu về PT", null, in.getSoTien(), "Nhập tay", null, Texts.nz(in.getGhiChu()),
+    if (phieu && Texts.blank(in.getGhiChu())) throw ApiException.invalid("Phiếu thu / chi cần ghi Nội dung");
+    boolean chi = chuyen || LOAI_PHIEU_CHI.equals(in.getLoai());
+    DongTienPT out = new DongTienPT(c.uid("DT"), in.getNgay(), chi ? "Chi từ PT" : "Thu về PT", null, in.getSoTien(), "Nhập tay", null, Texts.nz(in.getGhiChu()),
         hdbId, in.getLoai(), Texts.emptyToNull(in.getTep()));
     Ctx.upsert(c.db().getDongTienPT(), out, DongTienPT::getId);
     return out;
