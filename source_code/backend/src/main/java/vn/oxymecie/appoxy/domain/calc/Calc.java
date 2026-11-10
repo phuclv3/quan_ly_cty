@@ -41,6 +41,9 @@ public final class Calc {
   public static final List<String> CHECKLIST_HDM = List.of("Đặt hàng", "Thanh toán Đợt 1", "Dự kiến hàng về", "Kiểm định", "Nhập kho");
   public static final String CL_NHAP_KHO = "Nhập kho";
 
+  /** Nguồn tiền ảo "Quỹ Phú Tài" của chi phí thực hiện HĐ (lưu DB bằng cột quy_phu_tai, nguon_tien để NULL). */
+  public static final String NGUON_QUY_PHU_TAI = "QUY_PHU_TAI";
+
   private Calc() {}
 
   public static <T> double sum(List<T> arr, ToDoubleFunction<T> f) {
@@ -59,7 +62,8 @@ public final class Calc {
 
   // ── HĐ Bán ───────────────────────────────────────────────────────────
 
-  public record Thue(double moc, double phan1, double phan2, long thue1, long thue2, long thue, boolean cu) {}
+  /** cu = tính phẳng một mức (HĐ cũ hoặc nhập tay); tyLe = mức phẳng đó; tay = do người dùng nhập tay. */
+  public record Thue(double moc, double phan1, double phan2, long thue1, long thue2, long thue, boolean cu, double tyLe, boolean tay) {}
 
   /** HĐ ký trước ngày này tính theo công thức cũ: phí = TYLE_THUE_CU × chênh lệch (phần còn lại trả khách). */
   public static final String NGAY_DOI_CONG_THUC_THUE = "2026-03-01";
@@ -74,19 +78,21 @@ public final class Calc {
    * HDB-08: thuế TNDN trên chênh lệch.
    * HĐ mới: luỹ tiến, mốc = nguong × GTHĐ thực tế trước VAT. HĐ cũ (ký trước 03/2026): phẳng 22% × chênh lệch.
    */
-  public static Thue thueTNDN(double chenhLech, double thucTe, ThamSoThue ts, String ngayKy) {
+  public static Thue thueTNDN(double chenhLech, double thucTe, ThamSoThue ts, String ngayKy, Double tyLeTay) {
     double moc = ts.getNguong() * thucTe;
-    boolean cu = hdbCongThucCu(ngayKy);
-    if (chenhLech <= 0) return new Thue(moc, 0, 0, 0, 0, 0, cu);
+    boolean tay = tyLeTay != null;
+    boolean cu = tay || hdbCongThucCu(ngayKy);
+    double tyLe = tay ? tyLeTay : TYLE_THUE_CU;
+    if (chenhLech <= 0) return new Thue(moc, 0, 0, 0, 0, 0, cu, cu ? tyLe : 0, tay);
     if (cu) {
-      long thue = Math.round(chenhLech * TYLE_THUE_CU);
-      return new Thue(moc, chenhLech, 0, thue, 0, thue, true);
+      long thue = Math.round(chenhLech * tyLe);
+      return new Thue(moc, chenhLech, 0, thue, 0, thue, true, tyLe, tay);
     }
     double phan1 = Math.min(chenhLech, moc);
     double phan2 = Math.max(chenhLech - moc, 0);
     long thue1 = Math.round(phan1 * ts.getMuc1());
     long thue2 = Math.round(phan2 * ts.getMuc2());
-    return new Thue(moc, phan1, phan2, thue1, thue2, thue1 + thue2, cu);
+    return new Thue(moc, phan1, phan2, thue1, thue2, thue1 + thue2, false, 0, false);
   }
 
   /** Đã thu của một đợt — chỉ khi phiếu Thu được DUYỆT (F-02); đợt import không có phiếu tính theo số đã ghi. */
@@ -113,7 +119,7 @@ public final class Calc {
   public static HdbCalc hdbCalc(HopDongBan h, Db db) {
     long sau = sauVAT(h.getTruocVAT(), h.getVat());
     long chenhLech = h.getThucTeTruocVAT() > 0 ? h.getTruocVAT() - h.getThucTeTruocVAT() : 0;
-    Thue thue = thueTNDN(chenhLech, h.getThucTeTruocVAT(), h.getThamSoThue(), h.getNgayKy());
+    Thue thue = thueTNDN(chenhLech, h.getThucTeTruocVAT(), h.getThamSoThue(), h.getNgayKy(), h.getTyLeThueTay());
     long daThu = 0, daThuCho = 0;
     for (DotTTBan d : h.getDotTT()) {
       daThu += dotBanDaThu(d, db);

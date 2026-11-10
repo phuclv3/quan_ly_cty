@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component;
 import vn.oxymecie.appoxy.common.Dates;
 import vn.oxymecie.appoxy.common.Texts;
 import vn.oxymecie.appoxy.domain.logic.HeThongService;
+import vn.oxymecie.appoxy.domain.calc.Calc;
 import vn.oxymecie.appoxy.domain.model.*;
 import vn.oxymecie.appoxy.persistence.entity.*;
 import vn.oxymecie.appoxy.persistence.repo.*;
@@ -200,7 +201,7 @@ public class DbMapper {
     List<LichSuDuyet> ls = e.getLichSu().stream()
         .map(x -> new LichSuDuyet(t(x.getLuc()), x.getNguoi(), x.getHanhDong(), x.getGhiChu())).toList();
     return new ChiPhiHD(e.getId(), e.getMaCP(), Texts.nz(e.getHdbId()), d(e.getNgay()), Texts.nz(e.getLoaiChiPhi()), e.getNoiDung(),
-        e.getSoTien(), Texts.nz(e.getNguonTien()), e.getNguoiThucHien(), e.getNguoiNhan(), e.getDonViVanChuyen(), e.getTrangThai(),
+        e.getSoTien(), e.isQuyPhuTai() ? Calc.NGUON_QUY_PHU_TAI : Texts.nz(e.getNguonTien()), e.getNguoiThucHien(), e.getNguoiNhan(), e.getDonViVanChuyen(), e.getTrangThai(),
         e.getNguoiDuyet(), t(e.getNgayDuyet()), e.getLyDoTuChoi(), new ArrayList<>(e.getFiles().stream().map(this::file).toList()),
         e.getGhiChu(), orNull(new ArrayList<>(ls)));
   }
@@ -214,7 +215,7 @@ public class DbMapper {
         d(e.getNgayHieuLuc()), e.getTrangThai(), Texts.nz(e.getSale()), Texts.nz(e.getGhiChu()), e.getTruocVAT(), e.getVat(),
         e.getThucTeTruocVAT(), new ThamSoThue(e.getTsNguong(), e.getTsMuc1(), e.getTsMuc2()), dot, orNull(dong), e.getCoTamUng(),
         e.getPhatHD(), e.getLyDoPhat(), e.getLyDoHuy(), e.getGhiChuHoSoThieu(), t(e.getTaoLuc()), trueOrNull(e.isLaImport()), trueOrNull(e.isThuocPhuTai()),
-        e.getPtTyLeOxy());
+        e.getPtTyLeOxy(), e.getTyLeThueTay());
   }
 
   ViecGiao viecGiao(ViecGiaoEntity e) {
@@ -620,7 +621,9 @@ public class DbMapper {
     e.setLoaiChiPhi(Texts.emptyToNull(x.getLoaiChiPhi()));
     e.setNoiDung(Texts.nz(x.getNoiDung()));
     e.setSoTien(x.getSoTien());
-    e.setNguonTien(Texts.emptyToNull(x.getNguonTien()));
+    boolean quyPt = Calc.NGUON_QUY_PHU_TAI.equals(x.getNguonTien());
+    e.setQuyPhuTai(quyPt);
+    e.setNguonTien(quyPt ? null : Texts.emptyToNull(x.getNguonTien()));
     e.setNguoiThucHien(Texts.nz(x.getNguoiThucHien()));
     e.setNguoiNhan(x.getNguoiNhan());
     e.setDonViVanChuyen(x.getDonViVanChuyen());
@@ -661,6 +664,7 @@ public class DbMapper {
     e.setTsNguong(x.getThamSoThue().getNguong());
     e.setTsMuc1(x.getThamSoThue().getMuc1());
     e.setTsMuc2(x.getThamSoThue().getMuc2());
+    e.setTyLeThueTay(x.getTyLeThueTay());
     e.setCoTamUng(x.getCoTamUng());
     e.setPhatHD(x.getPhatHD());
     e.setLyDoPhat(x.getLyDoPhat());

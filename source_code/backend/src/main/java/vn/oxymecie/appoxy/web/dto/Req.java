@@ -76,6 +76,8 @@ public final class Req {
   public record SuaPhieuKho(@NotBlank(message = "Chưa chọn Ngày") @Pattern(regexp = NGAY, message = NGAY_MSG) String ngay,
                             @Size(max = 1000) String ghiChu) {}
 
+  public record ThemDongPhieuKho(List<KhoService.DongNhapLo> dongNhap, List<KhoService.DongXuat> dongXuat) {}
+
   public record SuaLo(@Size(max = 500) String thuocTinh, @PositiveOrZero(message = "Đơn giá không âm") double donGia,
                       @Min(0) @Max(100) Double vat, @Size(max = 1000) String ghiChu) {}
 

@@ -285,6 +285,36 @@ public class KhoService {
     if (c.dangChoXoa("PhieuKho", p.getId())) throw ApiException.conflict("Phiếu đang chờ huỷ — khoá sửa");
   }
 
+  /**
+   * "Sửa phiếu": thêm hàng vào phiếu đã lập. Nhập: mỗi dòng = một lô mới (bắt buộc đơn giá, mã lô nối tiếp phiếu).
+   * Xuất: trừ theo lô (chỉ định hoặc FIFO), chặn xuất quá tồn — tồn đã tính cả các dòng hiện có của phiếu.
+   */
+  public void themDongPhieuKho(Ctx c, String id, List<DongNhapLo> dongNhap, List<DongXuat> dongXuat) {
+    PhieuKho p = c.phieuKho(id);
+    if (p == null) throw ApiException.notFound("Không tìm thấy phiếu");
+    quyenPhieu(c, p);
+    if ("Nhập".equals(p.getLoai())) {
+      List<DongNhapLo> vao = (dongNhap == null ? List.<DongNhapLo>of() : dongNhap).stream()
+          .filter(d -> !Texts.blank(d.loaiHang()) && d.soLuong() > 0).toList();
+      if (vao.isEmpty()) throw ApiException.invalid("Cần ít nhất 1 dòng hàng có SL > 0");
+      for (int i = 0; i < vao.size(); i++) {
+        if (c.loaiHang(vao.get(i).loaiHang()) == null) throw ApiException.invalid("Không có mã " + vao.get(i).loaiHang());
+        if (!(vao.get(i).donGia() > 0)) throw ApiException.invalid("Dòng " + (i + 1) + ": chưa có đơn giá — nhập kho phải có đơn giá của lô");
+      }
+      Set<String> daCo = loDaCo(c);
+      int goc = p.getDong().size();
+      for (int i = 0; i < vao.size(); i++) {
+        DongNhapLo d = vao.get(i);
+        p.getDong().add(new DongPhieuKho(d.loaiHang(), Texts.trim(d.thuocTinh()), d.soLuong(), maLoMoi(p.getSoPhieu(), p.getSoHoaDon(), goc + i, daCo),
+            Math.max(d.donGia(), 0), d.vat(), null, null, null, Texts.trimToNull(d.ghiChu())));
+      }
+    } else {
+      List<DongPhieuKho> them = dongXuatTheoLo(c, p.getKho(), p.getHdId(), dongXuat, p.getNgay());
+      if (them.isEmpty()) throw ApiException.invalid("Cần ít nhất 1 dòng hàng có SL > 0");
+      p.getDong().addAll(them);
+    }
+  }
+
   /** Phiếu kho chỉ sửa Ngày, Ghi chú (KHO-04/05) — chặn đổi ngày làm lô xuất trước khi nhập. */
   public void suaPhieuKho(Ctx c, String id, String ngay, String ghiChu) {
     PhieuKho p = c.phieuKho(id);

@@ -92,6 +92,16 @@ public class KhoController {
     });
   }
 
+  @Operation(summary = "Sửa phiếu: thêm hàng vào phiếu nhập / xuất kho đã lập", description = "Nhập: mỗi dòng một lô mới, bắt buộc đơn giá. Xuất: trừ theo lô, chặn quá tồn.")
+  @PostMapping("/phieu-kho/{id}/dong")
+  public CommandResponse<Void> themDong(@PathVariable String id, @Valid @RequestBody Req.ThemDongPhieuKho r) {
+    return cmd.run("PK.themDong", c -> {
+      svc.themDongPhieuKho(c, id, r.dongNhap(), r.dongXuat());
+      c.nhatKy("PhieuKho", id, "Thêm hàng vào phiếu");
+      return null;
+    });
+  }
+
   @Operation(summary = "Sửa thông tin một lô nhập (quy cách, đơn giá, VAT)", description = "Giá vốn các dòng xuất của lô cập nhật theo. Trả số dòng xuất được cập nhật.")
   @PatchMapping("/phieu-kho/{id}/dong/{i}")
   public CommandResponse<Integer> suaLo(@PathVariable String id, @PathVariable int i, @Valid @RequestBody Req.SuaLo r) {

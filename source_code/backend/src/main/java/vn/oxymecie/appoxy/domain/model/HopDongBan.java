@@ -41,4 +41,6 @@ public class HopDongBan {
   private Boolean thuocPhuTai;
   /** HĐ Phú Tài: tỷ lệ % LN trước thuế OXY được hưởng (null = mặc định 70). */
   private Double ptTyLeOxy;
+  /** Thuế TNDN nhập tay: thuế suất phẳng 0..1 × chênh lệch. null = tính theo công thức. */
+  private Double tyLeThueTay;
 }

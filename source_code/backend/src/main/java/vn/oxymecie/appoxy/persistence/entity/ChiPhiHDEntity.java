@@ -49,6 +49,9 @@ public class ChiPhiHDEntity extends Audited {
   @Column(name = "nguon_tien")
   private String nguonTien;
 
+  @Column(name = "quy_phu_tai", nullable = false)
+  private boolean quyPhuTai;
+
   @Column(name = "nguoi_thuc_hien", nullable = false)
   private String nguoiThucHien;
 

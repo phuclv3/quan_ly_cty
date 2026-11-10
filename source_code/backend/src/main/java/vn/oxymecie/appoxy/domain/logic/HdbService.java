@@ -76,6 +76,8 @@ public class HdbService {
       h.setTaoLuc(cu.getTaoLuc());
       h.setLaImport(cu.getLaImport());
     }
+    // Thuế TNDN nhập tay: để trống = theo công thức; có thì 0..100%.
+    if (h.getTyLeThueTay() != null && (h.getTyLeThueTay() < 0 || h.getTyLeThueTay() > 1)) throw ApiException.invalid("Thuế TNDN nhập tay phải trong khoảng 0–100%");
     // Sale chỉ lập / sửa HĐ của chính mình.
     if (c.level(Perm.hdb) == Level.own) h.setSale(cu != null ? cu.getSale() : c.me());
     if (Texts.blank(h.getSale())) h.setSale(cu != null ? cu.getSale() : c.me());

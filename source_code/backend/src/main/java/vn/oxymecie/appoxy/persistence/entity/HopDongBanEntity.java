@@ -76,6 +76,9 @@ public class HopDongBanEntity extends Audited {
   @Column(name = "ts_muc2", nullable = false)
   private double tsMuc2;
 
+  @Column(name = "ty_le_thue_tay")
+  private Double tyLeThueTay;
+
   @Column(name = "co_tam_ung")
   private Boolean coTamUng;
 
