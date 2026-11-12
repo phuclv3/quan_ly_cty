@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal, viewChild } from '@angular/core';
-import { DongLo, loConHang, phanBoLo, tonTai } from '../core/calc';
+import { DongLo, conChuyenThang, loConHang, phanBoLo, tonTai } from '../core/calc';
 import { KHO_CHUYEN_THANG, PhieuKho } from '../core/models';
 import { Store } from '../core/store';
 import { TT, ttNhan } from '../core/trang-thai';
@@ -65,7 +65,10 @@ const xuatRong = (): DongXuatF => ({ loaiHang: '', lo: '', soLuong: 0, tenTrenHD
         <div class="field">
           <span class="lbl">Vị trí kho <span class="req">*</span></span>
           <app-pick [options]="khoOpts()" [value]="f().kho" (valueChange)="doiKho($event)" />
-          @if (f().kho === ctId) { <span class="hint">Chuyển thẳng: không cộng/trừ tồn, không theo lô (KHO-07)</span> }
+          <label class="check-row"><input type="checkbox" [checked]="f().kho === ctId" (change)="doiKho($any($event.target).checked ? ctId : khoThuong())" /> Hàng không qua kho (giao thẳng)</label>
+          @if (f().kho === ctId) {
+            <span class="hint">Không cộng/trừ tồn kho. {{ f().loai === 'Nhập' ? 'Phải chọn HĐ mua liên quan.' : 'Phải chọn HĐ bán; chỉ xuất tối đa số đã nhập không qua kho của HĐ mua liên quan.' }}</span>
+          }
         </div>
         @if (f().loai === 'Nhập') {
           <div class="field">
@@ -83,8 +86,8 @@ const xuatRong = (): DongXuatF => ({ loaiHang: '', lo: '', soLuong: 0, tenTrenHD
           </div>
         } @else {
           <div class="field wide">
-            <span class="lbl">HĐ bán (xuất cho hợp đồng)</span>
-            <app-pick [options]="hdOpts()" [value]="f().hdId" [allowEmpty]="true" placeholder="— Không gắn HĐ —" (valueChange)="set('hdId', $event)" />
+            <span class="lbl">HĐ bán (xuất cho hợp đồng) @if (f().kho === ctId) { <span class="req">*</span> }</span>
+            <app-pick [options]="hdOpts()" [value]="f().hdId" [allowEmpty]="f().kho !== ctId" placeholder="— Không gắn HĐ —" (valueChange)="set('hdId', $event)" />
             <span class="hint">Giá vốn của phiếu cộng vào HĐ bán này</span>
           </div>
         }
@@ -139,6 +142,7 @@ const xuatRong = (): DongXuatF => ({ loaiHang: '', lo: '', soLuong: 0, tenTrenHD
                   <td>
                     <app-pick [options]="maXuatOpts()" [value]="d.loaiHang" (valueChange)="setXuat(i, { loaiHang: $event, lo: '' })" />
                     @if (d.loaiHang && f().kho !== ctId) { <span class="hint">Tồn tại kho: {{ money(ton(d.loaiHang)) }}</span> }
+                    @if (d.loaiHang && f().kho === ctId) { <span class="hint">Còn xuất được (không qua kho): {{ money(conCT(d.loaiHang)) }}</span> }
                   </td>
                   <td>
                     @if (f().kho === ctId) { <span class="muted">Không theo lô</span> } @else {
@@ -251,7 +255,10 @@ export class PhieuTayForm {
   /** Xuất: chỉ mã còn hàng tại kho đã chọn (Chuyển thẳng: mọi mã). */
   protected readonly maXuatOpts = computed(() => {
     const f = this.f();
-    if (f.kho === KHO_CHUYEN_THANG) return this.maOpts();
+    if (f.kho === KHO_CHUYEN_THANG) {
+      const db = this.store.db();
+      return maHangOpts(this.store.loaiHang().filter((l) => l.dangDung && conChuyenThang(db, f.hdId, l.id) > 0));
+    }
     const con = new Set(loConHangTatCa(this.store, f.kho).map((l) => l.loaiHang));
     return maHangOpts(this.store.loaiHang().filter((l) => con.has(l.id)));
   });
@@ -278,6 +285,12 @@ export class PhieuTayForm {
 
   protected moTa(lh: string): string {
     return moTaMa(this.store.loaiHangById(lh));
+  }
+  protected conCT(lh: string): number {
+    return conChuyenThang(this.store.db(), this.f().hdId, lh);
+  }
+  protected khoThuong(): string {
+    return this.store.khoDangDung().find((k) => k.id !== KHO_CHUYEN_THANG)?.id ?? '';
   }
   protected ton(lh: string): number {
     return tonTai(this.store.db(), lh, this.f().kho);

@@ -843,6 +843,23 @@ export function donGiaChuyenThang(db: Db, hdbId: string | undefined, loaiHang: s
   return d ? Math.round(donGiaVND(d)) : 0;
 }
 
+/**
+ * Hàng không qua kho: số còn xuất được cho một HĐ bán = Σ nhập Chuyển thẳng (phiếu Hiệu lực của các HĐ mua liên quan)
+ * − Σ xuất Chuyển thẳng đã lập cho HĐ bán đó, theo mã hàng. Âm = đã xuất lố (dữ liệu cũ).
+ */
+export function conChuyenThang(db: Db, hdbId: string | undefined, loaiHang: string): number {
+  if (!hdbId) return 0;
+  const muaIds = new Set(db.hopDongMua.filter((m) => m.trangThai !== TT.HUY && hdmChoHdb(m, hdbId)).map((m) => m.id));
+  let con = 0;
+  for (const p of db.phieuKho) {
+    if (p.kho !== KHO_CHUYEN_THANG || p.trangThai !== TT.HIEU_LUC) continue;
+    const sl = sum(p.dong.filter((d) => d.loaiHang === loaiHang), (d) => d.soLuong);
+    if (p.loai === 'Nhập' && p.hdId && muaIds.has(p.hdId)) con += sl;
+    else if (p.loai === 'Xuất' && p.hdId === hdbId) con -= sl;
+  }
+  return con;
+}
+
 export interface DongLechKK {
   loaiHang: string;
   soSach: number;

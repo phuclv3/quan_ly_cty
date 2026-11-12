@@ -78,6 +78,7 @@ import {
   hdmTongSauVAT,
   sauVAT,
   hdmChoHdb,
+  conChuyenThang,
   donGiaChuyenThang,
   donGiaVND,
   hdbCalc,
@@ -1445,6 +1446,10 @@ export class Store {
       const tenTrenHD = d.tenTrenHD?.trim() || undefined;
       const ghiChu = d.ghiChu?.trim() || undefined;
       if (kho === KHO_CHUYEN_THANG) {
+        if (!hdbId) return 'Xuất hàng không qua kho phải chọn HĐ bán';
+        const daDung = out.filter((x) => x.loaiHang === d.loaiHang).reduce((s, x) => s + x.soLuong, 0);
+        const con = conChuyenThang(db, hdbId, d.loaiHang) - daDung;
+        if (d.soLuong > con + 1e-9) return `${d.loaiHang}: hàng không qua kho của HĐ này chỉ còn ${Math.max(0, con)} — lập phiếu nhập không qua kho (gắn HĐ mua liên quan) trước khi xuất`;
         out.push({ loaiHang: d.loaiHang, thuocTinh: '', soLuong: d.soLuong, donGiaGoc: donGiaChuyenThang(db, hdbId, d.loaiHang), tenTrenHD, ghiChu });
         continue;
       }
@@ -2160,6 +2165,7 @@ export class Store {
     if (e) return e;
     if (!p.ngay) return 'Chưa chọn Ngày';
     if (!p.kho) return 'Chưa chọn Vị trí kho';
+    if (p.kho === KHO_CHUYEN_THANG && !p.hdId) return p.loai === 'Nhập' ? 'Nhập hàng không qua kho phải chọn HĐ mua liên quan' : 'Xuất hàng không qua kho phải chọn HĐ bán';
     if (p.loai === 'Nhập' && p.hdId) {
       const m = this.hdmById(p.hdId);
       if (m && m.xuatHoaDon !== 'Đã') return `HĐ mua ${m.soHD || ''}: NCC chưa xuất hoá đơn — chọn "NCC đã xuất hoá đơn: Đã" ở HĐ mua trước khi nhập kho`;
