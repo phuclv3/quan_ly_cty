@@ -556,6 +556,21 @@ public final class Calc {
     return 0;
   }
 
+  /** Hàng không qua kho: số còn xuất được cho HĐ bán = Σ nhập Chuyển thẳng của các HĐ mua liên quan − Σ xuất Chuyển thẳng của HĐ bán, theo mã hàng. */
+  public static double conChuyenThang(Db db, String hdbId, String loaiHang) {
+    if (hdbId == null) return 0;
+    java.util.Set<String> muaIds = new java.util.HashSet<>();
+    for (HopDongMua m : db.getHopDongMua()) if (!TrangThai.HUY.equals(m.getTrangThai()) && hdmChoHdb(m, hdbId)) muaIds.add(m.getId());
+    double con = 0;
+    for (PhieuKho p : db.getPhieuKho()) {
+      if (!KHO_CHUYEN_THANG.equals(p.getKho()) || !TrangThai.HIEU_LUC.equals(p.getTrangThai())) continue;
+      double sl = p.getDong().stream().filter(d -> loaiHang.equals(d.getLoaiHang())).mapToDouble(DongPhieuKho::getSoLuong).sum();
+      if ("Nhập".equals(p.getLoai()) && p.getHdId() != null && muaIds.contains(p.getHdId())) con += sl;
+      else if ("Xuất".equals(p.getLoai()) && Objects.equals(p.getHdId(), hdbId)) con -= sl;
+    }
+    return con;
+  }
+
   public record DongLechKK(String loaiHang, double soSach, double thucTe, double lech) {}
 
   /** Đối chiếu kiểm kê: tồn sổ tới ngày kiểm kê tại kho với số đếm, theo mã hàng (không tính phiếu điều chỉnh của chính đợt). */

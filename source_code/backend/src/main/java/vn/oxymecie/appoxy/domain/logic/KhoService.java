@@ -54,6 +54,12 @@ public class KhoService {
       String tenTrenHD = Texts.trimToNull(d.tenTrenHD());
       String ghiChu = Texts.trimToNull(d.ghiChu());
       if (Calc.KHO_CHUYEN_THANG.equals(kho)) {
+        if (hdbId == null) throw ApiException.invalid("Xuất hàng không qua kho phải chọn HĐ bán");
+        double daDung = out.stream().filter(x -> x.getLoaiHang().equals(d.loaiHang())).mapToDouble(DongPhieuKho::getSoLuong).sum();
+        double con = Calc.conChuyenThang(c.db(), hdbId, d.loaiHang()) - daDung;
+        if (d.soLuong() > con + 1e-9)
+          throw ApiException.invalid(d.loaiHang() + ": hàng không qua kho của HĐ này chỉ còn " + Money.num(Math.max(0, con))
+              + " — lập phiếu nhập không qua kho (gắn HĐ mua liên quan) trước khi xuất");
         out.add(new DongPhieuKho(d.loaiHang(), "", d.soLuong(), null, null, null, null,
             Calc.donGiaChuyenThang(c.db(), hdbId, d.loaiHang()), tenTrenHD, ghiChu));
         continue;
@@ -114,6 +120,8 @@ public class KhoService {
     if (c.kho(p.kho()) == null) throw ApiException.invalid("Vị trí kho không tồn tại");
     if (!"Nhập".equals(p.loai()) && !"Xuất".equals(p.loai())) throw ApiException.invalid("Loại phiếu kho không hợp lệ");
     String hdId = Texts.emptyToNull(p.hdId());
+    if (Calc.KHO_CHUYEN_THANG.equals(p.kho()) && hdId == null)
+      throw ApiException.invalid("Nhập".equals(p.loai()) ? "Nhập hàng không qua kho phải chọn HĐ mua liên quan" : "Xuất hàng không qua kho phải chọn HĐ bán");
     if ("Nhập".equals(p.loai()) && hdId != null) {
       HopDongMua m = c.hdm(hdId);
       if (m == null) throw ApiException.invalid("HĐ mua không tồn tại");
