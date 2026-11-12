@@ -315,10 +315,6 @@ public class KeToanService {
     out.setNguonTien(Texts.emptyToNull(out.getNguonTien()));
     if (out.getHdbId() != null && c.hdb(out.getHdbId()) == null) throw ApiException.invalid("HĐ bán không tồn tại");
     boolean quyPt = Calc.NGUON_QUY_PHU_TAI.equals(out.getNguonTien());
-    if (quyPt) {
-      HopDongBan h = out.getHdbId() == null ? null : c.hdb(out.getHdbId());
-      if (h == null || !Boolean.TRUE.equals(h.getThuocPhuTai())) throw ApiException.invalid("Quỹ Phú Tài chỉ dùng cho chi phí của HĐ bán thuộc Phú Tài");
-    }
     kiemThamChieu(c, quyPt ? null : out.getNguonTien(), null, out.getLoaiChiPhi());
     out.setFiles(tepHopLe(c, out.getFiles()));
     out.setNguoiDuyet(cu == null ? null : cu.getNguoiDuyet());

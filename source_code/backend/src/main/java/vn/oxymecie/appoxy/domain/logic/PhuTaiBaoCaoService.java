@@ -303,7 +303,14 @@ public class PhuTaiBaoCaoService {
           tho.add(new Tho(cp.getNgay(), 2, cp.getId(), "Chi phí", h.getId(), Texts.nz(cp.getNoiDung()), 0, cp.getSoTien(), null, false));
       }
     }
+    // Chi phí HĐ bán của Oxy (không thuộc Phú Tài) chọn nguồn "Quỹ Phú Tài": hiện như phiếu chi của quỹ.
+    for (ChiPhiHD cp : raw.getChiPhiHD()) {
+      if (!Calc.NGUON_QUY_PHU_TAI.equals(cp.getNguonTien()) || !TrangThai.DA_DUYET.equals(cp.getTrangThai()) || theoId.containsKey(cp.getHdbId())) continue;
+      tho.add(new Tho(cp.getNgay(), 3, cp.getId(), LOAI_PHIEU_CHI, cp.getHdbId(), Texts.nz(cp.getNoiDung()), 0, cp.getSoTien(), null, false));
+    }
     tho.sort(Comparator.comparing((Tho t) -> Texts.nz(t.ngay())).thenComparingInt(Tho::thuTu).thenComparing(Tho::id));
+    Map<String, HopDongBan> hdbRaw = new LinkedHashMap<>();
+    raw.getHopDongBan().forEach(h -> hdbRaw.put(h.getId(), h));
     List<QuyRow> rows = new ArrayList<>();
     long ton = 0;
     Map<String, Integer> dem = new LinkedHashMap<>();
@@ -311,7 +318,8 @@ public class PhuTaiBaoCaoService {
     for (Tho t : tho) {
       ton += t.thu() - t.chi();
       HdPt r = t.hdbId() == null ? null : theoId.get(t.hdbId());
-      rows.add(new QuyRow(t.id(), t.ngay(), t.loai(), t.hdbId(), r == null ? null : r.h().getSoHD(), r == null ? null : r.h().getTenKH(), t.noiDung(), t.thu(), t.chi(), ton, t.tep(), t.tay()));
+      HopDongBan hb = r != null ? r.h() : t.hdbId() == null ? null : hdbRaw.get(t.hdbId());
+      rows.add(new QuyRow(t.id(), t.ngay(), t.loai(), t.hdbId(), hb == null ? null : hb.getSoHD(), hb == null ? null : hb.getTenKH(), t.noiDung(), t.thu(), t.chi(), ton, t.tep(), t.tay()));
       dem.computeIfPresent(t.loai(), (k, v) -> v + 1);
     }
     long dauKy = 0;
