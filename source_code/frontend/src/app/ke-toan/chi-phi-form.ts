@@ -142,9 +142,8 @@ export class ChiPhiForm {
     const list: PickOption[] = this.store.nguonDangDung().map((n) => ({ value: n.id, label: n.ten, hint: n.loai }));
     const n = this.store.nguonById(this.f()?.nguonTien);
     if (n && !list.some((o) => o.value === n.id)) list.push({ value: n.id, label: n.ten, hint: 'Ngưng' });
-    // HĐ bán thuộc Phú Tài: cho chi từ Quỹ Phú Tài — khoản chi hiện ở Sổ quỹ Phú Tài, không trừ nguồn tiền Oxy.
-    if (this.hd()?.thuocPhuTai || this.f()?.nguonTien === NGUON_QUY_PHU_TAI)
-      list.unshift({ value: NGUON_QUY_PHU_TAI, label: 'Quỹ Phú Tài', hint: 'Phú Tài' });
+    // Mọi HĐ bán: cho chi từ Quỹ Phú Tài — khoản chi hiện là phiếu chi ở Sổ quỹ Phú Tài, không trừ nguồn tiền Oxy.
+    list.unshift({ value: NGUON_QUY_PHU_TAI, label: 'Quỹ Phú Tài', hint: 'Phú Tài' });
     return list;
   });
 

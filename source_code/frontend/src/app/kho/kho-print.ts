@@ -17,6 +17,7 @@ const CHAM = '.'.repeat(300);
 const SO_DONG_TOI_THIEU = 11;
 
 const CSS_KHO = `
+  html, body, body * { font-family: 'Times New Roman', Tinos, 'Liberation Serif', Times, serif !important; }
   table.kho { width: 100%; border-collapse: collapse; margin: 10px 0 6px; font-size: 11pt; }
   table.kho th, table.kho td { border: 1px solid #000; padding: 3px 6px; vertical-align: middle; }
   table.kho th { text-align: center; background: none; font-weight: 700; }

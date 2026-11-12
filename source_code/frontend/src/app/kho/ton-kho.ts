@@ -87,7 +87,7 @@ const NGUONG_SAP_HET = 2;
     .tbl tbody td { padding-block: 10px; vertical-align: top; }
     .tbl .z { color: var(--ink-3); }
     .tbl .qc { color: #8a5a00; } .tbl .hs { color: #a3261d; font-weight: 600; }
-    .ma-ten { display: block; font-size: 11px; color: var(--ink-3); margin-top: 2px; max-width: 180px; }
+    .ma-ten { display: block; font-size: 11px; color: var(--ink-3); margin-top: 2px; width: 240px; max-width: 100%; white-space: normal; overflow-wrap: anywhere; line-height: 1.35; }
     .ts-ky-thuat { min-width: 220px; max-width: 360px; white-space: normal; }
     .ts-ky-thuat div + div { margin-top: 3px; padding-top: 3px; border-top: 1px dashed var(--line, #ddd); }
     .lo-link { border: 0; background: none; padding: 0; color: var(--brand); font-weight: 600; font-size: 12px; cursor: pointer; text-align: left; }
