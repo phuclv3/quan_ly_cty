@@ -183,14 +183,13 @@ public class DanhMucService {
 
   public void saveKho(Ctx c, Kho k, boolean isNew) {
     c.require(Perm.khoDanhMuc);
-    if (Calc.KHO_CHUYEN_THANG.equals(k.getId())) throw ApiException.invalid("\"Chuyển thẳng\" là vị trí hệ thống, không sửa được");
     if (Texts.blank(k.getTen())) throw ApiException.invalid("Chưa nhập tên kho");
     Kho cu = isNew ? null : c.kho(k.getId());
     if (!isNew && cu == null) throw ApiException.notFound("Không tìm thấy kho");
     if (isNew) {
       List<String> ids = c.db().getKho().stream().map(Kho::getId).toList();
       k.setId(idMoi(k.getId(), c.kho(k.getId()) != null, Ctx.nextMa("KHO", ids)));
-      k.setLoai("Kho thường");
+      k.setLoai("Kho NCC".equals(k.getLoai()) ? "Kho NCC" : "Kho thường");
     } else {
       k.setLoai(cu.getLoai());
     }

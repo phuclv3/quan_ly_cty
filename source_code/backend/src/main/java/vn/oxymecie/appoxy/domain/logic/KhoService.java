@@ -42,7 +42,6 @@ public class KhoService {
   /**
    * Dòng xuất → dòng phiếu theo LÔ: chỉ định lô thì trừ đúng lô đó, bỏ trống thì trừ lô nhập trước (FIFO, có thể tách
    * nhiều dòng). Chặn xuất quá tồn lô; chỉ trừ lô đã nhập tới ngày xuất. Giá vốn = đơn giá của lô.
-   * Kho Chuyển thẳng không có lô: giá gốc đích danh theo HĐ Mua liên quan (KHO-07).
    */
   public List<DongPhieuKho> dongXuatTheoLo(Ctx c, String kho, String hdbId, List<DongXuat> vao, String ngay) {
     List<DongLo> tatCa = Calc.tonTheoLo(c.db(), null);
@@ -53,17 +52,6 @@ public class KhoService {
       if (c.loaiHang(d.loaiHang()) == null) throw ApiException.invalid("Không có mã " + d.loaiHang());
       String tenTrenHD = Texts.trimToNull(d.tenTrenHD());
       String ghiChu = Texts.trimToNull(d.ghiChu());
-      if (Calc.KHO_CHUYEN_THANG.equals(kho)) {
-        if (hdbId == null) throw ApiException.invalid("Xuất hàng không qua kho phải chọn HĐ bán");
-        double daDung = out.stream().filter(x -> x.getLoaiHang().equals(d.loaiHang())).mapToDouble(DongPhieuKho::getSoLuong).sum();
-        double con = Calc.conChuyenThang(c.db(), hdbId, d.loaiHang()) - daDung;
-        if (d.soLuong() > con + 1e-9)
-          throw ApiException.invalid(d.loaiHang() + ": hàng không qua kho của HĐ này chỉ còn " + Money.num(Math.max(0, con))
-              + " — lập phiếu nhập không qua kho (gắn HĐ mua liên quan) trước khi xuất");
-        out.add(new DongPhieuKho(d.loaiHang(), "", d.soLuong(), null, null, null, null,
-            Calc.donGiaChuyenThang(c.db(), hdbId, d.loaiHang()), tenTrenHD, ghiChu));
-        continue;
-      }
       String lo = Texts.emptyToNull(d.lo());
       if (lo != null) {
         DongLo l = tatCa.stream().filter(x -> x.lo.equals(lo)).findFirst().orElse(null);
@@ -120,8 +108,6 @@ public class KhoService {
     if (c.kho(p.kho()) == null) throw ApiException.invalid("Vị trí kho không tồn tại");
     if (!"Nhập".equals(p.loai()) && !"Xuất".equals(p.loai())) throw ApiException.invalid("Loại phiếu kho không hợp lệ");
     String hdId = Texts.emptyToNull(p.hdId());
-    if (Calc.KHO_CHUYEN_THANG.equals(p.kho()) && hdId == null)
-      throw ApiException.invalid("Nhập".equals(p.loai()) ? "Nhập hàng không qua kho phải chọn HĐ mua liên quan" : "Xuất hàng không qua kho phải chọn HĐ bán");
     if ("Nhập".equals(p.loai()) && hdId != null) {
       HopDongMua m = c.hdm(hdId);
       if (m == null) throw ApiException.invalid("HĐ mua không tồn tại");
@@ -182,7 +168,7 @@ public class KhoService {
     if (seri.length() > 40) throw ApiException.invalid("Số serial tối đa 40 ký tự");
     if (c.db().getBinhKhi().stream().anyMatch(x -> x.getId().equalsIgnoreCase(seri))) throw ApiException.conflict("Số serial " + seri + " đã có");
     if (c.loaiHang(b.getLoaiHang()) == null) throw ApiException.invalid("Chọn mã hàng của bình");
-    if (c.kho(b.getKho()) == null || Calc.KHO_CHUYEN_THANG.equals(b.getKho())) throw ApiException.invalid("Chọn một kho thường");
+    if (c.kho(b.getKho()) == null) throw ApiException.invalid("Chọn một kho thường");
     if (Texts.blank(b.getXuatXu())) throw ApiException.invalid("Chưa nhập xuất xứ");
     if (Texts.blank(b.getNgaySX()) || Texts.blank(b.getHanSD())) throw ApiException.invalid("Chưa nhập Ngày SX / Hạn sử dụng");
     if (b.getHanSD().compareTo(b.getNgaySX()) < 0) throw ApiException.invalid("Hạn sử dụng phải sau Ngày sản xuất");
@@ -211,7 +197,7 @@ public class KhoService {
   public KiemKe saveKiemKe(Ctx c, KiemKe k, boolean isNew) {
     c.require(Perm.khoPhieuTay);
     if (Texts.blank(k.getNgay())) throw ApiException.invalid("Chưa chọn Ngày kiểm kê");
-    if (Texts.blank(k.getKho()) || Calc.KHO_CHUYEN_THANG.equals(k.getKho())) throw ApiException.invalid("Chọn một kho thường để kiểm kê");
+    if (Texts.blank(k.getKho())) throw ApiException.invalid("Chọn một kho thường để kiểm kê");
     if (c.kho(k.getKho()) == null) throw ApiException.invalid("Vị trí kho không tồn tại");
     List<DongKiemKe> dong = k.getDong().stream().filter(d -> !Texts.blank(d.getLoaiHang()) && d.getSoLuong() >= 0).toList();
     if (dong.isEmpty()) throw ApiException.invalid("Cần ít nhất 1 dòng mã hàng");

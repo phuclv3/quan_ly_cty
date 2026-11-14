@@ -217,11 +217,13 @@ public class HdmService {
     c.require(Perm.hdmNhapKho);
     HopDongMua m = c.hdm(hdmId);
     if (m == null) throw ApiException.notFound("Không tìm thấy HĐ");
-    if (m.isThuocPhuTai()) throw ApiException.conflict("HĐ thuộc Phú Tài không nhập kho Oxy");
     if (TrangThai.NHAP.equals(m.getTrangThai()) || TrangThai.HUY.equals(m.getTrangThai())) throw ApiException.conflict("HĐ chưa ký hoặc đã huỷ");
     if (hdmKhoa(c, m)) throw ApiException.conflict("HĐ đã khoá");
     if (Texts.blank(khoId)) throw ApiException.invalid("Chưa chọn Vị trí kho");
     if (c.kho(khoId) == null) throw ApiException.invalid("Vị trí kho không tồn tại");
+    // HĐ Phú Tài: hàng không về kho Oxy → chỉ nhập tại Kho NCC.
+    if (m.isThuocPhuTai() && !"Kho NCC".equals(c.kho(khoId).getLoai()))
+      throw ApiException.invalid("HĐ thuộc Phú Tài chỉ nhập tại Kho NCC (hàng không về kho Oxy)");
     if (Texts.blank(ngay)) throw ApiException.invalid("Chưa chọn Ngày");
     if (!"Đã".equals(m.getXuatHoaDon()))
       throw ApiException.invalid("NCC chưa xuất hoá đơn — chọn \"NCC đã xuất hoá đơn: Đã\" ở Tab 4 trước khi nhập kho");

@@ -34,7 +34,6 @@ import vn.oxymecie.appoxy.domain.model.ThamSoThue;
  * Giữ nguyên kiểu số double + Math.round như JavaScript để client và server ra cùng kết quả.
  */
 public final class Calc {
-  public static final String KHO_CHUYEN_THANG = "KHO-CT";
   public static final String LCP_HOA_HONG = "CPTH-HH";
   public static final String LCP_VAN_CHUYEN = "CPTH-VC";
   public static final List<String> HO_SO_BAT_BUOC = List.of("Hợp đồng", "BBGH/BBNT", "Hoá đơn");
@@ -537,38 +536,12 @@ public final class Calc {
     return out;
   }
 
-  /** Tồn hiện tại của một mã hàng — một kho, hoặc mọi kho thường (Chuyển thẳng luôn 0 — KHO-07). */
+  /** Tồn hiện tại của một mã hàng — một kho, hoặc mọi kho khi bỏ trống. */
   public static double tonTai(Db db, String loaiHang, String kho) {
-    if (KHO_CHUYEN_THANG.equals(kho)) return 0;
     double s = 0;
     for (DongTon r : tonKho(db, null))
-      if (r.loaiHang().equals(loaiHang) && (kho != null ? r.kho().equals(kho) : !r.kho().equals(KHO_CHUYEN_THANG))) s += r.ton();
+      if (r.loaiHang().equals(loaiHang) && (kho == null || r.kho().equals(kho))) s += r.ton();
     return s;
-  }
-
-  /** Chuyển thẳng (KHO-07): đơn giá gốc đích danh theo HĐ Mua liên quan của HĐ Bán, đúng mã hàng. */
-  public static double donGiaChuyenThang(Db db, String hdbId, String loaiHang) {
-    if (hdbId == null) return 0;
-    for (HopDongMua m : db.getHopDongMua()) {
-      if (TrangThai.HUY.equals(m.getTrangThai()) || !hdmChoHdb(m, hdbId)) continue;
-      for (DongHangMua d : dongMuaChoHdb(m, hdbId)) if (loaiHang.equals(d.getLoaiHang())) return Math.round(donGiaVND(d));
-    }
-    return 0;
-  }
-
-  /** Hàng không qua kho: số còn xuất được cho HĐ bán = Σ nhập Chuyển thẳng của các HĐ mua liên quan − Σ xuất Chuyển thẳng của HĐ bán, theo mã hàng. */
-  public static double conChuyenThang(Db db, String hdbId, String loaiHang) {
-    if (hdbId == null) return 0;
-    java.util.Set<String> muaIds = new java.util.HashSet<>();
-    for (HopDongMua m : db.getHopDongMua()) if (!TrangThai.HUY.equals(m.getTrangThai()) && hdmChoHdb(m, hdbId)) muaIds.add(m.getId());
-    double con = 0;
-    for (PhieuKho p : db.getPhieuKho()) {
-      if (!KHO_CHUYEN_THANG.equals(p.getKho()) || !TrangThai.HIEU_LUC.equals(p.getTrangThai())) continue;
-      double sl = p.getDong().stream().filter(d -> loaiHang.equals(d.getLoaiHang())).mapToDouble(DongPhieuKho::getSoLuong).sum();
-      if ("Nhập".equals(p.getLoai()) && p.getHdId() != null && muaIds.contains(p.getHdId())) con += sl;
-      else if ("Xuất".equals(p.getLoai()) && Objects.equals(p.getHdId(), hdbId)) con -= sl;
-    }
-    return con;
   }
 
   public record DongLechKK(String loaiHang, double soSach, double thucTe, double lech) {}

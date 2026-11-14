@@ -214,7 +214,6 @@ public class DuyetXoaService {
             ? "Loại đã dùng — chỉ ngưng" : null;
       }
       case "DM_Kho" -> {
-        if (Calc.KHO_CHUYEN_THANG.equals(id)) return "\"Chuyển thẳng\" là vị trí hệ thống";
         return d.getPhieuKho().stream().anyMatch(p -> id.equals(p.getKho())) || d.getKiemKe().stream().anyMatch(k -> id.equals(k.getKho()))
             ? "Kho đã có phiếu — chỉ ngưng" : null;
       }
