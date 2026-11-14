@@ -43,7 +43,10 @@ public final class TrangThai {
   public static final String DA_BAO_GIA = "DA_BAO_GIA";
   public static final String DANG_DAM_PHAN = "DANG_DAM_PHAN";
   public static final String KY_HOP_DONG = "KY_HOP_DONG";
-  public static final String DA_GIAO_HANG = "DA_GIAO_HANG";
+  public static final String DA_GIAO_HANG = "DA_GIAO_HANG"; // cơ hội KH; HĐ bán; yêu cầu xuất kho
+  // Yêu cầu xuất kho & giao hàng
+  public static final String CHO_KHO = "CHO_KHO";
+  public static final String DA_XUAT_KHO = "DA_XUAT_KHO";
 
   private static final Map<String, String> NHAN = Map.ofEntries(
       Map.entry(HOAT_DONG, "Hoạt động"), Map.entry(KHOA, "Khoá"), Map.entry(DANG_DUNG, "Đang dùng"),
@@ -57,7 +60,7 @@ public final class TrangThai {
       Map.entry(CHUA_LIEN_HE, "Chưa liên hệ"), Map.entry(DANG_LIEN_HE, "Đang liên hệ"), Map.entry(HOP_DONG, "Hợp đồng"),
       Map.entry(CHUA_TIEP_CAN, "Chưa tiếp cận"), Map.entry(DA_BAO_GIA, "Đã báo giá"),
       Map.entry(DANG_DAM_PHAN, "Đang đàm phán"), Map.entry(KY_HOP_DONG, "Ký hợp đồng"),
-      Map.entry(DA_GIAO_HANG, "Đã giao hàng"));
+      Map.entry(DA_GIAO_HANG, "Đã giao hàng"), Map.entry(CHO_KHO, "Chờ kho"), Map.entry(DA_XUAT_KHO, "Đã xuất kho"));
 
   /** Tên tiếng Việt để hiển thị; mã lạ trả lại nguyên mã. */
   public static String nhan(String ma) {

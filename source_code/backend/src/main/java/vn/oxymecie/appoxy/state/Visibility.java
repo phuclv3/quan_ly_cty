@@ -112,6 +112,7 @@ public final class Visibility {
       case "phieuThuChi" -> keep(row, x -> allPhieu || phieuCuaMinh((PhieuThuChi) x));
       case "phieuKho" -> keep(row, x -> allKho || hdb.contains(((PhieuKho) x).getHdId()) || hdm.contains(((PhieuKho) x).getHdId()));
       case "kiemKe" -> c.canView(Perm.khoTon) || c.canView(Perm.khoPhieuTay) ? row : null;
+      case "yeuCauXuatKho" -> keep(row, x -> allKho || hdb.contains(((YeuCauXuatKho) x).getHdbId()));
       case "deNghiVatTu" -> keep(row, x -> allHdm || hdb.contains(((DeNghiVatTu) x).getHdbId()));
       case "viecGiao" -> viec((ViecGiao) row);
       case "canhBao" -> c.level(Perm.viec) == Level.none ? null : row;

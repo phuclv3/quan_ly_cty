@@ -104,7 +104,7 @@ public class BaoCaoHdbService {
 
     int phatSinh = 0, duDk = 0, daTT = 0;
     Map<String, Integer> dem = new LinkedHashMap<>();
-    for (String t : List.of(TrangThai.HIEU_LUC, TrangThai.DANG_GIAO_HANG, TrangThai.HOAN_THANH, TrangThai.DA_TAT_TOAN)) dem.put(t, 0);
+    for (String t : List.of(TrangThai.HIEU_LUC, TrangThai.DANG_GIAO_HANG, TrangThai.DA_GIAO_HANG, TrangThai.HOAN_THANH, TrangThai.DA_TAT_TOAN)) dem.put(t, 0);
     Map<String, Integer> giao = new LinkedHashMap<>();
     for (String k : List.of("Chưa giao", "Giao một phần", "Giao đủ", "Không giao hàng")) giao.put(k, 0);
     Map<String, Integer> thu = new LinkedHashMap<>();

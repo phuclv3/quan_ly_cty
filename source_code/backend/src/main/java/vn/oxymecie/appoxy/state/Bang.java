@@ -56,6 +56,8 @@ public record Bang<D, E>(
       Repos::hopDongMua, HopDongMuaEntity::new, (m, d, e, c, me, now) -> m.applyHopDongMua(d, e, me, now));
   public static final Bang<KiemKe, KiemKeEntity> KIEM_KE = new Bang<>("kiemKe", Db::getKiemKe, KiemKe::getId,
       Repos::kiemKe, KiemKeEntity::new, (m, d, e, c, me, now) -> m.applyKiemKe(d, e));
+  public static final Bang<YeuCauXuatKho, YeuCauXuatKhoEntity> YEU_CAU_XUAT_KHO = new Bang<>("yeuCauXuatKho", Db::getYeuCauXuatKho,
+      YeuCauXuatKho::getId, Repos::yeuCauXuatKho, YeuCauXuatKhoEntity::new, (m, d, e, c, me, now) -> m.applyYeuCauXuatKho(d, e));
   public static final Bang<PhieuKho, PhieuKhoEntity> PHIEU_KHO = new Bang<>("phieuKho", Db::getPhieuKho, PhieuKho::getId,
       Repos::phieuKho, PhieuKhoEntity::new, (m, d, e, c, me, now) -> m.applyPhieuKho(d, e, me, now));
   public static final Bang<AnhXaTen, AnhXaTenEntity> ANH_XA_TEN = new Bang<>("anhXaTen", Db::getAnhXaTen, AnhXaTen::getId,
@@ -79,6 +81,6 @@ public record Bang<D, E>(
 
   /** Thứ tự ghi: bảng được tham chiếu trước bảng tham chiếu (xem khoá ngoại ở V1__create_initial_schema.sql). */
   public static final List<Bang<?, ?>> ALL = List.of(NHOM_QUYEN, TAI_KHOAN, NGUON_TIEN, LOAI_CHI_PHI, KHO, LOAI_HANG, KHACH_HANG, NCC,
-      PHIEU_THU_CHI, HOP_DONG_BAN, CHI_PHI_HD, DE_NGHI_VAT_TU, HOP_DONG_MUA, KIEM_KE, PHIEU_KHO, ANH_XA_TEN, BINH_KHI, HOP_DONG_PHU_TAI,
+      PHIEU_THU_CHI, HOP_DONG_BAN, CHI_PHI_HD, DE_NGHI_VAT_TU, HOP_DONG_MUA, KIEM_KE, PHIEU_KHO, YEU_CAU_XUAT_KHO, ANH_XA_TEN, BINH_KHI, HOP_DONG_PHU_TAI,
       DONG_TIEN_PT, VIEC_GIAO, CANH_BAO, YEU_CAU_XOA, HO_SO, HOA_DON);
 }

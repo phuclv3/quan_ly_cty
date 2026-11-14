@@ -110,6 +110,7 @@ public class DbMapper {
     db.setHopDongMua(list(r.hopDongMua().findAll(Sort.by(Sort.Direction.DESC, "createdAt")), this::hopDongMua));
     db.setPhieuKho(list(r.phieuKho().findAll(Sort.by(Sort.Direction.DESC, "ngay", "soPhieu")), this::phieuKho));
     db.setKiemKe(list(r.kiemKe().findAll(Sort.by(Sort.Direction.DESC, "ngay", "soPhieu")), this::kiemKe));
+    db.setYeuCauXuatKho(list(r.yeuCauXuatKho().findAll(Sort.by(Sort.Direction.DESC, "ngayGui", "soYC")), this::yeuCauXuatKho));
     db.setAnhXaTen(list(r.anhXaTen().findAll(Sort.by("ten", "id")), this::anhXaTen));
     db.setBinhKhi(list(r.binhKhi().findAll(Sort.by("id")), this::binhKhi));
     db.setDeNghiVatTu(list(r.deNghiVatTu().findAll(Sort.by(Sort.Direction.DESC, "ngay", "soPhieu")), this::deNghiVatTu));
@@ -297,6 +298,13 @@ public class DbMapper {
         x.getXuatXu(), x.getNongDo(), x.getGhiChu())).toList());
     return new KiemKe(e.getId(), e.getSoPhieu(), d(e.getNgay()), e.getKho(), e.getNguoiThucHien(), e.getGhiChu(), dong,
         orNull(new ArrayList<>(e.getPhieuDieuChinh())));
+  }
+
+  YeuCauXuatKho yeuCauXuatKho(YeuCauXuatKhoEntity e) {
+    List<DongYeuCauXuat> dong = new ArrayList<>(e.getDong().stream()
+        .map(x -> new DongYeuCauXuat(x.getLoaiHang(), x.getTenTrenHD(), x.getSoLuong(), x.getGhiChu())).toList());
+    return new YeuCauXuatKho(e.getId(), e.getSoYC(), d(e.getNgayGui()), e.getHdbId(), e.getNguoiGui(), dong, e.getGhiChu(), e.getTrangThai(),
+        e.getLyDoTuChoi(), e.getNguoiXuLy(), d(e.getNgayXuLy()), e.getKho(), e.getPhieuId(), d(e.getNgayXuat()), d(e.getNgayGiao()), e.getNguoiGiao());
   }
 
   BinhKhi binhKhi(BinhKhiEntity e) {
@@ -916,6 +924,33 @@ public class DbMapper {
     if (!e.getPhieuDieuChinh().equals(dc)) {
       e.getPhieuDieuChinh().clear();
       e.getPhieuDieuChinh().addAll(dc);
+    }
+  }
+
+  public void applyYeuCauXuatKho(YeuCauXuatKho x, YeuCauXuatKhoEntity e) {
+    e.setId(x.getId());
+    e.setSoYC(x.getSoYC());
+    e.setNgayGui(ld(x.getNgayGui()));
+    e.setHdbId(x.getHdbId());
+    e.setNguoiGui(x.getNguoiGui());
+    e.setGhiChu(x.getGhiChu());
+    e.setTrangThai(x.getTrangThai());
+    e.setLyDoTuChoi(x.getLyDoTuChoi());
+    e.setNguoiXuLy(x.getNguoiXuLy());
+    e.setNgayXuLy(ld(x.getNgayXuLy()));
+    e.setKho(Texts.emptyToNull(x.getKho()));
+    e.setPhieuId(x.getPhieuId());
+    e.setNgayXuat(ld(x.getNgayXuat()));
+    e.setNgayGiao(ld(x.getNgayGiao()));
+    e.setNguoiGiao(x.getNguoiGiao());
+    e.getDong().clear();
+    for (DongYeuCauXuat d : x.getDong()) {
+      YeuCauXuatKhoEntity.Dong o = new YeuCauXuatKhoEntity.Dong();
+      o.setLoaiHang(d.getLoaiHang());
+      o.setTenTrenHD(d.getTenTrenHD());
+      o.setSoLuong(d.getSoLuong());
+      o.setGhiChu(d.getGhiChu());
+      e.getDong().add(o);
     }
   }
 

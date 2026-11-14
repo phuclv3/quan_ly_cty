@@ -29,6 +29,7 @@ import vn.oxymecie.appoxy.domain.model.ChiPhiHD;
 import vn.oxymecie.appoxy.domain.model.HopDongBan;
 import vn.oxymecie.appoxy.domain.model.HopDongMua;
 import vn.oxymecie.appoxy.domain.model.PhieuKho;
+import vn.oxymecie.appoxy.domain.model.YeuCauXuatKho;
 import vn.oxymecie.appoxy.domain.model.PhieuThuChi;
 import vn.oxymecie.appoxy.web.dto.Req;
 
@@ -203,6 +204,26 @@ public class HopDongController {
       PhieuKho p = hdb.ghiNhanGiaoHang(c, id, r.ngay(), r.kho(), r.dong(), r.ghiChu());
       c.nhatKy("HopDongBan", id, "Giao hàng " + p.getSoPhieu());
       return p;
+    });
+  }
+
+  @Operation(summary = "Gửi yêu cầu xuất kho và giao hàng sang Kho", description = "HĐ Hiệu lực; SL không vượt số còn phải giao (đã trừ yêu cầu đang Chờ kho).")
+  @PostMapping("/hop-dong-ban/{id}/yeu-cau-xuat-kho")
+  public CommandResponse<YeuCauXuatKho> guiYeuCauXuat(@PathVariable String id, @Valid @RequestBody Req.YeuCauXuat r) {
+    return cmd.run("HDB.guiYeuCauXuat", c -> {
+      YeuCauXuatKho y = hdb.guiYeuCauXuatKho(c, id, r.dong(), r.ghiChu());
+      c.nhatKy("HopDongBan", id, "Gửi yêu cầu xuất kho " + y.getSoYC());
+      return y;
+    });
+  }
+
+  @Operation(summary = "Rút yêu cầu xuất kho (khi còn Chờ kho)")
+  @PostMapping("/yeu-cau-xuat-kho/{id}/rut")
+  public CommandResponse<Void> rutYeuCauXuat(@PathVariable String id) {
+    return cmd.run("HDB.rutYeuCauXuat", c -> {
+      hdb.rutYeuCauXuatKho(c, id);
+      c.nhatKy("YeuCauXuatKho", id, "Rút yêu cầu");
+      return null;
     });
   }
 

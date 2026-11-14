@@ -175,6 +175,20 @@ public final class Calc {
     return con;
   }
 
+  /**
+   * Số còn gửi yêu cầu xuất kho được theo mã hàng = {@link #hdbGioiHanGiao} trừ SL nằm trong các yêu cầu đang Chờ kho.
+   * null khi HĐ không có cơ sở giới hạn.
+   */
+  public static java.util.Map<String, Double> hdbConYeuCau(HopDongBan h, Db db) {
+    java.util.Map<String, Double> con = hdbGioiHanGiao(h, db);
+    if (con == null) return null;
+    for (var y : db.getYeuCauXuatKho()) {
+      if (!h.getId().equals(y.getHdbId()) || !TrangThai.CHO_KHO.equals(y.getTrangThai())) continue;
+      for (var d : y.getDong()) con.computeIfPresent(d.getLoaiHang(), (k, v) -> v - d.getSoLuong());
+    }
+    return con;
+  }
+
   /** Một đợt thanh toán để kiểm tra ràng buộc (dùng chung HĐ bán / HĐ mua). */
   public record DotRow(Double tyLe, long soTien, String han) {}
 

@@ -33,6 +33,7 @@ public record Repos(
     HopDongMuaRepository hopDongMua,
     PhieuKhoRepository phieuKho,
     KiemKeRepository kiemKe,
+    YeuCauXuatKhoRepository yeuCauXuatKho,
     AnhXaTenRepository anhXaTen,
     BinhKhiRepository binhKhi,
     HopDongPhuTaiRepository hopDongPhuTai,

@@ -284,6 +284,7 @@ public class DuyetXoaService {
         for (var v : d.getViecGiao()) if (id.equals(v.getHdbId())) v.setHdbId(null);
         for (var cb : d.getCanhBao()) if (id.equals(cb.getHdbId())) cb.setHdbId(null);
         d.getDeNghiVatTu().removeIf(x -> id.equals(x.getHdbId()));
+        d.getYeuCauXuatKho().removeIf(x -> id.equals(x.getHdbId()));
         Ctx.drop(d.getHopDongBan(), HopDongBan::getId, id);
       }
       case "HopDongMua" -> {
@@ -307,7 +308,10 @@ public class DuyetXoaService {
           HopDongBan h = c.hdb(p.getHdId());
           boolean conGiao = d.getPhieuKho().stream().anyMatch(x -> p.getHdId().equals(x.getHdId())
               && "Xuất".equals(x.getLoai()) && TrangThai.HIEU_LUC.equals(x.getTrangThai()));
-          if (h != null && TrangThai.DANG_GIAO_HANG.equals(h.getTrangThai()) && !conGiao) h.setTrangThai(TrangThai.HIEU_LUC);
+          KhoService.goPhieuKhoiYeuCau(c, id);
+          if (h != null && (TrangThai.DANG_GIAO_HANG.equals(h.getTrangThai()) || TrangThai.DA_GIAO_HANG.equals(h.getTrangThai())) && !conGiao)
+            h.setTrangThai(TrangThai.HIEU_LUC);
+          else KhoService.capNhatTrangThaiGiao(c, p.getHdId());
         }
       }
       case "HoaDon" -> {

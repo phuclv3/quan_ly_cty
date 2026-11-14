@@ -21,6 +21,7 @@ import vn.oxymecie.appoxy.domain.model.HopDongPhuTai;
 import vn.oxymecie.appoxy.domain.model.KhachHang;
 import vn.oxymecie.appoxy.domain.model.Kho;
 import vn.oxymecie.appoxy.domain.model.KiemKe;
+import vn.oxymecie.appoxy.domain.model.YeuCauXuatKho;
 import vn.oxymecie.appoxy.domain.model.LoaiChiPhi;
 import vn.oxymecie.appoxy.domain.model.LoaiHang;
 import vn.oxymecie.appoxy.domain.model.NguonTien;
@@ -240,6 +241,7 @@ public final class Ctx {
   public ChiPhiHD chiPhi(String id) { return find(db.getChiPhiHD(), ChiPhiHD::getId, id); }
   public PhieuKho phieuKho(String id) { return find(db.getPhieuKho(), PhieuKho::getId, id); }
   public KiemKe kiemKe(String id) { return find(db.getKiemKe(), KiemKe::getId, id); }
+  public YeuCauXuatKho yeuCauXuat(String id) { return find(db.getYeuCauXuatKho(), YeuCauXuatKho::getId, id); }
   public AnhXaTen anhXa(String id) { return find(db.getAnhXaTen(), AnhXaTen::getId, id); }
   public DeNghiVatTu deNghi(String id) { return find(db.getDeNghiVatTu(), DeNghiVatTu::getId, id); }
   public ViecGiao viec(String id) { return find(db.getViecGiao(), ViecGiao::getId, id); }

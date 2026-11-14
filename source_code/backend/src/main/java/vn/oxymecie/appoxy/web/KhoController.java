@@ -82,6 +82,36 @@ public class KhoController {
     });
   }
 
+  @Operation(summary = "Thủ kho xuất kho theo yêu cầu → phiếu Xuất", description = "Kiểm đúng mã, SL ≤ yêu cầu và ≤ còn phải giao; trừ theo lô.")
+  @PostMapping("/yeu-cau-xuat-kho/{id}/xuat")
+  public CommandResponse<PhieuKho> xuatYeuCau(@PathVariable String id, @Valid @RequestBody Req.GiaoHang r) {
+    return cmd.run("YCX.xuat", c -> {
+      PhieuKho p = svc.xuatKhoYeuCau(c, id, r.ngay(), r.kho(), r.dong(), r.ghiChu());
+      c.nhatKy("YeuCauXuatKho", id, "Xuất kho " + p.getSoPhieu());
+      return p;
+    });
+  }
+
+  @Operation(summary = "Thủ kho từ chối yêu cầu xuất kho (bắt buộc lý do)")
+  @PostMapping("/yeu-cau-xuat-kho/{id}/tu-choi")
+  public CommandResponse<Void> tuChoiYeuCau(@PathVariable String id, @Valid @RequestBody Req.LyDo r) {
+    return cmd.run("YCX.tuChoi", c -> {
+      svc.tuChoiYeuCau(c, id, r.lyDo());
+      c.nhatKy("YeuCauXuatKho", id, "Từ chối: " + r.lyDo());
+      return null;
+    });
+  }
+
+  @Operation(summary = "Cập nhật ngày giao hàng → Đã giao hàng")
+  @PostMapping("/yeu-cau-xuat-kho/{id}/ngay-giao")
+  public CommandResponse<Void> ngayGiao(@PathVariable String id, @Valid @RequestBody Req.NgayGiao r) {
+    return cmd.run("YCX.ngayGiao", c -> {
+      svc.capNhatNgayGiao(c, id, r.ngay());
+      c.nhatKy("YeuCauXuatKho", id, "Giao hàng ngày " + r.ngay());
+      return null;
+    });
+  }
+
   @Operation(summary = "Sửa Ngày / Ghi chú phiếu kho", description = "Chặn đổi ngày làm lô xuất trước ngày nhập.")
   @PatchMapping("/phieu-kho/{id}")
   public CommandResponse<Void> suaPhieu(@PathVariable String id, @Valid @RequestBody Req.SuaPhieuKho r) {

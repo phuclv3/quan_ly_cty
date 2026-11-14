@@ -22,6 +22,7 @@ import vn.oxymecie.appoxy.domain.model.HopDongBan;
 import vn.oxymecie.appoxy.domain.model.HopDongMua;
 import vn.oxymecie.appoxy.domain.model.KiemKe;
 import vn.oxymecie.appoxy.domain.model.PhieuKho;
+import vn.oxymecie.appoxy.domain.model.YeuCauXuatKho;
 import vn.oxymecie.appoxy.domain.perm.Level;
 import vn.oxymecie.appoxy.domain.perm.Perm;
 
@@ -157,6 +158,121 @@ public class KhoService {
       if (h != null && TrangThai.HIEU_LUC.equals(h.getTrangThai())) h.setTrangThai(TrangThai.DANG_GIAO_HANG);
     }
     return out;
+  }
+
+  // ── Yêu cầu xuất kho & giao hàng ─────────────────────────────────────
+
+  /**
+   * HĐ bán tự sang "Đã giao hàng" khi đã giao đủ SL (theo phiếu Xuất hiệu lực) và không còn yêu cầu xuất kho dở dang
+   * (Chờ kho / Đã xuất kho chưa có ngày giao); ngược lại (xoá phiếu, có yêu cầu mới…) lùi về "Đang giao hàng".
+   */
+  public static void capNhatTrangThaiGiao(Ctx c, String hdbId) {
+    HopDongBan h = c.hdb(hdbId);
+    if (h == null) return;
+    boolean dang = TrangThai.DANG_GIAO_HANG.equals(h.getTrangThai());
+    boolean da = TrangThai.DA_GIAO_HANG.equals(h.getTrangThai());
+    if (!dang && !da) return;
+    boolean doDang = c.db().getYeuCauXuatKho().stream().anyMatch(y -> hdbId.equals(y.getHdbId())
+        && (TrangThai.CHO_KHO.equals(y.getTrangThai()) || TrangThai.DA_XUAT_KHO.equals(y.getTrangThai())));
+    java.util.Map<String, Double> con = Calc.hdbGioiHanGiao(h, c.db());
+    boolean du = con != null && con.values().stream().allMatch(v -> v <= 1e-9);
+    if (dang && du && !doDang) h.setTrangThai(TrangThai.DA_GIAO_HANG);
+    else if (da && (!du || doDang)) h.setTrangThai(TrangThai.DANG_GIAO_HANG);
+  }
+
+  /** Phiếu Xuất bị xoá: yêu cầu đã xuất / đã giao từ phiếu đó quay lại Chờ kho (thủ kho xuất lại). */
+  public static void goPhieuKhoiYeuCau(Ctx c, String phieuId) {
+    for (YeuCauXuatKho y : c.db().getYeuCauXuatKho()) {
+      if (!phieuId.equals(y.getPhieuId())) continue;
+      y.setTrangThai(TrangThai.CHO_KHO);
+      y.setPhieuId(null);
+      y.setKho(null);
+      y.setNgayXuat(null);
+      y.setNgayGiao(null);
+      y.setNguoiGiao(null);
+      y.setNguoiXuLy(null);
+      y.setNgayXuLy(null);
+    }
+  }
+
+  /**
+   * Thủ kho xuất kho theo yêu cầu: kiểm từng dòng đúng mã trong yêu cầu, SL xuất ≤ SL yêu cầu và ≤ số còn phải giao của HĐ,
+   * rồi sinh phiếu Xuất trừ theo lô (giá vốn = đơn giá lô), HĐ bán sang Đang giao hàng. Phần yêu cầu không xuất hết thì đóng lại
+   * — sale gửi yêu cầu mới cho phần còn thiếu.
+   */
+  public PhieuKho xuatKhoYeuCau(Ctx c, String id, String ngay, String khoId, List<DongXuat> dong, String ghiChu) {
+    c.require(Perm.khoPhieuTay);
+    YeuCauXuatKho y = c.yeuCauXuat(id);
+    if (y == null) throw ApiException.notFound("Không tìm thấy yêu cầu xuất kho");
+    if (!TrangThai.CHO_KHO.equals(y.getTrangThai())) throw ApiException.conflict("Yêu cầu không còn ở trạng thái Chờ kho");
+    HopDongBan h = c.hdb(y.getHdbId());
+    if (h == null) throw ApiException.notFound("Không tìm thấy HĐ bán");
+    if (TrangThai.BAO_GIA.equals(h.getTrangThai()) || TrangThai.HOAN_THANH.equals(h.getTrangThai())
+        || TrangThai.DA_TAT_TOAN.equals(h.getTrangThai()) || TrangThai.HUY.equals(h.getTrangThai()) || c.dangChoXoa("HopDongBan", h.getId()))
+      throw ApiException.conflict("HĐ bán không còn xuất kho được (trạng thái " + TrangThai.nhan(h.getTrangThai()) + ")");
+    if (Texts.blank(khoId)) throw ApiException.invalid("Chưa chọn Vị trí kho");
+    if (c.kho(khoId) == null) throw ApiException.invalid("Vị trí kho không tồn tại");
+    if (Texts.blank(ngay)) throw ApiException.invalid("Chưa chọn Ngày xuất");
+    java.util.Map<String, Double> yc = new java.util.LinkedHashMap<>();
+    for (var d : y.getDong()) yc.merge(d.getLoaiHang(), d.getSoLuong(), Double::sum);
+    java.util.Map<String, Double> moi = new java.util.LinkedHashMap<>();
+    for (DongXuat d : dong == null ? List.<DongXuat>of() : dong)
+      if (!Texts.blank(d.loaiHang()) && d.soLuong() > 0) moi.merge(d.loaiHang(), d.soLuong(), Double::sum);
+    if (moi.isEmpty()) throw ApiException.invalid("Cần ít nhất 1 dòng hàng có số lượng > 0");
+    java.util.Map<String, Double> con = Calc.hdbGioiHanGiao(h, c.db());
+    for (var e : moi.entrySet()) {
+      Double r = yc.get(e.getKey());
+      if (r == null) throw ApiException.invalid("Mã hàng " + e.getKey() + " không có trong yêu cầu " + y.getSoYC());
+      if (e.getValue() > r + 1e-9)
+        throw ApiException.invalid("Mã hàng " + e.getKey() + ": xuất " + Money.num(e.getValue()) + " vượt SL yêu cầu " + Money.num(r));
+      Double cg = con == null ? null : con.get(e.getKey());
+      if (con != null && (cg == null || e.getValue() > cg + 1e-9))
+        throw ApiException.invalid("Mã hàng " + e.getKey() + ": xuất " + Money.num(e.getValue()) + " vượt số còn phải giao " + Money.num(Math.max(0, cg == null ? 0 : cg)));
+    }
+    List<DongPhieuKho> ds = dongXuatTheoLo(c, khoId, h.getId(), dong, ngay);
+    if (ds.isEmpty()) throw ApiException.invalid("Cần ít nhất 1 dòng hàng có số lượng > 0");
+    String ghi = Texts.trimToNull(ghiChu);
+    PhieuKho p = new PhieuKho(c.uid("PK"), c.nextSoThang(c.cauHinh().getTienToXK(), ngay), ngay, "Xuất", "Tự động HĐ Bán", h.getId(), khoId,
+        null, c.me(), TrangThai.HIEU_LUC, ghi == null ? "Theo yêu cầu " + y.getSoYC() : ghi + " · theo yêu cầu " + y.getSoYC(), ds, null, null, null);
+    Ctx.upsert(c.db().getPhieuKho(), p, PhieuKho::getId);
+    y.setTrangThai(TrangThai.DA_XUAT_KHO);
+    y.setKho(khoId);
+    y.setPhieuId(p.getId());
+    y.setNgayXuat(ngay);
+    y.setNguoiXuLy(c.me());
+    y.setNgayXuLy(c.today());
+    if (TrangThai.HIEU_LUC.equals(h.getTrangThai())) h.setTrangThai(TrangThai.DANG_GIAO_HANG);
+    capNhatTrangThaiGiao(c, h.getId());
+    return p;
+  }
+
+  /** Thủ kho từ chối yêu cầu (sai mã / không đủ hàng…) — bắt buộc lý do, sale thấy lại ở HĐ bán. */
+  public void tuChoiYeuCau(Ctx c, String id, String lyDo) {
+    c.require(Perm.khoPhieuTay);
+    YeuCauXuatKho y = c.yeuCauXuat(id);
+    if (y == null) throw ApiException.notFound("Không tìm thấy yêu cầu xuất kho");
+    if (!TrangThai.CHO_KHO.equals(y.getTrangThai())) throw ApiException.conflict("Yêu cầu không còn ở trạng thái Chờ kho");
+    if (Texts.blank(lyDo)) throw ApiException.invalid("Cần nhập lý do từ chối");
+    y.setTrangThai(TrangThai.TU_CHOI);
+    y.setLyDoTuChoi(lyDo.trim());
+    y.setNguoiXuLy(c.me());
+    y.setNgayXuLy(c.today());
+  }
+
+  /** Thủ kho cập nhật ngày giao hàng: không trước ngày xuất kho, không sau hôm nay → Đã giao hàng; HĐ bán tự sang Đã giao hàng khi giao đủ. */
+  public void capNhatNgayGiao(Ctx c, String id, String ngayGiao) {
+    c.require(Perm.khoPhieuTay);
+    YeuCauXuatKho y = c.yeuCauXuat(id);
+    if (y == null) throw ApiException.notFound("Không tìm thấy yêu cầu xuất kho");
+    if (!TrangThai.DA_XUAT_KHO.equals(y.getTrangThai())) throw ApiException.conflict("Chỉ cập nhật ngày giao cho yêu cầu Đã xuất kho");
+    if (Texts.blank(ngayGiao)) throw ApiException.invalid("Chưa chọn Ngày giao hàng");
+    if (y.getNgayXuat() != null && ngayGiao.compareTo(y.getNgayXuat()) < 0)
+      throw ApiException.invalid("Ngày giao không được trước ngày xuất kho " + Dates.vi(y.getNgayXuat()));
+    if (ngayGiao.compareTo(c.today()) > 0) throw ApiException.invalid("Ngày giao không được sau hôm nay");
+    y.setNgayGiao(ngayGiao);
+    y.setNguoiGiao(c.me());
+    y.setTrangThai(TrangThai.DA_GIAO_HANG);
+    capNhatTrangThaiGiao(c, y.getHdbId());
   }
 
   // ── Bình khí theo serial (tab "Bình & tem") ─────────────────────────

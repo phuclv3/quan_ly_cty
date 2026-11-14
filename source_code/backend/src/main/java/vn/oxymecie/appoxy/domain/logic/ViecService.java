@@ -62,7 +62,7 @@ public class ViecService {
         if (!TrangThai.DA_KY.equals(tt) && !TrangThai.DANG_NHAN_HANG.equals(tt)) throw ApiException.invalid("Chỉ ghi nhận sự cố phát sinh khi HĐ mua đã ký hoặc đang nhận hàng");
       } else {
         HopDongBan h = hd == null ? null : c.hdb(hd);
-        if (h == null || !TrangThai.DANG_GIAO_HANG.equals(h.getTrangThai())) throw ApiException.invalid("Chỉ ghi nhận sự cố phát sinh khi HĐ bán đang giao hàng");
+        if (h == null || !(TrangThai.DANG_GIAO_HANG.equals(h.getTrangThai()) || TrangThai.DA_GIAO_HANG.equals(h.getTrangThai()))) throw ApiException.invalid("Chỉ ghi nhận sự cố phát sinh khi HĐ bán đang giao hàng");
       }
     }
     String khId = Texts.emptyToNull(o.khId());

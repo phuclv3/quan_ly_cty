@@ -15,6 +15,7 @@ import java.util.List;
 import vn.oxymecie.appoxy.domain.logic.HdmService;
 import vn.oxymecie.appoxy.domain.logic.KhoService;
 import vn.oxymecie.appoxy.domain.model.DongDeNghi;
+import vn.oxymecie.appoxy.domain.model.DongYeuCauXuat;
 import vn.oxymecie.appoxy.domain.model.HopDongPhuTai;
 import vn.oxymecie.appoxy.domain.model.NhomQuyen;
 
@@ -53,6 +54,10 @@ public final class Req {
                          @NotBlank(message = "Chưa chọn Vị trí kho") String kho,
                          @NotEmpty(message = "Cần ít nhất 1 dòng hàng") List<KhoService.DongXuat> dong,
                          @Size(max = 1000) String ghiChu) {}
+
+  public record YeuCauXuat(@NotEmpty(message = "Cần ít nhất 1 dòng hàng") List<DongYeuCauXuat> dong, @Size(max = 1000) String ghiChu) {}
+
+  public record NgayGiao(@NotBlank(message = "Chưa chọn Ngày giao hàng") @Pattern(regexp = NGAY, message = NGAY_MSG) String ngay) {}
 
   public record ThucThu(@NotBlank(message = "Cần Ngày thực thu") @Pattern(regexp = NGAY, message = NGAY_MSG) String ngayThu,
                         @Positive(message = "Số tiền phải > 0") long soTienThu,
