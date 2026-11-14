@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal, viewChild } from '@angular/core';
 import { tonKho } from '../core/calc';
-import { KHO_CHUYEN_THANG, LoaiHang, NHOM_HANG, NhomHang } from '../core/models';
+import { LoaiHang, NHOM_HANG, NhomHang } from '../core/models';
 import { Store } from '../core/store';
 import { TT, ttNhan } from '../core/trang-thai';
 import { dirtyOf } from '../shared/unsaved';
@@ -236,7 +236,7 @@ export class DmLoaiHangTab {
   /** Tồn theo mã hàng, mọi kho thường. */
   protected readonly ton = computed(() => {
     const m = new Map<string, number>();
-    for (const r of tonKho(this.store.db())) if (r.kho !== KHO_CHUYEN_THANG) m.set(r.loaiHang, (m.get(r.loaiHang) ?? 0) + r.ton);
+    for (const r of tonKho(this.store.db())) m.set(r.loaiHang, (m.get(r.loaiHang) ?? 0) + r.ton);
     return m;
   });
   protected readonly rows = computed(() => {

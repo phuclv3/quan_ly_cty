@@ -28,7 +28,6 @@ import {
   HopDongBan,
   HopDongMua,
   HopDongPhuTai,
-  KHO_CHUYEN_THANG,
   KhachHang,
   KenhCS,
   ChamSocKH,
@@ -78,8 +77,6 @@ import {
   hdmTongSauVAT,
   sauVAT,
   hdmChoHdb,
-  conChuyenThang,
-  donGiaChuyenThang,
   donGiaVND,
   hdbCalc,
   hdbGioiHanGiao,
@@ -917,9 +914,8 @@ export class Store {
   private saveKho_(k: Kho): Result {
     const e = this.require('khoDanhMuc');
     if (e) return e;
-    if (k.id === KHO_CHUYEN_THANG) return '"Chuyển thẳng" là vị trí hệ thống, không sửa được';
     if (!k.ten.trim()) return 'Chưa nhập tên kho';
-    if (!k.id) k = { ...k, id: this.nextMa('KHO', this.db().kho.map((x) => x.id)), loai: 'Kho thường' };
+    if (!k.id) k = { ...k, id: this.nextMa('KHO', this.db().kho.map((x) => x.id)), loai: k.loai === 'Kho NCC' ? 'Kho NCC' : 'Kho thường' };
     this.upsert('kho', k);
     return null;
   }
@@ -1434,7 +1430,7 @@ export class Store {
   /**
    * Dòng xuất → dòng phiếu theo LÔ (sheet "2. XuatKho"): chỉ định lô thì trừ đúng lô đó, bỏ trống thì trừ
    * lô nhập trước (FIFO, có thể tách nhiều dòng). Chặn xuất quá tồn lô. Giá vốn = đơn giá của lô.
-   * Chỉ trừ lô đã nhập tới ngày xuất. Kho Chuyển thẳng không có lô: giá gốc đích danh theo HĐ Mua liên quan (KHO-07).
+   * Chỉ trừ lô đã nhập tới ngày xuất.
    */
   private dongXuatTheoLo(kho: string, hdbId: string | undefined, vao: DongXuat[], ngay: string): DongPhieuKho[] | string {
     const db = this.db();
@@ -1445,14 +1441,6 @@ export class Store {
       if (!d.loaiHang || !(d.soLuong > 0)) continue;
       const tenTrenHD = d.tenTrenHD?.trim() || undefined;
       const ghiChu = d.ghiChu?.trim() || undefined;
-      if (kho === KHO_CHUYEN_THANG) {
-        if (!hdbId) return 'Xuất hàng không qua kho phải chọn HĐ bán';
-        const daDung = out.filter((x) => x.loaiHang === d.loaiHang).reduce((s, x) => s + x.soLuong, 0);
-        const con = conChuyenThang(db, hdbId, d.loaiHang) - daDung;
-        if (d.soLuong > con + 1e-9) return `${d.loaiHang}: hàng không qua kho của HĐ này chỉ còn ${Math.max(0, con)} — lập phiếu nhập không qua kho (gắn HĐ mua liên quan) trước khi xuất`;
-        out.push({ loaiHang: d.loaiHang, thuocTinh: '', soLuong: d.soLuong, donGiaGoc: donGiaChuyenThang(db, hdbId, d.loaiHang), tenTrenHD, ghiChu });
-        continue;
-      }
       if (d.lo) {
         const l = tatCa.find((x) => x.lo === d.lo);
         if (l && ngay && l.ngay > ngay) return `Lô ${d.lo} nhập ngày ${l.ngay.split('-').reverse().join('/')} — sau ngày xuất`;
@@ -2044,9 +2032,9 @@ export class Store {
     if (e) return e;
     const m = this.hdmById(hdmId);
     if (!m) return 'Không tìm thấy HĐ';
-    if (m.thuocPhuTai) return 'HĐ thuộc Phú Tài không nhập kho Oxy';
     if (m.trangThai === TT.NHAP || m.trangThai === TT.HUY) return 'HĐ chưa ký hoặc đã huỷ';
     if (!o.kho) return 'Chưa chọn Vị trí kho';
+    if (m.thuocPhuTai && this.khoById(o.kho)?.loai !== 'Kho NCC') return 'HĐ thuộc Phú Tài chỉ nhập tại Kho NCC (hàng không về kho Oxy)';
     if (m.xuatHoaDon !== 'Đã') return 'NCC chưa xuất hoá đơn — chọn "NCC đã xuất hoá đơn: Đã" ở Tab 4 trước khi nhập kho';
     if (!o.soHoaDon?.trim()) return 'Cần Số hoá đơn NCC';
     const db = this.db();
@@ -2165,7 +2153,6 @@ export class Store {
     if (e) return e;
     if (!p.ngay) return 'Chưa chọn Ngày';
     if (!p.kho) return 'Chưa chọn Vị trí kho';
-    if (p.kho === KHO_CHUYEN_THANG && !p.hdId) return p.loai === 'Nhập' ? 'Nhập hàng không qua kho phải chọn HĐ mua liên quan' : 'Xuất hàng không qua kho phải chọn HĐ bán';
     if (p.loai === 'Nhập' && p.hdId) {
       const m = this.hdmById(p.hdId);
       if (m && m.xuatHoaDon !== 'Đã') return `HĐ mua ${m.soHD || ''}: NCC chưa xuất hoá đơn — chọn "NCC đã xuất hoá đơn: Đã" ở HĐ mua trước khi nhập kho`;
@@ -2231,7 +2218,7 @@ export class Store {
     const e = this.require('khoPhieuTay');
     if (e) return e;
     if (!k.ngay) return 'Chưa chọn Ngày kiểm kê';
-    if (!k.kho || k.kho === KHO_CHUYEN_THANG) return 'Chọn một kho thường để kiểm kê';
+    if (!k.kho) return 'Chọn một kho thường để kiểm kê';
     const dong = k.dong.filter((d) => d.loaiHang && d.soLuong >= 0);
     if (dong.length === 0) return 'Cần ít nhất 1 dòng mã hàng';
     const cu = k.id ? this.db().kiemKe.find((x) => x.id === k.id) : undefined;
@@ -2435,7 +2422,7 @@ export class Store {
     if (!id) return 'Chưa nhập số serial';
     if (this.db().binhKhi.some((x) => x.id === id)) return `Số serial ${id} đã có`;
     if (!this.loaiHangById(b.loaiHang)) return 'Chọn mã hàng của bình';
-    if (!this.khoById(b.kho) || b.kho === KHO_CHUYEN_THANG) return 'Chọn một kho thường';
+    if (!this.khoById(b.kho)) return 'Chọn một kho thường';
     if (!b.xuatXu.trim()) return 'Chưa nhập xuất xứ';
     if (!b.ngaySX || !b.hanSD) return 'Chưa nhập Ngày SX / Hạn sử dụng';
     if (b.hanSD < b.ngaySX) return 'Hạn sử dụng phải sau Ngày sản xuất';
@@ -2840,7 +2827,6 @@ export class Store {
       case 'DM_LoaiChiPhi':
         return d.phieuThuChi.some((p) => p.loaiChiPhi === id) || d.chiPhiHD.some((c) => c.loaiChiPhi === id) ? 'Loại đã dùng — chỉ ngưng' : null;
       case 'DM_Kho':
-        if (id === KHO_CHUYEN_THANG) return '"Chuyển thẳng" là vị trí hệ thống';
         return d.phieuKho.some((p) => p.kho === id) ? 'Kho đã có phiếu — chỉ ngưng' : null;
       case 'DM_LoaiHang':
         return d.phieuKho.some((p) => p.dong.some((x) => x.loaiHang === id)) || d.hopDongMua.some((m) => m.chiTiet.some((x) => x.loaiHang === id))

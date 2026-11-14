@@ -1,7 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { DongLo, daGiuTheoMa, lechKiemKe, tonKho, tonTheoLo } from '../core/calc';
-import { KHO_CHUYEN_THANG, KiemKe } from '../core/models';
+import { TT } from '../core/trang-thai';
+import { KiemKe } from '../core/models';
 import { Store } from '../core/store';
 import { nhoLoc } from '../core/ui';
 import { money, sum, viDate, vndShort } from '../core/util';
@@ -52,7 +53,7 @@ const NGUONG_SAP_HET = 2;
 
 /**
  * KHO-09 Tồn kho — bảng kiểm soát hàng hoá theo mã (Khả dụng = Tồn sổ − Đã giữ − Cách ly/chờ QC − Thiếu hồ sơ)
- * và bảng theo LÔ (sheet "3. TonTheoLo"). Giá trị tồn = Σ tồn lô × đơn giá lô. KHO-07 Chuyển thẳng tách riêng.
+ * và bảng theo LÔ (sheet "3. TonTheoLo"). Giá trị tồn = Σ tồn lô × đơn giá lô.
  */
 @Component({
   selector: 'app-kho-ton',
@@ -125,6 +126,8 @@ const NGUONG_SAP_HET = 2;
         }
         <app-filter [(loc)]="loc" memo="kho-ton" [time]="false" [facets]="facets()" placeholder="Tìm mã hàng, vị trí, lô, serial, số hoá đơn…" />
         <button type="button" class="btn sm quiet" (click)="xuatExcel()">Xuất Excel</button>
+        <label class="sub" title="Để trống = toàn bộ thời gian. Chọn tháng: xuất trong tháng, tồn cuối tháng">Tháng <input type="month" [value]="thangXuat()" (input)="thangXuat.set($any($event.target).value)" /></label>
+        <button type="button" class="btn sm quiet" (click)="xuatExcelTheoKho()" title="Mỗi dòng = một kho × một mã hàng; theo bộ lọc Kho / Nhóm / ô tìm">Xuất Excel theo kho</button>
       </div>
 
       @if (che() === 'ma') {
@@ -197,29 +200,10 @@ const NGUONG_SAP_HET = 2;
           </table>
         </div>
         <app-pager [pager]="pgLo" />
-        <p class="legend">Mỗi dòng phiếu nhập là một LÔ có đơn giá riêng; xuất kho trừ đúng lô → giá vốn lấy đúng đơn giá lô (không bình quân). Không tính phiếu Đã huỷ và kho Chuyển thẳng. Bấm dòng để xem thẻ kho.</p>
+        <p class="legend">Mỗi dòng phiếu nhập là một LÔ có đơn giá riêng; xuất kho trừ đúng lô → giá vốn lấy đúng đơn giá lô (không bình quân). Không tính phiếu Đã huỷ. Bấm dòng để xem thẻ kho.</p>
       }
     </section>
 
-    @if (ct().length) {
-      <h3 class="section-title">Chuyển thẳng (chỉ tham khảo)</h3>
-      <div class="note info">KHO-07: hàng đi thẳng từ NCC tới khách — phiếu vẫn lưu để truy vết theo HĐ nhưng không cộng/trừ tồn ở kho nào.</div>
-      <div class="tbl-wrap">
-        <table class="tbl freeze compact">
-          <thead><tr><th>Mã hàng</th><th class="num">SL nhập</th><th class="num">SL xuất</th><th class="num">Chênh</th></tr></thead>
-          <tbody>
-            @for (r of ct(); track r.loaiHang) {
-              <tr>
-                <td><b>{{ r.loaiHang }}</b> <span class="sub">{{ store.loaiHangTen(r.loaiHang) }}</span></td>
-                <td class="num">{{ money(r.nhap) }}</td>
-                <td class="num">{{ money(r.xuat) }}</td>
-                <td class="num muted">{{ money(r.ton) }}</td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      </div>
-    }
 
     <app-modal [open]="!!chon()" [title]="'Thẻ kho — ' + (chon()?.ten ?? '')" [sub]="chon()?.kho ? store.khoTen(chon()!.kho) : 'Tất cả kho'" size="lg" (closed)="chon.set(null)">
       <div class="tbl-wrap">
@@ -298,7 +282,7 @@ export class TonKhoTab {
     return l ? [l.moTa || l.ten, l.dvt].filter(Boolean).join(' · ') : '';
   }
 
-  private readonly allLo = computed(() => tonTheoLo(this.store.db()).filter((l) => l.kho !== KHO_CHUYEN_THANG));
+  private readonly allLo = computed(() => tonTheoLo(this.store.db()));
 
   /** Lô nhập từ HĐ mua mà HĐ mua chưa tích "Kiểm định" → cách ly / chờ QC. */
   private choKiemDinh(l: DongLo): boolean {
@@ -307,8 +291,12 @@ export class TonKhoTab {
     return !!m && m.checklist.some((c) => c.ten === 'Kiểm định') && !m.checklist.find((c) => c.ten === 'Kiểm định')?.xong;
   }
 
+  /** Kho đang chọn ở bộ lọc — rỗng = mọi kho. */
+  private readonly khoChon = computed(() => new Set(this.loc().sel['kho'] ?? []));
+
   private readonly allMa = computed<Ma[]>(() => {
     const db = this.store.db();
+    const kc = this.khoChon();
     const theoMa = new Map<string, Ma>();
     const row = (id: string): Ma => {
       let r = theoMa.get(id);
@@ -319,7 +307,7 @@ export class TonKhoTab {
       return r;
     };
     for (const t of tonKho(db)) {
-      if (t.kho === KHO_CHUYEN_THANG) continue;
+      if (kc.size && !kc.has(t.kho)) continue;
       const r = row(t.loaiHang);
       r.ton += t.ton;
       r.giaTri += t.giaTri;
@@ -328,7 +316,7 @@ export class TonKhoTab {
     // Mã đếm được khi kiểm kê nhưng chưa có trên sổ → vẫn hiện để thấy lệch.
     for (const id of this.lechMa().keys()) row(id);
     for (const l of this.allLo()) {
-      if (l.ton <= 0) continue;
+      if (l.ton <= 0 || (kc.size && !kc.has(l.kho))) continue;
       const r = row(l.loaiHang);
       r.soLo++;
       const qc = l.quyCach?.trim();
@@ -357,7 +345,7 @@ export class TonKhoTab {
   });
 
   protected readonly facets = computed<Facet[]>(() => [
-    { key: 'kho', label: 'Kho', options: khoOpts(this.store.db(), false) },
+    { key: 'kho', label: 'Kho', options: khoOpts(this.store.db()) },
     { key: 'nhom', label: 'Nhóm hàng', options: nhomOpts() },
     ...(this.che() === 'ma' ? [{ key: 'canh', label: 'Cảnh báo', options: CANH_OPTS }] : []),
   ]);
@@ -412,15 +400,6 @@ export class TonKhoTab {
     };
   });
 
-  protected readonly ct = computed(() => {
-    const m = new Map<string, { loaiHang: string; nhap: number; xuat: number; ton: number }>();
-    for (const r of tonKho(this.store.db())) {
-      if (r.kho !== KHO_CHUYEN_THANG) continue;
-      m.set(r.loaiHang, { loaiHang: r.loaiHang, nhap: r.nhap, xuat: r.xuat, ton: r.ton });
-    }
-    return [...m.values()];
-  });
-
   protected readonly the = computed(() => {
     const c = this.chon();
     return c ? theKho(this.store.db(), c) : [];
@@ -434,6 +413,51 @@ export class TonKhoTab {
   }
   protected hd(p: Parameters<typeof hdCuaPhieu>[1]) {
     return hdCuaPhieu(this.store, p);
+  }
+
+  /** Tháng (YYYY-MM) cho Excel theo kho; rỗng = toàn bộ thời gian. */
+  protected readonly thangXuat = signal('');
+
+  /**
+   * Excel theo kho × mã hàng, theo bộ lọc Kho / Nhóm / ô tìm. Có chọn tháng: SL / giá trị xuất = xuất trong tháng đó,
+   * tồn = tồn cuối tháng. Không chọn: xuất = mọi lần xuất, tồn = hiện tại. Giá trị theo đơn giá lô (giá vốn).
+   */
+  protected xuatExcelTheoKho(): void {
+    const l = this.loc();
+    const thang = this.thangXuat();
+    const db = this.store.db();
+    type R = { kho: string; loaiHang: string; slTon: number; slXuat: number; giaTriXuat: number; giaTriTon: number };
+    const g = new Map<string, R>();
+    const row = (kho: string, loaiHang: string): R | null => {
+      const lh = this.store.loaiHangById(loaiHang);
+      if (!khopSel(l, 'kho', kho) || !khopSel(l, 'nhom', lh?.nhom)) return null;
+      if (!khopQ(l, loaiHang, lh?.ten, lh?.moTa, this.store.khoTen(kho))) return null;
+      const k = `${kho}${loaiHang}`;
+      let r = g.get(k);
+      if (!r) g.set(k, (r = { kho, loaiHang, slTon: 0, slXuat: 0, giaTriXuat: 0, giaTriTon: 0 }));
+      return r;
+    };
+    for (const x of tonTheoLo(db, thang ? `${thang}-31` : undefined)) {
+      const r = row(x.kho, x.loaiHang);
+      if (!r) continue;
+      r.slTon += x.ton;
+      r.giaTriTon += x.giaTriTon;
+    }
+    for (const p of db.phieuKho) {
+      if (p.loai !== 'Xuất' || p.trangThai !== TT.HIEU_LUC || (thang && !p.ngay.startsWith(thang))) continue;
+      for (const d of p.dong) {
+        const r = row(p.kho, d.loaiHang);
+        if (!r) continue;
+        r.slXuat += d.soLuong;
+        r.giaTriXuat += d.soLuong * (d.donGiaGoc ?? 0);
+      }
+    }
+    const rows: (string | number)[][] = [['Vị trí kho', 'Mã hàng', 'Số lượng tồn', 'Số lượng xuất', 'Giá trị xuất', 'Giá trị tồn']];
+    const ds = [...g.values()]
+      .filter((r) => r.slTon !== 0 || r.slXuat !== 0)
+      .sort((a, b) => this.store.khoTen(a.kho).localeCompare(this.store.khoTen(b.kho)) || a.loaiHang.localeCompare(b.loaiHang));
+    for (const r of ds) rows.push([this.store.khoTen(r.kho), r.loaiHang, r.slTon, r.slXuat, Math.round(r.giaTriXuat), Math.round(r.giaTriTon)]);
+    void xuatExcel(thang ? `ton-kho-theo-kho-${thang}` : 'ton-kho-theo-kho', rows);
   }
 
   protected xuatExcel(): void {

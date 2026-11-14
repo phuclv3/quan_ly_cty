@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { giaTriPhieu, lechKiemKe, tonTheoLo } from '../core/calc';
-import { BinhKhi, KHO_CHUYEN_THANG, PhieuKho } from '../core/models';
+import { BinhKhi, PhieuKho } from '../core/models';
 import { Store } from '../core/store';
 import { TT } from '../core/trang-thai';
 import { daysFromToday, sum, todayIso, viDate, vndShort } from '../core/util';
@@ -56,7 +56,7 @@ const cuoiThang = (nam: number, thang: number) => `${nam}-${pad(thang)}-${pad(ne
       <span class="sub">Cập nhật {{ homNay }}</span>
       <button type="button" class="btn sm quiet" (click)="xuat()">Xuất Excel</button>
     </div>
-    <p class="sub luu-y">Giá trị theo đơn giá lô (giá vốn), chưa VAT; phiếu Đã huỷ và kho Chuyển thẳng không tính. Tuổi tồn tính từ ngày nhập lô. Chưa có hạn giao hàng và tình trạng vỏ bình nên không có chỉ tiêu giao đúng hạn.</p>
+    <p class="sub luu-y">Giá trị theo đơn giá lô (giá vốn), chưa VAT; phiếu Đã huỷ không tính. Tuổi tồn tính từ ngày nhập lô. Chưa có hạn giao hàng và tình trạng vỏ bình nên không có chỉ tiêu giao đúng hạn.</p>
 
     <div class="kpis">
       <div class="k hero">
@@ -274,7 +274,7 @@ export class KhoBaoCao {
   }
 
   /** Phiếu Hiệu lực của kho thường. */
-  private readonly phieu = computed(() => this.store.db().phieuKho.filter((p) => p.trangThai === TT.HIEU_LUC && p.kho !== KHO_CHUYEN_THANG));
+  private readonly phieu = computed(() => this.store.db().phieuKho.filter((p) => p.trangThai === TT.HIEU_LUC));
 
   /** Khoảng ngày của kỳ đang chọn trong năm `nam`. */
   private khoang(nam: number): { tu: string; den: string } {
@@ -293,7 +293,7 @@ export class KhoBaoCao {
     const soNgay = Math.max(1, Math.round((new Date(denTinh).getTime() - new Date(tu).getTime()) / 864e5) + 1);
     const giaTriNhap = sum(nhap, giaTriPhieu);
     const giaTriXuat = sum(xuat, giaTriPhieu);
-    const tonCuoi = sum(tonTheoLo(this.store.db(), denTinh).filter((l) => l.kho !== KHO_CHUYEN_THANG), (l) => l.giaTriTon);
+    const tonCuoi = sum(tonTheoLo(this.store.db(), denTinh), (l) => l.giaTriTon);
     return { nhap: giaTriNhap, xuat: giaTriXuat, soNhap: nhap.length, soXuat: xuat.length, tonCuoi, soNgay };
   }
   protected readonly ky = computed(() => this.tongKy(+this.nam()));
@@ -362,7 +362,7 @@ export class KhoBaoCao {
   });
 
   // ── Tồn hiện tại ──
-  private readonly loTon = computed(() => tonTheoLo(this.store.db()).filter((l) => l.kho !== KHO_CHUYEN_THANG && l.ton > 0));
+  private readonly loTon = computed(() => tonTheoLo(this.store.db()).filter((l) => l.ton > 0));
   protected readonly tonHienTai = computed(() => sum(this.loTon(), (l) => l.giaTriTon));
   protected readonly nhom = computed(() => {
     const theo = new Map<string, number>();

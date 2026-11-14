@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { HopDongBan, KHO_CHUYEN_THANG } from '../core/models';
+import { HopDongBan } from '../core/models';
 import { Store } from '../core/store';
 import { TT } from '../core/trang-thai';
 import { nhoLoc } from '../core/ui';
@@ -39,7 +39,7 @@ interface HdGT {
   template: `
     <div class="note info">
       <b>Giá vốn đích danh theo lô:</b> mỗi dòng xuất trừ đúng một lô nhập, đơn giá vốn = đơn giá chưa VAT của lô đó (chốt lúc lập phiếu xuất).
-      Không dùng bình quân vì cùng mã hàng giá các lô chênh nhau nhiều lần. Kho "Chuyển thẳng" không theo lô — lấy đơn giá dòng HĐ Mua liên quan.
+      Không dùng bình quân vì cùng mã hàng giá các lô chênh nhau nhiều lần.
       Tổng giá vốn dùng làm Giá vốn ở HĐ Bán (HDB-11).
     </div>
     <div class="kpis">
@@ -132,7 +132,7 @@ export class GiaTriHdTab {
             sl: d.soLuong,
             donGia: d.donGiaGoc ?? 0,
             thanhTien: (d.donGiaGoc ?? 0) * d.soLuong,
-            cach: p.kho === KHO_CHUYEN_THANG ? 'Chuyển thẳng — theo HĐ mua' : d.lo ? 'Đích danh theo lô' : 'Chưa gán lô',
+            cach: d.lo ? 'Đích danh theo lô' : 'Chưa gán lô',
           });
       out.push({
         hd,

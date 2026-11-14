@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal, viewChild } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { lechKiemKe, tonKho } from '../core/calc';
-import { DongKiemKe, KHO_CHUYEN_THANG, KiemKe } from '../core/models';
+import { DongKiemKe, KiemKe } from '../core/models';
 import { Store } from '../core/store';
 import { TT, ttNhan } from '../core/trang-thai';
 import { money, sum, todayIso, viDate } from '../core/util';
@@ -207,7 +207,6 @@ export class KiemKeTab {
   protected readonly khoOpts = computed<PickOption[]>(() =>
     this.store
       .khoDangDung()
-      .filter((k) => k.id !== KHO_CHUYEN_THANG)
       .map((k) => ({ value: k.id, label: k.ten, hint: k.id })),
   );
   protected readonly maOpts = computed(() => maHangOpts(this.store.loaiHang().filter((l) => l.dangDung)));

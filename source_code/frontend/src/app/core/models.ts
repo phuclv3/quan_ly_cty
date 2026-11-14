@@ -332,12 +332,10 @@ export interface NhaCungCap {
 export interface Kho {
   id: string;
   ten: string;
-  loai: 'Kho thường' | 'Chuyển thẳng';
+  loai: 'Kho thường' | 'Kho NCC';
   dangDung: boolean;
 }
 
-/** Vị trí hệ thống "Chuyển thẳng — không qua kho": không sửa, không xoá (KHO-01). */
-export const KHO_CHUYEN_THANG = 'KHO-CT';
 
 /**
  * Spec (KHO-02) nêu 3 nhóm Vỏ bình / Thiết bị tái sử dụng / Phụ kiện; dữ liệu kho thực tế

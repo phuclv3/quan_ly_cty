@@ -2,7 +2,7 @@ import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, input, linkedSignal, signal, viewChild } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { giaTriPhieu, maLo, tongSL } from '../core/calc';
-import { KHO_CHUYEN_THANG, PhieuKho } from '../core/models';
+import { PhieuKho } from '../core/models';
 import { Perm } from '../core/perm';
 import { Store } from '../core/store';
 import { TT, ttNhan } from '../core/trang-thai';
@@ -92,7 +92,6 @@ const quyenSua = (p: PhieuKho): Perm =>
         Phiếu nhập: mỗi dòng là một LÔ có mã lô + đơn giá riêng. Phiếu xuất: mỗi dòng trừ đúng một lô, giá vốn = đơn giá lô.
         Phiếu không sửa số lượng — chỉ sửa Ngày, Ghi chú; huỷ phiếu qua duyệt xoá, duyệt xong phiếu bị xoá hẳn và tồn tính lại.
         Phiếu nhập có lô đã xuất phải huỷ phiếu xuất trước.
-        Phiếu có Vị trí kho "Chuyển thẳng — không qua kho" chỉ lưu để truy vết theo HĐ, không cộng/trừ tồn (KHO-07).
       </div>
     </div>
 
@@ -102,7 +101,6 @@ const quyenSua = (p: PhieuKho): Perm =>
           <div class="btn-row" style="justify-content:flex-start;margin-bottom:10px">
             <app-tt [v]="p.trangThai" />
             @if (choXoa(p)) { <app-tt v="Chờ xoá" /> }
-            @if (p.kho === ctId) { <span class="tag mute">Chuyển thẳng — không tính tồn</span> }
           </div>
           <div class="form-grid blk xanh">
 <h3 class="blk-t">Thông tin phiếu</h3>
@@ -246,7 +244,6 @@ export class PhieuKhoTab {
   protected readonly giaTriPhieu = giaTriPhieu;
   protected readonly lo = maLo;
   protected readonly suaLo = signal<SuaLo | null>(null);
-  protected readonly ctId = KHO_CHUYEN_THANG;
 
   protected readonly memo = computed(() => `kho-phieu-${this.loai() === 'Nhập' ? 'nhap' : 'xuat'}`);
   protected readonly loc = linkedSignal<Loc>(() => nhoLoc(this.memo(), LOC_RONG));

@@ -262,7 +262,7 @@ interface TraForm {
           <div class="section-title">
             <span class="muted">Thành tiền VNĐ = SL × Đơn giá × Tỷ giá (VNĐ: tỷ giá = 1).</span>
             <div class="btn-row">
-              @if (!m.thuocPhuTai && store.canEdit('hdmNhapKho') && !isNew()) {
+              @if (store.canEdit('hdmNhapKho') && !isNew()) {
                 <button type="button" class="btn" [disabled]="!nhapDuoc() || (!chon().length && !conNhap().length)" [attr.title]="!nhapDuoc() ? 'Chưa nhập kho được — HĐ cần ở trạng thái Hiệu lực trở lên và NCC đã xuất hoá đơn' : !conNhap().length ? 'Mọi dòng đã nhập kho đủ' : null" (click)="moNhap(chon().length ? chon() : conNhap())"><app-icon name="box" [size]="16" /> @if (chon().length) { Nhập kho {{ chon().length }} dòng chọn } @else { Nhập kho tất cả ({{ conNhap().length }} dòng còn lại) }</button>
               }
               @if (edit()) {
@@ -272,7 +272,7 @@ interface TraForm {
               }
             </div>
           </div>
-          @if (!m.thuocPhuTai && store.canEdit('hdmNhapKho') && !isNew() && !nhapDuoc() && trangThai() === TT.NHAP) {
+          @if (store.canEdit('hdmNhapKho') && !isNew() && !nhapDuoc() && trangThai() === TT.NHAP) {
             <div class="note info">Chuyển HĐ sang “Hiệu lực” để nhập kho.</div>
           }
           @if (choHoaDon()) {
@@ -285,7 +285,7 @@ interface TraForm {
                   @if (nhapDuoc()) { <th><input type="checkbox" aria-label="Chọn tất cả dòng còn phải nhập" title="Chọn tất cả dòng còn phải nhập" [checked]="conNhap().length > 0 && chon().length === conNhap().length" (change)="chonTatNhap($any($event.target).checked)" /></th> }
                   <th class="w-lg">Mã hàng</th><th class="w-lg">Tên hàng</th><th class="w-md">Thông số</th><th class="w-sm num">SL</th><th class="w-sm">ĐVT</th>
                   <th class="w-md num">Đơn giá</th><th class="w-sm">Loại tiền</th><th class="w-md num">Tỷ giá</th><th class="num">Thành tiền VNĐ</th>
-                  @if (!m.thuocPhuTai) { <th class="num">SL đã nhập</th> }
+                  <th class="num">SL đã nhập</th>
                   <th class="w-md">Ghi chú</th><th></th>
                 </tr>
               </thead>
@@ -319,7 +319,7 @@ interface TraForm {
                       @else { <app-money [value]="d.tyGia" [decimals]="2" [disabled]="!edit()" placeholder="Bắt buộc" (valueChange)="setDong(i, { tyGia: $event })" /> }
                     </td>
                     <td class="num" title="SL × Đơn giá × Tỷ giá">{{ money(thanhTien(d)) }}</td>
-                    @if (!m.thuocPhuTai) {
+                    @if (true) {
                       <td class="num">
                         {{ num(da) }}
                         @if (d.soLuong > 0 && con <= 0) { <span class="tag ok">✓ Đã nhập kho</span> }
@@ -342,7 +342,7 @@ interface TraForm {
                   <tr>
                     @if (nhapDuoc()) { <td></td> }
                     <th>Tổng</th><td></td><td></td><td class="num">{{ num(c.slMua) }}</td><td colspan="5" class="num">{{ money(c.tongDong) }}</td>
-                    @if (!m.thuocPhuTai) { <td class="num">{{ num(c.slNhap) }}</td> }
+                    <td class="num">{{ num(c.slNhap) }}</td>
                     <td colspan="2"></td>
                   </tr>
                 </tfoot>
@@ -364,7 +364,7 @@ interface TraForm {
             </div>
           }
 
-          @if (!m.thuocPhuTai && !isNew()) {
+          @if (!isNew()) {
             <h3 class="section-title">Phiếu nhập kho của HĐ</h3>
             <div class="tbl-wrap">
               <table class="tbl compact">
@@ -831,8 +831,6 @@ export class HdmDetail {
     const s = this.saved();
     return (
       !!s &&
-      !s.thuocPhuTai &&
-      !this.f().thuocPhuTai &&
       !this.choXoa() &&
       this.store.canEdit('hdmNhapKho') &&
       (s.trangThai === TT.DA_KY || s.trangThai === TT.DANG_NHAN_HANG || s.trangThai === TT.DA_NHAN_DU)
@@ -873,7 +871,7 @@ export class HdmDetail {
   protected readonly lhOpts = computed<PickOption[]>(() =>
     maHangOpts(this.store.loaiHang().filter((l) => l.dangDung || this.f().chiTiet.some((d) => d.loaiHang === l.id))),
   );
-  protected readonly khoOpts = computed<PickOption[]>(() => this.store.khoDangDung().map((k) => ({ value: k.id, label: k.ten, hint: k.loai })));
+  protected readonly khoOpts = computed<PickOption[]>(() => this.store.khoDangDung().filter((k) => !this.f().thuocPhuTai || k.loai === 'Kho NCC').map((k) => ({ value: k.id, label: k.ten, hint: k.loai })));
   protected readonly nguonOpts = computed<PickOption[]>(() => this.store.nguonDangDung().map((n) => ({ value: n.id, label: n.ten, hint: n.loai })));
 
   protected readonly nguyenTe = computed(() =>
@@ -1437,7 +1435,7 @@ export class HdmDetail {
       return;
     }
     const kho = this.store.khoDangDung();
-    this.nhap.set({ ngay: todayIso(), kho: (kho.find((k) => k.loai === 'Kho thường') ?? kho[0])?.id ?? '', ghiChu: '', soHoaDon: '', vat: 8, sl, dongIds });
+    this.nhap.set({ ngay: todayIso(), kho: (kho.find((k) => k.loai === (this.f().thuocPhuTai ? 'Kho NCC' : 'Kho thường')) ?? (this.f().thuocPhuTai ? undefined : kho[0]))?.id ?? '', ghiChu: '', soHoaDon: '', vat: 8, sl, dongIds });
   }
 
   /** Đơn giá lô khi nhập = đơn giá dòng HĐ mua quy VNĐ. */

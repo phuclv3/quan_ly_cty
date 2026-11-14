@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Store } from '../core/store';
-import { KHO_CHUYEN_THANG, PHUT_DUYET_HAN, ViecGiao } from '../core/models';
+import { PHUT_DUYET_HAN, ViecGiao } from '../core/models';
 import { dotBanDaThu, hdbCalc, hdmCalc, hoSoThieu, ptCalc, soDuQuyPT, tamUngTreo, tonKho } from '../core/calc';
 import { daysFromToday, money, sum, todayIso, viDate, viMoment, vndShort, nowIso } from '../core/util';
 import { Modal, PickGo, PickOption } from '../shared/ui-kit';
@@ -389,7 +389,6 @@ export class Dashboard {
   protected readonly tonTheoKho = computed(() => {
     const m = new Map<string, number>();
     for (const r of tonKho(this.store.db())) {
-      if (r.kho === KHO_CHUYEN_THANG) continue;
       m.set(r.kho, (m.get(r.kho) ?? 0) + r.ton);
     }
     return [...m.entries()].map(([kho, sl]) => ({ kho, sl, ten: this.store.khoTen(kho) })).sort((a, b) => a.ten.localeCompare(b.ten, 'vi'));

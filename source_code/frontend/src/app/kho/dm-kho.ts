@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal, viewChild } from '@angular/core';
-import { KHO_CHUYEN_THANG, Kho } from '../core/models';
+import { Kho } from '../core/models';
 import { Store } from '../core/store';
 import { TT } from '../core/trang-thai';
 import { dirtyOf } from '../shared/unsaved';
@@ -46,9 +46,7 @@ import { ImportDm } from '../shared/import-dm';
               <td class="num">{{ r.soPhieu }}</td>
               @if (edit()) {
                 <td>
-                  @if (r.k.id === ctId) {
-                    <span class="tag mute">Vị trí hệ thống — không sửa</span>
-                  } @else if (!choXoa(r.k)) {
+                  @if (!choXoa(r.k)) {
                     <div class="btn-row" style="justify-content:flex-start">
                       <button type="button" class="btn sm quiet" (click)="sua(r.k)">Sửa</button>
                       <button type="button" class="btn sm quiet" (click)="batTat(r.k)">{{ r.k.dangDung ? 'Ngưng' : 'Dùng lại' }}</button>
@@ -65,7 +63,7 @@ import { ImportDm } from '../shared/import-dm';
       </table>
     </div>
     <div class="note info">
-      "Để tại Phú Tài" = Kho Phú Tài; hàng Oxy gửi tại Kho Phú Tài vẫn tính tồn Oxy (D-18). "Chuyển thẳng — không qua kho" là vị trí hệ thống: không sửa, không xoá, không tính tồn (KHO-07).
+      "Để tại Phú Tài" = Kho Phú Tài; hàng Oxy gửi tại Kho Phú Tài vẫn tính tồn Oxy (D-18). "Kho NCC" = hàng nằm tại kho nhà cung cấp, vẫn cộng/trừ tồn và tính vào giá trị tồn.
       Kho đã có phiếu không xoá được — chỉ Ngưng.
     </div>
 
@@ -74,7 +72,11 @@ import { ImportDm } from '../shared/import-dm';
         <div class="form-grid blk xanh">
 <h3 class="blk-t">Thông tin kho</h3>
           <div class="field"><span class="lbl">Mã kho</span><div class="ro">{{ k.id || 'Tự sinh khi lưu' }}</div></div>
-          <div class="field"><span class="lbl">Loại</span><div class="ro">Kho thường</div></div>
+          <div class="field"><label for="k-loai">Loại</label>
+            @if (k.id) { <div class="ro">{{ k.loai }}</div> } @else {
+              <select id="k-loai" [value]="k.loai" (change)="set({ loai: $any($event.target).value })"><option value="Kho thường">Kho thường</option><option value="Kho NCC">Kho NCC (hàng nằm tại NCC)</option></select>
+            }
+          </div>
           <div class="field wide"><label for="k-ten">Tên / địa điểm <span class="req">*</span></label><input id="k-ten" [value]="k.ten" (input)="set({ ten: $any($event.target).value })" /></div>
           <label class="check-row wide"><input type="checkbox" [checked]="k.dangDung" (change)="set({ dangDung: $any($event.target).checked })" /> Đang dùng</label>
         </div>
@@ -92,7 +94,6 @@ export class DmKhoTab {
   protected readonly store = inject(Store);
   protected readonly TT = TT;
   private readonly confirm = inject(Confirm);
-  protected readonly ctId = KHO_CHUYEN_THANG;
   protected readonly edit = computed(() => this.store.canEdit('khoDanhMuc'));
   protected readonly cn = new ChonNhieu();
   protected readonly f = signal<Kho | null>(null);
@@ -131,10 +132,10 @@ export class DmKhoTab {
     const e = this.store.saveKho({ ...k, dangDung: !k.dangDung });
     this.store.say(e ?? (k.dangDung ? `Đã ngưng ${k.ten}` : `Đã dùng lại ${k.ten}`));
   }
-  /** Xoá hàng loạt: bỏ vị trí hệ thống và kho đang chờ xoá; kho đã có phiếu bị bỏ qua kèm lý do. */
+  /** Xoá hàng loạt: bỏ kho đang chờ xoá; kho đã có phiếu bị bỏ qua kèm lý do. */
   protected readonly chonDuoc = computed(() => this.edit() && this.store.level('duyetXoa') !== 'none');
   protected xoaDuoc(k: Kho): boolean {
-    return k.id !== this.ctId && !this.choXoa(k);
+    return !this.choXoa(k);
   }
   protected readonly idTrang = computed(() => this.rows().filter((r) => this.xoaDuoc(r.k)).map((r) => r.k.id));
   protected async xoaNhieu(): Promise<void> {

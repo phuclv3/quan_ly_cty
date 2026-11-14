@@ -15,7 +15,6 @@ import {
   HopDongBan,
   HopDongMua,
   HopDongPhuTai,
-  KHO_CHUYEN_THANG,
   KiemKe,
   LCP_HOA_HONG,
   LoaiHoSo,
@@ -789,11 +788,10 @@ export function tonKho(db: Db, denNgay?: string): DongTon[] {
   return [...map.values()];
 }
 
-/** Tồn hiện tại của một mã hàng — một kho, hoặc mọi kho thường khi bỏ trống (Chuyển thẳng luôn 0 — KHO-07). */
+/** Tồn hiện tại của một mã hàng — một kho, hoặc mọi kho khi bỏ trống. */
 export function tonTai(db: Db, loaiHang: string, kho?: string): number {
-  if (kho === KHO_CHUYEN_THANG) return 0;
   return sum(
-    tonKho(db).filter((r) => r.loaiHang === loaiHang && (kho ? r.kho === kho : r.kho !== KHO_CHUYEN_THANG)),
+    tonKho(db).filter((r) => r.loaiHang === loaiHang && (!kho || r.kho === kho)),
     (r) => r.ton,
   );
 }
@@ -801,7 +799,7 @@ export function tonTai(db: Db, loaiHang: string, kho?: string): number {
 /** Các lô còn hàng của một mã hàng (kho bỏ trống = mọi kho thường), lô nhập trước đứng trước. */
 export function loConHang(db: Db, loaiHang: string, kho?: string): DongLo[] {
   return tonTheoLo(db).filter(
-    (l) => l.loaiHang === loaiHang && l.ton > 0 && (kho ? l.kho === kho : l.kho !== KHO_CHUYEN_THANG),
+    (l) => l.loaiHang === loaiHang && l.ton > 0 && (!kho || l.kho === kho),
   );
 }
 
@@ -828,36 +826,6 @@ export function phanBoLo(
 export function kiemTraKho(db: Db, loaiHang: string, soLuong: number): { ton: number; du: boolean; thieu: number } {
   const ton = tonTai(db, loaiHang);
   return { ton, du: ton >= soLuong, thieu: Math.max(soLuong - ton, 0) };
-}
-
-/**
- * Chuyển thẳng (không qua lô, KHO-07): đơn giá gốc đích danh theo HĐ Mua liên quan của HĐ Bán, đúng mã hàng.
- * Không có HĐ Mua liên quan → 0.
- */
-export function donGiaChuyenThang(db: Db, hdbId: string | undefined, loaiHang: string): number {
-  if (!hdbId) return 0;
-  const d = db.hopDongMua
-    .filter((m) => m.trangThai !== TT.HUY && hdmChoHdb(m, hdbId))
-    .flatMap((m) => dongMuaChoHdb(m, hdbId))
-    .find((x) => x.loaiHang === loaiHang);
-  return d ? Math.round(donGiaVND(d)) : 0;
-}
-
-/**
- * Hàng không qua kho: số còn xuất được cho một HĐ bán = Σ nhập Chuyển thẳng (phiếu Hiệu lực của các HĐ mua liên quan)
- * − Σ xuất Chuyển thẳng đã lập cho HĐ bán đó, theo mã hàng. Âm = đã xuất lố (dữ liệu cũ).
- */
-export function conChuyenThang(db: Db, hdbId: string | undefined, loaiHang: string): number {
-  if (!hdbId) return 0;
-  const muaIds = new Set(db.hopDongMua.filter((m) => m.trangThai !== TT.HUY && hdmChoHdb(m, hdbId)).map((m) => m.id));
-  let con = 0;
-  for (const p of db.phieuKho) {
-    if (p.kho !== KHO_CHUYEN_THANG || p.trangThai !== TT.HIEU_LUC) continue;
-    const sl = sum(p.dong.filter((d) => d.loaiHang === loaiHang), (d) => d.soLuong);
-    if (p.loai === 'Nhập' && p.hdId && muaIds.has(p.hdId)) con += sl;
-    else if (p.loai === 'Xuất' && p.hdId === hdbId) con -= sl;
-  }
-  return con;
 }
 
 export interface DongLechKK {

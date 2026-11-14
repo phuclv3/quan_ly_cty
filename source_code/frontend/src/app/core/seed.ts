@@ -17,7 +17,6 @@ import {
   HopDongBan,
   HopDongMua,
   HopDongPhuTai,
-  KHO_CHUYEN_THANG,
   KhachHang,
   LCP_HOA_HONG,
   LCP_VAN_CHUYEN,
@@ -196,7 +195,6 @@ export async function buildSeed(): Promise<Db> {
     { id: 'KHO-PT', ten: 'Kho Phú Tài', loai: 'Kho thường', dangDung: true },
     { id: 'KHO-HT', ten: 'Kho Huy Thịnh', loai: 'Kho thường', dangDung: true },
     { id: 'KHO-OM', ten: 'Kho OxyMecie', loai: 'Kho thường', dangDung: true },
-    { id: KHO_CHUYEN_THANG, ten: 'Chuyển thẳng — không qua kho', loai: 'Chuyển thẳng', dangDung: true },
   );
 
   // ── Khách hàng, NCC ──
@@ -879,7 +877,7 @@ export function nangCapKhoV5(d: Db): void {
     });
   }
   for (const p of ps) {
-    if (p.loai !== 'Xuất' || p.kho === KHO_CHUYEN_THANG) continue;
+    if (p.loai !== 'Xuất') continue;
     const hl = p.trangThai === TT.HIEU_LUC;
     const out: typeof p.dong = [];
     for (const x of p.dong) {

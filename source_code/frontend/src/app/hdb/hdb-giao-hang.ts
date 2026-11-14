@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal, viewChild } from '@angular/core';
 import { Store } from '../core/store';
 import { TT } from '../core/trang-thai';
-import { FileRef, HopDongBan, KHO_CHUYEN_THANG, PhieuKho, ViecGiao } from '../core/models';
+import { FileRef, HopDongBan, PhieuKho, ViecGiao } from '../core/models';
 import { DongLo, dongMuaChoHdb, hdbGioiHanGiao, hdmChoHdb, loConHang, tonTai, tongSL } from '../core/calc';
 import { daysFromToday, num, todayIso, viDate } from '../core/util';
 import { Confirm } from '../shared/confirm';
@@ -144,7 +144,7 @@ const dongRong = (): DongNhap => ({ loaiHang: '', lo: '', soLuong: 0, tenTrenHD:
           <label for="gh-kho">Vị trí kho <span class="req">*</span></label>
           <select id="gh-kho" (change)="doiKho($any($event.target).value)">
             @for (k of store.khoDangDung(); track k.id) {
-              <option [value]="k.id" [selected]="k.id === kho()">{{ k.id === KHO_CT ? k.ten + ' — không qua kho' : k.ten }}</option>
+              <option [value]="k.id" [selected]="k.id === kho()">{{ k.ten }}</option>
             }
           </select>
         </div>
@@ -165,18 +165,16 @@ const dongRong = (): DongNhap => ({ loaiHang: '', lo: '', soLuong: 0, tenTrenHD:
             <tr>
               <td>
                 <app-pick [options]="lhOpts()" [value]="d.loaiHang" (valueChange)="setDong(i, { loaiHang: $event, lo: '' })" />
-                @if (d.loaiHang && kho() !== KHO_CT) { <span class="hint" [class.neg]="ton(d.loaiHang) < d.soLuong">Tồn tại kho: {{ num(ton(d.loaiHang)) }}</span> }
+                @if (d.loaiHang) { <span class="hint" [class.neg]="ton(d.loaiHang) < d.soLuong">Tồn tại kho: {{ num(ton(d.loaiHang)) }}</span> }
                 @if (conLai(d.loaiHang, i) !== null) { <span class="hint" [class.neg]="d.soLuong > conLai(d.loaiHang, i)!">Còn phải giao: {{ num(conLai(d.loaiHang, i)!) }}</span> }
               </td>
               <td>
-                @if (kho() === KHO_CT) { <span class="muted">Không theo lô</span> } @else {
-                  <select (change)="setDong(i, { lo: $any($event.target).value })" aria-label="Lô" [disabled]="!d.loaiHang">
-                    <option value="" [selected]="!d.lo">Tự chọn (nhập trước)</option>
-                    @for (l of lots(d.loaiHang); track l.lo) {
-                      <option [value]="l.lo" [selected]="l.lo === d.lo">{{ l.lo }} · tồn {{ l.ton }}{{ l.quyCach ? ' · ' + l.quyCach.slice(0, 40) : '' }}</option>
-                    }
-                  </select>
-                }
+                <select (change)="setDong(i, { lo: $any($event.target).value })" aria-label="Lô" [disabled]="!d.loaiHang">
+                  <option value="" [selected]="!d.lo">Tự chọn (nhập trước)</option>
+                  @for (l of lots(d.loaiHang); track l.lo) {
+                    <option [value]="l.lo" [selected]="l.lo === d.lo">{{ l.lo }} · tồn {{ l.ton }}{{ l.quyCach ? ' · ' + l.quyCach.slice(0, 40) : '' }}</option>
+                  }
+                </select>
               </td>
               <td><input class="num" type="number" min="0" [attr.max]="conLai(d.loaiHang, i)" [value]="d.soLuong" (input)="setDong(i, { soLuong: +$any($event.target).value || 0 })" /></td>
               <td><textarea class="keo-gian" rows="1" [value]="d.tenTrenHD" placeholder="VD Bình khí chuẩn NO2 200ppm" (input)="setDong(i, { tenTrenHD: $any($event.target).value })"></textarea></td>
@@ -209,7 +207,6 @@ export class HdbGiaoHang {
   protected readonly viDate = viDate;
   protected readonly num = num;
   protected readonly tongSL = tongSL;
-  protected readonly KHO_CT = KHO_CHUYEN_THANG;
 
   protected readonly open = signal(false);
   protected readonly ngay = signal(todayIso());
@@ -358,7 +355,7 @@ export class HdbGiaoHang {
     const goiY: DongNhap[] = [];
     const thieu: string[] = [];
     for (const r of this.conPhaiGiao()) {
-      const ton = kho === KHO_CHUYEN_THANG ? r.con : tonTai(db, r.loaiHang, kho);
+      const ton = tonTai(db, r.loaiHang, kho);
       if (ton > 0) goiY.push({ ...dongRong(), loaiHang: r.loaiHang, soLuong: Math.min(r.con, ton), tenTrenHD: r.tenHang });
       if (r.con > ton) thieu.push(`${r.loaiHang} × ${r.con - Math.max(ton, 0)}`);
     }
@@ -371,7 +368,7 @@ export class HdbGiaoHang {
     // Mặc định kho có nhiều hàng cần giao nhất (không lấy kho đầu danh sách — hàng có thể nằm ở kho khác).
     const can = this.conPhaiGiao();
     const db = this.store.db();
-    const khos = this.store.khoDangDung().filter((k) => k.id !== KHO_CHUYEN_THANG);
+    const khos = this.store.khoDangDung();
     const diem = (kho: string) => can.reduce((s, r) => s + Math.min(r.con, Math.max(tonTai(db, r.loaiHang, kho), 0)), 0);
     const tot = [...khos].sort((a, b) => diem(b.id) - diem(a.id))[0] ?? this.store.khoDangDung()[0];
     this.kho.set(tot?.id ?? '');

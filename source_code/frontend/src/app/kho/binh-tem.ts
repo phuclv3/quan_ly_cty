@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { BinhKhi, KHO_CHUYEN_THANG, XUAT_XU_VN } from '../core/models';
+import { BinhKhi, XUAT_XU_VN } from '../core/models';
 import { Store } from '../core/store';
 import { nhoLoc } from '../core/ui';
 import { todayIso, viDate } from '../core/util';
@@ -198,7 +198,7 @@ export class BinhTemTab {
 
   private trong(): Form {
     const ngay = todayIso();
-    return { id: '', loaiHang: '', xuatXu: XUAT_XU_VN, ngaySX: ngay, hanSD: cong1Nam(ngay), kho: this.store.khoDangDung().find((k) => k.id !== KHO_CHUYEN_THANG)?.id ?? '', ghiChu: '' };
+    return { id: '', loaiHang: '', xuatXu: XUAT_XU_VN, ngaySX: ngay, hanSD: cong1Nam(ngay), kho: this.store.khoDangDung()[0]?.id ?? '', ghiChu: '' };
   }
 
   /** Chưa in lên trước, rồi theo ngày sản xuất mới nhất. */
@@ -208,7 +208,7 @@ export class BinhTemTab {
   protected readonly facets = computed<Facet[]>(() => [
     { key: 'xx', label: 'Xuất xứ', options: [...new Set(this.store.binhKhi().map((b) => b.xuatXu))].sort().map((x) => ({ value: x, label: x })) },
     { key: 'tem', label: 'Tem', options: TEM_OPTS },
-    { key: 'kho', label: 'Kho', options: khoOpts(this.store.db(), false) },
+    { key: 'kho', label: 'Kho', options: khoOpts(this.store.db()) },
   ]);
   protected readonly rows = computed(() => {
     const l = this.loc();
@@ -287,7 +287,7 @@ export class BinhTemTab {
 
   // ── Thêm bình ──
   protected readonly loaiHangDung = computed(() => this.store.loaiHang().filter((l) => l.dangDung));
-  protected readonly khoDung = computed(() => this.store.khoDangDung().filter((k) => k.id !== KHO_CHUYEN_THANG));
+  protected readonly khoDung = computed(() => this.store.khoDangDung());
   protected val(e: Event): string {
     return (e.target as HTMLInputElement).value;
   }

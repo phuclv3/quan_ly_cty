@@ -1,5 +1,5 @@
 import { maLo } from '../core/calc';
-import { Db, KHO_CHUYEN_THANG, LoaiHang, NHOM_HANG, PhieuKho } from '../core/models';
+import { Db, LoaiHang, NHOM_HANG, PhieuKho } from '../core/models';
 import { Store } from '../core/store';
 import { TT } from '../core/trang-thai';
 import { PickOption } from '../shared/ui-kit';
@@ -19,11 +19,11 @@ export interface DongTheKho {
 
 /**
  * Thẻ kho: các dòng phiếu Hiệu lực của một lô, hoặc của một mã hàng (× kho nếu có), theo ngày.
- * kho rỗng = mọi kho thường (bỏ Chuyển thẳng). [cần chuyển vào core/calc.ts]
+ * kho rỗng = mọi kho. [cần chuyển vào core/calc.ts]
  */
 export function theKho(db: Db, o: { loaiHang?: string; lo?: string; kho?: string }): DongTheKho[] {
   const ps = db.phieuKho
-    .filter((p) => p.trangThai === TT.HIEU_LUC && (o.kho ? p.kho === o.kho : p.kho !== KHO_CHUYEN_THANG))
+    .filter((p) => p.trangThai === TT.HIEU_LUC && (!o.kho || p.kho === o.kho))
     .sort((a, b) => (a.ngay === b.ngay ? a.soPhieu.localeCompare(b.soPhieu) : a.ngay < b.ngay ? -1 : 1));
   const out: DongTheKho[] = [];
   let lk = 0;
@@ -55,8 +55,8 @@ export function hdCuaPhieu(store: Store, p: PhieuKho): { so: string; link: strin
   return h ? { so: h.soHD || '(chưa có số)', link: ['/hop-dong-ban', h.id] } : null;
 }
 
-export const khoOpts = (db: Db, gomCT = true): PickOption[] =>
-  db.kho.filter((k) => gomCT || k.id !== KHO_CHUYEN_THANG).map((k) => ({ value: k.id, label: k.ten, hint: k.dangDung ? k.id : `${k.id} · Ngưng` }));
+export const khoOpts = (db: Db): PickOption[] =>
+  db.kho.map((k) => ({ value: k.id, label: k.ten, hint: k.dangDung ? k.id : `${k.id} · Ngưng` }));
 
 export const nhomOpts = (): PickOption[] => NHOM_HANG.map((n) => ({ value: n, label: n }));
 
