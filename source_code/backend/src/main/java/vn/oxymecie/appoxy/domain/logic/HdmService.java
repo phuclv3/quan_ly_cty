@@ -80,7 +80,6 @@ public class HdmService {
     if (m.isNhapTay() && Texts.blank(m.getLyDoNhapTay())) throw ApiException.invalid("Nhập tay tổng giá trị cần ghi lý do");
     if (m.getVat() != 0 && m.getVat() != 8 && m.getVat() != 10) throw ApiException.invalid("VAT chỉ 0, 8 hoặc 10%");
     if (m.getTongNhapTay() != null && m.getTongNhapTay() < 0) throw ApiException.invalid("Tổng giá trị không âm");
-    if (m.getDotTT().size() > c.cauHinh().getSoDotToiDa()) throw ApiException.invalid("Tối đa " + c.cauHinh().getSoDotToiDa() + " đợt thanh toán");
     if (!"Đã".equals(m.getXuatHoaDon()) && !"Chưa".equals(m.getXuatHoaDon())) m.setXuatHoaDon("Chưa");
     if (m.getChecklist() == null || m.getChecklist().isEmpty()) {
       List<ChecklistItem> cl = new ArrayList<>();

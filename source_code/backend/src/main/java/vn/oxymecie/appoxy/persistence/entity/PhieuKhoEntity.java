@@ -62,6 +62,10 @@ public class PhieuKhoEntity extends Audited {
 
   @Column(name = "kiem_ke_id")
   private String kiemKeId;
+
+  @Column(name = "chuyen_id")
+  private String chuyenId;
+
   @ElementCollection
   @CollectionTable(name = "kho_phieu_dong", joinColumns = @JoinColumn(name = "phieu_id"))
   @OrderColumn(name = "thu_tu")
@@ -98,5 +102,11 @@ public class PhieuKhoEntity extends Audited {
 
     @Column(name = "ghi_chu")
     private String ghiChu;
+
+    @Column(name = "phu_kien", nullable = false)
+    private boolean phuKien;
+
+    @Column(name = "lo_goc")
+    private String loGoc;
   }
 }

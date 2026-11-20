@@ -31,7 +31,11 @@ import vn.oxymecie.appoxy.domain.perm.Perm;
 public class KhoService {
 
   /** Một dòng xuất do người dùng nhập: chỉ định lô, hoặc bỏ trống để tự trừ lô nhập trước (FIFO). */
-  public record DongXuat(String loaiHang, String lo, double soLuong, String tenTrenHD, String ghiChu) {}
+  public record DongXuat(String loaiHang, String lo, double soLuong, String tenTrenHD, String ghiChu, boolean phuKien) {
+    public DongXuat(String loaiHang, String lo, double soLuong, String tenTrenHD, String ghiChu) {
+      this(loaiHang, lo, soLuong, tenTrenHD, ghiChu, false);
+    }
+  }
 
   /** Một dòng nhập lô: mã hàng + quy cách / nồng độ, SL, đơn giá, VAT. */
   public record DongNhapLo(String loaiHang, String thuocTinh, double soLuong, double donGia, Double vat, String ghiChu) {}
@@ -69,7 +73,7 @@ public class KhoService {
         double sl = Math.min(con, l.ton);
         l.ton -= sl;
         con -= sl;
-        out.add(new DongPhieuKho(d.loaiHang(), l.quyCach, sl, l.lo, null, null, null, l.donGia, tenTrenHD, ghiChu));
+        out.add(new DongPhieuKho(d.loaiHang(), l.quyCach, sl, l.lo, null, null, null, l.donGia, tenTrenHD, ghiChu, d.phuKien()));
       }
       if (con > 0) {
         throw ApiException.invalid(lo != null
@@ -214,11 +218,19 @@ public class KhoService {
     if (c.kho(khoId) == null) throw ApiException.invalid("Vị trí kho không tồn tại");
     if (Texts.blank(ngay)) throw ApiException.invalid("Chưa chọn Ngày xuất");
     java.util.Map<String, Double> yc = new java.util.LinkedHashMap<>();
-    for (var d : y.getDong()) yc.merge(d.getLoaiHang(), d.getSoLuong(), Double::sum);
+    java.util.Map<String, Double> ycPK = new java.util.LinkedHashMap<>();
+    for (var d : y.getDong()) (d.isPhuKien() ? ycPK : yc).merge(d.getLoaiHang(), d.getSoLuong(), Double::sum);
     java.util.Map<String, Double> moi = new java.util.LinkedHashMap<>();
+    java.util.Map<String, Double> moiPK = new java.util.LinkedHashMap<>();
     for (DongXuat d : dong == null ? List.<DongXuat>of() : dong)
-      if (!Texts.blank(d.loaiHang()) && d.soLuong() > 0) moi.merge(d.loaiHang(), d.soLuong(), Double::sum);
-    if (moi.isEmpty()) throw ApiException.invalid("Cần ít nhất 1 dòng hàng có số lượng > 0");
+      if (!Texts.blank(d.loaiHang()) && d.soLuong() > 0) (d.phuKien() ? moiPK : moi).merge(d.loaiHang(), d.soLuong(), Double::sum);
+    if (moi.isEmpty() && moiPK.isEmpty()) throw ApiException.invalid("Cần ít nhất 1 dòng hàng có số lượng > 0");
+    for (var e : moiPK.entrySet()) {
+      Double r = ycPK.get(e.getKey());
+      if (r == null) throw ApiException.invalid("Phụ kiện " + e.getKey() + " không có trong yêu cầu " + y.getSoYC());
+      if (e.getValue() > r + 1e-9)
+        throw ApiException.invalid("Phụ kiện " + e.getKey() + ": xuất " + Money.num(e.getValue()) + " vượt SL yêu cầu " + Money.num(r));
+    }
     java.util.Map<String, Double> con = Calc.hdbGioiHanGiao(h, c.db());
     for (var e : moi.entrySet()) {
       Double r = yc.get(e.getKey());
@@ -393,6 +405,56 @@ public class KhoService {
         : "Tự động HĐ Bán".equals(p.getNguonGoc()) ? Perm.hdbGiaoHang : Perm.khoPhieuTay);
     if (TrangThai.DA_HUY.equals(p.getTrangThai())) throw ApiException.conflict("Phiếu đã huỷ");
     if (c.dangChoXoa("PhieuKho", p.getId())) throw ApiException.conflict("Phiếu đang chờ huỷ — khoá sửa");
+    if ("Chuyển kho".equals(p.getNguonGoc())) throw ApiException.conflict("Phiếu chuyển kho không sửa được — lập chuyển kho ngược lại nếu nhầm");
+  }
+
+  /**
+   * Chuyển kho = cặp phiếu liên kết: Xuất (kho đi, trừ theo lô) + Nhập (kho đến, lô mới kế thừa đơn giá / ngày nhập / HĐ / NCC của lô gốc).
+   * Tổng SL và tổng giá trị toàn hệ thống không đổi; không tính vào nhập mua / giá vốn xuất bán. Trả phiếu Xuất.
+   */
+  public PhieuKho chuyenKho(Ctx c, String ngay, String khoDi, String khoDen, List<DongXuat> dong, String ghiChu) {
+    c.require(Perm.khoPhieuTay);
+    if (Texts.blank(ngay)) throw ApiException.invalid("Chưa chọn Ngày chuyển");
+    if (Texts.blank(khoDi) || Texts.blank(khoDen)) throw ApiException.invalid("Chọn Kho đi và Kho đến");
+    if (khoDi.equals(khoDen)) throw ApiException.invalid("Kho đi và Kho đến phải khác nhau");
+    if (c.kho(khoDi) == null || c.kho(khoDen) == null) throw ApiException.invalid("Vị trí kho không tồn tại");
+    List<DongXuat> vao = new ArrayList<>();
+    for (DongXuat d : dong == null ? List.<DongXuat>of() : dong) vao.add(new DongXuat(d.loaiHang(), d.lo(), d.soLuong(), null, null));
+    List<DongPhieuKho> xuat = dongXuatTheoLo(c, khoDi, null, vao, ngay);
+    if (xuat.isEmpty()) throw ApiException.invalid("Cần ít nhất 1 dòng hàng có số lượng > 0");
+    java.util.Map<String, DongLo> lots = new java.util.HashMap<>();
+    for (DongLo l : Calc.tonTheoLo(c.db(), null)) lots.put(l.lo, l);
+    Set<String> daCo = loDaCo(c);
+    String ghi = Texts.trimToNull(ghiChu);
+    String idX = c.uid("PK");
+    String idN = c.uid("PK");
+    List<DongPhieuKho> nhap = new ArrayList<>();
+    for (DongPhieuKho d : xuat) {
+      int n = 1;
+      while (daCo.contains(d.getLo() + "-C" + n)) n++;
+      String lo = d.getLo() + "-C" + n;
+      daCo.add(lo);
+      DongLo g = lots.get(d.getLo());
+      DongPhieuKho x = new DongPhieuKho(d.getLoaiHang(), d.getThuocTinh(), d.getSoLuong(), lo, d.getDonGiaGoc(), g == null ? null : g.vat, null, null, null, null);
+      x.setLoGoc(d.getLo());
+      nhap.add(x);
+    }
+    xuat.forEach(d -> {
+      d.setTenTrenHD(null);
+      d.setPhuKien(false);
+    });
+    PhieuKho px = new PhieuKho(idX, c.nextSoThang(c.cauHinh().getTienToXK(), ngay), ngay, "Xuất", "Chuyển kho", null, khoDi,
+        "Chuyển kho sang " + tenKho(c, khoDen), c.me(), TrangThai.HIEU_LUC, ghi, xuat, null, null, null, idN);
+    PhieuKho pn = new PhieuKho(idN, c.nextSoThang(c.cauHinh().getTienToNK(), ngay), ngay, "Nhập", "Chuyển kho", null, khoDen,
+        "Chuyển kho từ " + tenKho(c, khoDi), c.me(), TrangThai.HIEU_LUC, ghi, nhap, null, null, null, idX);
+    Ctx.upsert(c.db().getPhieuKho(), px, PhieuKho::getId);
+    Ctx.upsert(c.db().getPhieuKho(), pn, PhieuKho::getId);
+    return px;
+  }
+
+  private static String tenKho(Ctx c, String id) {
+    var k = c.kho(id);
+    return k == null ? id : k.getTen();
   }
 
   /**
@@ -469,6 +531,7 @@ public class KhoService {
   public int suaLo(Ctx c, String phieuId, int i, String thuocTinh, double donGia, Double vat, String ghiChu) {
     PhieuKho p = c.phieuKho(phieuId);
     if (p == null || !"Nhập".equals(p.getLoai()) || i < 0 || i >= p.getDong().size()) throw ApiException.notFound("Không tìm thấy dòng nhập");
+    if ("Chuyển kho".equals(p.getNguonGoc())) throw ApiException.conflict("Lô chuyển kho kế thừa đơn giá lô gốc — sửa ở phiếu nhập gốc");
     quyenPhieu(c, p);
     if (!(donGia >= 0)) throw ApiException.invalid("Đơn giá không hợp lệ");
     String lo = Calc.maLo(p, i);

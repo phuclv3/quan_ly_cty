@@ -170,7 +170,7 @@ public final class Calc {
     if (con.isEmpty()) return null;
     for (var p : db.getPhieuKho()) {
       if (!"Xuất".equals(p.getLoai()) || !h.getId().equals(p.getHdId()) || !TrangThai.HIEU_LUC.equals(p.getTrangThai())) continue;
-      for (var d : p.getDong()) con.computeIfPresent(d.getLoaiHang(), (k, v) -> v - d.getSoLuong());
+      for (var d : p.getDong()) if (!d.isPhuKien()) con.computeIfPresent(d.getLoaiHang(), (k, v) -> v - d.getSoLuong());
     }
     return con;
   }
@@ -184,7 +184,7 @@ public final class Calc {
     if (con == null) return null;
     for (var y : db.getYeuCauXuatKho()) {
       if (!h.getId().equals(y.getHdbId()) || !TrangThai.CHO_KHO.equals(y.getTrangThai())) continue;
-      for (var d : y.getDong()) con.computeIfPresent(d.getLoaiHang(), (k, v) -> v - d.getSoLuong());
+      for (var d : y.getDong()) if (!d.isPhuKien()) con.computeIfPresent(d.getLoaiHang(), (k, v) -> v - d.getSoLuong());
     }
     return con;
   }
@@ -287,6 +287,15 @@ public final class Calc {
       if (h.getMst() == null || h.getMst().trim().isEmpty()) out.add("Chưa có MST khách hàng");
       if (h.getNgayKy() == null || h.getNgayKy().isEmpty()) out.add("Chưa có Ngày ký");
       if (h.getTruocVAT() <= 0) out.add("Chưa có Giá trị HĐ");
+    }
+    if (TrangThai.HOAN_THANH.equals(toi)) {
+      // Giao thiếu so với HĐ → chặn Hoàn thành (phụ kiện giao kèm không tính vào số phải giao).
+      java.util.Map<String, Double> con = hdbGioiHanGiao(h, db);
+      if (con != null) {
+        List<String> thieu = new ArrayList<>();
+        for (var e : con.entrySet()) if (e.getValue() > 1e-9) thieu.add(e.getKey() + " × " + e.getValue().longValue());
+        if (!thieu.isEmpty()) out.add("Giao thiếu hàng so với HĐ: " + String.join("; ", thieu));
+      }
     }
     if (TrangThai.DA_TAT_TOAN.equals(toi)) {
       HdbCalc c = hdbCalc(h, db);
@@ -488,11 +497,13 @@ public final class Calc {
         .filter(p -> TrangThai.HIEU_LUC.equals(p.getTrangThai()) && (denNgay == null || p.getNgay().compareTo(denNgay) <= 0))
         .toList();
     Map<String, DongLo> map = new LinkedHashMap<>();
+    Map<String, String> goc = new HashMap<>();
     for (PhieuKho p : hl) {
       if (!"Nhập".equals(p.getLoai())) continue;
       for (int i = 0; i < p.getDong().size(); i++) {
         DongPhieuKho d = p.getDong().get(i);
         String lo = maLo(p, i);
+        if (d.getLoGoc() != null && !d.getLoGoc().isBlank()) goc.put(lo, d.getLoGoc());
         DongLo g = map.get(lo);
         if (g != null) {
           g.nhap += d.getSoLuong();
@@ -511,6 +522,17 @@ public final class Calc {
         g.vat = d.getVat() == null ? 0 : d.getVat();
         g.nhap = d.getSoLuong();
         map.put(lo, g);
+      }
+    }
+    // Lô sinh ra từ chuyển kho: kế thừa ngày nhập (FIFO, tuổi tồn), số HĐ, NCC của lô gốc.
+    for (Map.Entry<String, String> e : goc.entrySet()) {
+      DongLo r = map.get(e.getValue());
+      for (int n = 0; r != null && goc.containsKey(r.lo) && n < 20; n++) r = map.get(goc.get(r.lo));
+      DongLo l = map.get(e.getKey());
+      if (r != null && l != null) {
+        l.ngay = r.ngay;
+        l.soHoaDon = r.soHoaDon;
+        l.ncc = r.ncc;
       }
     }
     for (PhieuKho p : hl) {

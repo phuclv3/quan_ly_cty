@@ -26,4 +26,12 @@ public class PhieuKho {
   private String soHoaDon;
   private String ncc;
   private String kiemKeId;
+  /** Chuyển kho: id phiếu đối ứng (Xuất <-> Nhập). */
+  private String chuyenId;
+
+  public PhieuKho(String id, String soPhieu, String ngay, String loai, String nguonGoc, String hdId, String kho, String lyDo,
+                  String nguoiThucHien, String trangThai, String ghiChu, List<DongPhieuKho> dong, String soHoaDon, String ncc,
+                  String kiemKeId) {
+    this(id, soPhieu, ngay, loai, nguonGoc, hdId, kho, lyDo, nguoiThucHien, trangThai, ghiChu, dong, soHoaDon, ncc, kiemKeId, null);
+  }
 }

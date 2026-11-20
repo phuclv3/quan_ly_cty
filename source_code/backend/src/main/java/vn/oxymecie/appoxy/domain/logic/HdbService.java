@@ -111,8 +111,6 @@ public class HdbService {
       throw ApiException.conflict("HĐ đã có phiếu Thu — không đổi Giá trị trước VAT / VAT (xoá phiếu Thu trước nếu cần sửa)");
     if (h.getNgayKy() != null && h.getNgayHieuLuc() != null && h.getNgayHieuLuc().compareTo(h.getNgayKy()) < 0)
       throw ApiException.invalid("Ngày hiệu lực (ngày thu tạm ứng) phải ≥ Ngày ký");
-    if (h.getDotTT().size() > c.cauHinh().getSoDotToiDa())
-      throw ApiException.invalid("Tối đa " + c.cauHinh().getSoDotToiDa() + " đợt thanh toán");
     if (cu != null && !TrangThai.BAO_GIA.equals(cu.getTrangThai())) {
       List<String> thieu = Calc.hdbThieuDeChuyen(h, TrangThai.HIEU_LUC, c.db());
       if (!thieu.isEmpty()) throw ApiException.invalid(String.join(" · ", thieu));
@@ -242,10 +240,10 @@ public class HdbService {
     if (con != null) {
       java.util.Map<String, Double> moi = new java.util.LinkedHashMap<>();
       for (KhoService.DongXuat d : dong == null ? List.<KhoService.DongXuat>of() : dong)
-        if (!Texts.blank(d.loaiHang()) && d.soLuong() > 0) moi.merge(d.loaiHang(), d.soLuong(), Double::sum);
+        if (!Texts.blank(d.loaiHang()) && d.soLuong() > 0 && !d.phuKien()) moi.merge(d.loaiHang(), d.soLuong(), Double::sum);
       for (var e : moi.entrySet()) {
         Double r = con.get(e.getKey());
-        if (r == null) throw ApiException.invalid("Mã hàng " + e.getKey() + " không có trong Sản phẩm & giá của HĐ bán");
+        if (r == null) throw ApiException.invalid("Mã hàng " + e.getKey() + " không có trong Sản phẩm & giá của HĐ bán (nếu là phụ kiện giao kèm, tích \"Phụ kiện ngoài HĐ\")");
         if (e.getValue() > r + 1e-9)
           throw ApiException.invalid("Mã hàng " + e.getKey() + ": giao " + so(e.getValue()) + " vượt số còn phải giao " + so(Math.max(0, r)));
       }
@@ -277,8 +275,8 @@ public class HdbService {
     for (DongYeuCauXuat d : dong == null ? List.<DongYeuCauXuat>of() : dong) {
       if (Texts.blank(d.getLoaiHang()) || !(d.getSoLuong() > 0)) continue;
       if (c.loaiHang(d.getLoaiHang()) == null) throw ApiException.invalid("Không có mã " + d.getLoaiHang());
-      moi.merge(d.getLoaiHang(), d.getSoLuong(), Double::sum);
-      out.add(new DongYeuCauXuat(d.getLoaiHang(), Texts.trimToNull(d.getTenTrenHD()), d.getSoLuong(), Texts.trimToNull(d.getGhiChu())));
+      if (!d.isPhuKien()) moi.merge(d.getLoaiHang(), d.getSoLuong(), Double::sum);
+      out.add(new DongYeuCauXuat(d.getLoaiHang(), Texts.trimToNull(d.getTenTrenHD()), d.getSoLuong(), Texts.trimToNull(d.getGhiChu()), d.isPhuKien()));
     }
     if (out.isEmpty()) throw ApiException.invalid("Cần ít nhất 1 dòng hàng có số lượng > 0");
     if (con != null) {

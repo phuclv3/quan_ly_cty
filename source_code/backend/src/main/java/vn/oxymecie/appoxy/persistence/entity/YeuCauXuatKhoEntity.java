@@ -87,5 +87,8 @@ public class YeuCauXuatKhoEntity {
 
     @Column(name = "ghi_chu")
     private String ghiChu;
+
+    @Column(name = "phu_kien", nullable = false)
+    private boolean phuKien;
   }
 }

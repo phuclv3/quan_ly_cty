@@ -288,9 +288,9 @@ public class DbMapper {
 
   PhieuKho phieuKho(PhieuKhoEntity e) {
     List<DongPhieuKho> dong = new ArrayList<>(e.getDong().stream().map(x -> new DongPhieuKho(x.getLoaiHang(), x.getThuocTinh(), x.getSoLuong(),
-        x.getLo(), x.getDonGia(), x.getVat(), x.getDongHDMua(), x.getDonGiaGoc(), x.getTenTrenHD(), x.getGhiChu())).toList());
+        x.getLo(), x.getDonGia(), x.getVat(), x.getDongHDMua(), x.getDonGiaGoc(), x.getTenTrenHD(), x.getGhiChu(), x.isPhuKien(), x.getLoGoc())).toList());
     return new PhieuKho(e.getId(), e.getSoPhieu(), d(e.getNgay()), e.getLoai(), e.getNguonGoc(), e.getHdId(), e.getKho(), e.getLyDo(),
-        e.getNguoiThucHien(), e.getTrangThai(), e.getGhiChu(), dong, e.getSoHoaDon(), e.getNcc(), e.getKiemKeId());
+        e.getNguoiThucHien(), e.getTrangThai(), e.getGhiChu(), dong, e.getSoHoaDon(), e.getNcc(), e.getKiemKeId(), e.getChuyenId());
   }
 
   KiemKe kiemKe(KiemKeEntity e) {
@@ -302,7 +302,7 @@ public class DbMapper {
 
   YeuCauXuatKho yeuCauXuatKho(YeuCauXuatKhoEntity e) {
     List<DongYeuCauXuat> dong = new ArrayList<>(e.getDong().stream()
-        .map(x -> new DongYeuCauXuat(x.getLoaiHang(), x.getTenTrenHD(), x.getSoLuong(), x.getGhiChu())).toList());
+        .map(x -> new DongYeuCauXuat(x.getLoaiHang(), x.getTenTrenHD(), x.getSoLuong(), x.getGhiChu(), x.isPhuKien())).toList());
     return new YeuCauXuatKho(e.getId(), e.getSoYC(), d(e.getNgayGui()), e.getHdbId(), e.getNguoiGui(), dong, e.getGhiChu(), e.getTrangThai(),
         e.getLyDoTuChoi(), e.getNguoiXuLy(), d(e.getNgayXuLy()), e.getKho(), e.getPhieuId(), d(e.getNgayXuat()), d(e.getNgayGiao()), e.getNguoiGiao());
   }
@@ -884,6 +884,7 @@ public class DbMapper {
     e.setSoHoaDon(x.getSoHoaDon());
     e.setNcc(Texts.emptyToNull(x.getNcc()));
     e.setKiemKeId(Texts.emptyToNull(x.getKiemKeId()));
+    e.setChuyenId(Texts.emptyToNull(x.getChuyenId()));
     e.getDong().clear();
     for (DongPhieuKho d : x.getDong()) {
       PhieuKhoEntity.Dong o = new PhieuKhoEntity.Dong();
@@ -897,6 +898,8 @@ public class DbMapper {
       o.setDonGiaGoc(d.getDonGiaGoc());
       o.setTenTrenHD(d.getTenTrenHD());
       o.setGhiChu(d.getGhiChu());
+      o.setPhuKien(d.isPhuKien());
+      o.setLoGoc(Texts.emptyToNull(d.getLoGoc()));
       e.getDong().add(o);
     }
     audit(e, me, now);
@@ -950,6 +953,7 @@ public class DbMapper {
       o.setTenTrenHD(d.getTenTrenHD());
       o.setSoLuong(d.getSoLuong());
       o.setGhiChu(d.getGhiChu());
+      o.setPhuKien(d.isPhuKien());
       e.getDong().add(o);
     }
   }

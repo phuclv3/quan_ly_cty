@@ -82,6 +82,17 @@ public class KhoController {
     });
   }
 
+  @Operation(summary = "Chuyển kho — cặp phiếu Xuất / Nhập liên kết",
+      description = "Hàng chuyển giữ nguyên lô, đơn giá, ngày nhập; tổng SL và giá trị không đổi. Chặn xuất quá tồn kho đi.")
+  @PostMapping("/kho/chuyen-kho")
+  public CommandResponse<PhieuKho> chuyenKho(@Valid @RequestBody Req.ChuyenKho r) {
+    return cmd.run("PK.chuyenKho", c -> {
+      PhieuKho p = svc.chuyenKho(c, r.ngay(), r.khoDi(), r.khoDen(), r.dong(), r.ghiChu());
+      c.nhatKy("PhieuKho", p.getId(), "Chuyển kho " + p.getSoPhieu());
+      return p;
+    });
+  }
+
   @Operation(summary = "Thủ kho xuất kho theo yêu cầu → phiếu Xuất", description = "Kiểm đúng mã, SL ≤ yêu cầu và ≤ còn phải giao; trừ theo lô.")
   @PostMapping("/yeu-cau-xuat-kho/{id}/xuat")
   public CommandResponse<PhieuKho> xuatYeuCau(@PathVariable String id, @Valid @RequestBody Req.GiaoHang r) {

@@ -55,6 +55,12 @@ public final class Req {
                          @NotEmpty(message = "Cần ít nhất 1 dòng hàng") List<KhoService.DongXuat> dong,
                          @Size(max = 1000) String ghiChu) {}
 
+  public record ChuyenKho(@NotBlank(message = "Chưa chọn Ngày chuyển") @Pattern(regexp = NGAY, message = NGAY_MSG) String ngay,
+                          @NotBlank(message = "Chọn Kho đi") String khoDi,
+                          @NotBlank(message = "Chọn Kho đến") String khoDen,
+                          @NotEmpty(message = "Cần ít nhất 1 dòng hàng") List<KhoService.DongXuat> dong,
+                          @Size(max = 1000) String ghiChu) {}
+
   public record YeuCauXuat(@NotEmpty(message = "Cần ít nhất 1 dòng hàng") List<DongYeuCauXuat> dong, @Size(max = 1000) String ghiChu) {}
 
   public record NgayGiao(@NotBlank(message = "Chưa chọn Ngày giao hàng") @Pattern(regexp = NGAY, message = NGAY_MSG) String ngay) {}

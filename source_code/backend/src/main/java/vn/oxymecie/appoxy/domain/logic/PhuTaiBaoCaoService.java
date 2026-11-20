@@ -27,7 +27,8 @@ import vn.oxymecie.appoxy.common.Texts;
  * Module Phú Tài theo HĐ bán / HĐ mua có tích "Thuộc Phú Tài": giao dịch khách hàng, giao dịch NCC, đối soát quyền lợi OXY,
  * sổ quỹ Phú Tài và báo cáo. Mọi số liệu tính ở backend.
  *
- * <p>Quy ước: Giá đầu vào = giá trị các HĐ mua Phú Tài phục vụ HĐ bán; LN trước thuế = giá bán trước VAT − giá đầu vào;
+ * <p>Quy ước: Giá đầu vào = giá trị các HĐ mua Phú Tài phục vụ HĐ bán; LN trước thuế = Lợi nhuận gộp tạm tính của HĐ bán
+ * (giá bán trước VAT − giá vốn − chi phí thực hiện đã duyệt, cùng công thức tab Chi phí thực hiện);
  * OXY được hưởng (gộp) = LN trước thuế × tỷ lệ OXY của HĐ (mặc định 70%); Đủ ĐK nhận = OXY được hưởng × (KH đã trả / giá trị sau VAT);
  * Đã nhận = tổng dòng "Chuyển OXY" ở sổ quỹ Phú Tài; LN thực OXY = OXY được hưởng − chi phí thực hiện HĐ đã duyệt.
  * Sổ quỹ Phú Tài = KH trả (đợt thu của HĐ bán) − trả NCC (đợt trả của HĐ mua) − chi phí HĐ − chuyển OXY, cộng số dư đầu kỳ nhập tay.
@@ -81,7 +82,8 @@ public class PhuTaiBaoCaoService {
       long chuyen = raw.getDongTienPT().stream().filter(d -> LOAI_CHUYEN_OXY.equals(d.getLoai()) && h.getId().equals(d.getHdbId())).mapToLong(DongTienPT::getSoTien).sum();
       double tyLe = h.getPtTyLeOxy() == null ? TY_LE_OXY_MAC_DINH : h.getPtTyLeOxy();
       long giaDauVao = Math.round(dauVao);
-      long lnTruoc = h.getTruocVAT() - giaDauVao;
+      // LN trước thuế = Lợi nhuận gộp tạm tính của HĐ bán (tab Chi phí thực hiện): GTHĐ trước VAT − Giá vốn − Chi phí đã duyệt.
+      long lnTruoc = Math.round(h.getTruocVAT() - c.giaVon() - c.cpDuyet());
       long gop = lnTruoc > 0 ? Math.round(lnTruoc * tyLe / 100.0) : 0;
       long duDK = c.sauVAT() > 0 ? Math.round(gop * Math.min(1.0, (double) c.daThu() / c.sauVAT())) : 0;
       out.add(new HdPt(h, c, giaDauVao, hdm, vc, kd, khac, c.daThu(), tra, chuyen, tyLe, lnTruoc, gop, duDK, Math.max(0, duDK - chuyen), gop - (vc + kd + khac)));

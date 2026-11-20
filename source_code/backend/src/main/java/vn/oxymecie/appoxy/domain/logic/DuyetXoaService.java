@@ -185,6 +185,7 @@ public class DuyetXoaService {
       }
       case "PhieuKho" -> {
         PhieuKho p = c.phieuKho(id);
+        if (p != null && "Chuyển kho".equals(p.getNguonGoc())) return "Phiếu chuyển kho không huỷ riêng được — lập chuyển kho ngược lại để hoàn tác";
         if (p == null || !"Nhập".equals(p.getLoai())) return null;
         Set<String> los = new HashSet<>();
         for (int i = 0; i < p.getDong().size(); i++) los.add(Calc.maLo(p, i));

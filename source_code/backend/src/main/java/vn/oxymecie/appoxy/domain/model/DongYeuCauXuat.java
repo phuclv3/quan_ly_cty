@@ -13,4 +13,10 @@ public class DongYeuCauXuat {
   private String tenTrenHD;
   private double soLuong;
   private String ghiChu;
+  /** Phụ kiện giao kèm, không có tên trong HĐ bán. */
+  private boolean phuKien;
+
+  public DongYeuCauXuat(String loaiHang, String tenTrenHD, double soLuong, String ghiChu) {
+    this(loaiHang, tenTrenHD, soLuong, ghiChu, false);
+  }
 }
