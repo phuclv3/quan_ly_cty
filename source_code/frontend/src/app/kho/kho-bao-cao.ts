@@ -287,8 +287,8 @@ export class KhoBaoCao {
   private tongKy(nam: number) {
     const { tu, den } = this.khoang(nam);
     const trong = this.phieu().filter((p) => p.ngay >= tu && p.ngay <= den);
-    const nhap = trong.filter((p) => p.loai === 'Nhập');
-    const xuat = trong.filter((p) => p.loai === 'Xuất');
+    const nhap = trong.filter((p) => p.loai === 'Nhập' && p.nguonGoc !== 'Chuyển kho');
+    const xuat = trong.filter((p) => p.loai === 'Xuất' && p.nguonGoc !== 'Chuyển kho');
     const denTinh = den > todayIso() ? todayIso() : den;
     const soNgay = Math.max(1, Math.round((new Date(denTinh).getTime() - new Date(tu).getTime()) / 864e5) + 1);
     const giaTriNhap = sum(nhap, giaTriPhieu);
@@ -320,7 +320,7 @@ export class KhoBaoCao {
     const nam = +this.nam();
     const out = Array.from({ length: 12 }, (_, i) => ({ t: i + 1, nhap: 0, xuat: 0, soXuat: 0 }));
     for (const p of this.phieu()) {
-      if (+p.ngay.slice(0, 4) !== nam) continue;
+      if (+p.ngay.slice(0, 4) !== nam || p.nguonGoc === 'Chuyển kho') continue;
       const o = out[+p.ngay.slice(5, 7) - 1];
       if (p.loai === 'Nhập') o.nhap += giaTriPhieu(p);
       else {
@@ -406,7 +406,7 @@ export class KhoBaoCao {
   protected readonly cham = computed(() => {
     const cuoiXuat = new Map<string, string>();
     const dauNhap = new Map<string, string>();
-    for (const p of this.phieu() as PhieuKho[])
+    for (const p of (this.phieu() as PhieuKho[]).filter((x) => x.nguonGoc !== 'Chuyển kho'))
       for (const d of p.dong) {
         const m = p.loai === 'Xuất' ? cuoiXuat : dauNhap;
         const cu = m.get(d.loaiHang);

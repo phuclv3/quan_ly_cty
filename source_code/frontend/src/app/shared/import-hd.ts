@@ -200,7 +200,6 @@ export function docHdBan(rows: string[][], store: Store): KetQuaHd<HopDongBan>[]
     const han = tach(o(r0, 'Hạn đợt (ngày)')).map((x) => parseSo(x));
     if (tyLe.some((x) => !(x > 0))) loi.push('Đợt TT (%) phải là số > 0');
     else if (tyLe.length && Math.abs(tyLe.reduce((a, b) => a + b, 0) - 100) > 0.01) loi.push(`Tổng Đợt TT = ${tyLe.reduce((a, b) => a + b, 0)}% (phải = 100%)`);
-    if (tyLe.length > store.cauHinh().SO_DOT_TOI_DA) loi.push(`Tối đa ${store.cauHinh().SO_DOT_TOI_DA} đợt thanh toán`);
     let h: HopDongBan = {
       ...store.newHdb(),
       soHD,
@@ -301,7 +300,6 @@ export function docHdMua(rows: string[][], store: Store): KetQuaHd<HopDongMua>[]
     const han = hanRaw.map((x) => parseNgay(x));
     if (tyLe.some((x) => !(x > 0))) loi.push('Đợt TT (%) phải là số > 0');
     else if (tyLe.length && Math.abs(tyLe.reduce((a, b) => a + b, 0) - 100) > 0.01) loi.push(`Tổng Đợt TT = ${tyLe.reduce((a, b) => a + b, 0)}% (phải = 100%)`);
-    if (tyLe.length > store.cauHinh().SO_DOT_TOI_DA) loi.push(`Tối đa ${store.cauHinh().SO_DOT_TOI_DA} đợt thanh toán`);
     han.forEach((x, i) => x === null && loi.push(`Hạn đợt "${hanRaw[i]}" không hợp lệ`));
     const m: HopDongMua = { ...m0, dotTT: tyLe.map((p, i) => ({ dot: i + 1, soTien: Math.round((p / 100) * tong), han: han[i] || undefined })) };
     return { soHD, dong: g.map((x) => x.n), doiTac: n?.ten ?? ten, doiTacMoi: !!nccMoi, soDongHang: chiTiet.length, giaTri: tong, trangThai: m.trangThai, loi, hd: m, nccMoi };

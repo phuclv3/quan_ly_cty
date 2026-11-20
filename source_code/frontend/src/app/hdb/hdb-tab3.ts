@@ -232,7 +232,7 @@ interface ThuNhap {
     <section class="card blk xanh">
       <div class="section-title">
         <h2>Đợt thanh toán</h2>
-        <span class="sub">Tối đa {{ max() }} đợt · Σ tỷ lệ {{ tongTyLe() }}% / 100% · Σ đợt {{ money(tongDot()) }} / {{ money(c().sauVAT) }}</span>
+        <span class="sub">Không giới hạn số đợt · Σ tỷ lệ {{ tongTyLe() }}% / 100% · Σ đợt {{ money(tongDot()) }} / {{ money(c().sauVAT) }}</span>
       </div>
       @if (loiDot(); as e) { <p class="note bad" role="alert">{{ e }}</p> }
       @if (f().dotTT.length && !loiDot() && tongDot() !== c().sauVAT) {
@@ -398,7 +398,6 @@ export class HdbTab3 {
   }
   /** F-08: đã có phiếu Thu (chưa bị từ chối) → khoá Giá trị trước VAT / VAT. */
   protected readonly khoaGiaTri = computed(() => !!this.saved() && this.store.hdbCoPhieuThu(this.saved()!));
-  protected readonly max = computed(() => this.store.cauHinh().SO_DOT_TOI_DA);
   protected readonly tongDot = computed(() => sum(this.f().dotTT, (d) => d.soTien));
   protected readonly tongTyLe = computed(() => Math.round(sum(this.f().dotTT, (d) => d.tyLe ?? 0) * 10) / 10);
   /** Ràng buộc các đợt (tỷ lệ ≤ 100%, Σ tiền ≤ giá trị HĐ, hạn tăng dần) — cùng quy tắc Store / backend chặn khi lưu. */
@@ -562,11 +561,10 @@ export class HdbTab3 {
   protected readonly themDotDuoc = computed(() => {
     const ds = this.f().dotTT;
     const sau = this.c().sauVAT;
-    return ds.length < this.max() && (ds.length === 0 || ds[ds.length - 1].soTien > 0) && !(sau > 0 && this.tongDot() >= sau);
+    return (ds.length === 0 || ds[ds.length - 1].soTien > 0) && !(sau > 0 && this.tongDot() >= sau);
   });
   protected lyDoKhongThemDot(): string | null {
     if (this.themDotDuoc()) return null;
-    if (this.f().dotTT.length >= this.max()) return `Đã đủ ${this.max()} đợt thanh toán (tối đa)`;
     if (this.c().sauVAT > 0 && this.tongDot() >= this.c().sauVAT) return 'Các đợt đã phân bổ đủ 100% giá trị hợp đồng — giảm số tiền một đợt trước khi thêm đợt mới';
     return 'Đợt cuối chưa có Số tiền — nhập số tiền đợt cuối trước khi thêm đợt mới';
   }

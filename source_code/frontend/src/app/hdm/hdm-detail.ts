@@ -518,7 +518,7 @@ interface TraForm {
                     </td>
                   </tr>
                 } @empty {
-                  <tr><td colspan="11" class="muted">Chưa có đợt thanh toán (tối đa {{ soDotToiDa() }} đợt)</td></tr>
+                  <tr><td colspan="11" class="muted">Chưa có đợt thanh toán</td></tr>
                 }
               </tbody>
               <tfoot>
@@ -806,7 +806,6 @@ export class HdmDetail {
   /** Tab 4 (thêm Kế toán). */
   protected readonly edit4 = computed(() => !this.locked() && (this.store.canEdit('hdm') || (this.store.canEdit('hdmTab4') && !this.isNew())));
   protected readonly canSave = computed(() => this.edit() || this.edit4());
-  protected readonly soDotToiDa = computed(() => this.store.cauHinh().SO_DOT_TOI_DA);
 
   protected readonly ngayHieuLuc = computed(() => ngayHieuLucHdm(this.f()));
   /** Lý do chưa nhập kho được (hiện ở Tab 3 để người dùng biết cần làm gì tiếp). */
@@ -1166,12 +1165,10 @@ export class HdmDetail {
     const d = this.f().dotTT[i];
     this.setDot(i, moc ? { hanMoc: moc, hanNgay: d.hanNgay ?? 0 } : { hanMoc: undefined, hanNgay: undefined });
   }
-  protected readonly themDotDuoc = computed(() => this.f().dotTT.length < this.soDotToiDa() && !(this.calc().tong > 0 && this.tongDot() >= this.calc().tong));
+  protected readonly themDotDuoc = computed(() => !(this.calc().tong > 0 && this.tongDot() >= this.calc().tong));
   protected lyDoKhongThemDot(): string | null {
     if (this.themDotDuoc()) return null;
-    return this.f().dotTT.length >= this.soDotToiDa()
-      ? `Đã đủ ${this.soDotToiDa()} đợt thanh toán (tối đa)`
-      : 'Các đợt đã phân bổ đủ 100% giá trị hợp đồng — giảm số tiền một đợt trước khi thêm đợt mới';
+    return 'Các đợt đã phân bổ đủ 100% giá trị hợp đồng — giảm số tiền một đợt trước khi thêm đợt mới';
   }
   protected themDot(): void {
     const m = this.f();

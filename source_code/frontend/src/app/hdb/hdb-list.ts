@@ -290,7 +290,7 @@ export class HdbList {
       phatSinh: c.quaHan > 0 || c.phat > 0,
       duDK,
       vuong,
-      hd: { t: ttNhan(h.trangThai), c: baoGia ? 'mute' : huy ? 'bad' : tatToan ? 'done' : h.trangThai === TT.HOAN_THANH ? 'ok' : h.trangThai === TT.DANG_GIAO_HANG ? 'warn' : 'info' },
+      hd: { t: ttNhan(h.trangThai), c: baoGia ? 'mute' : huy ? 'bad' : tatToan ? 'done' : h.trangThai === TT.HOAN_THANH || h.trangThai === TT.DA_GIAO_HANG ? 'ok' : h.trangThai === TT.DANG_GIAO_HANG ? 'warn' : 'info' },
       thucHien: baoGia || huy ? { t: 'Chưa', c: 'mute' } : c.giaoHang === 'Chưa giao' ? { t: 'Chuẩn bị', c: 'info' } : { t: 'Xong', c: 'ok' },
       giao: { t: c.giaoHang, c: daGiao ? 'ok' : c.giaoHang === 'Đang giao' ? 'warn' : 'mute', sub: c.soLanGiao ? `${c.soLanGiao} lần giao` : undefined },
       nghiemThu: choNT ? { t: 'Chờ BBNT', c: 'bad', sub: 'thiếu BBGH/BBNT' } : daGiao ? { t: 'Đạt', c: 'ok' } : { t: 'Chưa', c: 'mute' },

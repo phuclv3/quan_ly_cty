@@ -453,11 +453,12 @@ export interface ChiPhiHD {
 
 // ── Kinh doanh ──────────────────────────────────────────────────────────
 
-export type TrangThaiHDB = typeof TT.BAO_GIA | typeof TT.HIEU_LUC | typeof TT.DANG_GIAO_HANG | typeof TT.HOAN_THANH | typeof TT.DA_TAT_TOAN | typeof TT.HUY;
+export type TrangThaiHDB = typeof TT.BAO_GIA | typeof TT.HIEU_LUC | typeof TT.DANG_GIAO_HANG | typeof TT.DA_GIAO_HANG | typeof TT.HOAN_THANH | typeof TT.DA_TAT_TOAN | typeof TT.HUY;
 export const TRANG_THAI_HDB: TrangThaiHDB[] = [
   TT.BAO_GIA,
   TT.HIEU_LUC,
   TT.DANG_GIAO_HANG,
+  TT.DA_GIAO_HANG,
   TT.HOAN_THANH,
   TT.DA_TAT_TOAN,
   TT.HUY,
@@ -763,7 +764,7 @@ export interface HopDongMua {
 
 // ── Kho ─────────────────────────────────────────────────────────────────
 
-export type NguonGocPhieuKho = 'Tự động HĐ Mua' | 'Tự động HĐ Bán' | 'Nhập tay – điều chỉnh';
+export type NguonGocPhieuKho = 'Tự động HĐ Mua' | 'Tự động HĐ Bán' | 'Nhập tay – điều chỉnh' | 'Chuyển kho';
 
 /**
  * Phiếu nhập: mỗi dòng = một LÔ (mã lô là khoá trừ kho), có đơn giá riêng.
@@ -789,6 +790,10 @@ export interface DongPhieuKho {
   tenTrenHD?: string;
   /** Ghi chú của dòng (cột "Ghi chú" sheet NhapKho / XuatKho). */
   ghiChu?: string;
+  /** Phiếu xuất: phụ kiện giao kèm HĐ bán, không có trong Sản phẩm & giá của HĐ (không tính vào SL còn phải giao). */
+  phuKien?: boolean;
+  /** Phiếu nhập do chuyển kho: mã lô gốc ở kho đi — lô mới kế thừa đơn giá, ngày nhập, số HĐ / NCC của lô gốc. */
+  loGoc?: string;
 }
 
 export interface PhieuKho {
@@ -811,6 +816,41 @@ export interface PhieuKho {
   ncc?: string;
   /** Phiếu sinh từ đợt kiểm kê. */
   kiemKeId?: string;
+  /** Chuyển kho: id phiếu đối ứng (phiếu Xuất ↔ phiếu Nhập). */
+  chuyenId?: string;
+}
+
+/** Một dòng hàng của yêu cầu xuất kho. */
+export interface DongYeuCauXuat {
+  loaiHang: string;
+  tenTrenHD?: string;
+  soLuong: number;
+  ghiChu?: string;
+  /** Phụ kiện giao kèm, không có tên trong HĐ bán (không bị giới hạn bởi SL HĐ). */
+  phuKien?: boolean;
+}
+
+/**
+ * Yêu cầu xuất kho và giao hàng của HĐ bán: sale gửi → thủ kho kiểm đủ / đúng mã rồi Xuất kho (sinh phiếu Xuất) hoặc Từ chối
+ * → cập nhật ngày giao. CHO_KHO → DA_XUAT_KHO → DA_GIAO_HANG; hoặc TU_CHOI / DA_RUT.
+ */
+export interface YeuCauXuatKho {
+  id: string;
+  soYC: string;
+  ngayGui: string;
+  hdbId: string;
+  nguoiGui: string;
+  dong: DongYeuCauXuat[];
+  ghiChu?: string;
+  trangThai: typeof TT.CHO_KHO | typeof TT.DA_XUAT_KHO | typeof TT.DA_GIAO_HANG | typeof TT.TU_CHOI | typeof TT.DA_RUT;
+  lyDoTuChoi?: string;
+  nguoiXuLy?: string;
+  ngayXuLy?: string;
+  kho?: string;
+  phieuId?: string;
+  ngayXuat?: string;
+  ngayGiao?: string;
+  nguoiGiao?: string;
 }
 
 /** Một đợt kiểm kê thực tế tại kho — đối chiếu với tồn sổ theo mã hàng. */
@@ -993,6 +1033,7 @@ export interface Db {
   hopDongMua: HopDongMua[];
   phieuKho: PhieuKho[];
   kiemKe: KiemKe[];
+  yeuCauXuatKho: YeuCauXuatKho[];
   anhXaTen: AnhXaTen[];
   binhKhi: BinhKhi[];
   deNghiVatTu: DeNghiVatTu[];

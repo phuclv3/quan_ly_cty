@@ -134,6 +134,7 @@ export async function buildSeed(): Promise<Db> {
     hopDongMua: [],
     phieuKho: [],
     kiemKe: [],
+    yeuCauXuatKho: [],
     anhXaTen: [],
     binhKhi: [],
     deNghiVatTu: [],
@@ -301,7 +302,7 @@ export async function buildSeed(): Promise<Db> {
       vat: [0, 8, 10].includes(vat) ? vat : 8,
       thucTeTruocVAT: r.giaTriThucTe ?? 0,
       thamSoThue: ts,
-      dotTT: r.dotTT.slice(0, 3).map((d, i) => ({
+      dotTT: r.dotTT.map((d, i) => ({
         dot: i + 1,
         soTien: d.soTien,
         ngayThu: d.daThu ? d.ngayThu : undefined,
@@ -392,7 +393,7 @@ export async function buildSeed(): Promise<Db> {
       dotTT: [],
       import: true,
     });
-    m.dotTT = (botDot ? [] : (r.dotTT ?? [])).slice(0, 3).map((d, i) => {
+    m.dotTT = (botDot ? [] : (r.dotTT ?? [])).map((d, i) => {
       if (pt || !d.ngayTra) return { dot: i + 1, soTien: Math.round(d.soTien), ngayTra: d.ngayTra, soTienTra: d.ngayTra ? Math.round(d.soTien) : undefined };
       const p = phieu(db, so, {
         ngayLap: d.ngayTra,
@@ -850,6 +851,7 @@ export function nangCapKhoV6(d: Db): void {
  */
 export function nangCapKhoV5(d: Db): void {
   d.kiemKe ??= [];
+  d.yeuCauXuatKho ??= [];
   for (const r of RAW_MA_HANG) {
     const moi = maHangTuRaw(r);
     const cu = d.loaiHang.find((x) => x.id === r.ma);

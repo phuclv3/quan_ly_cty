@@ -23,6 +23,16 @@ interface Chon {
   ten: string;
 }
 
+/** Tồn của một mã theo một thông số kỹ thuật tại một vị trí kho. */
+interface ChiTietMa {
+  thongSo: string;
+  kho: string;
+  khoTen: string;
+  ton: number;
+  soLo: number;
+  giaTri: number;
+}
+
 /** Một dòng bảng kiểm soát: gộp theo mã hàng (mọi kho thường). */
 interface Ma {
   loaiHang: string;
@@ -30,6 +40,8 @@ interface Ma {
   khos: string[];
   /** Thông số kỹ thuật / nồng độ (quy cách khi nhập lô) của các lô còn tồn — đúng như lúc nhập kho. */
   thongSo: string[];
+  /** Tồn chi tiết theo (thông số kỹ thuật × vị trí kho) của các lô còn hàng. */
+  chiTiet: ChiTietMa[];
   ton: number;
   daGiu: number;
   /** Tồn của lô nhập từ HĐ mua chưa kiểm định xong. */
@@ -87,6 +99,7 @@ const NGUONG_SAP_HET = 2;
     .tbl thead th:first-child { border-top-left-radius: 10px; } .tbl thead th:last-child { border-top-right-radius: 10px; }
     .tbl tbody td { padding-block: 10px; vertical-align: top; }
     .tbl .z { color: var(--ink-3); }
+    .tbl tr.ct td { padding-block: 5px; background: var(--panel); border-top: 0; font-size: 12px; }
     .tbl .qc { color: #8a5a00; } .tbl .hs { color: #a3261d; font-weight: 600; }
     .ma-ten { display: block; font-size: 11px; color: var(--ink-3); margin-top: 2px; width: 240px; max-width: 100%; white-space: normal; overflow-wrap: anywhere; line-height: 1.35; }
     .ts-ky-thuat { min-width: 220px; max-width: 360px; white-space: normal; }
@@ -138,14 +151,12 @@ const NGUONG_SAP_HET = 2;
             </thead>
             <tbody>
               @for (r of pgMa.items(); track r.loaiHang) {
-                <tr>
+                <tr class="ma-chinh">
                   <td>
                     <b>{{ r.loaiHang }}</b>
                     <span class="ma-ten">{{ moTa(r.loaiHang) }}</span>
                   </td>
-                  <td class="sub ts-ky-thuat">
-                    @for (t of r.thongSo; track t) { <div>{{ t }}</div> } @empty { — }
-                  </td>
+                  <td class="sub">{{ r.chiTiet.length ? 'Chi tiết theo thông số · kho ↓' : '—' }}</td>
                   <td>{{ r.khos.join(' / ') || '—' }}</td>
                   <td class="num" [class.neg]="r.ton < 0"><b>{{ money(r.ton) }}</b></td>
                   <td class="num" [class.z]="!r.daGiu">{{ money(r.daGiu) }}</td>
@@ -158,6 +169,17 @@ const NGUONG_SAP_HET = 2;
                   <td class="num">{{ r.giaTri ? vndShort(r.giaTri) : '—' }}</td>
                   <td><span class="st" [class]="'st ' + mau(r.canh)">{{ r.canh }}{{ r.canh === 'Lệch' ? ' ' + (r.lech > 0 ? '+' : '') + r.lech : '' }}</span></td>
                 </tr>
+                @for (c of r.chiTiet; track c.thongSo + c.kho) {
+                  <tr class="ct">
+                    <td></td>
+                    <td class="sub ts-ky-thuat">↳ {{ c.thongSo || '(chưa ghi thông số)' }}</td>
+                    <td>{{ c.khoTen }}</td>
+                    <td class="num"><b>{{ money(c.ton) }}</b></td>
+                    <td colspan="4" class="sub">{{ c.soLo }} lô</td>
+                    <td class="num">{{ c.giaTri ? vndShort(c.giaTri) : '—' }}</td>
+                    <td></td>
+                  </tr>
+                }
               } @empty {
                 <tr><td colspan="11" class="empty">Không có mã hàng nào khớp bộ lọc</td></tr>
               }
@@ -301,7 +323,7 @@ export class TonKhoTab {
     const row = (id: string): Ma => {
       let r = theoMa.get(id);
       if (!r) {
-        r = { loaiHang: id, khos: [], thongSo: [], ton: 0, daGiu: 0, choQC: 0, thieuHS: 0, khaDung: 0, soLo: 0, loChoQC: 0, loThieuHS: 0, giaTri: 0, lech: this.lechMa().get(id) ?? 0, canh: 'Đủ hàng' };
+        r = { loaiHang: id, khos: [], thongSo: [], chiTiet: [], ton: 0, daGiu: 0, choQC: 0, thieuHS: 0, khaDung: 0, soLo: 0, loChoQC: 0, loThieuHS: 0, giaTri: 0, lech: this.lechMa().get(id) ?? 0, canh: 'Đủ hàng' };
         theoMa.set(id, r);
       }
       return r;
@@ -321,6 +343,15 @@ export class TonKhoTab {
       r.soLo++;
       const qc = l.quyCach?.trim();
       if (qc && !r.thongSo.includes(qc)) r.thongSo.push(qc);
+      const ts = qc || '';
+      let ct = r.chiTiet.find((x) => x.thongSo === ts && x.kho === l.kho);
+      if (!ct) {
+        ct = { thongSo: ts, kho: l.kho, khoTen: this.store.khoTen(l.kho), ton: 0, soLo: 0, giaTri: 0 };
+        r.chiTiet.push(ct);
+      }
+      ct.ton += l.ton;
+      ct.soLo++;
+      ct.giaTri += l.giaTriTon;
       if (this.choKiemDinh(l)) {
         r.choQC += l.ton;
         r.loChoQC++;
@@ -330,6 +361,7 @@ export class TonKhoTab {
       }
     }
     for (const r of theoMa.values()) {
+      r.chiTiet.sort((a, b) => a.thongSo.localeCompare(b.thongSo) || a.khoTen.localeCompare(b.khoTen));
       r.daGiu = daGiuTheoMa(db, r.loaiHang);
       r.khaDung = Math.max(0, r.ton - r.daGiu - r.choQC - r.thieuHS);
       r.canh =
@@ -444,7 +476,7 @@ export class TonKhoTab {
       r.giaTriTon += x.giaTriTon;
     }
     for (const p of db.phieuKho) {
-      if (p.loai !== 'Xuất' || p.trangThai !== TT.HIEU_LUC || (thang && !p.ngay.startsWith(thang))) continue;
+      if (p.loai !== 'Xuất' || p.nguonGoc === 'Chuyển kho' || p.trangThai !== TT.HIEU_LUC || (thang && !p.ngay.startsWith(thang))) continue;
       for (const d of p.dong) {
         const r = row(p.kho, d.loaiHang);
         if (!r) continue;
@@ -462,10 +494,12 @@ export class TonKhoTab {
 
   protected xuatExcel(): void {
     if (this.che() === 'ma') {
-      const rows: (string | number)[][] = [['Mã hàng', 'Tên', 'Mô tả', 'Thông số kỹ thuật', 'Tên trên hoá đơn', 'Nhóm', 'ĐVT', 'Vị trí kho', 'Tồn sổ', 'Đã giữ', 'Cách ly / chờ QC', 'Thiếu hồ sơ', 'Khả dụng', 'Số lô', 'Giá trị tồn', 'Lệch kiểm kê', 'Cảnh báo']];
+      const rows: (string | number)[][] = [['Mã hàng', 'Tên', 'Mô tả', 'Thông số kỹ thuật', 'Vị trí kho', 'Tồn theo thông số · kho', 'Số lô', 'Giá trị tồn (chi tiết)', 'Tên trên hoá đơn', 'Nhóm', 'ĐVT', 'Tồn sổ cả mã', 'Đã giữ', 'Cách ly / chờ QC', 'Thiếu hồ sơ', 'Khả dụng', 'Lệch kiểm kê', 'Cảnh báo']];
       for (const r of this.rowsMa()) {
         const lh = this.store.loaiHangById(r.loaiHang);
-        rows.push([r.loaiHang, lh?.ten ?? '', lh?.moTa ?? '', r.thongSo.join('; '), this.tenHD(r.loaiHang).join('; '), lh?.nhom ?? '', lh?.dvt ?? '', r.khos.join(' / '), r.ton, r.daGiu, r.choQC, r.thieuHS, r.khaDung, r.soLo, Math.round(r.giaTri), r.lech, r.canh]);
+        const chung = [this.tenHD(r.loaiHang).join('; '), lh?.nhom ?? '', lh?.dvt ?? '', r.ton, r.daGiu, r.choQC, r.thieuHS, r.khaDung, r.lech, r.canh];
+        if (!r.chiTiet.length) rows.push([r.loaiHang, lh?.ten ?? '', lh?.moTa ?? '', '', r.khos.join(' / '), r.ton, r.soLo, Math.round(r.giaTri), ...chung]);
+        for (const c of r.chiTiet) rows.push([r.loaiHang, lh?.ten ?? '', lh?.moTa ?? '', c.thongSo, c.khoTen, c.ton, c.soLo, Math.round(c.giaTri), ...chung]);
       }
       void xuatExcel('ton-kho-theo-ma', rows);
       return;

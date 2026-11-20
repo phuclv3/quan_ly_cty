@@ -5,7 +5,7 @@ import { map } from 'rxjs';
 import { Store } from '../core/store';
 import { TT, ttNhan } from '../core/trang-thai';
 import { HopDongBan, HopDongMua, PhieuKho, TRANG_THAI_HDB, TrangThaiHDB } from '../core/models';
-import { dnvtTinhTrang, dongMuaChoHdb, hdbCalc, hdbConChuaGiao, hdbThieuDeChuyen, hdmCalc, hdmChoHdb, maLo } from '../core/calc';
+import { dnvtTinhTrang, dongMuaChoHdb, hdbCalc, hdbThieuDeChuyen, hdmCalc, hdmChoHdb, maLo } from '../core/calc';
 import { money, pct, viDate } from '../core/util';
 import { linkPhieuKho } from '../kho/kho-util';
 import { Confirm } from '../shared/confirm';
@@ -108,7 +108,7 @@ const TABS = [
           </div>
           <p class="tt-goi-y">
             <b>{{ ttNhan(s.trangThai) }}</b> — {{ goiYBuoc() }}
-            @if (s.trangThai === TT.HIEU_LUC && keTiep() === TT.DANG_GIAO_HANG || s.trangThai === TT.DANG_GIAO_HANG) {
+            @if (s.trangThai === TT.HIEU_LUC && keTiep() === TT.DANG_GIAO_HANG || s.trangThai === TT.DANG_GIAO_HANG || s.trangThai === TT.DA_GIAO_HANG) {
               @if (tab() !== '1') { <button type="button" class="linkish" (click)="setTab('1')">Mở mục Giao hàng ›</button> }
             }
           </p>
@@ -402,7 +402,7 @@ export class HdbDetail {
     const co = new Set(this.tabs().map((t) => t.k));
     const tab = (k: string) => (co.has(k) ? k : undefined);
     return this.thieu().map((text) => {
-      const k = /^Còn phải thu|phiếu Thu chờ duyệt|Giá trị HĐ/i.test(text) ? '3' : /^Thiếu hồ sơ/.test(text) ? '2' : /chi phí thực hiện/i.test(text) ? '4' : /^Chưa có/.test(text) ? '1' : '';
+      const k = /^Còn phải thu|phiếu Thu chờ duyệt|Giá trị HĐ/i.test(text) ? '3' : /^Thiếu hồ sơ/.test(text) ? '2' : /chi phí thực hiện/i.test(text) ? '4' : /^Chưa có|^Giao thiếu/.test(text) ? '1' : '';
       const t = k ? tab(k) : undefined;
       return { text, tab: t, tenTab: TABS.find((x) => x.k === t)?.t ?? '' };
     });
@@ -482,6 +482,8 @@ export class HdbDetail {
         return 'Hiệu lực: HĐ đã ký. Để chuyển cần Số HĐ, MST khách hàng, Ngày ký và Giá trị HĐ. Từ bước này Số HĐ và Khách hàng bị khoá.';
       case TT.DANG_GIAO_HANG:
         return 'Đang giao hàng: tự chuyển khi ghi nhận lần giao hàng đầu tiên ở mục Giao hàng (Tab 1) — không chuyển bằng tay.';
+      case TT.DA_GIAO_HANG:
+        return 'Đã giao hàng: tự chuyển khi mọi yêu cầu xuất kho đã có ngày giao và giao đủ số lượng HĐ — không chuyển bằng tay.';
       case TT.HOAN_THANH:
         return 'Hoàn thành: đã giao đủ hàng cho khách. Bấm Chuyển khi giao xong. HĐ dịch vụ không giao hàng chuyển thẳng từ Hiệu lực.';
       case TT.DA_TAT_TOAN:
@@ -510,6 +512,8 @@ export class HdbDetail {
           : 'Ghi nhận giao hàng ở mục Giao hàng; HĐ sẽ tự chuyển sang "Đang giao hàng".';
       case TT.DANG_GIAO_HANG:
         return 'Giao đủ hàng cho khách rồi bấm "Chuyển → Hoàn thành". Có sự cố thì bấm "Phát sinh".';
+      case TT.DA_GIAO_HANG:
+        return 'Đã giao đủ hàng cho khách. Bấm "Chuyển → Hoàn thành" khi nghiệm thu xong.';
       case TT.HOAN_THANH:
         return 'Thu đủ tiền và đủ hồ sơ rồi bấm "Chuyển → Đã tất toán".';
       case TT.DA_TAT_TOAN:
@@ -617,11 +621,9 @@ export class HdbDetail {
         : k === TT.DA_TAT_TOAN
           ? 'Sau khi tất toán, HĐ bị khoá toàn bộ; chỉ người có quyền "Mở lại HĐ đã tất toán" (HDB-03-ML) mở lại được.'
           : undefined;
-    const chuaGiao = k === TT.HOAN_THANH ? hdbConChuaGiao(s, this.store.db()) : [];
     const warn =
       [
         k === TT.HOAN_THANH && this.c().hoSoThieu.length ? `Thiếu hồ sơ: ${this.c().hoSoThieu.join(', ')}` : '',
-        chuaGiao.length ? `Còn hàng theo HĐ mua chưa giao: ${chuaGiao.map((x) => `${x.loaiHang} × ${x.con}`).join('; ')}` : '',
         k === TT.HOAN_THANH && s.trangThai === TT.HIEU_LUC ? 'HĐ không có HĐ mua / phiếu xuất — xác nhận đây là HĐ không giao hàng (dịch vụ).' : '',
       ]
         .filter(Boolean)

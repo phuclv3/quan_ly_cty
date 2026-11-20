@@ -135,6 +135,8 @@ const TONE: Record<string, string> = {
   [TT.DANG_DAM_PHAN]: 'warn',
   [TT.KY_HOP_DONG]: 'ok',
   [TT.DA_GIAO_HANG]: 'ok',
+  [TT.CHO_KHO]: 'warn',
+  [TT.DA_XUAT_KHO]: 'info',
   [TT.CHUA_PHAN_BO]: 'mute',
   [TT.DA_PHAN_BO]: 'info',
   [TT.DA_RUT]: 'mute',

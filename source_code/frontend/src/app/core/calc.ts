@@ -314,7 +314,7 @@ export function slDaDeNghi(db: Db, hdbId: string): Map<string, number> {
 }
 
 /** HĐ bán đang giữ hàng: đã Hiệu lực / Đang giao hàng và có dòng sản phẩm. */
-const giuHang = (h: HopDongBan) => (h.trangThai === TT.HIEU_LUC || h.trangThai === TT.DANG_GIAO_HANG) && !!h.dongHang?.length;
+const giuHang = (h: HopDongBan) => (h.trangThai === TT.HIEU_LUC || h.trangThai === TT.DANG_GIAO_HANG || h.trangThai === TT.DA_GIAO_HANG) && !!h.dongHang?.length;
 
 /** SL còn phải giao theo mã của một HĐ bán = Σ dòng sản phẩm − đã xuất kho cho HĐ. */
 function conPhaiGiaoTheoMa(db: Db, h: HopDongBan): Map<string, number> {
@@ -475,6 +475,11 @@ export function hdbThieuDeChuyen(h: HopDongBan, toi: HopDongBan['trangThai'], db
     if (!h.mst?.trim()) out.push('Chưa có MST khách hàng');
     if (!h.ngayKy) out.push('Chưa có Ngày ký');
     if (h.truocVAT <= 0) out.push('Chưa có Giá trị HĐ');
+  }
+  if (toi === TT.HOAN_THANH) {
+    // Giao thiếu so với HĐ → chặn Hoàn thành (phụ kiện giao kèm không tính vào số phải giao).
+    const thieu = hdbConChuaGiao(h, db);
+    if (thieu.length) out.push(`Giao thiếu hàng so với HĐ: ${thieu.map((x) => `${x.loaiHang} × ${x.con}`).join('; ')}`);
   }
   if (toi === TT.DA_TAT_TOAN) {
     if (c.conPhaiThu > 0) out.push(`Còn phải thu ${vnd(c.conPhaiThu)}`);
@@ -707,10 +712,12 @@ export function tonTheoLo(db: Db, denNgay?: string): DongLo[] {
   for (const m of db.hopDongMua) for (const d of m.chiTiet) dongMua.set(d.id, d);
   const hl = db.phieuKho.filter((p) => p.trangThai === TT.HIEU_LUC && (!denNgay || p.ngay <= denNgay));
   const map = new Map<string, DongLo>();
+  const goc = new Map<string, string>();
   for (const p of hl) {
     if (p.loai !== 'Nhập') continue;
     p.dong.forEach((d, i) => {
       const lo = maLo(p, i);
+      if (d.loGoc) goc.set(lo, d.loGoc);
       const g = map.get(lo);
       if (g) g.nhap += d.soLuong;
       else
@@ -731,6 +738,17 @@ export function tonTheoLo(db: Db, denNgay?: string): DongLo[] {
           giaTriTon: 0,
         });
     });
+  }
+  // Lô sinh ra từ chuyển kho: kế thừa ngày nhập (FIFO, tuổi tồn), số HĐ, NCC của lô gốc.
+  for (const [lo, g0] of goc) {
+    let r = map.get(g0);
+    for (let n = 0; r && goc.has(r.lo) && n < 20; n++) r = map.get(goc.get(r.lo)!);
+    const l = map.get(lo);
+    if (r && l) {
+      l.ngay = r.ngay;
+      l.soHoaDon = r.soHoaDon;
+      l.ncc = r.ncc;
+    }
   }
   for (const p of hl) {
     if (p.loai !== 'Xuất') continue;
@@ -990,21 +1008,10 @@ export function soDuQuyPT(db: Db, o: { hdptId?: string; denNgay?: string } = {})
  * với các phiếu xuất Hiệu lực (nồng độ ghi theo lô nên không so). Dùng để cảnh báo khi chuyển "Hoàn thành".
  */
 export function hdbConChuaGiao(h: HopDongBan, db: Db): { loaiHang: string; con: number }[] {
-  const daGiao = new Map<string, number>();
-  for (const p of db.phieuKho) {
-    if (p.loai !== 'Xuất' || p.hdId !== h.id || p.trangThai !== TT.HIEU_LUC) continue;
-    for (const d of p.dong) daGiao.set(d.loaiHang, (daGiao.get(d.loaiHang) ?? 0) + d.soLuong);
-  }
-  // Có dòng hàng trên HĐ bán → so theo dòng hàng; chưa có thì so theo các HĐ mua liên quan như trước.
-  const can = h.dongHang?.length
-    ? h.dongHang.map((d) => ({ loaiHang: d.loaiHang, soLuong: d.soLuong }))
-    : db.hopDongMua.filter((m) => m.trangThai !== TT.HUY && hdmChoHdb(m, h.id)).flatMap((m) => dongMuaChoHdb(m, h.id));
+  // Dùng cùng cơ sở với giới hạn giao hàng (bỏ phụ kiện giao kèm); null = HĐ không có cơ sở → không chặn.
+  const con = hdbGioiHanGiao(h, db);
   const out: { loaiHang: string; con: number }[] = [];
-  for (const d of can) {
-    const tru = Math.min(daGiao.get(d.loaiHang) ?? 0, d.soLuong);
-    daGiao.set(d.loaiHang, (daGiao.get(d.loaiHang) ?? 0) - tru);
-    if (d.soLuong - tru > 0) out.push({ loaiHang: d.loaiHang, con: d.soLuong - tru });
-  }
+  if (con) for (const [loaiHang, sl] of con) if (sl > 1e-9) out.push({ loaiHang, con: sl });
   return out;
 }
 
@@ -1021,7 +1028,18 @@ export function hdbGioiHanGiao(h: HopDongBan, db: Db): Map<string, number> | nul
   if (!con.size) return null;
   for (const p of db.phieuKho) {
     if (p.loai !== 'Xuất' || p.hdId !== h.id || p.trangThai !== TT.HIEU_LUC) continue;
-    for (const d of p.dong) if (con.has(d.loaiHang)) con.set(d.loaiHang, con.get(d.loaiHang)! - d.soLuong);
+    for (const d of p.dong) if (!d.phuKien && con.has(d.loaiHang)) con.set(d.loaiHang, con.get(d.loaiHang)! - d.soLuong);
+  }
+  return con;
+}
+
+/** Số còn gửi yêu cầu xuất kho được = còn phải giao trừ SL trong các yêu cầu đang Chờ kho; null khi HĐ không có cơ sở giới hạn. */
+export function hdbConYeuCau(h: HopDongBan, db: Db): Map<string, number> | null {
+  const con = hdbGioiHanGiao(h, db);
+  if (!con) return null;
+  for (const y of db.yeuCauXuatKho ?? []) {
+    if (y.hdbId !== h.id || y.trangThai !== TT.CHO_KHO) continue;
+    for (const d of y.dong) if (!d.phuKien && con.has(d.loaiHang)) con.set(d.loaiHang, con.get(d.loaiHang)! - d.soLuong);
   }
   return con;
 }

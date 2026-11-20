@@ -1,8 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal, viewChild } from '@angular/core';
 import { Store } from '../core/store';
 import { TT } from '../core/trang-thai';
-import { FileRef, HopDongBan, PhieuKho, ViecGiao } from '../core/models';
-import { DongLo, dongMuaChoHdb, hdbGioiHanGiao, hdmChoHdb, loConHang, tonTai, tongSL } from '../core/calc';
+import { FileRef, HopDongBan, PhieuKho, ViecGiao, YeuCauXuatKho } from '../core/models';
+import { DongLo, dongMuaChoHdb, hdbConChuaGiao, hdbConYeuCau, hdbGioiHanGiao, hdmChoHdb, loConHang, tonTai, tongSL } from '../core/calc';
 import { daysFromToday, num, todayIso, viDate } from '../core/util';
 import { Confirm } from '../shared/confirm';
 import { guiXoa } from '../shared/ho-so';
@@ -19,23 +19,26 @@ interface DongNhap {
   lo: string;
   soLuong: number;
   tenTrenHD: string;
+  /** Phụ kiện giao kèm, không có tên trong HĐ (không bị giới hạn SL theo HĐ). */
+  phuKien: boolean;
 }
 
-const dongRong = (): DongNhap => ({ loaiHang: '', lo: '', soLuong: 0, tenTrenHD: '' });
+const dongRong = (): DongNhap => ({ loaiHang: '', lo: '', soLuong: 0, tenTrenHD: '', phuKien: false });
 
 /** HDB-04 — khu Giao hàng ở Tab 1: các lần giao (phiếu XK) + popup Ghi nhận giao hàng. */
 @Component({
   selector: 'app-hdb-giao-hang',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [Modal, Pick, TrangThai, Icon, RouterLink, NguoiThem, TepDinhKem],
-  styles: [`:host { display: block; } .gh-tbl td { vertical-align: top; } .gh-tbl td > select, .gh-tbl td > input, .gh-tbl td > textarea.keo-gian { height: 40px; min-height: 40px; width: 100%; } .gh-tbl td > textarea.keo-gian { height: auto; } .gh-tbl td:last-child { padding-top: 12px; } .them-dong { justify-self: start; align-self: flex-start; width: auto; } .sc-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 24px; align-items: start; } .sc-grid .full { grid-column: 1 / -1; } .sc-grid .field { min-width: 0; } @media (max-width: 720px) { .sc-grid { grid-template-columns: minmax(0, 1fr); } }`],
+  styles: [`:host { display: block; } .gh-tbl td { vertical-align: top; } .gh-tbl td > select, .gh-tbl td > input, .gh-tbl td > textarea.keo-gian { height: 40px; min-height: 40px; width: 100%; } .gh-tbl td > textarea.keo-gian { height: auto; } .gh-tbl td:last-child { padding-top: 12px; } .gh-tbl td.ctr { text-align: center; padding-top: 12px; } .gh-tbl td.ctr > input { width: auto; height: auto; min-height: 0; } .them-dong { justify-self: start; align-self: flex-start; width: auto; } .sc-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 24px; align-items: start; } .sc-grid .full { grid-column: 1 / -1; } .sc-grid .field { min-width: 0; } @media (max-width: 720px) { .sc-grid { grid-template-columns: minmax(0, 1fr); } }`],
   template: `
     <section class="card">
       <div class="section-title">
         <h2>Giao hàng <small class="sub">Có hàng trong kho → phiếu xuất kho → giao (ngày giao = ngày phiếu)</small></h2>
         <div class="btn-row">
           @if (store.canEdit('hdbGiaoHang', h().sale)) {
-            <button type="button" class="btn sm" [disabled]="!coTheGiao()" [attr.title]="lyDoKhongGiao()" (click)="mo()"><app-icon name="truck" [size]="16" /> Ghi nhận giao hàng</button>
+            <button type="button" class="btn sm" [disabled]="!coTheGuiYC()" [attr.title]="lyDoKhongGuiYC()" (click)="moYC()"><app-icon name="send" [size]="16" /> Gửi yêu cầu xuất kho</button>
+            <button type="button" class="btn sm quiet" [disabled]="!coTheGiao()" [attr.title]="lyDoKhongGiao()" (click)="mo()"><app-icon name="truck" [size]="16" /> Ghi nhận giao hàng</button>
           }
           @if (store.canEdit('viec')) {
             <button type="button" class="btn sm quiet" [disabled]="!coTheBaoSuCo()" [attr.title]="lyDoKhongSuCo()" (click)="moSuCo()"><app-icon name="alert" [size]="16" /> Phát sinh</button>
@@ -43,6 +46,9 @@ const dongRong = (): DongNhap => ({ loaiHang: '', lo: '', soLuong: 0, tenTrenHD:
         </div>
       </div>
       @if (h().trangThai === TT.BAO_GIA) { <p class="sub">HĐ chưa Hiệu lực — chưa ghi nhận giao hàng được.</p> }
+      @if (thieuGiao().length) {
+        <p class="note bad" role="alert">⚠ Giao thiếu so với HĐ — còn phải giao: {{ moTaThieu() }}. Chưa chuyển được sang "Hoàn thành" cho đến khi giao đủ.</p>
+      }
       <div class="tbl-wrap">
         <table class="tbl compact">
           <thead><tr><th>Ngày</th><th>Số phiếu XK</th><th>Kho</th><th>Hàng</th><th class="num">SL</th><th>Trạng thái</th><th></th></tr></thead>
@@ -71,6 +77,44 @@ const dongRong = (): DongNhap => ({ loaiHang: '', lo: '', soLuong: 0, tenTrenHD:
         </table>
       </div>
     </section>
+
+    @if (yeuCaus().length) {
+      <section class="card">
+        <div class="section-title">
+          <h2>Yêu cầu xuất kho <small class="sub">Sale gửi → thủ kho kiểm đủ / đúng mã rồi xuất → thủ kho cập nhật ngày giao → Đã giao hàng</small></h2>
+        </div>
+        <div class="tbl-wrap">
+          <table class="tbl compact">
+            <thead><tr><th>Số YC</th><th>Ngày gửi</th><th>Hàng yêu cầu</th><th>Trạng thái</th><th>Phiếu XK</th><th>Ngày giao</th><th></th></tr></thead>
+            <tbody>
+              @for (y of yeuCaus(); track y.id) {
+                <tr>
+                  <td><b>{{ y.soYC }}</b></td>
+                  <td>{{ viDate(y.ngayGui) }}<span class="sub"> · {{ store.userName(y.nguoiGui) }}</span></td>
+                  <td class="sub">{{ moTaYC(y) }}@if (y.ghiChu) { <br />Ghi chú: {{ y.ghiChu }} }</td>
+                  <td>
+                    <app-tt [v]="y.trangThai" />
+                    @if (y.trangThai === TT.TU_CHOI && y.lyDoTuChoi) { <span class="sub"> Lý do: {{ y.lyDoTuChoi }}</span> }
+                  </td>
+                  <td>
+                    @if (phieuCua(y); as p) {
+                      @if (store.canView('khoTon')) { <a routerLink="/kho" [queryParams]="link(p)"><b>{{ p.soPhieu }}</b></a> } @else { <b>{{ p.soPhieu }}</b> }
+                      <span class="sub"> · {{ viDate(y.ngayXuat) }}</span>
+                    } @else { <span class="muted">—</span> }
+                  </td>
+                  <td>{{ y.ngayGiao ? viDate(y.ngayGiao) : '—' }}</td>
+                  <td>
+                    @if (y.trangThai === TT.CHO_KHO && store.canEdit('hdbGiaoHang', h().sale) && !khoa()) {
+                      <button type="button" class="btn sm quiet" (click)="rutYC(y)">Rút yêu cầu</button>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+    }
 
     @if (suCos().length || store.canEdit('viec')) {
       <section class="card">
@@ -133,6 +177,39 @@ const dongRong = (): DongNhap => ({ loaiHang: '', lo: '', soLuong: 0, tenTrenHD:
       </div>
     </app-modal>
 
+    <app-modal [open]="ycOpen()" title="Gửi yêu cầu xuất kho và giao hàng" [sub]="'HĐ ' + h().soHD" size="lg" [dirty]="ycOpen() && ycDong().length > 0" (closed)="ycOpen.set(false)">
+      <p class="note info">Yêu cầu chuyển sang Kho: thủ kho kiểm tra đủ hàng và đúng mã rồi mới xuất và giao. Mã hàng trong HĐ không được vượt số còn phải giao. Phụ kiện giao kèm không có tên trong HĐ: tích cột <b>Phụ kiện</b> rồi chọn mã hàng bất kỳ.</p>
+      <div class="tbl-wrap">
+        <table class="tbl compact gh-tbl">
+          <thead><tr><th style="width:34%">Mã hàng</th><th class="num w-sm">Số lượng</th><th>Tên hàng trên HĐ</th><th style="width:76px" title="Phụ kiện giao kèm, không có tên trong HĐ">Phụ kiện</th><th style="width:40px"></th></tr></thead>
+          <tbody>
+            @for (d of ycDong(); track $index; let i = $index) {
+              <tr>
+                <td>
+                  <app-pick [options]="d.phuKien ? tatCaOpts() : ycLhOpts()" [value]="d.loaiHang" (valueChange)="setYC(i, { loaiHang: $event })" />
+                  @if (!d.phuKien && ycConLai(d.loaiHang, i) !== null) { <span class="hint" [class.neg]="d.soLuong > ycConLai(d.loaiHang, i)!">Còn gửi yêu cầu được: {{ num(ycConLai(d.loaiHang, i)!) }}</span> }
+                </td>
+                <td><input class="num" type="number" min="0" [attr.max]="d.phuKien ? null : ycConLai(d.loaiHang, i)" [value]="d.soLuong" (input)="setYC(i, { soLuong: +$any($event.target).value || 0 })" /></td>
+                <td><textarea class="keo-gian" rows="1" [value]="d.tenTrenHD" (input)="setYC(i, { tenTrenHD: $any($event.target).value })"></textarea></td>
+                <td class="ctr"><input type="checkbox" [checked]="d.phuKien" aria-label="Phụ kiện ngoài HĐ" (change)="setYC(i, { phuKien: $any($event.target).checked, loaiHang: '' })" /></td>
+                <td><button type="button" class="icon-btn sm" aria-label="Xoá dòng" (click)="xoaYC(i)"><app-icon name="trash" [size]="16" /></button></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <button type="button" class="btn sm quiet them-dong" (click)="themYC()"><app-icon name="plus" [size]="16" /> Thêm dòng</button>
+      <div class="field wide">
+        <label for="yc-gc">Ghi chú cho kho</label>
+        <textarea id="yc-gc" rows="2" placeholder="VD Giao trong ngày, liên hệ anh A" [value]="ycGhiChu()" (input)="ycGhiChu.set($any($event.target).value)"></textarea>
+      </div>
+      @if (ycLoi()) { <p class="note bad">{{ ycLoi() }}</p> }
+      <div foot class="btn-row">
+        <button type="button" class="btn quiet" (click)="ycOpen.set(false)">Huỷ</button>
+        <button type="button" class="btn" (click)="guiYC()">Gửi yêu cầu</button>
+      </div>
+    </app-modal>
+
     <app-modal #mGH [open]="open()" title="Ghi nhận giao hàng" [sub]="'HĐ ' + h().soHD" size="lg" [dirty]="dirty()" (closed)="open.set(false)">
       <div class="form-grid blk xanh">
 <h3 class="blk-t">Thông tin giao hàng</h3>
@@ -159,14 +236,14 @@ const dongRong = (): DongNhap => ({ loaiHang: '', lo: '', soLuong: 0, tenTrenHD:
       }
       <div class="tbl-wrap">
       <table class="tbl compact gh-tbl">
-        <thead><tr><th style="width:28%">Mã hàng</th><th style="width:22%">Lô</th><th class="num w-sm">Số lượng</th><th>Tên hàng trên HĐ</th><th style="width:40px"></th></tr></thead>
+        <thead><tr><th style="width:28%">Mã hàng</th><th style="width:22%">Lô</th><th class="num w-sm">Số lượng</th><th>Tên hàng trên HĐ</th><th style="width:76px" title="Phụ kiện giao kèm, không có tên trong HĐ">Phụ kiện</th><th style="width:40px"></th></tr></thead>
         <tbody>
           @for (d of dong(); track $index; let i = $index) {
             <tr>
               <td>
-                <app-pick [options]="lhOpts()" [value]="d.loaiHang" (valueChange)="setDong(i, { loaiHang: $event, lo: '' })" />
+                <app-pick [options]="d.phuKien ? tatCaOpts() : lhOpts()" [value]="d.loaiHang" (valueChange)="setDong(i, { loaiHang: $event, lo: '' })" />
                 @if (d.loaiHang) { <span class="hint" [class.neg]="ton(d.loaiHang) < d.soLuong">Tồn tại kho: {{ num(ton(d.loaiHang)) }}</span> }
-                @if (conLai(d.loaiHang, i) !== null) { <span class="hint" [class.neg]="d.soLuong > conLai(d.loaiHang, i)!">Còn phải giao: {{ num(conLai(d.loaiHang, i)!) }}</span> }
+                @if (!d.phuKien && conLai(d.loaiHang, i) !== null) { <span class="hint" [class.neg]="d.soLuong > conLai(d.loaiHang, i)!">Còn phải giao: {{ num(conLai(d.loaiHang, i)!) }}</span> }
               </td>
               <td>
                 <select (change)="setDong(i, { lo: $any($event.target).value })" aria-label="Lô" [disabled]="!d.loaiHang">
@@ -176,8 +253,9 @@ const dongRong = (): DongNhap => ({ loaiHang: '', lo: '', soLuong: 0, tenTrenHD:
                   }
                 </select>
               </td>
-              <td><input class="num" type="number" min="0" [attr.max]="conLai(d.loaiHang, i)" [value]="d.soLuong" (input)="setDong(i, { soLuong: +$any($event.target).value || 0 })" /></td>
+              <td><input class="num" type="number" min="0" [attr.max]="d.phuKien ? null : conLai(d.loaiHang, i)" [value]="d.soLuong" (input)="setDong(i, { soLuong: +$any($event.target).value || 0 })" /></td>
               <td><textarea class="keo-gian" rows="1" [value]="d.tenTrenHD" placeholder="VD Bình khí chuẩn NO2 200ppm" (input)="setDong(i, { tenTrenHD: $any($event.target).value })"></textarea></td>
+              <td class="ctr"><input type="checkbox" [checked]="d.phuKien" aria-label="Phụ kiện ngoài HĐ" (change)="setDong(i, { phuKien: $any($event.target).checked, loaiHang: '', lo: '' })" /></td>
               <td><button type="button" class="icon-btn sm" aria-label="Xoá dòng" (click)="xoaDong(i)"><app-icon name="trash" [size]="16" /></button></td>
             </tr>
           }
@@ -235,7 +313,7 @@ export class HdbGiaoHang {
     return 'Chỉ ghi nhận phát sinh khi HĐ đang ở trạng thái "Đang giao hàng" (sau lần ghi nhận giao hàng đầu tiên)';
   });
   /** Chỉ báo sự cố khi HĐ đang giao hàng (ghi nhận giao đầu tiên đã chuyển trạng thái). */
-  protected readonly coTheBaoSuCo = computed(() => !this.khoa() && this.h().trangThai === TT.DANG_GIAO_HANG);
+  protected readonly coTheBaoSuCo = computed(() => !this.khoa() && (this.h().trangThai === TT.DANG_GIAO_HANG || this.h().trangThai === TT.DA_GIAO_HANG));
   protected readonly daysFromToday = daysFromToday;
   protected readonly suCos = computed(() =>
     this.store
@@ -259,17 +337,28 @@ export class HdbGiaoHang {
   );
   /** Số còn phải giao theo mã (null = HĐ không có cơ sở để giới hạn → cho chọn mọi mã). */
   protected readonly gioiHan = computed(() => hdbGioiHanGiao(this.h(), this.store.db()));
+  /** Mã còn thiếu so với HĐ (đã bỏ phụ kiện); chỉ cảnh báo khi HĐ đã có phát sinh giao hàng. */
+  protected readonly thieuGiao = computed(() => {
+    const h = this.h();
+    if (h.trangThai === TT.BAO_GIA || h.trangThai === TT.HUY) return [];
+    return hdbConChuaGiao(h, this.store.db());
+  });
+  protected moTaThieu(): string {
+    return this.thieuGiao().map((x) => `${x.loaiHang} × ${num(x.con)}`).join('; ');
+  }
   /** Chỉ các mã trong Sản phẩm & giá của HĐ (còn phải giao > 0), kèm số còn lại. */
   protected readonly lhOpts = computed<PickOption[]>(() => {
     const con = this.gioiHan();
     const ds = this.store.loaiHang().filter((l) => l.dangDung && (!con || (con.get(l.id) ?? 0) > 0));
     return maHangOpts(ds).map((o) => (con ? { ...o, hint: `Còn phải giao ${num(con.get(o.value) ?? 0)}${o.hint ? ' · ' + o.hint : ''}` } : o));
   });
+  /** Mọi mã hàng đang dùng — cho dòng phụ kiện giao kèm (không có trong HĐ). */
+  protected readonly tatCaOpts = computed<PickOption[]>(() => maHangOpts(this.store.loaiHang().filter((l) => l.dangDung)));
   /** Còn phải giao của mã trừ phần đang nhập ở các dòng khác của popup. */
   protected conLai(lh: string, boQuaDong: number): number | null {
     const con = this.gioiHan();
     if (!con || !lh || !con.has(lh)) return null;
-    const dangNhap = this.dong().reduce((s, d, i) => (i !== boQuaDong && d.loaiHang === lh ? s + (d.soLuong || 0) : s), 0);
+    const dangNhap = this.dong().reduce((s, d, i) => (i !== boQuaDong && !d.phuKien && d.loaiHang === lh ? s + (d.soLuong || 0) : s), 0);
     return Math.max(0, (con.get(lh) ?? 0) - dangNhap);
   }
   /** Xuất quá tồn lô / thiếu tồn → báo ngay, xác nhận sẽ bị chặn. */
@@ -279,8 +368,82 @@ export class HdbGiaoHang {
 
   protected readonly link = linkPhieuKho;
 
+  // ── Yêu cầu xuất kho ──
+  protected readonly yeuCaus = computed(() =>
+    this.store
+      .yeuCauXuatKho()
+      .filter((y) => y.hdbId === this.h().id)
+      .sort((a, b) => (a.ngayGui === b.ngayGui ? (a.soYC < b.soYC ? 1 : -1) : a.ngayGui < b.ngayGui ? 1 : -1)),
+  );
+  protected readonly ycOpen = signal(false);
+  protected readonly ycDong = signal<{ loaiHang: string; soLuong: number; tenTrenHD: string; phuKien: boolean }[]>([]);
+  protected readonly ycGhiChu = signal('');
+  protected readonly ycLoi = signal('');
+  /** Số còn gửi yêu cầu được theo mã (đã trừ yêu cầu đang Chờ kho); null = HĐ không có cơ sở giới hạn. */
+  private readonly conYC = computed(() => hdbConYeuCau(this.h(), this.store.db()));
+  protected readonly coTheGuiYC = computed(
+    () => !this.khoa() && this.h().trangThai !== TT.BAO_GIA && this.h().trangThai !== TT.HOAN_THANH && this.store.canEdit('hdbGiaoHang', this.h().sale),
+  );
+  protected readonly lyDoKhongGuiYC = computed(() => {
+    if (this.coTheGuiYC()) return null;
+    if (this.khoa()) return 'HĐ đã khoá (Đã tất toán / đang chờ xoá)';
+    if (this.h().trangThai === TT.BAO_GIA) return 'HĐ phải chuyển sang Hiệu lực trước khi gửi yêu cầu xuất kho';
+    return 'HĐ đã Hoàn thành — không gửi thêm yêu cầu';
+  });
+  protected readonly ycLhOpts = computed<PickOption[]>(() => {
+    const con = this.conYC();
+    const ds = this.store.loaiHang().filter((l) => l.dangDung && (!con || (con.get(l.id) ?? 0) > 0));
+    return maHangOpts(ds).map((o) => (con ? { ...o, hint: `Còn ${num(con.get(o.value) ?? 0)}${o.hint ? ' · ' + o.hint : ''}` } : o));
+  });
+  protected ycConLai(lh: string, boQua: number): number | null {
+    const con = this.conYC();
+    if (!con || !lh || !con.has(lh)) return null;
+    const dangNhap = this.ycDong().reduce((s, d, i) => (i !== boQua && !d.phuKien && d.loaiHang === lh ? s + (d.soLuong || 0) : s), 0);
+    return Math.max(0, (con.get(lh) ?? 0) - dangNhap);
+  }
+  protected moTaYC(y: YeuCauXuatKho): string {
+    return y.dong.map((d) => `${d.loaiHang}${d.phuKien ? ' [phụ kiện]' : ''} × ${num(d.soLuong)}`).join('; ');
+  }
+  protected phieuCua(y: YeuCauXuatKho): PhieuKho | undefined {
+    return y.phieuId ? this.store.phieuKho().find((p) => p.id === y.phieuId) : undefined;
+  }
+  protected moYC(): void {
+    const con = this.conYC();
+    const goiY = [...(con?.entries() ?? [])]
+      .filter(([, sl]) => sl > 0)
+      .map(([ma, sl]) => ({ loaiHang: ma, soLuong: sl, tenTrenHD: this.h().dongHang?.find((d) => d.loaiHang === ma)?.tenHang ?? '', phuKien: false }));
+    this.ycDong.set(goiY.length ? goiY : [{ loaiHang: '', soLuong: 0, tenTrenHD: '', phuKien: false }]);
+    this.ycGhiChu.set('');
+    this.ycLoi.set('');
+    this.ycOpen.set(true);
+  }
+  protected setYC(i: number, p: Partial<{ loaiHang: string; soLuong: number; tenTrenHD: string; phuKien: boolean }>): void {
+    this.ycDong.update((arr) => arr.map((d, j) => (j === i ? { ...d, ...p } : d)));
+  }
+  protected themYC(): void {
+    this.ycDong.update((arr) => [...arr, { loaiHang: '', soLuong: 0, tenTrenHD: '', phuKien: false }]);
+  }
+  protected xoaYC(i: number): void {
+    this.ycDong.update((arr) => arr.filter((_, j) => j !== i));
+  }
+  protected guiYC(): void {
+    const err = this.store.guiYeuCauXuatKho(
+      this.h().id,
+      this.ycDong().map((d) => ({ loaiHang: d.loaiHang, soLuong: d.soLuong, tenTrenHD: d.tenTrenHD, phuKien: d.phuKien })),
+      this.ycGhiChu().trim() || undefined,
+    );
+    if (err) return this.ycLoi.set(err);
+    this.ycOpen.set(false);
+    this.store.say('Đã gửi yêu cầu xuất kho — chờ thủ kho kiểm tra và xuất');
+  }
+  protected async rutYC(y: YeuCauXuatKho): Promise<void> {
+    if (!(await this.confirm.ask({ title: 'Rút yêu cầu xuất kho', message: `Rút yêu cầu ${y.soYC}? Kho sẽ không xử lý yêu cầu này nữa.`, ok: 'Rút yêu cầu' }))) return;
+    const err = this.store.rutYeuCauXuatKho(y.id);
+    this.store.say(err ?? 'Đã rút yêu cầu');
+  }
+
   protected moTaDong(p: PhieuKho): string {
-    return p.dong.map((d) => `${d.loaiHang}${d.lo ? ' (lô ' + d.lo + ')' : ''} × ${num(d.soLuong)}`).join('; ');
+    return p.dong.map((d) => `${d.loaiHang}${d.phuKien ? ' [phụ kiện]' : ''}${d.lo ? ' (lô ' + d.lo + ')' : ''} × ${num(d.soLuong)}`).join('; ');
   }
 
   protected nguoiPT(v: ViecGiao): string {
@@ -403,7 +566,7 @@ export class HdbGiaoHang {
     const err = this.store.ghiNhanGiaoHang(this.h().id, {
       ngay: this.ngay(),
       kho: this.kho(),
-      dong: this.dong().map((d) => ({ loaiHang: d.loaiHang, lo: d.lo || undefined, soLuong: d.soLuong, tenTrenHD: d.tenTrenHD })),
+      dong: this.dong().map((d) => ({ loaiHang: d.loaiHang, lo: d.lo || undefined, soLuong: d.soLuong, tenTrenHD: d.tenTrenHD, phuKien: d.phuKien })),
       ghiChu: this.ghiChu().trim() || undefined,
     });
     if (err) {

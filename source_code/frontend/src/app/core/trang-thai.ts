@@ -34,6 +34,8 @@ export const TT = {
   DANG_DAM_PHAN: 'DANG_DAM_PHAN',
   KY_HOP_DONG: 'KY_HOP_DONG',
   DA_GIAO_HANG: 'DA_GIAO_HANG',
+  CHO_KHO: 'CHO_KHO',
+  DA_XUAT_KHO: 'DA_XUAT_KHO',
 } as const;
 
 export type MaTrangThai = (typeof TT)[keyof typeof TT];
@@ -69,6 +71,8 @@ const NHAN: Record<MaTrangThai, string> = {
   DANG_DAM_PHAN: 'Đang đàm phán',
   KY_HOP_DONG: 'Ký hợp đồng',
   DA_GIAO_HANG: 'Đã giao hàng',
+  CHO_KHO: 'Chờ kho',
+  DA_XUAT_KHO: 'Đã xuất kho',
 };
 
 /** Tên tiếng Việt để hiển thị; mã lạ / rỗng trả lại nguyên giá trị (rỗng → ''). */

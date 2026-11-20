@@ -50,7 +50,7 @@ interface Mieng {
 
 const R = 36;
 const CHU_VI = 2 * Math.PI * R;
-const MAU_TT: Record<string, string> = { HIEU_LUC: '#14806f', DANG_GIAO_HANG: '#e0a31c', HOAN_THANH: '#4bb04f', DA_TAT_TOAN: '#3d4a52' };
+const MAU_TT: Record<string, string> = { HIEU_LUC: '#14806f', DANG_GIAO_HANG: '#e0a31c', DA_GIAO_HANG: '#2f9e6f', HOAN_THANH: '#4bb04f', DA_TAT_TOAN: '#3d4a52' };
 const MAU_GIAO: Record<string, string> = { 'Chưa giao': '#b8bfc2', 'Giao một phần': '#e0a31c', 'Giao đủ': '#1f9d55', 'Không giao hàng': '#3b7bc9' };
 const MAU_THU: Record<string, string> = { 'Chưa thu': '#b8bfc2', 'Thu một phần': '#e0a31c', 'Thu đủ': '#1f9d55' };
 const MAU_NHOM = ['#0f5a2a', '#14806f', '#7ccf5b', '#e0a31c', '#3b7bc9', '#7b5cc4'];
