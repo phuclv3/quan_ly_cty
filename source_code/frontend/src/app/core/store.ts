@@ -3303,7 +3303,7 @@ const loaiHs_ = (loai: string) => e_(loai.replace('/', '~'));
 export function dbRong(): Db {
   return {
     version: 0, taiKhoan: [], nhomQuyen: [], phien: [],
-    cauHinh: { TNDN_NGUONG: 0.2, TNDN_MUC1: 0.25, TNDN_MUC2: 0.5, PT_THUE: 0.2, PT_GIU: 0.1, PT_CACH_CHIA: 'Nhân', SO_DOT_TOI_DA: 3, TIEN_TO_TC: 'TC', TIEN_TO_CP: 'CP', TIEN_TO_NK: 'NK', TIEN_TO_XK: 'XK' },
+    cauHinh: { TNDN_NGUONG: 0.2, TNDN_MUC1: 0.25, TNDN_MUC2: 0.5, PT_THUE: 0.2, PT_GIU: 0.1, PT_CACH_CHIA: 'Nhân', TIEN_TO_TC: 'TC', TIEN_TO_CP: 'CP', TIEN_TO_NK: 'NK', TIEN_TO_XK: 'XK' },
     cauHinhLog: [], yeuCauXoa: [], hoSo: [], hoaDon: [], nguonTien: [], loaiChiPhi: [], khachHang: [], ncc: [], kho: [], loaiHang: [],
     phieuThuChi: [], chiPhiHD: [], hopDongBan: [], hopDongMua: [], phieuKho: [], kiemKe: [], yeuCauXuatKho: [], anhXaTen: [], binhKhi: [], deNghiVatTu: [], viecGiao: [], canhBao: [],
     hopDongPhuTai: [], dongTienPT: [], boDem: {},

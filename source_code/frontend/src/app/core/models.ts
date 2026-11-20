@@ -68,7 +68,6 @@ export interface CauHinh {
    * "Cộng" — Oxy = 1 − thuế − PT giữ, đều tính trên LN trước thuế, mặc định 70%.
    */
   PT_CACH_CHIA: CachChiaPT;
-  SO_DOT_TOI_DA: number;
   TIEN_TO_TC: string;
   TIEN_TO_CP: string;
   TIEN_TO_NK: string;
