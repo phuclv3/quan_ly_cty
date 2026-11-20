@@ -23,8 +23,6 @@ public class CauHinh {
   private double ptGiu = 0.1;
   @JsonProperty("PT_CACH_CHIA")
   private String ptCachChia = "Nhân";
-  @JsonProperty("SO_DOT_TOI_DA")
-  private int soDotToiDa = 3;
   @JsonProperty("TIEN_TO_TC")
   private String tienToTC = "TC";
   @JsonProperty("TIEN_TO_CP")

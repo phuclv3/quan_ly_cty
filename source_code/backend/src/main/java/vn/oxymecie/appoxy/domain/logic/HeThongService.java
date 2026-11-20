@@ -34,7 +34,6 @@ public class HeThongService {
       case "PT_THUE" -> Money.num(c.getPtThue());
       case "PT_GIU" -> Money.num(c.getPtGiu());
       case "PT_CACH_CHIA" -> c.getPtCachChia();
-      case "SO_DOT_TOI_DA" -> String.valueOf(c.getSoDotToiDa());
       case "TIEN_TO_TC" -> c.getTienToTC();
       case "TIEN_TO_CP" -> c.getTienToCP();
       case "TIEN_TO_NK" -> c.getTienToNK();
@@ -52,7 +51,6 @@ public class HeThongService {
       case "PT_THUE" -> c.setPtThue(Double.parseDouble(v));
       case "PT_GIU" -> c.setPtGiu(Double.parseDouble(v));
       case "PT_CACH_CHIA" -> c.setPtCachChia(v);
-      case "SO_DOT_TOI_DA" -> c.setSoDotToiDa(Integer.parseInt(v));
       case "TIEN_TO_TC" -> c.setTienToTC(v);
       case "TIEN_TO_CP" -> c.setTienToCP(v);
       case "TIEN_TO_NK" -> c.setTienToNK(v);
@@ -79,10 +77,6 @@ public class HeThongService {
     } else if ("PT_CACH_CHIA".equals(k)) {
       moi = raw.toString();
       if (!List.of("Nhân", "Cộng").contains(moi)) throw ApiException.invalid("Cách chia: chọn một trong Nhân / Cộng");
-    } else if ("SO_DOT_TOI_DA".equals(k)) {
-      double n = raw instanceof Number x ? x.doubleValue() : Double.parseDouble(raw.toString());
-      if (n != Math.rint(n) || n < 1 || n > 24) throw ApiException.invalid("Số đợt tối đa: nhập số nguyên từ 1 đến 24");
-      moi = String.valueOf((int) n);
     } else if (KHOA_TIEN_TO.contains(k)) {
       moi = raw.toString().trim().toUpperCase();
       if (!moi.matches("^[A-Z]{1,5}$")) throw ApiException.invalid("Tiền tố: 1–5 chữ cái in hoa, không dấu");

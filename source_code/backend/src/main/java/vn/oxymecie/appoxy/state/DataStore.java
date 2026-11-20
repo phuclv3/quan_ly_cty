@@ -266,7 +266,7 @@ public class DataStore {
   }
 
   private void luuCauHinh(Db base, Db work, String me, Instant now) {
-    for (String k : List.of("TNDN_NGUONG", "TNDN_MUC1", "TNDN_MUC2", "PT_THUE", "PT_GIU", "PT_CACH_CHIA", "SO_DOT_TOI_DA", "TIEN_TO_TC",
+    for (String k : List.of("TNDN_NGUONG", "TNDN_MUC1", "TNDN_MUC2", "PT_THUE", "PT_GIU", "PT_CACH_CHIA", "TIEN_TO_TC",
         "TIEN_TO_CP", "TIEN_TO_NK", "TIEN_TO_XK")) {
       String v = HeThongService.giaTri(work.getCauHinh(), k);
       if (v.equals(HeThongService.giaTri(base.getCauHinh(), k))) continue;
